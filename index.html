@@ -146,38 +146,89 @@
     font-family:'Big Shoulders Display';font-weight:800;
     font-size:clamp(1.7rem,4vw,2.4rem);letter-spacing:.06em;text-transform:uppercase;
   }
-  .sec-head span{color:var(--chalk-dim);font-size:.95rem}
+  .sec-head span{color:var(--chalk-dim);font-size:1.05rem}
+
+  /* ---------- Sport filter pills ---------- */
+  .sport-filter{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
+  .sport-filter button{
+    font-family:'Big Shoulders Display';font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    font-size:.95rem;padding:9px 20px;border-radius:999px;
+    border:1.5px solid var(--line);background:var(--field);color:var(--chalk-dim);
+    cursor:pointer;transition:border-color .15s,color .15s,background .15s,transform .12s;
+  }
+  .sport-filter button:hover{border-color:var(--gold);color:var(--chalk)}
+  .sport-filter button.active{
+    background:linear-gradient(180deg,var(--gold-hi),var(--gold));color:#241a02;border-color:var(--gold);
+  }
+  .sport-filter button:focus-visible{outline:3px solid var(--gold-hi);outline-offset:2px}
+
+  /* ---------- Clickable game cards ---------- */
+  .game{cursor:pointer}
+  .game:focus-visible{outline:3px solid var(--gold-hi);outline-offset:3px}
+
+  /* ---------- Add-to-calendar modal ---------- */
+  .modal-backdrop{
+    position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+    padding:20px;background:rgba(5,15,10,.78);backdrop-filter:blur(6px);
+    opacity:0;pointer-events:none;transition:opacity .18s ease;
+  }
+  .modal-backdrop.open{opacity:1;pointer-events:auto}
+  .modal-card{
+    position:relative;width:100%;max-width:440px;
+    background:linear-gradient(180deg, var(--turf), var(--field) 60%);
+    border:1.5px solid var(--gold);border-radius:var(--radius);
+    padding:30px 30px 26px;box-shadow:0 30px 70px -20px rgba(0,0,0,.65);
+    transform:translateY(12px);transition:transform .18s ease;
+  }
+  .modal-backdrop.open .modal-card{transform:translateY(0)}
+  .modal-close{
+    position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;
+    border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--chalk-dim);
+    font-size:.95rem;cursor:pointer;transition:border-color .15s,color .15s;
+  }
+  .modal-close:hover{border-color:var(--gold);color:var(--chalk)}
+  .modal-sport{
+    font-size:.8rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);
+    margin-bottom:6px;
+  }
+  #modalTitle{
+    font-family:'Big Shoulders Display';font-weight:800;font-size:1.5rem;letter-spacing:.02em;
+    margin-bottom:14px;padding-right:20px;line-height:1.15;
+  }
+  .modal-when, .modal-where{color:var(--chalk-dim);font-size:1rem;margin-bottom:4px}
+  .modal-actions{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+  .modal-actions .btn{justify-content:center;font-size:.95rem}
 
   /* ---------- Schedule rundown ---------- */
   .rundown{display:flex;flex-direction:column;gap:10px}
   .game{
-    display:grid;grid-template-columns:92px 1fr auto;gap:6px 20px;align-items:center;
+    display:grid;grid-template-columns:108px 1fr auto;gap:8px 24px;align-items:center;
     background:var(--field);border:1px solid var(--line);border-radius:12px;
-    padding:16px 20px;transition:border-color .15s,transform .12s;
+    padding:20px 24px;transition:border-color .15s,transform .12s;
   }
   .game:hover{border-color:var(--gold);transform:translateX(3px)}
   .game .date{
     font-family:'Big Shoulders Display';font-weight:700;text-align:center;line-height:1.05;
     color:var(--gold-hi);
   }
-  .game .date b{display:block;font-size:1.6rem}
-  .game .date small{font-size:.7rem;letter-spacing:.2em;color:var(--chalk-dim)}
+  .game .date b{display:block;font-size:2.1rem}
+  .game .date small{font-size:.85rem;letter-spacing:.2em;color:var(--chalk-dim)}
   .game .info .sport{
-    font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);
+    font-size:.88rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);
   }
-  .game .info .teams{font-weight:600;font-size:1.08rem}
-  .game .info .loc{color:var(--chalk-dim);font-size:.85rem;margin-top:2px}
+  .game .info .teams{font-weight:600;font-size:1.35rem}
+  .game .info .loc{color:var(--chalk-dim);font-size:1rem;margin-top:4px}
   .game .info .note-badge{
     display:inline-block;background:rgba(217,165,33,.16);border:1px solid var(--gold);
-    color:var(--gold-hi);font-size:.68rem;font-weight:700;letter-spacing:.12em;
-    text-transform:uppercase;padding:2px 9px;border-radius:999px;margin-left:8px;vertical-align:middle;
+    color:var(--gold-hi);font-size:.8rem;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;padding:3px 11px;border-radius:999px;margin-left:8px;vertical-align:middle;
   }
-  .game .time{font-variant-numeric:tabular-nums;color:var(--chalk-dim);font-weight:600;text-align:right}
+  .game .time{font-variant-numeric:tabular-nums;color:var(--chalk-dim);font-weight:600;text-align:right;font-size:1.2rem}
   .game .time .live-tag{
-    display:inline-block;background:var(--tally);color:#fff;font-size:.68rem;font-weight:700;
-    letter-spacing:.12em;padding:3px 9px;border-radius:999px;margin-left:8px;vertical-align:middle;
+    display:inline-block;background:var(--tally);color:#fff;font-size:.8rem;font-weight:700;
+    letter-spacing:.1em;padding:4px 11px;border-radius:999px;margin-left:8px;vertical-align:middle;
   }
-  .sched-note{margin-top:16px;color:var(--chalk-dim);font-size:.9rem}
+  .sched-note{margin-top:16px;color:var(--chalk-dim);font-size:1.05rem}
 
   /* ---------- Archives ---------- */
   .archive-panel{
@@ -206,7 +257,7 @@
     nav a{padding:8px 9px;font-size:.85rem}
     .tally{display:none}
     .lowerthird .when{margin-left:0;width:100%}
-    .game{grid-template-columns:70px 1fr;grid-template-rows:auto auto}
+    .game{grid-template-columns:82px 1fr;grid-template-rows:auto auto}
     .game .time{grid-column:2;text-align:left}
     .archive-panel{grid-template-columns:1fr;text-align:center;justify-items:center}
     section{padding:42px 0}
@@ -263,8 +314,17 @@
       <h2>Broadcast Rundown</h2>
       <span>All times Central</span>
     </div>
+    <div class="sport-filter" id="sportFilter" role="group" aria-label="Filter schedule by sport">
+      <button type="button" class="active" data-sport="all">All Sports</button>
+      <button type="button" data-sport="football">Football</button>
+      <button type="button" data-sport="volleyball">Volleyball</button>
+      <button type="button" data-sport="basketball">Basketball</button>
+      <button type="button" data-sport="soccer">Soccer</button>
+      <button type="button" data-sport="baseball">Baseball</button>
+      <button type="button" data-sport="softball">Softball</button>
+    </div>
     <div class="rundown" id="rundown"><!-- populated by JS --></div>
-    <p class="sched-note">Schedule subject to change. Streams go live about 15 minutes before kickoff/tip-off.</p>
+    <p class="sched-note">Tap any game to add a calendar reminder. Schedule subject to change — streams go live about 15 minutes before game start.</p>
   </div>
 </section>
 
@@ -299,6 +359,21 @@
     </div>
   </div>
 </footer>
+
+<!-- ============ ADD TO CALENDAR MODAL ============ -->
+<div class="modal-backdrop" id="modalBackdrop" role="presentation">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle" id="modalCard">
+    <button type="button" class="modal-close" id="modalClose" aria-label="Close">✕</button>
+    <div class="modal-sport" id="modalSport"></div>
+    <h3 id="modalTitle"></h3>
+    <div class="modal-when" id="modalWhen"></div>
+    <div class="modal-where" id="modalWhere"></div>
+    <div class="modal-actions">
+      <a class="btn btn-gold" id="modalGoogle" target="_blank" rel="noopener">Add to Google Calendar</a>
+      <a class="btn btn-ghost" id="modalIcs">Download .ics (Apple / Outlook)</a>
+    </div>
+  </div>
+</div>
 
 <script>
 /* =====================================================
@@ -346,34 +421,160 @@ async function loadSchedule(){
   }
 }
 
-/* ---- Render the rundown ---- */
-function renderSchedule(data){
+/* ---- Render the rundown (filterable by sport) ---- */
+let allUpcoming = [];       // full unfiltered list, used for filtering + next-game logic
+let currentSportFilter = "all";
+
+function buildUpcoming(data){
   const now = new Date();
-  const upcoming = (data.games || [])
+  return (data.games || [])
     .map(g => ({...g, d: new Date(g.start)}))
     .filter(g => !isNaN(g.d) && g.d.getTime() > now.getTime() - LIVE_WINDOW_HRS*3600e3)
     .sort((a,b) => a.d - b.d);
+}
+
+function renderRundown(){
+  const now = new Date();
+  const filtered = currentSportFilter === "all"
+    ? allUpcoming
+    : allUpcoming.filter(g => (g.sport || "").toLowerCase() === currentSportFilter);
 
   const el = document.getElementById("rundown");
-  if (!upcoming.length){
+  if (!filtered.length){
+    const msg = allUpcoming.length
+      ? `No upcoming ${currentSportFilter} broadcasts scheduled right now.`
+      : "No broadcasts currently scheduled — check back soon!";
     el.innerHTML = `<div class="game"><div class="date"><b>—</b></div>
-      <div class="info"><div class="sport">Off Season</div>
-      <div class="teams">No broadcasts currently scheduled — check back soon!</div></div></div>`;
-    return null;
+      <div class="info"><div class="sport">${allUpcoming.length ? "No Matches" : "Off Season"}</div>
+      <div class="teams">${msg}</div></div></div>`;
+    return;
   }
-  el.innerHTML = upcoming.map(g => {
+  el.innerHTML = filtered.map(g => {
     const live = isLiveWindow(g.d, now);
     const badge = g.notes ? `<span class="note-badge">${g.notes}</span>` : "";
     const loc = g.location ? `<div class="loc">${g.homeAway === "away" ? "🚌 " : "🏠 "}${g.location}</div>` : "";
-    return `<div class="game">
+    const label = `${g.sport}: FBCA Eagles ${vsAt(g)} ${g.opponent}, add to calendar`;
+    return `<div class="game" data-game-id="${g.id}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${label}">
       <div class="date"><small>${MONTHS[g.d.getMonth()]}</small><b>${g.d.getDate()}</b><small>${g.d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase()}</small></div>
       <div class="info"><div class="sport">${g.sport}</div>
         <div class="teams">FBCA Eagles ${vsAt(g)} ${g.opponent}${badge}</div>${loc}</div>
       <div class="time">${fmtTime(g.d)}${live ? '<span class="live-tag">LIVE</span>' : ''}</div>
     </div>`;
   }).join("");
-  return upcoming[0];
 }
+
+function renderSchedule(data){
+  allUpcoming = buildUpcoming(data);
+  renderRundown();
+  return allUpcoming[0] || null;   // unfiltered next game, for off-air/live-tally logic
+}
+
+/* ---- Add-to-calendar: build Google Calendar link + downloadable .ics ---- */
+const GAME_DURATION_HRS = 2.5; // rough default length for a broadcast/game
+
+function toIcsUtc(d){
+  return d.toISOString().replace(/[-:]/g,"").split(".")[0] + "Z";
+}
+function icsEscape(str){
+  return String(str).replace(/\\/g,"\\\\").replace(/,/g,"\\,").replace(/;/g,"\\;").replace(/\n/g,"\\n");
+}
+function buildEventFields(g){
+  const start = g.d;
+  const end = new Date(start.getTime() + GAME_DURATION_HRS*3600e3);
+  const title = `FBCA Eagles ${vsAt(g)} ${g.opponent} (${g.sport})`;
+  const details = `Watch live on Eagles on the Air: https://fbca.tv`;
+  const location = g.location || "";
+  return { start, end, title, details, location };
+}
+function openGoogleCalendar(fields){
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: fields.title,
+    dates: `${toIcsUtc(fields.start)}/${toIcsUtc(fields.end)}`,
+    details: fields.details,
+    location: fields.location
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+function buildIcsFile(g, fields){
+  const uid = `${g.id}@fbca.tv`;
+  const stamp = toIcsUtc(new Date());
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Eagles on the Air//Broadcast Schedule//EN",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${toIcsUtc(fields.start)}`,
+    `DTEND:${toIcsUtc(fields.end)}`,
+    `SUMMARY:${icsEscape(fields.title)}`,
+    `DESCRIPTION:${icsEscape(fields.details)}`,
+    `LOCATION:${icsEscape(fields.location)}`,
+    "URL:https://fbca.tv",
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ];
+  return lines.join("\r\n");
+}
+
+/* ---- Modal wiring ---- */
+const modalBackdrop = document.getElementById("modalBackdrop");
+const modalClose = document.getElementById("modalClose");
+
+function openGameModal(game){
+  const fields = buildEventFields(game);
+  document.getElementById("modalSport").textContent = game.sport;
+  document.getElementById("modalTitle").textContent = `FBCA Eagles ${vsAt(game)} ${game.opponent}`;
+  document.getElementById("modalWhen").textContent =
+    fields.start.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }) +
+    " · " + fmtTime(fields.start) + " Central";
+  document.getElementById("modalWhere").textContent = fields.location || "Location TBD";
+
+  document.getElementById("modalGoogle").href = openGoogleCalendar(fields);
+
+  const icsBlob = new Blob([buildIcsFile(game, fields)], { type: "text/calendar;charset=utf-8" });
+  const icsUrl = URL.createObjectURL(icsBlob);
+  const icsLink = document.getElementById("modalIcs");
+  icsLink.href = icsUrl;
+  icsLink.download = `FBCA-Eagles-${game.sport}-${game.id}.ics`;
+
+  modalBackdrop.classList.add("open");
+  modalClose.focus();
+}
+function closeGameModal(){
+  modalBackdrop.classList.remove("open");
+}
+modalClose.addEventListener("click", closeGameModal);
+modalBackdrop.addEventListener("click", (e) => { if (e.target === modalBackdrop) closeGameModal(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeGameModal(); });
+
+function findGame(id){ return allUpcoming.find(g => g.id === id); }
+
+document.getElementById("rundown").addEventListener("click", (e) => {
+  const card = e.target.closest(".game[data-game-id]");
+  if (!card) return;
+  const game = findGame(card.dataset.gameId);
+  if (game) openGameModal(game);
+});
+document.getElementById("rundown").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const card = e.target.closest(".game[data-game-id]");
+  if (!card) return;
+  e.preventDefault();
+  const game = findGame(card.dataset.gameId);
+  if (game) openGameModal(game);
+});
+
+/* ---- Filter pill clicks ---- */
+document.getElementById("sportFilter").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-sport]");
+  if (!btn) return;
+  currentSportFilter = btn.dataset.sport;
+  document.querySelectorAll("#sportFilter button").forEach(b => b.classList.toggle("active", b === btn));
+  renderRundown();
+});
 
 /* ---- Player + on-air state ---- */
 const video = document.getElementById("player");
