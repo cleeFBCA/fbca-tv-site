@@ -283,9 +283,11 @@
 
   /* ---------- Mobile ---------- */
   @media (max-width:720px){
-    .bar{height:60px}
-    .brand-name{font-size:1.1rem}
-    nav a{padding:8px 9px;font-size:.85rem}
+    .bar{height:60px;gap:10px}
+    .brand-name{font-size:1.1rem;white-space:nowrap}
+    .brand-name small{display:none}
+    nav{gap:0}
+    nav a{padding:8px 8px;font-size:.85rem}
     .tally{display:none}
     .lowerthird .when{margin-left:0;width:100%}
     .game{grid-template-columns:82px 1fr;grid-template-rows:auto auto}
