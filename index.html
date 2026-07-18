@@ -395,16 +395,7 @@
       <h2>Broadcast Schedule</h2>
       <span>All times Central</span>
     </div>
-    <div class="sport-filter" id="sportFilter" role="group" aria-label="Filter schedule by sport">
-      <button type="button" class="active" data-sport="all">All Sports</button>
-      <button type="button" data-sport="football">Football</button>
-      <button type="button" data-sport="volleyball">Volleyball</button>
-      <button type="button" data-sport="basketball">Basketball</button>
-      <button type="button" data-sport="soccer">Soccer</button>
-      <button type="button" data-sport="baseball">Baseball</button>
-      <button type="button" data-sport="softball">Softball</button>
-      <button type="button" data-sport="special event">Special Events</button>
-    </div>
+    <div class="sport-filter" id="sportFilter" role="group" aria-label="Filter schedule by sport"><!-- pills populated by JS --></div>
     <div class="rundown" id="rundown"><!-- populated by JS --></div>
     <p class="sched-note">Tap any game to add a calendar reminder. Schedule subject to change — streams go live about 15 minutes before start of event.</p>
   </div>
@@ -467,7 +458,7 @@
    iOS app should point at the SAME URL. Examples:
      Squarespace file upload:  "/s/schedule.json"
      GitHub raw:               "https://raw.githubusercontent.com/YOU/eota-schedule/main/schedule.json"  */
-const SCHEDULE_URL = "https://raw.githubusercontent.com/cleeFBCA/eota-schedule/refs/heads/main/schedule.json";
+const SCHEDULE_URL = "https://fbca.tv/schedule.json";
 
 const FALLBACK_STREAM_URL = "https://cdn3.wowza.com/1/dWs2d1hVSlFlQlFH/c2RJVUtM/hls/live/playlist.m3u8";
 
@@ -560,9 +551,63 @@ function renderRundown(){
   }).join("");
 }
 
+/* ---- Canonical sport order for the filter pills.
+   Pills only appear for sports that actually have upcoming games, but
+   always sit in THIS order rather than jumping around as seasons change.
+   Any sport in the schedule that isn't in this list (e.g. a typo like
+   "Football " with a trailing space, or a brand-new sport) still gets a
+   pill — appended at the end — so those games never vanish silently. ---- */
+const SPORT_ORDER = ["Football","Volleyball","Basketball","Soccer","Baseball","Softball","Special Event"];
+
+function prettySportLabel(sport){
+  // "Special Event" -> "Special Events" for the pill; others shown as-is
+  if (sport.toLowerCase() === "special event") return "Special Events";
+  return sport;
+}
+
+function renderFilterPills(){
+  const container = document.getElementById("sportFilter");
+
+  // Distinct sports present in upcoming games, preserving their exact JSON text
+  const present = [];
+  const seen = new Set();
+  for (const g of allUpcoming){
+    const s = (g.sport || "").trim();
+    if (!s) continue;
+    const key = s.toLowerCase();
+    if (!seen.has(key)){ seen.add(key); present.push(s); }
+  }
+
+  // Order: canonical list first (only those present), then any leftovers (typos/new sports) appended
+  const ordered = [];
+  for (const canonical of SPORT_ORDER){
+    const match = present.find(s => s.toLowerCase() === canonical.toLowerCase());
+    if (match) ordered.push(match);
+  }
+  for (const s of present){
+    if (!ordered.some(o => o.toLowerCase() === s.toLowerCase())) ordered.push(s);
+  }
+
+  // Build pills: always an "All" pill, then one per present sport
+  let html = `<button type="button" class="active" data-sport="all">All Sports</button>`;
+  for (const s of ordered){
+    html += `<button type="button" data-sport="${s.toLowerCase()}">${prettySportLabel(s)}</button>`;
+  }
+  container.innerHTML = html;
+
+  // If the previously selected filter no longer has games, fall back to "All"
+  if (currentSportFilter !== "all" && !ordered.some(s => s.toLowerCase() === currentSportFilter)){
+    currentSportFilter = "all";
+  }
+  // Keep the active class in sync with the current filter
+  container.querySelectorAll("button").forEach(b =>
+    b.classList.toggle("active", b.dataset.sport === currentSportFilter));
+}
+
 function renderSchedule(data){
   allUpcoming = buildUpcoming(data);
   allPast = buildPast(data);
+  renderFilterPills();
   renderRundown();
 }
 
