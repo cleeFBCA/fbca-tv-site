@@ -10,11 +10,11 @@
      {
       "id": "2026-07-18-fb-grad",
       "start": "2026-07-18T15:00:00-05:00",
-      "sport": "Special Event",
-      "opponent": "FBCA 29th Commencement Ceremony - Graduation 2026",
-      "homeAway": null,
-      "location": "Sugar Creek Baptist Church",
-      "notes": null
+      "sport": "Football",
+      "opponent": "St. Pius X Catholic School",
+      "homeAway": "away",
+      "location": "Kubiak Stadium",
+      "notes": "FB Season Opener"
     },
     {
       "id": "2026-05-25-fb-grad",
