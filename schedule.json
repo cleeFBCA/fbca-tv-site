@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "team": "Eagles on the Air",
+  "school": "Fort Bend Christian Academy",
+  "timezone": "America/Chicago",
+  "streamUrl": "https://cdn3.wowza.com/1/dWs2d1hVSlFlQlFH/c2RJVUtM/hls/live/playlist.m3u8",
+  "archiveUrl": "https://www.youtube.com/@eaglesontheair",
+  "updated": "2026-07-14T17:30:00-05:00",
+  "games": [
+     {
+      "id": "2026-05-25-fb-grad",
+      "start": "2026-05-22T15:00:00-05:00",
+      "sport": "Special Event",
+      "opponent": "FBCA 29th Commencement Ceremony - Graduation 2026",
+      "homeAway": null,
+      "location": "Sugar Creek Baptist Church",
+      "notes": null
+    },
+    {
+      "id": "2026-08-21-fb-st-pius-x",
+      "start": "2026-08-21T19:00:00-05:00",
+      "sport": "Football",
+      "opponent": "St. Pius X Catholic School",
+      "homeAway": "away",
+      "location": "Kubiak Stadium",
+      "notes": "FB Season Opener"
+    },
+    {
+      "id": "2026-08-25-vb-duchesne",
+      "start": "2026-08-25T18:00:00-05:00",
+      "sport": "Volleyball",
+      "opponent": "Duchesne Academy of the Sacred Heart",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": "VB Season Opener"
+    },
+    {
+      "id": "2026-08-28-fb-john-cooper",
+      "start": "2026-08-28T19:00:00-05:00",
+      "sport": "Football",
+      "opponent": "John Cooper School",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2026-09-01-vb-st-john-xxiii",
+      "start": "2026-09-01T17:30:00-05:00",
+      "sport": "Volleyball",
+      "opponent": "St. John XXIII College Preparatory",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2026-09-03-vb-woodlands-christian",
+      "start": "2026-09-03T18:00:00-05:00",
+      "sport": "Volleyball",
+      "opponent": "The Woodlands Christian Academy",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2026-09-04-fb-houston-christian",
+      "start": "2026-09-04T19:00:00-05:00",
+      "sport": "Football",
+      "opponent": "Houston Christian High School",
+      "homeAway": "away",
+      "location": "Mustang Field",
+      "notes": null
+    },
+    {
+      "id": "2026-09-11-fb-episcopal",
+      "start": "2026-09-11T19:00:00-05:00",
+      "sport": "Football",
+      "opponent": "Episcopal High School",
+      "homeAway": "away",
+      "location": "Simmons Field",
+      "notes": null
+    },
+    {
+      "id": "2026-09-17-vb-emery-weiner",
+      "start": "2026-09-17T18:00:00-05:00",
+      "sport": "Volleyball",
+      "opponent": "The Emery/Weiner School",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2026-09-18-fb-concordia-lutheran-tomball",
+      "start": "2026-09-18T19:00:00-05:00",
+      "sport": "Football",
+      "opponent": "Concordia Lutheran High School Tomball",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": "Senior Night"
+    },
+    {
+      "id": "2026-09-25-fb-st-johns",
+      "start": "2026-09-25T19:00:00-05:00",
+      "sport": "Football",
+      "opponent": "St. John's School",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2026-09-29-vb-second-baptist",
+      "start": "2026-09-29T18:00:00-05:00",
+      "sport": "Volleyball",
+      "opponent": "Second Baptist School",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2026-10-01-vb-logos-prep",
+      "start": "2026-10-01T18:00:00-05:00",
+      "sport": "Volleyball",
+      "opponent": "Logos Preparatory Academy",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2026-10-02-fb-second-baptist",
+      "start": "2026-10-02T19:00:00-05:00",
+      "sport": "Football",
+      "opponent": "Second Baptist School",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2026-10-08-vb-st-joseph",
+      "start": "2026-10-08T18:00:00-05:00",
+      "sport": "Volleyball",
+      "opponent": "St. Joseph School",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2026-10-09-fb-woodlands-christian",
+      "start": "2026-10-09T19:00:00-05:00",
+      "sport": "Football",
+      "opponent": "The Woodlands Christian Academy",
+      "homeAway": "away",
+      "location": "Warrior Stadium",
+      "notes": null
+    },
+    {
+      "id": "2026-10-13-vb-cypress-christian",
+      "start": "2026-10-13T18:00:00-05:00",
+      "sport": "Volleyball",
+      "opponent": "Cypress Christian School",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2026-10-16-fb-cypress-christian",
+      "start": "2026-10-16T19:00:00-05:00",
+      "sport": "Football",
+      "opponent": "Cypress Christian School",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": "Homecoming"
+    },
+    {
+      "id": "2026-10-23-fb-st-josephs-brownsville",
+      "start": "2026-10-23T19:00:00-05:00",
+      "sport": "Football",
+      "opponent": "St Joseph's Academy Brownsville",
+      "homeAway": "away",
+      "location": "J.T. Canales Field",
+      "notes": null
+    }
+  ]
+}
