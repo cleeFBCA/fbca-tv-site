@@ -179,5 +179,14 @@
       "location": "J.T. Canales Field",
       "notes": null
     }
+    {
+      "id": "2026-11-23-bb-st-josephs-brownsville",
+      "start": "2026-10-23T15:00:00-05:00",
+      "sport": "Basketball",
+      "opponent": "St Joseph's Academy Brownsville",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": TESTING ONLY
+    }
   ]
 }
