@@ -180,7 +180,7 @@
       "notes": null
     },
     {
-      "id": "2026-11-23-bb-st-josephs-brownsville",
+      "id": "2026-11-23-bkb-st-josephs-brownsville",
       "start": "2026-11-23T15:00:00-05:00",
       "sport": "Basketball",
       "opponent": "St Joseph's Academy Brownsville",
@@ -189,7 +189,7 @@
       "notes": "TESTING ONLY"
     },
     {
-      "id": "2026-11-23-bb-st-josephs-brownsville",
+      "id": "2026-11-23-bkb-st-josephs-brownsville",
       "start": "2026-11-23T15:00:00-05:00",
       "sport": "Basketball",
       "opponent": "St Joseph's Academy Brownsville",
@@ -198,7 +198,7 @@
       "notes": "TESTING ONLY"
     },
     {
-      "id": "2026-11-23-bb-st-josephs-brownsville",
+      "id": "2026-11-23-bsb-st-josephs-brownsville",
       "start": "2026-11-23T15:00:00-05:00",
       "sport": "Baseball",
       "opponent": "St Joseph's Academy Brownsville",
@@ -207,8 +207,8 @@
       "notes": "TESTING ONLY"
     },
     {
-      "id": "2026-07-27-bb-st-josephs-brownsville",
-      "start": "2026-07-27T22:10:00-05:00",
+      "id": "2026-07-27-sfb-st-josephs-brownsville",
+      "start": "2026-07-27T22:20:00-05:00",
       "sport": "Softball",
       "opponent": "St Joseph's Academy Brownsville",
       "homeAway": "home",
