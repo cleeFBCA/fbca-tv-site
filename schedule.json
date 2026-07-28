@@ -178,69 +178,6 @@
       "homeAway": "away",
       "location": "J.T. Canales Field",
       "notes": null
-    },
-    {
-      "id": "2026-07-28-bbb-st-josephs-brownsville",
-      "start": "2026-07-28T17:00:00-05:00",
-      "sport": "Boys Basketball",
-      "opponent": "St Joseph's Academy Brownsville",
-      "homeAway": "home",
-      "location": "The Nest",
-      "notes": "TESTING ONLY"
-    },
-    {
-      "id": "2026-07-28-gbb-st-josephs-brownsville",
-      "start": "2026-07-28T15:00:00-05:00",
-      "sport": "Girls Basketball",
-      "opponent": "St Joseph's Academy Brownsville",
-      "homeAway": "home",
-      "location": "The Nest",
-      "notes": "TESTING ONLY"
-    },
-    {
-      "id": "2026-07-29-bbb-st-josephs-brownsville",
-      "start": "2026-07-29T17:00:00-05:00",
-      "sport": "Boys Basketball",
-      "opponent": "St Joseph's Academy Brownsville",
-      "homeAway": "home",
-      "location": "The Nest",
-      "notes": "TESTING ONLY"
-    },
-    {
-      "id": "2026-07-30-bsb-st-josephs-brownsville",
-      "start": "2026-07-30T15:00:00-05:00",
-      "sport": "Baseball",
-      "opponent": "St Joseph's Academy Brownsville",
-      "homeAway": "home",
-      "location": "The Nest",
-      "notes": "TESTING ONLY"
-    },
-    {
-      "id": "2026-07-31-gsoc-st-josephs-brownsville",
-      "start": "2026-11-31T15:00:00-05:00",
-      "sport": "Girls Soccer",
-      "opponent": "St Joseph's Academy Brownsville",
-      "homeAway": "home",
-      "location": "The Nest",
-      "notes": "TESTING ONLY"
-    },
-    {
-      "id": "2026-07-31-bsoc-st-josephs-brownsville",
-      "start": "2026-07-31T17:00:00-05:00",
-      "sport": "Boys Soccer",
-      "opponent": "St Joseph's Academy Brownsville",
-      "homeAway": "home",
-      "location": "The Nest",
-      "notes": "TESTING ONLY"
-    },
-    {
-      "id": "2026-07-27-sfb-st-josephs-brownsville",
-      "start": "2026-07-27T23:45:00-05:00",
-      "sport": "Softball",
-      "opponent": "St Joseph's Academy Brownsville",
-      "homeAway": "home",
-      "location": "The Nest",
-      "notes": "TESTING ONLY"
     }
   ]
 }
