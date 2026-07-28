@@ -99,8 +99,12 @@ Field by field:
   `YYYY-MM-DDTHH:MM:SS-05:00`. The time is 24-hour. The `-05:00` at the end is
   the Central Time zone offset. **Use `-05:00` for daylight time (spring/summer/
   fall) and `-06:00` for standard time (roughly November–early March).**
-- **`sport`** — one of: `Football`, `Volleyball`, `Basketball`, `Soccer`,
-  `Baseball`, `Softball`, or `Special Event`. Spelling matters (see section 6).
+- **`sport`** — one of: `Football`, `Volleyball`, `Girls Basketball`,
+  `Boys Basketball`, `Girls Soccer`, `Boys Soccer`, `Baseball`, `Softball`, or
+  `Special Event`. Spelling matters (see section 6). Note that basketball and
+  soccer are split by gender — use the full label (e.g. `"Girls Basketball"`),
+  not just `"Basketball"`. This lets the site show and filter the girls' and
+  boys' games separately, which matters when they are broadcast back-to-back.
 - **`opponent`** — the other team's name. For a `Special Event`, put the event
   name here instead (e.g. `"FBCA 29th Commencement Ceremony"`).
 - **`homeAway`** — `"home"` or `"away"`. Rule of thumb: if the schedule says
@@ -134,7 +138,7 @@ The strip of text directly below the video player changes automatically based on
 the current date and time compared to the schedule. It picks one of four states,
 in this priority order:
 
-1. **LIVE** (red indicator) — a game is happening now. This turns on 15 minutes
+1. **LIVE** (red indicator) — a game is happening now. This turns on 5 minutes
    before the listed start time and stays on for 3 hours after.
 2. **STARTING SOON** (gold indicator) — the next game begins within the hour.
 3. **REPLAY** (gray indicator) — no game is live or imminent, so it shows the
@@ -159,9 +163,10 @@ These are generated automatically from `schedule.json`:
 - A sport's button only appears if there is at least one **upcoming** game of
   that sport. So in the fall you will see Football and Volleyball; spring sports
   appear as their seasons arrive.
-- Buttons always appear in a fixed order (Football, Volleyball, Basketball,
-  Soccer, Baseball, Softball, Special Events) no matter what order games are in
-  the file.
+- Buttons always appear in a fixed order (Football, Volleyball, Girls Basketball,
+  Boys Basketball, Girls Soccer, Boys Soccer, Baseball, Softball, Special Events)
+  no matter what order games are in the file. Girls' games are listed before
+  boys' for each sport.
 - If a sport name is misspelled in the JSON, that game still shows up — it just
   gets its own button at the end. This is a safety net, but it is best to spell
   sports exactly as listed in section 4 so they group correctly.
