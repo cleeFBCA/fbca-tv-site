@@ -187,6 +187,33 @@
       "homeAway": "home",
       "location": "The Nest",
       "notes": "TESTING ONLY"
+    },
+    {
+      "id": "2026-11-23-bb-st-josephs-brownsville",
+      "start": "2026-11-23T15:00:00-05:00",
+      "sport": "Basketball",
+      "opponent": "St Joseph's Academy Brownsville",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": "TESTING ONLY"
+    },
+    {
+      "id": "2026-11-23-bb-st-josephs-brownsville",
+      "start": "2026-11-23T15:00:00-05:00",
+      "sport": "Baseball",
+      "opponent": "St Joseph's Academy Brownsville",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": "TESTING ONLY"
+    }
+    {
+      "id": "2026-07-27-bb-st-josephs-brownsville",
+      "start": "2026-07-27T23:00:00-05:00",
+      "sport": "Softball",
+      "opponent": "St Joseph's Academy Brownsville",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": "TESTING ONLY"
     }
   ]
 }
