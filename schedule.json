@@ -54,15 +54,6 @@
       "notes": null
     },
     {
-      "id": "2026-09-03-vb-woodlands-christian",
-      "start": "2026-09-03T18:00:00-05:00",
-      "sport": "Volleyball",
-      "opponent": "The Woodlands Christian Academy",
-      "homeAway": "home",
-      "location": "The Nest",
-      "notes": null
-    },
-    {
       "id": "2026-09-04-fb-houston-christian",
       "start": "2026-09-04T19:00:00-05:00",
       "sport": "Football",
@@ -78,15 +69,6 @@
       "opponent": "Episcopal High School",
       "homeAway": "away",
       "location": "Simmons Field",
-      "notes": null
-    },
-    {
-      "id": "2026-09-17-vb-emery-weiner",
-      "start": "2026-09-17T18:00:00-05:00",
-      "sport": "Volleyball",
-      "opponent": "The Emery/Weiner School",
-      "homeAway": "home",
-      "location": "The Nest",
       "notes": null
     },
     {
@@ -117,30 +99,12 @@
       "notes": null
     },
     {
-      "id": "2026-10-01-vb-logos-prep",
-      "start": "2026-10-01T18:00:00-05:00",
-      "sport": "Volleyball",
-      "opponent": "Logos Preparatory Academy",
-      "homeAway": "home",
-      "location": "The Nest",
-      "notes": null
-    },
-    {
       "id": "2026-10-02-fb-second-baptist",
       "start": "2026-10-02T19:00:00-05:00",
       "sport": "Football",
       "opponent": "Second Baptist School",
       "homeAway": "home",
       "location": "Eagle Stadium",
-      "notes": null
-    },
-    {
-      "id": "2026-10-08-vb-st-joseph",
-      "start": "2026-10-08T18:00:00-05:00",
-      "sport": "Volleyball",
-      "opponent": "St. Joseph School",
-      "homeAway": "home",
-      "location": "The Nest",
       "notes": null
     },
     {
