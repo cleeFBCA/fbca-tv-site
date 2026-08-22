@@ -921,6 +921,7 @@ const STALL_STRIKES        = 3;      // consecutive checks with no progress befo
 const MAX_STALE_S          = 90;     // chunklist not advancing this long means the instance is retired
 const STALE_COOLDOWN_MS    = 60000;  // floor between stale-triggered rebuilds, so a permanently
                                      // retired playlist cannot become a rebuild loop
+const MASTER_POLL_MS       = 30000;  // how often we re-read the master playlist itself
 const RETRY_DELAYS_MS      = [2000, 4000, 8000, 15000, 30000];
 
 let hls = null;                      // current hls.js instance, if any
@@ -936,6 +937,9 @@ let networkRecoveryTried = false;
 let mediaRecoveryTried = false;
 let hasUnmuted = false;              // viewer has clicked Watch, so keep sound on across a rebuild
 let lastStaleReloadAt = 0;           // rate-limits the stale-playlist rebuild path
+let masterFingerprint = null;        // which stream the master playlist named when we last built
+let masterPollTimer = null;
+let lastMasterReloadAt = 0;
 let reloading = false;
 
 function showStreamUnavailable(retrying){
@@ -973,12 +977,20 @@ function bustCache(url){
    window never looks like a dead stream. Returns null when unknown. */
 function playlistStaleSeconds(){
   try{
-    if (hls && hls.levels && hls.currentLevel >= 0){
-      const d = hls.levels[hls.currentLevel].details;
+    if (!hls || !hls.levels || !hls.levels.length) return null;
+    // ABR moves currentLevel around and it sits at -1 before the first switch,
+    // so fall back through loadLevel and then any level whose details we hold.
+    const candidates = [hls.currentLevel, hls.loadLevel, hls.firstLevel];
+    for (const i of candidates){
+      const d = i >= 0 && hls.levels[i] ? hls.levels[i].details : null;
+      if (d && d.live && typeof d.age === "number") return d.age;
+    }
+    for (const lvl of hls.levels){
+      const d = lvl && lvl.details;
       if (d && d.live && typeof d.age === "number") return d.age;
     }
   }catch(err){ /* level details not ready yet */ }
-  return null;
+  return null;   // also the VOD case: a finished recording has no live edge
 }
 
 /* Safari's native HLS exposes no playlist internals, so fall back to the
@@ -997,14 +1009,52 @@ function nativeStaleSeconds(){
   return (Date.now() - (ms + video.currentTime * 1000)) / 1000;
 }
 
+/* Re-read the MASTER playlist and fingerprint the stream it names.
+
+   This is the general form of the whole problem. The older Wowza output names
+   the instance in a relative path (../l349d9fc/1080/chunklist.m3u8); the newer
+   CMAF output puts a session UUID in absolute rendition URLs. Either way those
+   lines change the moment the broadcast is stopped and restarted. They also
+   change when Wowza swaps the URL between a live stream and the finished VOD
+   recording of one, which is a case no playback-health check can see, because
+   a recording plays perfectly well while being entirely the wrong content. */
+async function readMasterFingerprint(){
+  try{
+    const res = await fetch(bustCache(currentStreamUrl), { cache:"no-store" });
+    if (!res.ok) return null;
+    const variants = (await res.text()).split("\n")
+      .map(l => l.trim())
+      .filter(l => l && l.charAt(0) !== "#");   // the rendition URLs
+    return variants.length ? variants.join("|") : null;
+  }catch(err){
+    return null;   // offline or CDN hiccup; try again next tick
+  }
+}
+
+async function checkMaster(){
+  if (reloading) return;
+  const fp = await readMasterFingerprint();
+  if (!fp) return;
+  if (masterFingerprint === null){ masterFingerprint = fp; return; }   // first sighting
+  if (fp === masterFingerprint) return;
+  if (Date.now() - lastMasterReloadAt < STALE_COOLDOWN_MS) return;
+  lastMasterReloadAt = Date.now();
+  masterFingerprint = fp;
+  console.warn("Master playlist now names a different stream, rebuilding.");
+  reloadStream();
+}
+
 function startWatchdog(){
   stopWatchdog();
   lastPlayheadTime = -1;
   stallStrikes = 0;
   watchdogTimer = setInterval(checkPlayback, WATCHDOG_INTERVAL_MS);
+  masterPollTimer = setInterval(checkMaster, MASTER_POLL_MS);
+  checkMaster();   // baseline straight away rather than waiting a full period
 }
 function stopWatchdog(){
   if (watchdogTimer){ clearInterval(watchdogTimer); watchdogTimer = null; }
+  if (masterPollTimer){ clearInterval(masterPollTimer); masterPollTimer = null; }
 }
 
 function checkPlayback(){
@@ -1092,6 +1142,7 @@ function onPlaybackReady(){
 }
 
 function attachPlayer(streamUrl, isReload){
+  if (streamUrl !== currentStreamUrl) masterFingerprint = null;
   currentStreamUrl = streamUrl;
   networkRecoveryTried = false;
   mediaRecoveryTried = false;
@@ -1133,6 +1184,10 @@ function attachPlayer(streamUrl, isReload){
   }
 }
 
+/* When a VOD recording plays out to its end, go and see whether the master
+   has gone live again rather than sitting on a finished file. */
+video.addEventListener("ended", () => { checkMaster(); });
+
 /* A tab that was hidden across a restart should heal as soon as it is looked
    at again, without waiting out a full watchdog interval. */
 document.addEventListener("visibilitychange", () => {
@@ -1140,6 +1195,7 @@ document.addEventListener("visibilitychange", () => {
   lastPlayheadTime = -1;
   stallStrikes = 0;
   setTimeout(checkPlayback, 1500);
+  checkMaster();
 });
 
 document.getElementById("btnWatch").addEventListener("click", () => {
