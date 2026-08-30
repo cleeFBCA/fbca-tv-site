@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.6.14/hls.min.js"></script>
 <style>
   :root{
     --pine:#0D2418;        /* deepest booth green */
@@ -1149,11 +1149,11 @@ function onPlaybackReady(){
    an iPhone: WebKit shipped no MediaSource at all.
 
    iOS 17.1 changed that. The iPhone now exposes ManagedMediaSource, and
-   hls.js treats it as a MediaSource (it even prefers it over the real thing
-   where both exist, via the preferManagedMediaSource default). So
-   Hls.isSupported() quietly began returning true on iPhones and this page
-   moved itself off native playback onto hls.js there, with nothing else
-   having changed.
+   hls.js treats it as a MediaSource. So Hls.isSupported() quietly began
+   returning true on iPhones and this page moved itself off native playback
+   onto hls.js there, with nothing else having changed. Note that no hls.js
+   release fixes this for us: 1.5.13 and 1.6.14 select a MediaSource with
+   identical code. The routing below is the fix.
 
    That path does not survive contact with this stream. ManagedMediaSource
    exists so the browser can tell the player to stop pulling data when it
@@ -1190,7 +1190,15 @@ function attachNative(src){
 }
 
 function attachHlsJs(src){
-  hls = new Hls({ liveDurationInfinity:true });
+  /* preferManagedMediaSource is on by default, and hls.js reads it as a
+     preference for ManagedMediaSource even where a real MediaSource exists,
+     so macOS Safari was quietly running on the same machinery that starves
+     an iPhone. It survives there only because a desktop is never asked to
+     suspend streaming, which is an accident rather than a guarantee. Turning
+     it off puts every remaining hls.js browser on plain MediaSource, and
+     between that and the native path above nothing here touches
+     ManagedMediaSource at all. */
+  hls = new Hls({ liveDurationInfinity:true, preferManagedMediaSource:false });
   hls.loadSource(src);
   hls.attachMedia(video);
   hls.on(Hls.Events.MANIFEST_PARSED, onPlaybackReady);
