@@ -1141,6 +1141,76 @@ function onPlaybackReady(){
   startWatchdog();
 }
 
+/* WHY APPLE MOBILE GETS THE NATIVE PLAYER FIRST:
+
+   iOS and iPadOS play HLS natively through AVFoundation, which is the exact
+   engine the iOS app uses, and it handles this stream without complaint. The
+   page used to land there by default, because Hls.isSupported() was false on
+   an iPhone: WebKit shipped no MediaSource at all.
+
+   iOS 17.1 changed that. The iPhone now exposes ManagedMediaSource, and
+   hls.js treats it as a MediaSource (it even prefers it over the real thing
+   where both exist, via the preferManagedMediaSource default). So
+   Hls.isSupported() quietly began returning true on iPhones and this page
+   moved itself off native playback onto hls.js there, with nothing else
+   having changed.
+
+   That path does not survive contact with this stream. ManagedMediaSource
+   exists so the browser can tell the player to stop pulling data when it
+   wants to spare the radio or the battery, and iPhone Safari uses that
+   licence far more freely than a desktop does. Playback runs to the end of
+   the first buffered segment, roughly eight seconds here, then starves and
+   the media element errors out. Desktop Safari and Chrome never get told to
+   stop, so they look perfectly healthy, and so does the app.
+
+   Every browser on iOS is WebKit underneath, so Chrome for iOS fails the
+   same way and is fixed the same way. ---- */
+function preferNativeHls(){
+  if (!video.canPlayType("application/vnd.apple.mpegurl")) return false;
+  const ua = navigator.userAgent || "";
+  // iPadOS reports itself as a Mac, so touch points are what give it away.
+  const iPadAsMac = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  // Belt and braces: any WebKit that has ManagedMediaSource but no plain
+  // MediaSource is an iPhone, whatever the user agent claims.
+  const managedOnly = typeof self.ManagedMediaSource !== "undefined" &&
+                      typeof self.MediaSource === "undefined";
+  return /iPhone|iPad|iPod/.test(ua) || iPadAsMac || managedOnly;
+}
+
+function attachNative(src){
+  nativeAbort = new AbortController();
+  const signal = nativeAbort.signal;
+  video.addEventListener("loadedmetadata", onPlaybackReady, { once:true, signal });
+  video.addEventListener("error", () => { showStreamUnavailable(true); scheduleRetry(); }, { signal });
+  video.src = src;
+  nativeProbeTimer = setTimeout(() => {
+    nativeProbeTimer = null;
+    if (video.readyState === 0){ showStreamUnavailable(true); scheduleRetry(); }
+  }, 8000);
+}
+
+function attachHlsJs(src){
+  hls = new Hls({ liveDurationInfinity:true });
+  hls.loadSource(src);
+  hls.attachMedia(video);
+  hls.on(Hls.Events.MANIFEST_PARSED, onPlaybackReady);
+  hls.on(Hls.Events.ERROR, (_, data) => {
+    if (!data.fatal) return;
+    // Give hls.js one shot at its own cheap recovery per error type before
+    // we throw everything away and go back to the master playlist.
+    if (data.type === Hls.ErrorTypes.NETWORK_ERROR && !networkRecoveryTried){
+      networkRecoveryTried = true;
+      try { hls.startLoad(); return; } catch(err){ /* fall through */ }
+    }
+    if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !mediaRecoveryTried){
+      mediaRecoveryTried = true;
+      try { hls.recoverMediaError(); return; } catch(err){ /* fall through */ }
+    }
+    showStreamUnavailable(true);
+    scheduleRetry();
+  });
+}
+
 function attachPlayer(streamUrl, isReload){
   if (streamUrl !== currentStreamUrl) masterFingerprint = null;
   currentStreamUrl = streamUrl;
@@ -1148,37 +1218,15 @@ function attachPlayer(streamUrl, isReload){
   mediaRecoveryTried = false;
   const src = isReload ? bustCache(streamUrl) : streamUrl;
 
-  if (window.Hls && Hls.isSupported()){
-    hls = new Hls({ liveDurationInfinity:true });
-    hls.loadSource(src);
-    hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, onPlaybackReady);
-    hls.on(Hls.Events.ERROR, (_, data) => {
-      if (!data.fatal) return;
-      // Give hls.js one shot at its own cheap recovery per error type before
-      // we throw everything away and go back to the master playlist.
-      if (data.type === Hls.ErrorTypes.NETWORK_ERROR && !networkRecoveryTried){
-        networkRecoveryTried = true;
-        try { hls.startLoad(); return; } catch(err){ /* fall through */ }
-      }
-      if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !mediaRecoveryTried){
-        mediaRecoveryTried = true;
-        try { hls.recoverMediaError(); return; } catch(err){ /* fall through */ }
-      }
-      showStreamUnavailable(true);
-      scheduleRetry();
-    });
+  // Set before the source, so iOS grants the muted autoplay onPlaybackReady asks for.
+  video.muted = !hasUnmuted;
+
+  if (preferNativeHls()){
+    attachNative(src);
+  } else if (window.Hls && Hls.isSupported()){
+    attachHlsJs(src);
   } else if (video.canPlayType("application/vnd.apple.mpegurl")){
-    // Safari / iOS native HLS
-    nativeAbort = new AbortController();
-    const signal = nativeAbort.signal;
-    video.addEventListener("loadedmetadata", onPlaybackReady, { once:true, signal });
-    video.addEventListener("error", () => { showStreamUnavailable(true); scheduleRetry(); }, { signal });
-    video.src = src;
-    nativeProbeTimer = setTimeout(() => {
-      nativeProbeTimer = null;
-      if (video.readyState === 0){ showStreamUnavailable(true); scheduleRetry(); }
-    }, 8000);
+    attachNative(src);
   } else {
     showStreamUnavailable(false);
   }
