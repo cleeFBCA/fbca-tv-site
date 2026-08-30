@@ -37,6 +37,19 @@
     --tally:#E5352B;       /* ON AIR light */
     --radius:14px;
     --wrap:1120px;
+
+    /* Both webfonts arrive from Google with display=swap, so every element
+       below paints in a fallback first and re-lays out when the real face
+       lands. Naming a fallback that is metrically close to the real one is
+       what keeps that reflow small. Big Shoulders Display is heavily
+       condensed, so the browser default (a serif) was about the worst
+       possible stand-in: it rendered "STARTING SOON" in the tally 48% wider
+       than the loaded face, and the header nav slid sideways when it swapped.
+       Arial Narrow ships on macOS, iOS and Windows, Roboto Condensed covers
+       Android, and both are condensed enough to cut that gap roughly in
+       half. */
+    --font-display:'Big Shoulders Display','Arial Narrow','Roboto Condensed',sans-serif;
+    --font-body:'Barlow',system-ui,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
@@ -45,7 +58,7 @@
     *,*::before,*::after{animation:none!important;transition:none!important}
   }
   body{
-    font-family:'Barlow',system-ui,sans-serif;
+    font-family:var(--font-body);
     background:
       radial-gradient(1200px 500px at 50% -120px, rgba(217,165,33,.10), transparent 60%),
       var(--pine);
@@ -70,12 +83,12 @@
   .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--chalk)}
   .brand img{width:44px;height:44px}
   .brand-name{
-    font-family:'Big Shoulders Display',sans-serif;
+    font-family:var(--font-display);
     font-weight:800;font-size:1.35rem;letter-spacing:.04em;line-height:1;
     text-transform:uppercase;
   }
   .brand-name small{
-    display:block;font-family:'Barlow';font-weight:600;font-size:.62rem;
+    display:block;font-family:var(--font-body);font-weight:600;font-size:.62rem;
     letter-spacing:.28em;color:var(--gold);margin-top:3px;
   }
   .brand-name .bn-short{display:none}
@@ -89,10 +102,19 @@
   /* Tally light — the signature */
   .tally{
     display:flex;align-items:center;gap:8px;
-    font-family:'Big Shoulders Display';font-weight:700;font-size:.95rem;
+    font-family:var(--font-display);font-weight:700;font-size:.95rem;
     letter-spacing:.14em;padding:7px 14px;border-radius:999px;
     border:1px solid var(--line);color:var(--chalk-dim);
     margin-left:10px;white-space:nowrap;
+    /* nav sits on margin-left:auto, so it is positioned by whatever is to its
+       right, which is this pill. Every time the pill resized, the nav slid.
+       It resized twice per load: once when the display face swapped in, and
+       again when JS replaced the hardcoded OFF AIR with a live status.
+       Measured in Chrome at the loaded face, the four states span 92.0px
+       (ON AIR) to 149.7px (STARTING SOON). Pinning the floor above the
+       widest of them makes all four render at one width, and holds the
+       fallback state too, since OFF AIR in the fallback is only ~121px. */
+    min-width:152px;justify-content:center;
   }
   .tally .dot{width:9px;height:9px;border-radius:50%;background:#4d6a58}
   .tally.live{border-color:rgba(229,53,43,.6);color:#ffd9d5;background:rgba(229,53,43,.10)}
@@ -123,13 +145,20 @@
     padding:24px;
   }
   .offair img{width:min(180px,32vw);opacity:.95;filter:drop-shadow(0 10px 24px rgba(0,0,0,.5))}
-  .offair h2{font-family:'Big Shoulders Display';font-weight:800;font-size:clamp(1.5rem,4vw,2.2rem);letter-spacing:.05em;text-transform:uppercase}
+  .offair h2{font-family:var(--font-display);font-weight:800;font-size:clamp(1.5rem,4vw,2.2rem);letter-spacing:.05em;text-transform:uppercase}
   .offair p{color:var(--chalk-dim);max-width:46ch}
   .offair p strong{color:var(--gold-hi)}
   .hidden{display:none!important}
 
   /* Lower-third strip under the player */
   .lowerthird{
+    /* The matchup text is swapped in after the schedule fetch and rewraps,
+       which resized this strip and pushed the page around. The floors below
+       are measured maxima for the realistic range of matchup strings at each
+       breakpoint, so the strip is a constant height and nothing moves:
+       50px once everything fits one line (860px and up), 84px while the
+       matchup wraps to two (721 to 859), 146px on phones. */
+    min-height:50px;
     display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;
     margin-top:14px;padding:12px 16px;
     background:linear-gradient(90deg, var(--turf), var(--field) 65%);
@@ -137,29 +166,33 @@
     border-radius:8px;
   }
   .lowerthird .sport{
-    font-family:'Big Shoulders Display';font-weight:800;letter-spacing:.1em;
+    font-family:var(--font-display);font-weight:800;letter-spacing:.1em;
     text-transform:uppercase;color:var(--gold-hi);font-size:1.05rem;
   }
   .lowerthird .matchup{font-weight:600;font-size:1.02rem}
   .lowerthird .when{margin-left:auto;color:var(--chalk-dim);font-size:.92rem;font-variant-numeric:tabular-nums}
 
+  /* display:none took the whole 65.5px block (55.5px box plus its 10px
+     margin) out of flow, so revealing it after the schedule fetch shoved
+     everything below it down the page. visibility keeps the box reserved. */
+  .countdown.is-idle{visibility:hidden}
   .countdown{
     display:flex;align-items:center;justify-content:center;gap:12px;
     margin-top:10px;padding:10px 16px;border-radius:8px;
     background:rgba(217,165,33,.10);border:1px solid rgba(217,165,33,.4);
   }
   .countdown .cd-label{
-    font-family:'Big Shoulders Display';font-weight:700;letter-spacing:.12em;
+    font-family:var(--font-display);font-weight:700;letter-spacing:.12em;
     text-transform:uppercase;color:var(--chalk-dim);font-size:.9rem;
   }
   .countdown .cd-clock{
-    font-family:'Big Shoulders Display';font-weight:800;letter-spacing:.04em;
+    font-family:var(--font-display);font-weight:800;letter-spacing:.04em;
     color:var(--gold-hi);font-size:1.35rem;font-variant-numeric:tabular-nums;
   }
   .btnrow{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
   .btn{
     display:inline-flex;align-items:center;gap:9px;
-    font-family:'Big Shoulders Display';font-weight:700;font-size:1.05rem;letter-spacing:.08em;
+    font-family:var(--font-display);font-weight:700;font-size:1.05rem;letter-spacing:.08em;
     text-transform:uppercase;text-decoration:none;
     padding:12px 22px;border-radius:10px;transition:transform .12s,filter .15s;
   }
@@ -211,7 +244,7 @@
     clip-path:polygon(0 0, 100% 0, 72% 100%, 0 100%); /* broadcast slash */
   }
   .sec-head h2{
-    font-family:'Big Shoulders Display';font-weight:800;
+    font-family:var(--font-display);font-weight:800;
     font-size:clamp(1.7rem,4vw,2.4rem);letter-spacing:.06em;text-transform:uppercase;
   }
   .sec-head span{color:var(--chalk-dim);font-size:1.05rem}
@@ -219,7 +252,7 @@
   /* ---------- Sport filter pills ---------- */
   .sport-filter{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
   .sport-filter button{
-    font-family:'Big Shoulders Display';font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    font-family:var(--font-display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;
     font-size:.95rem;padding:9px 20px;border-radius:999px;
     border:1.5px solid var(--line);background:var(--field);color:var(--chalk-dim);
     cursor:pointer;transition:border-color .15s,color .15s,background .15s,transform .12s;
@@ -260,7 +293,7 @@
     margin-bottom:6px;
   }
   #modalTitle{
-    font-family:'Big Shoulders Display';font-weight:800;font-size:1.5rem;letter-spacing:.02em;
+    font-family:var(--font-display);font-weight:800;font-size:1.5rem;letter-spacing:.02em;
     margin-bottom:14px;padding-right:20px;line-height:1.15;
   }
   .modal-when, .modal-where{color:var(--chalk-dim);font-size:1rem;margin-bottom:4px}
@@ -276,7 +309,7 @@
   }
   .game:hover{border-color:var(--gold);transform:translateX(3px)}
   .game .date{
-    font-family:'Big Shoulders Display';font-weight:700;text-align:center;line-height:1.05;
+    font-family:var(--font-display);font-weight:700;text-align:center;line-height:1.05;
     color:var(--gold-hi);
   }
   .game .date b{display:block;font-size:2.1rem}
@@ -307,7 +340,7 @@
     border:1px solid var(--line);border-radius:var(--radius);padding:30px 32px;
   }
   .archive-panel img{width:110px}
-  .archive-panel h3{font-family:'Big Shoulders Display';font-weight:800;font-size:1.6rem;letter-spacing:.05em;text-transform:uppercase}
+  .archive-panel h3{font-family:var(--font-display);font-weight:800;font-size:1.6rem;letter-spacing:.05em;text-transform:uppercase}
   .archive-panel p{color:var(--chalk-dim);max-width:52ch}
 
   /* ---------- Footer ---------- */
@@ -319,7 +352,11 @@
   .foot a:hover{text-decoration:underline}
 
   /* ---------- Mobile ---------- */
+  @media (max-width:860px){
+    .lowerthird{min-height:84px}
+  }
   @media (max-width:720px){
+    .lowerthird{min-height:146px}
     .bar{height:60px;gap:10px}
     .brand-name{font-size:1.1rem;white-space:nowrap}
     .brand-name small{display:none}
@@ -372,7 +409,7 @@
       <span class="when" id="ltWhen"></span>
     </div>
 
-    <div class="countdown hidden" id="countdown" role="timer" aria-live="polite">
+    <div class="countdown is-idle" id="countdown" role="timer" aria-live="polite">
       <span class="cd-label">Next broadcast in</span>
       <span class="cd-clock" id="cdClock"></span>
     </div>
@@ -866,17 +903,17 @@ let cdTarget = null;
 
 function updateCountdown(target){
   cdTarget = target;
-  if (!cdTarget){ countdownEl.classList.add("hidden"); return; }
+  if (!cdTarget){ countdownEl.classList.add("is-idle"); return; }
   tickCountdown();
-  countdownEl.classList.remove("hidden");
+  countdownEl.classList.remove("is-idle");
 }
 function tickCountdown(){
-  if (!cdTarget){ countdownEl.classList.add("hidden"); return; }
+  if (!cdTarget){ countdownEl.classList.add("is-idle"); return; }
   const now = new Date();
   let diff = Math.floor((cdTarget - now) / 1000);
   if (diff <= 0){
     // Reached kickoff — hand back to status logic to flip into LIVE
-    countdownEl.classList.add("hidden");
+    countdownEl.classList.add("is-idle");
     renderBroadcastStatus();
     return;
   }
