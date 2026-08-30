@@ -1,0 +1,23 @@
+# This repo is the document root of a public website. It is public on GitHub,
+# Pages is enabled, and CNAME points it at fbca.tv, so anything committed here
+# is served to anyone who asks for it by name. Credentials must never land in
+# this folder. These patterns are a backstop, not the plan: keep tokens
+# outside the repo entirely.
+
+# Cloudflare and other API credentials
+*Cloudflare*Token*
+*cloudflare*token*
+*api*token*
+*API*Token*
+*.token
+.env
+.env.*
+
+# Keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+
+# Deliberately NOT ignored: Word ~$ lock files. Those are wanted in commits.
