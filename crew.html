@@ -937,7 +937,8 @@
 
   // ---------- baseball / softball ----------
   var BASES = { 1: [600, 530], 2: [500, 430], 3: [400, 530] }, BASE_NAME = { 1: 'first', 2: 'second', 3: 'third' };
-  var PITCHER = [500, 545], HOME = [500, 628];
+  var PITCHER = [500, 545], HOME = [500, 628], SCORING = [445, 588];
+  function runnerMark(p, label) { return '<g class="runner"><circle cx="' + p[0] + '" cy="' + (p[1] - 18) + '" r="9"/><text x="' + p[0] + '" y="' + (p[1] - 14) + '">' + (label || 'R') + '</text></g>'; }
   SIMS.baseball = {
     state: { bat: 'R', run: { 1: false, 2: false, 3: false }, cam4: 'static', m: 'between', bx: 600, by: 330 },
     controls: [
@@ -961,7 +962,7 @@
       if (m !== 'inplay') extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH');
       [1, 2, 3].forEach(function (b) {
         var p = BASES[b];
-        if (run[b]) extra += '<g class="runner"><circle cx="' + p[0] + '" cy="' + (p[1] - 18) + '" r="9"/><text x="' + p[0] + '" y="' + (p[1] - 14) + '">R</text></g>';
+        if (run[b] && m !== 'inplay') extra += runnerMark(p);
         extra += '<circle class="basehit" data-base="' + b + '" cx="' + p[0] + '" cy="' + (p[1] - 6) + '" r="24"><title>Runner on ' + BASE_NAME[b] + '</title></circle>';
       });
 
@@ -990,22 +991,31 @@
         aim(c2, 500, 470, 62, 100); say(c2, 'Set the defense', 'Show where the fielders are standing.');
         say(batCam, 'Batter', 'Hold on the batter.');
       } else if (m === 'inplay') {
-        // How deep the ball is hit decides the hit type and how far the batter-runner gets.
+        // How deep the ball is hit decides the hit type. Every runner moves up as many bases as the batter,
+        // so nobody passes anybody, and a runner pushed past third scores.
         var depth = Math.hypot(s.bx - HOME[0], s.by - HOME[1]);
         var hit = depth < 380 ? 'single' : depth < 500 ? 'double' : 'triple';
-        var br = hit === 'single' ? [585, 545] : hit === 'double' ? [555, 475] : [445, 475];
-        extra += person(br[0], br[1], 'BATTER', '', true);
+        var adv = { single: 1, double: 2, triple: 3 }[hit], onBase = [], scored = 0;
+        [3, 2, 1].forEach(function (b) { if (run[b]) { if (b + adv >= 4) scored++; else onBase.push(b + adv); } });
+        onBase.forEach(function (b) { extra += runnerMark(BASES[b]); });
+        var br = BASES[adv], newLead = Math.max.apply(null, onBase.concat([adv]));
+        extra += person(br[0], br[1] + 18, 'BATTER', '', true);
+        if (scored) extra += person(SCORING[0], SCORING[1], scored > 1 ? scored + ' SCORE' : 'SCORES', 'flag', true);
         aim(c2, s.bx, s.by, 30, 60); say(c2, 'Ball in play', 'Follow the ball and the defense. Include the umpire on the call at any base.');
         function shag(c) { aim(c, s.bx, s.by, 18, 40); say(c, 'Shag', 'No one on base: shag the ball.'); }
-        function hero(c) { aim(c, br[0], br[1], 12, 30); say(c, 'Offensive hero', 'The offensive hero on the ' + hit + '. Follow the batter around the bases.'); }
+        function hero(c) { aim(c, br[0], br[1], 12, 30); say(c, 'Offensive hero', 'The offensive hero on the ' + hit + '. Follow the batter to ' + BASE_NAME[adv] + '.'); }
+        function newLeadRunner(c) {
+          var p = BASES[newLead]; aim(c, p[0], p[1] - 10, 10, 30);
+          say(c, 'Lead runner', 'The lead runner, now headed to ' + BASE_NAME[newLead] + (s.bat === 'R' ? ', then the trailing runners after the runner touches third.' : '.'));
+        }
         // Cam 1
-        if (s.bat === 'R') { if (any) onLead(c1); else shag(c1); if (any) say(c1, 'Lead runner', 'The lead runner, then the trailing runners after the runner touches third.'); }
+        if (s.bat === 'R') { if (any) newLeadRunner(c1); else shag(c1); }
         else if (hit !== 'triple') hero(c1);
-        else if (any) onLead(c1); else shag(c1);
+        else if (any) newLeadRunner(c1); else shag(c1);
         // Cam 3
-        if (run[2] || run[3]) { aim(c3, HOME[0], HOME[1], 12, 30); say(c3, 'Score runners', 'Score all runners. Make the switch to the runner coming home.'); }
+        if (scored) { aim(c3, SCORING[0], SCORING[1], 12, 30); say(c3, 'Score runners', (scored > 1 ? scored + ' runners are' : 'A runner is') + ' coming home. Make the switch and score every runner.'); }
         else if (hit === 'triple') hero(c3);
-        else if (s.bat === 'L') { if (any) onLead(c3); else shag(c3); }
+        else if (s.bat === 'L') { if (any) newLeadRunner(c3); else shag(c3); }
         else { aim(c3, br[0], br[1], 14, 30); say(c3, 'Batter', 'Follow the batter. If it turns into a triple, you have the offensive hero.'); }
         // Cam 4
         if (manned && Math.abs(s.bx - 500) < 60 && s.by < 520) { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Up the middle', 'Hit straight up the middle. Feel free to stay with the ball.'); }
