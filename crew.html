@@ -248,11 +248,11 @@
           job: 'Replays, crowd shots, coaches, and views of the sidelines. Down low, you get a dramatic replay angle on plays at the right end.',
           framing: 'Whatever the director asks for. During plays, frame the action coming toward you. Between plays, find the crowd, a coach, or the sideline.',
           tips: ['Your feed is always in the control room, even when you’re not on air. Always have a usable shot.', 'When the offense is driving away from you, you’re behind the quarterback. Try staying on the quarterback even after the throw or handoff. A quarterback getting hit or pressured makes a great replay.', 'Being low makes plays look big. Hold steady during plays at your end.', 'Watch for players running out of the back of the end zone. Protect yourself and the camera.'] },
-        { x: 560, y: 420, aim: -110, fov: 40, len: 150, type: 'handheld', travel: [[180, 420], [820, 420]],
+        { x: 560, y: 420, aim: -110, fov: 40, len: 150, type: 'handheld', travel: [[100, 420], [900, 420]],
           role: 'Sideline handheld', where: 'Wireless, moving along the near sideline',
           job: 'Replays from angles nobody else has: unique sideline shots, goal-line replays, and shots in the huddle. Also the coin toss and the sideline reporter.',
           framing: 'Close and personal. Shots the stands cameras can’t get.',
-          tips: ['On scoring drives, get to the goal line. Your angle is often the best replay.', 'Before kickoff, be at midfield for the coin toss. Be ready with the sideline reporter whenever the director calls for it.', 'Stay behind the white sideline border and out of the team box. If an official asks you to move, move.', 'Never walk in front of Cam 1, 2, or 3. Check your battery and signal before kickoff and swap batteries at halftime.'] }
+          tips: ['Try to stay 10 to 20 yards ahead of the play.', 'When the ball is inside the 15-yard line, move to the back corner of the end zone. Your angle is often the best replay on a score.', 'Before kickoff, be at midfield for the coin toss. Be ready with the sideline reporter whenever the director calls for it.', 'Stay behind the white sideline border and out of the team box. If an official asks you to move, move.'] }
       ],
       roles: [
         ['Game', 'The live shot for every snap. Always the stands camera closest to the ball.', 'Wide before the snap. Both lines plus the safeties, about 25 to 30 yards of field.',
@@ -417,7 +417,7 @@
       title: 'Soccer', venue: 'Eagle Stadium', view: [1000, 640], draw: drawSoccer,
       summary: 'Six cameras. Cam 2 at midfield is the game camera, with Cam 1 and Cam 3 on the left and right 18-yard lines getting heroes. Cam 4 and Cam 5 behind the goals, and Cam 6 roaming the near sideline.',
       notes: [
-        'The <b>near side</b> is the sideline by the home bleachers and press box, where Cams 1, 2, 3, and 6 are. The <b>far side</b> is the other sideline.'
+        'The <b>near side</b> is the sideline by the home bleachers and press box, where Cams 1, 2, 3, and 6 are. The <b>far side</b> is the other sideline, where the team benches are: away team to the left of the midfield line, home team to the right.'
       ],
       cams: [
         { x: 225, y: 608, aim: -84, fov: 20, len: 340, type: 'elevated',
@@ -568,6 +568,8 @@
     s += r(100, 137, 125, 306, 'none', STROKE) + r(775, 137, 125, 306, 'none', STROKE);
     s += r(100, 220.5, 42, 139, 'none', STROKE) + r(858, 220.5, 42, 139, 'none', STROKE);
     s += r(88, 262, 12, 56, 'rgba(243,239,226,.25)', STROKE) + r(900, 262, 12, 56, 'rgba(243,239,226,.25)', STROKE);
+    s += r(330, 18, 130, 26, '#17402B', 'rx="4" ' + STROKE) + t(395, 36, 'AWAY BENCH', 12, 'class="lbl"');
+    s += r(540, 18, 130, 26, '#17402B', 'rx="4" ' + STROKE) + t(605, 36, 'HOME BENCH', 12, 'class="lbl"');
     return s + t(500, 578, 'NEAR SIDELINE', 18, 'class="lbl"');
   }
   function drawBaseball() {
