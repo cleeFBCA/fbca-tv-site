@@ -134,12 +134,16 @@
 
   .rot{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin:18px 0 0;padding:14px 16px;
     background:var(--field);border:1px solid var(--line);border-radius:12px}
-  .rot .dir{display:flex;gap:6px}
-  .rot .dir button{font:600 .9rem 'Barlow',sans-serif;color:var(--chalk);background:var(--pine);border:1px solid var(--line);
+  .rot .ctl{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+  .rot .ctl.wide{flex:1 1 320px}
+  .rot .ctl-lbl{font-weight:600;white-space:nowrap} .rot .ctl-lbl b{color:var(--gold-hi)}
+  .rot .seg{display:flex;flex-wrap:wrap;gap:6px}
+  .rot .hint{width:100%;margin:2px 0 0;font-size:.85rem;color:var(--chalk-dim)}
+  .rot .seg button{font:600 .9rem 'Barlow',sans-serif;color:var(--chalk);background:var(--pine);border:1px solid var(--line);
     border-radius:8px;padding:8px 12px;cursor:pointer}
-  .rot .dir button.on{background:var(--gold);border-color:var(--gold);color:var(--pine)}
+  .rot .seg button.on{background:var(--gold);border-color:var(--gold);color:var(--pine)}
   .ball-ctl{font-weight:600;white-space:nowrap} .ball-ctl b{color:var(--gold-hi)}
-  #ballIn{flex:1 1 200px;accent-color:var(--gold);min-width:160px}
+  .rot input[type=range]{flex:1 1 200px;accent-color:var(--gold);min-width:160px}
   .now{display:flex;gap:6px;flex-wrap:wrap;width:100%}
   .chip{display:inline-block;font-size:.85rem;font-weight:600;border-radius:999px;padding:4px 12px;border:1px solid}
   .chip b{text-transform:uppercase;letter-spacing:.06em;color:inherit!important}
@@ -159,6 +163,22 @@
   .assign dd{margin:2px 0 0}
   .card .grp{margin:14px 0 4px;font-weight:700;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-hi)}
   .card ul:empty{display:none}
+  #fig.drag svg{touch-action:none;cursor:grab}
+  .diagram .ballr{stroke:var(--pine);stroke-width:2}
+  .diagram .person circle{fill:var(--chalk);stroke:var(--pine);stroke-width:2}
+  .diagram .person text{font-size:11px;font-weight:800;letter-spacing:.1em;fill:var(--chalk)}
+  .diagram .person.flag circle{fill:#E8D44D}
+  .diagram .runner circle{fill:var(--gold-hi);stroke:var(--pine);stroke-width:2}
+  .diagram .runner text{font-size:11px;font-weight:800;fill:var(--pine)}
+  .diagram .basehit{fill:transparent;cursor:pointer}
+  .diagram .basehit:hover{fill:rgba(242,193,78,.18)}
+  .nowlist{margin:16px 0 0;background:var(--field);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .nowlist h4{font-family:'Big Shoulders Display';font-weight:700;font-size:1.05rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-hi);margin-bottom:6px}
+  .nowrow{display:flex;gap:12px;align-items:flex-start;padding:7px 0;border-top:1px solid rgba(44,106,70,.6)}
+  .nowrow:first-of-type{border-top:0}
+  .nowrow .num{width:26px;height:26px;font-size:.85rem;margin-top:1px}
+  .nowrow b{display:block;color:var(--chalk);font-size:.95rem}
+  .nowrow > div > span{color:var(--chalk-dim);font-size:.92rem}
   footer{border-top:1px solid rgba(217,165,33,.3);padding:26px 0 40px;color:var(--chalk-dim);font-size:.88rem}
   .foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   .foot img{width:44px}
@@ -551,7 +571,8 @@
     s += l(400, 120, 400, 420) + l(600, 120, 600, 420);
     s += '<line x1="500" y1="100" x2="500" y2="440" stroke="#F3EFE2" stroke-width="6"/>';
     s += '<circle cx="500" cy="100" r="7" fill="#F3EFE2"/><circle cx="500" cy="440" r="7" fill="#F3EFE2"/>';
-    return s + t(500, 72, 'NET', 14, 'class="lbl dim"') + t(500, 584, 'BLEACHERS', 16, 'class="lbl dim"');
+    s += gymBenches(46);
+    return s + t(530, 96, 'NET', 12, 'class="lbl dim"') + t(500, 584, 'BLEACHERS', 16, 'class="lbl dim"');
   }
   function drawBasketball() {
     var s = r(150, 100, 700, 372, '#C2873F', STROKE) + l(500, 100, 500, 472);
@@ -560,7 +581,14 @@
     s += '<circle cx="291.5" cy="286" r="45" fill="none" ' + STROKE + '/><circle cx="708.5" cy="286" r="45" fill="none" ' + STROKE + '/>';
     s += '<path d="M150 144.3 A147 147 0 0 1 150 427.7" fill="none" ' + STROKE + '/><path d="M850 144.3 A147 147 0 0 0 850 427.7" fill="none" ' + STROKE + '/>';
     s += '<circle cx="189" cy="286" r="7" fill="none" stroke="#E07B39" stroke-width="3"/><circle cx="811" cy="286" r="7" fill="none" stroke="#E07B39" stroke-width="3"/>';
+    s += gymBenches(62);
     return s + t(500, 578, 'BLEACHERS', 16, 'class="lbl dim"');
+  }
+  // The Nest: benches on the far side, away on the left, home on the right, scorer's table between.
+  function gymBenches(y) {
+    return r(300, y, 140, 26, '#17402B', 'rx="4" ' + STROKE) + t(370, y + 18, 'AWAY BENCH', 12, 'class="lbl"') +
+      r(452, y, 96, 26, '#3A2F24', 'rx="4" ' + STROKE) + t(500, y + 18, 'TABLE', 12, 'class="lbl"') +
+      r(560, y, 140, 26, '#17402B', 'rx="4" ' + STROKE) + t(630, y + 18, 'HOME BENCH', 12, 'class="lbl"');
   }
   function drawSoccer() {
     var s = r(100, 50, 800, 480, '#2E7A4C', STROKE) + l(500, 50, 500, 530);
@@ -597,14 +625,29 @@
 
   function diagram(sp) {
     var cams = sp.cams.map(function (c) { return Object.assign({}, c); }), cones = '', marks = '', label = sp.title + ' camera positions: ';
-    var extra = sp.rotation ? applyRotation(cams) : '';
-    cams.forEach(function (c, i) { cones += cone(c); marks += marker(c, i + 1); label += 'Camera ' + (i + 1) + ', ' + c.where + '. '; });
+    var sim = SIMS[sp.id], extra = sim ? sim.apply(sim.state, cams) || '' : '';
+    LAST_CAMS = cams;
+    cams.forEach(function (c, i) { if (sim && !sim.labels) c.roleTag = null; cones += cone(c); marks += marker(c, i + 1); label += 'Camera ' + (i + 1) + ', ' + c.where + '. '; });
     return '<svg viewBox="0 0 ' + sp.view[0] + ' ' + sp.view[1] + '" role="img" aria-label="' + label + '">' + sp.draw() + cones + extra + marks + '</svg>';
   }
 
-  // ---------- football role rotation ----------
+  // ---------- interactive diagrams ----------
+  // Each sport in SIMS has a state, its controls, and apply(), which aims every camera for the
+  // current state and sets c.tag / c.text for the "Right now" list. Drawing happens in SVG
+  // coordinates, so drag positions come back in the same units the diagrams use.
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function aim(c, tx, ty, fov, pad) {
+    var dx = tx - c.x, dy = ty - c.y;
+    c.aim = Math.atan2(dy, dx) * 180 / Math.PI; c.fov = fov; c.len = Math.round(Math.hypot(dx, dy) + (pad == null ? 40 : pad));
+  }
+  function say(c, tag, text) { c.tag = tag; c.text = text; }
+  function roundBall(x, y, fill) { return '<circle class="ballr" cx="' + x + '" cy="' + y + '" r="9" fill="' + fill + '"/>'; }
+  function person(x, y, label, cls, below) {
+    return '<g class="person ' + (cls || '') + '"><circle cx="' + x + '" cy="' + y + '" r="8"/>' + (label ? '<text x="' + x + '" y="' + (below ? y + 24 : y - 14) + '">' + label + '</text>' : '') + '</g>';
+  }
+
+  // ---------- football: game, pit, and iso rotate at the 30s ----------
   // Ball position is yards from the left goal line (0 to 100). dir is 1 driving right, -1 driving left.
-  var ROT = { ball: 25, dir: 1 };
   var ZONES = ['Left goal line to the left 30', 'Between the 30s', 'Right 30 to the right goal line'];
   function zoneOf(b) { return b <= 30 ? 0 : b >= 70 ? 2 : 1; }
   // Game is the stands camera closest to the ball. Inside either 30, Cam 2 is pit.
@@ -615,20 +658,6 @@
   }
   function yardLabel(b) { return b === 50 ? 'the 50' : (b < 50 ? 'the left ' + b : 'the right ' + (100 - b)); }
   function ballX(b) { return 166.7 + b * 6.667; }
-
-  function applyRotation(cams) {
-    var ro = roles(ROT.ball, ROT.dir), bx = ballX(ROT.ball), by = 220, role = {};
-    role[ro.game] = 'game'; role[ro.pit] = 'pit'; role[ro.iso] = 'iso';
-    [0, 1, 2].forEach(function (i) {
-      var c = cams[i], rl = role[i + 1], tx = bx, ty = by, fov = 44, pad = 60;
-      if (rl === 'pit') { fov = 14; pad = 30; }
-      if (rl === 'iso') { tx = Math.max(170, Math.min(830, bx + ROT.dir * 100)); ty = 150; fov = 10; pad = 30; }
-      var dx = tx - c.x, dy = ty - c.y;
-      c.aim = Math.atan2(dy, dx) * 180 / Math.PI; c.fov = fov; c.len = Math.round(Math.hypot(dx, dy) + pad); c.roleTag = rl;
-    });
-    var d = ROT.dir;
-    return '<g class="ball"><ellipse cx="' + bx + '" cy="' + by + '" rx="13" ry="8"/><path d="M' + (bx + d * 20) + ' ' + (by - 7) + ' l' + (d * 13) + ' 7 l' + (-d * 13) + ' 7 z"/></g>';
-  }
 
   function rotationTables() {
     var h = '<div class="rot-tables">';
@@ -646,32 +675,431 @@
     return h + '</div>';
   }
 
-  function updateRotation(sp) {
-    document.getElementById('fig').innerHTML = diagram(sp);
-    document.getElementById('ballLbl').textContent = yardLabel(ROT.ball);
-    var ro = roles(ROT.ball, ROT.dir), now = '';
-    [1, 2, 3].forEach(function (n) {
-      var r = ro.game === n ? 'Game' : ro.pit === n ? 'Pit' : 'Iso';
-      now += '<span class="chip ' + r.toLowerCase() + '">Cam ' + n + ' <b>' + r + '</b></span>';
+  var ROLE_TEXT = {
+    game: 'Wide on the formation. Slow push in on runs, push in to the receiver on passes.',
+    pit: 'Tight on the quarterback and the line.',
+    iso: 'Locked on one player for the replay.'
+  };
+
+  var SIMS = {};
+
+  SIMS.football = {
+    state: { ball: 25, dir: 1 },
+    labels: true,
+    controls: [
+      { type: 'seg', key: 'dir', label: 'Offense', opts: [[1, 'Driving right →'], [-1, 'Driving left ←']] },
+      { type: 'range', key: 'ball', min: 1, max: 99, label: function (s) { return 'Ball on <b>' + yardLabel(s.ball) + '</b>'; } }
+    ],
+    hint: function () { return 'Drag the ball or use the slider.'; },
+    drag: function (s, x) { s.ball = clamp(Math.round((x - 166.7) / 6.667), 1, 99); },
+    apply: function (s, cams) {
+      var ro = roles(s.ball, s.dir), bx = ballX(s.ball), by = 220, d = s.dir, role = {};
+      role[ro.game] = 'game'; role[ro.pit] = 'pit'; role[ro.iso] = 'iso';
+      [0, 1, 2].forEach(function (i) {
+        var c = cams[i], rl = role[i + 1];
+        if (rl === 'game') aim(c, bx, by, 44, 60);
+        if (rl === 'pit') aim(c, bx, by, 14, 30);
+        if (rl === 'iso') aim(c, clamp(bx + d * 100, 170, 830), 150, 10, 30);
+        c.roleTag = rl; say(c, rl.charAt(0).toUpperCase() + rl.slice(1), ROLE_TEXT[rl]);
+      });
+      // The end zone camera the offense is driving away from is behind the quarterback.
+      var behind = d > 0 ? cams[3] : cams[4], ahead = d > 0 ? cams[4] : cams[3], qbX = bx - d * 35;
+      aim(behind, qbX, by, 14, 30);
+      say(behind, 'Behind the QB', 'The offense is driving away from you. Stay on the quarterback after the throw or handoff for the hit or pressure replay.');
+      aim(ahead, bx, by, 24, 40);
+      say(ahead, 'Play coming at you', 'Frame the play coming toward you. Your angle is a great replay.');
+      var c6 = cams[5], redZone = d > 0 ? s.ball >= 85 : s.ball <= 15;
+      if (redZone) {
+        c6.x = d > 0 ? 905 : 95; c6.y = 412;
+        say(c6, 'Back corner', 'Ball inside the 15. You’re in the back corner of the end zone for the replay on a score.');
+      } else {
+        c6.x = Math.round(clamp(bx + d * 100, 120, 880)); c6.y = 420;
+        say(c6, 'Ahead of the play', 'Stay 10 to 20 yards ahead of the play. The ball is on ' + yardLabel(s.ball) + '.');
+      }
+      aim(c6, bx, by, 36, 30);
+      return '<g class="ball"><ellipse cx="' + bx + '" cy="' + by + '" rx="13" ry="8"/><path d="M' + (bx + d * 20) + ' ' + (by - 7) + ' l' + (d * 13) + ' 7 l' + (-d * 13) + ' 7 z"/></g>';
+    },
+    after: function (s) {
+      var z = zoneOf(s.ball);
+      document.querySelectorAll('.rot-table').forEach(function (t) {
+        t.querySelectorAll('[data-zone]').forEach(function (c) { c.classList.toggle('cur', +t.dataset.dir === s.dir && +c.dataset.zone === z); });
+      });
+    }
+  };
+
+  // ---------- basketball: nearside is the corner camera closer to the ball ----------
+  var BK_TABLE = [500, 75], BK_BENCHES = [500, 75];
+  SIMS.basketball = {
+    state: { bx: 640, by: 300, m: 'live' },
+    controls: [
+      { type: 'seg', key: 'm', label: 'Moment', opts: [['live', 'Live play'], ['made', 'Made basket'], ['turnover', 'Turnover'], ['foul', 'Foul'], ['ft', 'Free throw'], ['sub', 'Substitution'], ['end', 'End of game']] }
+    ],
+    hint: function () { return 'Drag the ball around the court. Cam 3 and Cam 4 swap nearside and backside as it crosses half court.'; },
+    drag: function (s, x, y) { s.bx = clamp(x, 155, 845); s.by = clamp(y, 105, 467); },
+    apply: function (s, cams) {
+      var left = s.bx < 500, near = left ? cams[2] : cams[3], back = left ? cams[3] : cams[2];
+      var hoop = left ? [189, 286] : [811, 286], ft = left ? [291.5, 286] : [708.5, 286];
+      var c1 = cams[0], c2 = cams[1], m = s.m, extra = '';
+      near.tag = 'Nearside'; back.tag = 'Backside';
+      aim(c1, s.bx, s.by, 50, 80); say(c1, 'Game', 'Follow the ball. Half court with all ten players when a team sets up.');
+      aim(c2, s.bx, s.by, 14, 30); say(c2, 'Tight', 'Tight on the ball handler.');
+      aim(near, s.bx, s.by, 28, 40); say(near, 'Nearside', 'You’re close to the action. Low angle on drives, shots, and rebounds.');
+      aim(back, s.bx, s.by, 40, 40); say(back, 'Backside', 'You’re away from the action. Hold a usable replay angle.');
+      if (m === 'made') {
+        say(c1, 'Game', 'Follow the other team up the court.');
+        say(c2, 'Hero', 'The hero, or a good assist.');
+        aim(back, s.bx, s.by, 16, 40); say(back, 'Backside: hero', 'Always the hero.');
+        say(near, 'Nearside: hero or bench', 'The hero if you can get them, or the bench reacting.');
+      } else if (m === 'turnover') {
+        aim(c2, BK_BENCHES[0], BK_BENCHES[1], 30, 20); say(c2, 'Coach', 'The coach of the team that turned it over.');
+        aim(back, s.bx, s.by, 16, 40); say(back, 'Backside: turned it over', 'The player who turned it over (last touch or bad pass).');
+        aim(near, s.bx, s.by, 20, 40); say(near, 'Nearside: forced it', 'The player who forced the turnover, or the inbound.');
+      } else if (m === 'foul') {
+        say(c2, 'Fouler', 'The player who committed the foul, then their coach.');
+        aim(near, s.bx, s.by, 30, 40); say(near, 'Nearside: floor', 'Pick up all the players getting up off the floor, then the fouler, then the shooter at the line or the inbound.');
+        aim(back, BK_BENCHES[0], BK_BENCHES[1], 30, 20); say(back, 'Backside: fouler or fans', 'The fouler leaving the game if they’re near the bench. If not, booing fans or color.');
+      } else if (m === 'ft') {
+        extra = person(ft[0], ft[1], 'SHOOTER');
+        aim(c1, (ft[0] + hoop[0]) / 2, 286, 40, 80); say(c1, 'Game', 'Wide for the shot and the rebound.');
+        aim(c2, BK_TABLE[0], BK_TABLE[1], 30, 20); say(c2, 'Creative', 'Subs coming in, the fouler, or get creative.');
+        aim(near, ft[0], ft[1], 9, 30); say(near, 'Nearside: shooter', 'Tight on the shooter.');
+        aim(back, hoop[0], hoop[1], 34, 60); say(back, 'Backside: wide', 'Wide for the shot. On the last free throw, push to the shooter on a make, or the rebounder on a miss.');
+      } else if (m === 'sub') {
+        extra = person(ft[0], ft[1], 'SHOOTER');
+        say(c1, 'Game', 'Hold wide.');
+        aim(c2, BK_TABLE[0], BK_TABLE[1], 26, 20); say(c2, 'Subs in', 'Subs coming in. Start wide to show the scorer’s table, then push tight to the star.');
+        aim(back, BK_TABLE[0], BK_TABLE[1], 30, 20); say(back, 'Backside: backup', 'Backup shot of subs coming in if Cam 2 is on air, or subs leaving if the nearside camera has the shooter at the line.');
+        aim(near, ft[0], ft[1], 12, 30); say(near, 'Nearside: line or exits', 'The shooter at the line, or players leaving the game.');
+      } else if (m === 'end') {
+        aim(c1, (s.bx + 500) / 2, (s.by + 286) / 2, 75, 80); say(c1, 'Atmosphere', 'An easy pull out from the final play to show the atmosphere, or push in to the winning bench.');
+        aim(c2, s.bx < 500 ? 370 : 630, BK_BENCHES[1], 24, 20); say(c2, 'Winning coach', 'The winning coach through the handshake, then the star player or players.');
+        aim(near, s.bx, s.by, 16, 40); say(near, 'Nearside: hero and goat', 'On a buzzer beater, the hero and the goat at the final shot, then coming back to the bench. If not, frame the star player or the winning coach coming toward you.');
+        aim(back, (s.bx + 500) / 2, (s.by + BK_BENCHES[1]) / 2, 30, 40); say(back, 'Backside: hero and goat', 'On a buzzer beater, the hero and the goat coming back to the bench. If not, frame the star player or the winning coach coming toward you.');
+      }
+      return extra + (m === 'ft' ? roundBall(ft[0] + (left ? 12 : -12), ft[1] - 10, '#E07B39') : roundBall(s.bx, s.by, '#E07B39'));
+    }
+  };
+
+  // ---------- volleyball: a camera’s far court is the other side of the net ----------
+  var VB_TABLE = [500, 59];
+  SIMS.volleyball = {
+    state: { bx: 350, by: 250, m: 'rally' },
+    controls: [
+      { type: 'seg', key: 'm', label: 'Moment', opts: [['serve', 'Serve'], ['rally', 'Rally'], ['point', 'Point scored'], ['out', 'Ball out'], ['timeout', 'Timeout'], ['sub', 'Substitution']] }
+    ],
+    hint: function (s) { return s.m === 'serve' ? 'Drag the ball to either side to pick which team is serving.' : 'Drag the ball around the court.'; },
+    drag: function (s, x, y) { s.bx = clamp(x, 155, 845); s.by = clamp(y, 85, 455); },
+    apply: function (s, cams) {
+      var c1 = cams[0], c2 = cams[1], c3 = cams[2], c4 = cams[3], c5 = cams[4], c6 = cams[5], m = s.m;
+      var left = s.bx < 500, bx = s.bx, by = s.by, extra = '';
+      if (m === 'serve') { bx = left ? 172 : 828; by = clamp(s.by, 140, 400); extra = person(bx, by + 2, 'SERVER', '', true); }
+      // Cam 1 pans as little as possible, so it only drifts a quarter of the way toward the ball.
+      aim(c1, 500 + (bx - 500) * (m === 'serve' ? 0.3 : 0.22), 270 + (by - 270) * 0.22, m === 'serve' ? 66 : 58, 60);
+      say(c1, 'Game', '¾ court with both 3-meter lines. Keep panning to a minimum.');
+      if (m === 'serve') say(c1, 'Game', 'Wide with the server in frame. Some servers start far behind the end line.');
+      if (m === 'rally' && (bx < 300 || bx > 700)) say(c1, 'Widen', 'Big play in the back court. Widen to show it, then return to normal framing when the player rejoins the action.');
+
+      // Cam 2 owns the left half, Cam 3 the right half.
+      [[c2, true, 350, 370], [c3, false, 650, 630]].forEach(function (a) {
+        var c = a[0], mine = a[1] === left;
+        var front = a[1] ? 440 : 560;
+        aim(c, a[2], by, 30, 40); say(c, 'Your half', mine ? 'The ball is on your half. Frame your half of the court.' : 'Frame your half of the court and watch the ball come back over.');
+        if (m === 'rally') {
+          if (mine) { aim(c, bx, by, 22, 40); say(c, 'Ball on your half', 'Frame the play. After two touches, tighten on the front row player about to go for the kill.'); }
+          else { aim(c, front, by, 26, 40); say(c, 'Your half', 'The ball is on the other side. Stay on your half and get ready for it to come back.'); }
+        }
+        if (m === 'point') {
+          aim(c, mine ? bx : front, by, 22, 40);
+          say(c, 'Dead ball', mine ? 'The point ended on your half. Get the hero or the reaction.' : 'Your half and up to the 3-meter line on the other side. Look for a reaction.');
+        }
+        if (m === 'out') {
+          if (mine) { aim(c, bx, by, 18, 40); say(c, 'Ball out', 'Never miss a ball going out on your half. It’s a key replay.'); }
+          else { aim(c, front, by, 26, 40); say(c, 'Your half', 'Hold your half.'); }
+        }
+        if (m === 'timeout') { aim(c, a[3], 95, 24, 30); say(c, 'Huddle', 'The team huddle on your side.'); }
+      });
+
+      // Cam 4 sits on the left, so its far court is the right half. Cam 5 sits on the right, so its far court is the left half.
+      [[c4, false, 650], [c5, true, 350]].forEach(function (a) {
+        var c = a[0], farIsLeft = a[1], ballFar = left === farIsLeft;
+        aim(c, a[2], by, 34, 40); say(c, 'Far court', 'The team on your far court.');
+        if (m === 'serve') {
+          if (ballFar) { aim(c, bx, by, 10, 40); say(c, 'Server', 'The server is on your far court. Shoot the server.'); }
+          else say(c, 'Far court', 'Your far court team getting set to receive.');
+        }
+        // During a rally, keep ¾ court framing but tilt and pan with the ball.
+        var follow = function () { aim(c, 500 + (bx - 500) * 0.5, 270 + (by - 270) * 0.6, 44, 40); };
+        if (m === 'rally') { follow(); say(c, '¾ court', '¾ court with both 3-meter lines and both antennas. Tilt and pan with that framing.'); }
+        if (m === 'point') {
+          if (ballFar) aim(c, bx, by, 14, 40);
+          say(c, 'Hero', 'The hero, usually on your far court. Usually the player who got the kill, sometimes a libero or DS with a clutch dig.');
+        }
+        if (m === 'out') {
+          if (!ballFar) { aim(c, bx, by, 20, 40); say(c, 'Ball out', 'The ball is out on your near court. Never miss it. It’s a key replay.'); }
+          else { follow(); say(c, '¾ court', 'Hold your ¾ court framing.'); }
+        }
+        if (m === 'timeout') { aim(c, VB_TABLE[0], VB_TABLE[1], 34, 20); say(c, 'Crowd or bench', 'Find the crowd or a bench and tell the director what you have.'); }
+        if (m === 'sub') { aim(c, VB_TABLE[0], VB_TABLE[1], 14, 20); say(c, 'Subs', 'Help with subs. They stand near the scorer’s table with their hands up before coming in.'); }
+      });
+
+      c6.aim = -90; c6.fov = 50; c6.len = 330;
+      say(c6, 'Locked', 'Mounted and locked across the top of the net, so it doesn’t move. Watch it as a replay source.');
+      if ((m === 'rally' || m === 'point') && Math.abs(bx - 500) < 90) say(c6, 'At the net', 'The ball is at the net. Blocks, tips, and kills here are your replay.');
+      return extra + (m === 'serve' ? roundBall(bx + (left ? 14 : -14), by - 12, '#F3EFE2') : roundBall(bx, by, '#F3EFE2'));
+    }
+  };
+
+  // ---------- soccer: near side is the sideline by the home bleachers ----------
+  var SOC_BENCH = { left: [395, 31], right: [605, 31] };
+  SIMS.soccer = {
+    state: { bx: 620, by: 360, m: 'live' },
+    controls: [
+      { type: 'seg', key: 'm', label: 'Moment', opts: [['live', 'Live play'], ['goal', 'Goal'], ['corner', 'Corner kick'], ['freekick', 'Free kick'], ['offside', 'Offside'], ['foul', 'Foul or card'], ['sub', 'Substitution']] }
+    ],
+    hint: function (s) { return s.m === 'corner' ? 'Drag the ball toward a corner to pick which corner.' : 'Drag the ball around the field.'; },
+    drag: function (s, x, y) { s.bx = clamp(x, 105, 895); s.by = clamp(y, 55, 525); },
+    apply: function (s, cams) {
+      var c1 = cams[0], c2 = cams[1], c3 = cams[2], c4 = cams[3], c5 = cams[4], c6 = cams[5], m = s.m;
+      var left = s.bx < 500, nearSide = s.by > 290, bx = s.bx, by = s.by, extra = '';
+      var endCam = left ? c4 : c5, otherEnd = left ? c5 : c4, cl18 = left ? c1 : c3, other18 = left ? c3 : c1;
+      var gx = left ? 100 : 900, bench = SOC_BENCH[left ? 'left' : 'right'];
+      if (m === 'corner') { bx = left ? 106 : 894; by = nearSide ? 524 : 56; }
+      var inBox = bx < 225 || bx > 775, dGoal = Math.abs(bx - gx);
+
+      aim(c2, bx, by, inBox ? 30 : 48, 80);
+      say(c2, 'Game', inBox ? 'The ball is near goal. Show the ball and the goal together, a little tighter.' : 'Ball in frame. Leave more room ahead of the ball than behind it to lead the play.');
+      [c1, c3].forEach(function (c) {
+        aim(c, bx, by, nearSide ? 28 : 16, 40);
+        say(c, 'Heroes', nearSide ? 'Ball on the near side: shoot wider (think offside), ready for the hero.' : 'Ball on the far side: shoot tighter, ready for the hero.');
+      });
+      aim(endCam, bx, by, clamp(18 + dGoal / 18, 18, 44), 40);
+      say(endCam, 'Play coming at you', 'X’s and O’s. Wide at first, then slowly tighter as the play gets closer to your goal.');
+      aim(otherEnd, bx, by, 40, 40);
+      say(otherEnd, 'Play at the far end', 'X’s and O’s. Stay wide so the replay shows the play develop.');
+      c6.x = Math.round(clamp(bx, 120, 880)); c6.y = 546;
+      if (nearSide) { aim(c6, bx, by, 30, 30); say(c6, 'Follow the play', 'Short passes, throw-ins, and goal attempts on your side of the field.'); }
+      else { aim(c6, bench[0], bench[1], 22, 20); say(c6, 'Bench and refs', 'The ball is on the far side. Bench, coach, and referee shots.'); }
+
+      if (m === 'goal') {
+        aim(c2, gx + (left ? 14 : -14), 290, 9, 30); say(c2, 'Goat', 'Slowly push in on the goalie who gave up the goal until the director cuts off you.');
+        aim(cl18, bx, by, 12, 40); say(cl18, 'Primary hero', 'The scorer.');
+        aim(other18, bx, by, 18, 40); say(other18, 'Secondary hero', 'The assist or the player who got the play going. If you’re not sure, the crowd.');
+        say(endCam, 'Replay', 'Your angle dissects the goal for the replay.');
+        aim(otherEnd, bench[0], bench[1], 24, 20); say(otherEnd, 'Bench', 'Coach and bench reactions. Listen to talent.');
+        aim(c6, bench[0], bench[1], 26, 20); say(c6, 'Reactions', 'Reactions on the sideline after the goal.');
+      } else if (m === 'corner') {
+        aim(c2, gx + (left ? 70 : -70), 290, 40, 80); say(c2, 'Game', 'Wide on the box.');
+        aim(endCam, gx + (left ? 60 : -60), 290, 34, 40);
+        say(endCam, 'Corner', 'Before the kick, the players in the box getting set. For the kick, either wide on the kicker and the goal and push in, or tight on the goal and let it develop.');
+        if (nearSide) { aim(cl18, (bx + gx) / 2, (by + 290) / 2, 32, 40); say(cl18, 'Near-side corner', 'Include the player taking the kick and the goal, then slowly push in as the ball is kicked toward goal.'); }
+        else { aim(cl18, gx, 290, 18, 40); say(cl18, 'Far-side corner', 'Just the goal and the mass of players.'); }
+        say(other18, 'Crowd or secondary', 'The crowd, or be ready for a secondary hero.');
+        if (nearSide) { c6.x = left ? 120 : 880; aim(c6, gx + (left ? 50 : -50), 290, 34, 30); say(c6, 'End line', 'On the end line. Get creative on the corner kick.'); }
+      } else if (m === 'freekick') {
+        aim(endCam, bx, by, 12, 40); say(endCam, 'Near-end free kick', 'Iso the kicker before the kick (head to toe or tight), then back wide with most of the goal for the kick. Pull out or tilt down as the ball travels.');
+        aim(otherEnd, bx, by, 34, 40); say(otherEnd, 'Far-end free kick', 'Wide enough for the kicker and the goal or target players.');
+        say(c2, 'Game', 'Wide on the kick.');
+      } else if (m === 'offside') {
+        // Far-side offside: the side judge is on the left half of the far sideline. Near-side: right half of the near sideline.
+        var ar = nearSide ? [700, 538] : [250, 42];
+        extra = person(ar[0], ar[1], 'SIDE JUDGE', 'flag');
+        [c4, c5].forEach(function (c) {
+          aim(c, ar[0], ar[1], 10, 30);
+          say(c, 'Side judge', nearSide ? 'Near-side offside: the side judge is on the right side of the field. Get the flag.' : 'Far-side offside: the side judge is on the left side of the field. Get the flag.');
+        });
+      } else if (m === 'foul') {
+        var ref = [clamp(bx + 34, 110, 890), clamp(by - 24, 60, 520)];
+        extra = person(ref[0], ref[1], 'REF', 'flag');
+        [c4, c5].forEach(function (c) { aim(c, ref[0], ref[1], 10, 30); say(c, 'Referee', 'Find the referee right away. We want to see the yellow or red card.'); });
+        aim(cl18, bx, by, 12, 40); say(cl18, 'Primary: fouled', 'The player who got fouled.');
+        aim(other18, bx, by, 14, 40); say(other18, 'Secondary: fouler', 'The player who committed the foul.');
+        if (nearSide) say(c6, 'Reactions', 'Reactions after the foul call.');
+      } else if (m === 'sub') {
+        extra = person(500, 40, 'SUBS');
+        [c1, c3].forEach(function (c) { aim(c, 500, 40, 12, 30); say(c, 'Coming out', 'The player coming out of the game.'); });
+        [c4, c5].forEach(function (c) { aim(c, 500, 40, 12, 30); say(c, 'Coming in', 'The player coming into the game.'); });
+        say(c2, 'Game', 'Hold wide.');
+        aim(c6, 500, 40, 24, 20); say(c6, 'Bench', 'Bench and coach shots.');
+      }
+      return extra + roundBall(bx, by, '#F3EFE2');
+    }
+  };
+
+  // ---------- baseball / softball ----------
+  var BASES = { 1: [600, 530], 2: [500, 430], 3: [400, 530] }, BASE_NAME = { 1: 'first', 2: 'second', 3: 'third' };
+  var PITCHER = [500, 545], HOME = [500, 628];
+  SIMS.baseball = {
+    state: { bat: 'R', run: { 1: false, 2: false, 3: false }, cam4: 'static', m: 'between', bx: 600, by: 330 },
+    controls: [
+      { type: 'seg', key: 'bat', label: 'Batter', opts: [['R', 'Righty'], ['L', 'Lefty']] },
+      { type: 'multi', key: 'run', label: 'Runners', opts: [['1', '1st'], ['2', '2nd'], ['3', '3rd']] },
+      { type: 'seg', key: 'cam4', label: 'Cam 4', opts: [['static', 'Static'], ['manned', 'Manned']] },
+      { type: 'seg', key: 'm', label: 'Moment', opts: [['between', 'Between pitches'], ['pitch', 'Pitch'], ['inplay', 'Ball in play'], ['steal', 'Steal'], ['score', 'Runner scoring'], ['appeal', 'Swing appeal'], ['k3', 'Strikeout, 3rd out'], ['inning', 'Inning change']] }
+    ],
+    hint: function (s) { return 'Click a base to add or remove a runner.' + (s.m === 'inplay' ? ' Drag the ball to where it was hit.' : ''); },
+    drag: function (s, x, y) { if (s.m !== 'inplay') return false; s.bx = clamp(x, 90, 910); s.by = clamp(y, 40, 600); },
+    canDrag: function (s) { return s.m === 'inplay'; },
+    onBase: function (s, b) { s.run[b] = !s.run[b]; },
+    apply: function (s, cams) {
+      var c1 = cams[0], c2 = cams[1], c3 = cams[2], c4 = cams[3], m = s.m, run = s.run;
+      var batter = s.bat === 'R' ? [482, 622] : [518, 622];
+      var batCam = s.bat === 'R' ? c3 : c1, sideCam = s.bat === 'R' ? c1 : c3;
+      var lead = run[3] ? 3 : run[2] ? 2 : run[1] ? 1 : 0, any = !!lead, loaded = run[1] && run[2] && run[3];
+      var manned = s.cam4 === 'manned', extra = '';
+
+      // Once the ball is in play the batter is running, so they’re drawn on the bases instead of at the plate.
+      if (m !== 'inplay') extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH');
+      [1, 2, 3].forEach(function (b) {
+        var p = BASES[b];
+        if (run[b]) extra += '<g class="runner"><circle cx="' + p[0] + '" cy="' + (p[1] - 18) + '" r="9"/><text x="' + p[0] + '" y="' + (p[1] - 14) + '">R</text></g>';
+        extra += '<circle class="basehit" data-base="' + b + '" cx="' + p[0] + '" cy="' + (p[1] - 6) + '" r="24"><title>Runner on ' + BASE_NAME[b] + '</title></circle>';
+      });
+
+      function onLead(c, tag) { var p = BASES[lead]; aim(c, p[0], p[1] - 10, 10, 30); say(c, tag || 'Lead runner', 'The lead runner at ' + BASE_NAME[lead] + '.'); }
+      function pitcherOrColor(c) { aim(c, PITCHER[0], PITCHER[1], 14, 30); say(c, 'Pitcher or color', 'The pitcher, runners, or color between pitches.'); }
+      function staticCam4() { aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'Static', 'Locked on the pitcher-to-batter shot.'); }
+
+      // Defaults: between pitches.
+      if (loaded) { aim(c2, 500, 500, 50, 100); say(c2, 'Set the table', 'Bases loaded. Show all the runners.'); }
+      else { aim(c2, PITCHER[0], PITCHER[1], 8, 30); say(c2, 'Pitcher', 'The pitcher between every pitch.'); }
+      aim(batCam, batter[0], batter[1], 8, 20);
+      say(batCam, 'Batter', 'Waist up on the batter between every pitch. Head to toe with a push in for the first ID.');
+      if (s.bat === 'R' && run[1]) { aim(sideCam, BASES[1][0], BASES[1][1] - 10, 12, 30); say(sideCam, 'Pickoff', 'Righty batting with a runner on first: the pickoff shot.'); }
+      else if (any) onLead(sideCam);
+      else pitcherOrColor(sideCam);
+      if (manned && run[2]) { aim(c4, BASES[2][0], BASES[2][1] - 10, 10, 30); say(c4, 'Runner on 2nd', 'Set the runner on second at each new batter.'); }
+      else if (manned) { aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'Pitch shot', 'Pitcher to batter, ready for the pitch.'); }
+      else staticCam4();
+
+      if (m === 'pitch') {
+        aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'On air', 'The pitch: pitcher to batter.');
+        aim(c2, 500, 470, 62, 100); say(c2, 'Set the defense', 'Show where the fielders are standing.');
+        say(batCam, 'Batter', 'Hold on the batter.');
+      } else if (m === 'inplay') {
+        // How deep the ball is hit decides the hit type and how far the batter-runner gets.
+        var depth = Math.hypot(s.bx - HOME[0], s.by - HOME[1]);
+        var hit = depth < 380 ? 'single' : depth < 500 ? 'double' : 'triple';
+        var br = hit === 'single' ? [585, 545] : hit === 'double' ? [555, 475] : [445, 475];
+        extra += person(br[0], br[1], 'BATTER', '', true);
+        aim(c2, s.bx, s.by, 30, 60); say(c2, 'Ball in play', 'Follow the ball and the defense. Include the umpire on the call at any base.');
+        function shag(c) { aim(c, s.bx, s.by, 18, 40); say(c, 'Shag', 'No one on base: shag the ball.'); }
+        function hero(c) { aim(c, br[0], br[1], 12, 30); say(c, 'Offensive hero', 'The offensive hero on the ' + hit + '. Follow the batter around the bases.'); }
+        // Cam 1
+        if (s.bat === 'R') { if (any) onLead(c1); else shag(c1); if (any) say(c1, 'Lead runner', 'The lead runner, then the trailing runners after the runner touches third.'); }
+        else if (hit !== 'triple') hero(c1);
+        else if (any) onLead(c1); else shag(c1);
+        // Cam 3
+        if (run[2] || run[3]) { aim(c3, HOME[0], HOME[1], 12, 30); say(c3, 'Score runners', 'Score all runners. Make the switch to the runner coming home.'); }
+        else if (hit === 'triple') hero(c3);
+        else if (s.bat === 'L') { if (any) onLead(c3); else shag(c3); }
+        else { aim(c3, br[0], br[1], 14, 30); say(c3, 'Batter', 'Follow the batter. If it turns into a triple, you have the offensive hero.'); }
+        // Cam 4
+        if (manned && Math.abs(s.bx - 500) < 60 && s.by < 520) { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Up the middle', 'Hit straight up the middle. Feel free to stay with the ball.'); }
+        else if (manned) { aim(c4, br[0], br[1], 10, 20); say(c4, 'Batter', 'Follow the batter on the base hit.'); }
+        else say(c4, 'Static', 'Locked on the pitcher-to-batter shot, so it doesn’t move. Switch Cam 4 to Manned to see it follow the play.');
+        return extra + roundBall(s.bx, s.by, '#F3EFE2');
+      } else if (m === 'steal') {
+        var from = run[1] ? 1 : run[2] ? 2 : 0;
+        if (!from) { say(c2, 'Add a runner', 'Click first or second base to add a runner, then watch the steal.'); }
+        else {
+          var a = BASES[from], b = BASES[from + 1];
+          aim(c2, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 30, 60); say(c2, 'Steal', 'Keep the runner and the ball in frame.');
+          if (manned && from === 1) { aim(c4, 530, 480, 30, 40); say(c4, 'Reveal the steal', 'Pull out to reveal the steal of second.'); }
+        }
+      } else if (m === 'score') {
+        if (!run[3] && !run[2]) {
+          aim(c3, HOME[0], HOME[1], 12, 30); say(c3, 'Add a runner', 'Click second or third base to put a runner in scoring position.');
+        } else {
+          // The lead runner is on the way home: from third they're on the baseline, from second they're rounding third.
+          var rr = run[3] ? [450, 580] : [410, 510];
+          extra += person(rr[0], rr[1], 'SCORING', 'flag', true);
+          aim(c3, rr[0], rr[1], 12, 30); say(c3, 'Score the runner', 'Make the switch to the runner coming home, then score them crossing the plate.');
+          aim(c2, (rr[0] + HOME[0]) / 2, (rr[1] + HOME[1]) / 2, 30, 40); say(c2, 'Play at the plate', 'The runner, the throw, and the umpire on the call at home.');
+          aim(c1, 585, 545, 14, 30); say(c1, 'Offensive hero', 'The offensive hero on the RBI.');
+          if (run[3] && run[2]) say(c3, 'Score all runners', 'Score the runner from third, then make the switch to the next runner coming home.');
+        }
+      } else if (m === 'appeal') {
+        var ump = s.bat === 'R' ? [618, 515] : [382, 515];
+        extra += person(ump[0], ump[1], 'UMP', 'flag');
+        aim(c2, ump[0], ump[1], 10, 30); say(c2, 'Base umpire', 'The umpire in the direction the batter is facing.');
+      } else if (m === 'k3' || m === 'inning') {
+        [c1, c3].forEach(function (c) { aim(c, PITCHER[0], PITCHER[1], 12, 30); say(c, 'Pitcher to dugout', 'At the end of every other half inning, the pitcher walking toward your dugout.'); });
+        if (m === 'k3' && manned) { aim(c4, PITCHER[0], PITCHER[1], 8, 30); say(c4, 'Pitcher to dugout', 'Third out was a strikeout. Push in on the pitcher and follow them into the dugout.'); }
+        if (m === 'inning') { aim(c2, 500, 330, 70, 120); say(c2, 'Beauty shot', 'A good time for a beauty shot. Scorebug comes out.'); }
+        else { aim(c2, PITCHER[0], PITCHER[1], 20, 30); say(c2, 'Pitcher', 'The pitcher walking off.'); }
+      }
+      return extra;
+    }
+  };
+
+  function simPanel(id) {
+    var sim = SIMS[id], h = '<div class="rot">';
+    sim.controls.forEach(function (ctl) {
+      if (ctl.type === 'range') {
+        h += '<div class="ctl wide"><label class="ctl-lbl" for="rng-' + ctl.key + '" id="rl-' + ctl.key + '"></label><input type="range" id="rng-' + ctl.key + '" data-key="' + ctl.key + '" min="' + ctl.min + '" max="' + ctl.max + '" step="1"></div>';
+      } else {
+        h += '<div class="ctl"><span class="ctl-lbl">' + ctl.label + '</span><div class="seg" role="group" aria-label="' + ctl.label + '">';
+        ctl.opts.forEach(function (o) { h += '<button type="button" data-type="' + ctl.type + '" data-key="' + ctl.key + '" data-val="' + o[0] + '">' + o[1] + '</button>'; });
+        h += '</div></div>';
+      }
     });
-    document.getElementById('rotNow').innerHTML = now;
-    document.querySelectorAll('.rot .dir button').forEach(function (b) {
-      var on = +b.dataset.dir === ROT.dir; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
-    });
-    var z = zoneOf(ROT.ball);
-    document.querySelectorAll('.rot-table').forEach(function (t) {
-      t.querySelectorAll('[data-zone]').forEach(function (c) { c.classList.toggle('cur', +t.dataset.dir === ROT.dir && +c.dataset.zone === z); });
-    });
+    return h + '<p class="hint" id="simHint"></p></div>';
   }
 
-  function wireRotation(sp) {
-    var input = document.getElementById('ballIn');
-    input.value = ROT.ball;
-    input.addEventListener('input', function () { ROT.ball = +input.value; updateRotation(sp); });
-    document.querySelectorAll('.rot .dir button').forEach(function (b) {
-      b.addEventListener('click', function () { ROT.dir = +b.dataset.dir; updateRotation(sp); });
+  var LAST_CAMS = [];
+  function updateSim(sp) {
+    var sim = SIMS[sp.id], s = sim.state, fig = document.getElementById('fig');
+    fig.innerHTML = diagram(sp);
+    fig.classList.toggle('drag', !!sim.drag && (!sim.canDrag || sim.canDrag(s)));
+    sim.controls.forEach(function (ctl) {
+      if (ctl.type === 'range') {
+        document.getElementById('rng-' + ctl.key).value = s[ctl.key];
+        document.getElementById('rl-' + ctl.key).innerHTML = ctl.label(s);
+      }
     });
-    updateRotation(sp);
+    document.querySelectorAll('.rot .seg button').forEach(function (b) {
+      var k = b.dataset.key, v = b.dataset.val;
+      var on = b.dataset.type === 'multi' ? !!s[k][v] : String(s[k]) === v;
+      b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+    });
+    document.getElementById('simHint').textContent = sim.hint ? sim.hint(s) : '';
+    var h = '<h4>Right now</h4>';
+    LAST_CAMS.forEach(function (c, i) {
+      if (!c.tag) return;
+      h += '<div class="nowrow"><span class="num ' + c.type + '">' + (i + 1) + '</span><div><b>' + c.tag + '</b><span>' + c.text + '</span></div></div>';
+    });
+    document.getElementById('nowList').innerHTML = h;
+    if (sim.after) sim.after(s);
+  }
+
+  function wireSim(sp) {
+    var sim = SIMS[sp.id], s = sim.state, fig = document.getElementById('fig'), dragging = false;
+    document.querySelectorAll('.rot .seg button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.dataset.key, v = b.dataset.val;
+        if (b.dataset.type === 'multi') s[k][v] = !s[k][v];
+        else s[k] = /^-?\d+$/.test(v) ? +v : v;
+        updateSim(sp);
+      });
+    });
+    document.querySelectorAll('.rot input[type=range]').forEach(function (inp) {
+      inp.addEventListener('input', function () { s[inp.dataset.key] = +inp.value; updateSim(sp); });
+    });
+    function toSvg(e) {
+      var svg = fig.querySelector('svg'), pt = svg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      return pt.matrixTransform(svg.getScreenCTM().inverse());
+    }
+    function move(e) { var p = toSvg(e); sim.drag(s, p.x, p.y); updateSim(sp); }
+    fig.addEventListener('pointerdown', function (e) {
+      var base = e.target.closest && e.target.closest('[data-base]');
+      if (base && sim.onBase) { sim.onBase(s, base.dataset.base); updateSim(sp); return; }
+      if (!sim.drag || (sim.canDrag && !sim.canDrag(s))) return;
+      dragging = true; try { fig.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); move(e);
+    });
+    fig.addEventListener('pointermove', function (e) { if (dragging) move(e); });
+    ['pointerup', 'pointercancel'].forEach(function (ev) { fig.addEventListener(ev, function () { dragging = false; }); });
+    updateSim(sp);
   }
 
   var TYPE_LABEL = { elevated: 'Hard cam, elevated', ground: 'Hard cam, floor', handheld: 'Handheld', mounted: 'Mounted' };
@@ -680,11 +1108,7 @@
     var sp = SPORTS[id];
     var h = '<h2>' + sp.title + ' · <span class="venue">' + sp.venue + '</span></h2>';
     h += '<p class="summary">' + sp.summary + '</p>';
-    if (sp.rotation) {
-      h += '<div class="rot"><div class="dir" role="group" aria-label="Offense direction"><button type="button" data-dir="1">Driving right →</button><button type="button" data-dir="-1">Driving left ←</button></div>';
-      h += '<label class="ball-ctl" for="ballIn">Ball on <b id="ballLbl"></b></label><input type="range" id="ballIn" min="1" max="99" step="1">';
-      h += '<div class="now" id="rotNow" aria-live="polite"></div></div>';
-    }
+    if (SIMS[id]) h += simPanel(id);
     h += '<figure class="diagram" id="fig">' + diagram(sp) + '</figure>';
     h += '<div class="legend">';
     Object.keys(TYPE_LABEL).forEach(function (k) {
@@ -693,6 +1117,7 @@
     h += '<span><i class="sw fov"></i>What the camera sees</span>';
     if (sp.cams.some(function (c) { return c.travel; })) h += '<span><i class="sw travel"></i>Handheld path</span>';
     h += '</div>';
+    if (SIMS[id]) h += '<div class="nowlist" id="nowList" aria-live="polite"></div>';
 
     if (sp.notes) {
       h += '<h3 class="sub">General Notes</h3><div class="callout">';
@@ -750,7 +1175,7 @@
     h += '</ul>';
 
     document.getElementById('guide').innerHTML = h;
-    if (sp.rotation) wireRotation(sp);
+    if (SIMS[id]) wireSim(sp);
     document.querySelectorAll('.picker button').forEach(function (b) {
       var on = b.dataset.sport === id;
       b.setAttribute('aria-selected', on);
@@ -758,6 +1183,7 @@
     });
   }
 
+  Object.keys(SPORTS).forEach(function (k) { SPORTS[k].id = k; });
   function fromHash() { var id = location.hash.slice(1); return SPORTS[id] ? id : 'football'; }
   document.querySelectorAll('.picker button').forEach(function (b) {
     b.addEventListener('click', function () { history.replaceState(null, '', '#' + b.dataset.sport); render(b.dataset.sport); });
