@@ -179,6 +179,10 @@
   .nowrow .num{width:26px;height:26px;font-size:.85rem;margin-top:1px}
   .nowrow b{display:block;color:var(--chalk);font-size:.95rem}
   .nowrow > div > span{color:var(--chalk-dim);font-size:.92rem}
+  .diagram .ballring{fill:none;stroke:#F3EFE2;stroke-width:3;stroke-dasharray:4 4}
+  .ballpill{font-style:normal;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    margin-left:8px;padding:1px 7px;border-radius:999px;background:var(--chalk);color:var(--pine);vertical-align:2px}
+  .legend .sw.ring{width:14px;height:14px;border-radius:50%;border:2px dashed var(--chalk)}
   footer{border-top:1px solid rgba(217,165,33,.3);padding:26px 0 40px;color:var(--chalk-dim);font-size:.88rem}
   .foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   .foot img{width:44px}
@@ -619,6 +623,7 @@
   }
   function marker(c, n) {
     var s = c.travel ? '<line class="travel" x1="' + c.travel[0][0] + '" y1="' + c.travel[0][1] + '" x2="' + c.travel[1][0] + '" y2="' + c.travel[1][1] + '"/>' : '';
+    if (c.hasBall) s += '<circle class="ballring" cx="' + c.x + '" cy="' + c.y + '" r="25"/>';
     return s + '<g class="cam ' + c.type + '"><circle cx="' + c.x + '" cy="' + c.y + '" r="17"/><text x="' + c.x + '" y="' + (c.y + 7) + '">' + n + '</text></g>' +
       (c.roleTag ? '<text class="role ' + c.roleTag + '" x="' + c.x + '" y="' + (c.y + 44) + '">' + c.roleTag.toUpperCase() + '</text>' : '');
   }
@@ -700,7 +705,7 @@
         if (rl === 'game') aim(c, bx, by, 44, 60);
         if (rl === 'pit') aim(c, bx, by, 14, 30);
         if (rl === 'iso') aim(c, clamp(bx + d * 100, 170, 830), 150, 10, 30);
-        c.roleTag = rl; say(c, rl.charAt(0).toUpperCase() + rl.slice(1), ROLE_TEXT[rl]);
+        c.roleTag = rl; c.hasBall = rl === 'game'; say(c, rl.charAt(0).toUpperCase() + rl.slice(1), ROLE_TEXT[rl]);
       });
       // The end zone camera the offense is driving away from is behind the quarterback.
       var behind = d > 0 ? cams[3] : cams[4], ahead = d > 0 ? cams[4] : cams[3], qbX = bx - d * 35;
@@ -776,6 +781,8 @@
         aim(near, s.bx, s.by, 16, 40); say(near, 'Nearside: hero and goat', 'On a buzzer beater, the hero and the goat at the final shot, then coming back to the bench. If not, frame the star player or the winning coach coming toward you.');
         aim(back, (s.bx + 500) / 2, (s.by + BK_BENCHES[1]) / 2, 30, 40); say(back, 'Backside: hero and goat', 'On a buzzer beater, the hero and the goat coming back to the bench. If not, frame the star player or the winning coach coming toward you.');
       }
+      c1.hasBall = m !== 'ft' && m !== 'end';
+      if (m === 'ft') near.hasBall = true;
       return extra + (m === 'ft' ? roundBall(ft[0] + (left ? 12 : -12), ft[1] - 10, '#E07B39') : roundBall(s.bx, s.by, '#E07B39'));
     }
   };
@@ -845,6 +852,7 @@
       c6.aim = -90; c6.fov = 50; c6.len = 330;
       say(c6, 'Locked', 'Mounted and locked across the top of the net, so it doesn’t move. Watch it as a replay source.');
       if ((m === 'rally' || m === 'point') && Math.abs(bx - 500) < 90) say(c6, 'At the net', 'The ball is at the net. Blocks, tips, and kills here are your replay.');
+      c1.hasBall = m !== 'timeout' && m !== 'sub';
       return extra + (m === 'serve' ? roundBall(bx + (left ? 14 : -14), by - 12, '#F3EFE2') : roundBall(bx, by, '#F3EFE2'));
     }
   };
@@ -921,6 +929,8 @@
         say(c2, 'Game', 'Hold wide.');
         aim(c6, 500, 40, 24, 20); say(c6, 'Bench', 'Bench and coach shots.');
       }
+      c2.hasBall = m !== 'goal' && m !== 'sub';
+      if (m === 'goal') cl18.hasBall = true;
       return extra + roundBall(bx, by, '#F3EFE2');
     }
   };
@@ -958,6 +968,8 @@
       function onLead(c, tag) { var p = BASES[lead]; aim(c, p[0], p[1] - 10, 10, 30); say(c, tag || 'Lead runner', 'The lead runner at ' + BASE_NAME[lead] + '.'); }
       function pitcherOrColor(c) { aim(c, PITCHER[0], PITCHER[1], 14, 30); say(c, 'Pitcher or color', 'The pitcher, runners, or color between pitches.'); }
       function staticCam4() { aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'Static', 'Locked on the pitcher-to-batter shot.'); }
+      // Where the ball is in each moment, and which camera has it.
+      var ball = null, ballCam = null;
 
       // Defaults: between pitches.
       if (loaded) { aim(c2, 500, 500, 50, 100); say(c2, 'Set the table', 'Bases loaded. Show all the runners.'); }
@@ -967,12 +979,14 @@
       if (s.bat === 'R' && run[1]) { aim(sideCam, BASES[1][0], BASES[1][1] - 10, 12, 30); say(sideCam, 'Pickoff', 'Righty batting with a runner on first: the pickoff shot.'); }
       else if (any) onLead(sideCam);
       else pitcherOrColor(sideCam);
+      ball = [508, 538]; ballCam = loaded ? null : c2;
       if (manned && run[2]) { aim(c4, BASES[2][0], BASES[2][1] - 10, 10, 30); say(c4, 'Runner on 2nd', 'Set the runner on second at each new batter.'); }
       else if (manned) { aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'Pitch shot', 'Pitcher to batter, ready for the pitch.'); }
       else staticCam4();
 
       if (m === 'pitch') {
         aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'On air', 'The pitch: pitcher to batter.');
+        ball = [500, 590]; ballCam = c4;
         aim(c2, 500, 470, 62, 100); say(c2, 'Set the defense', 'Show where the fielders are standing.');
         say(batCam, 'Batter', 'Hold on the batter.');
       } else if (m === 'inplay') {
@@ -997,6 +1011,7 @@
         if (manned && Math.abs(s.bx - 500) < 60 && s.by < 520) { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Up the middle', 'Hit straight up the middle. Feel free to stay with the ball.'); }
         else if (manned) { aim(c4, br[0], br[1], 10, 20); say(c4, 'Batter', 'Follow the batter on the base hit.'); }
         else say(c4, 'Static', 'Locked on the pitcher-to-batter shot, so it doesn’t move. Switch Cam 4 to Manned to see it follow the play.');
+        c2.hasBall = true;
         return extra + roundBall(s.bx, s.by, '#F3EFE2');
       } else if (m === 'steal') {
         var from = run[1] ? 1 : run[2] ? 2 : 0;
@@ -1004,6 +1019,8 @@
         else {
           var a = BASES[from], b = BASES[from + 1];
           aim(c2, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 30, 60); say(c2, 'Steal', 'Keep the runner and the ball in frame.');
+          // The catcher’s throw is on its way to the base being stolen.
+          ball = [(HOME[0] + b[0]) / 2, (HOME[1] + b[1]) / 2]; ballCam = c2;
           if (manned && from === 1) { aim(c4, 530, 480, 30, 40); say(c4, 'Reveal the steal', 'Pull out to reveal the steal of second.'); }
         }
       } else if (m === 'score') {
@@ -1015,6 +1032,7 @@
           extra += person(rr[0], rr[1], 'SCORING', 'flag', true);
           aim(c3, rr[0], rr[1], 12, 30); say(c3, 'Score the runner', 'Make the switch to the runner coming home, then score them crossing the plate.');
           aim(c2, (rr[0] + HOME[0]) / 2, (rr[1] + HOME[1]) / 2, 30, 40); say(c2, 'Play at the plate', 'The runner, the throw, and the umpire on the call at home.');
+          ball = [545, 575]; ballCam = c2;
           aim(c1, 585, 545, 14, 30); say(c1, 'Offensive hero', 'The offensive hero on the RBI.');
           if (run[3] && run[2]) say(c3, 'Score all runners', 'Score the runner from third, then make the switch to the next runner coming home.');
         }
@@ -1022,13 +1040,16 @@
         var ump = s.bat === 'R' ? [618, 515] : [382, 515];
         extra += person(ump[0], ump[1], 'UMP', 'flag');
         aim(c2, ump[0], ump[1], 10, 30); say(c2, 'Base umpire', 'The umpire in the direction the batter is facing.');
+        ball = [500, 642]; ballCam = null;
       } else if (m === 'k3' || m === 'inning') {
+        ball = null; ballCam = null;
         [c1, c3].forEach(function (c) { aim(c, PITCHER[0], PITCHER[1], 12, 30); say(c, 'Pitcher to dugout', 'At the end of every other half inning, the pitcher walking toward your dugout.'); });
         if (m === 'k3' && manned) { aim(c4, PITCHER[0], PITCHER[1], 8, 30); say(c4, 'Pitcher to dugout', 'Third out was a strikeout. Push in on the pitcher and follow them into the dugout.'); }
         if (m === 'inning') { aim(c2, 500, 330, 70, 120); say(c2, 'Beauty shot', 'A good time for a beauty shot. Scorebug comes out.'); }
         else { aim(c2, PITCHER[0], PITCHER[1], 20, 30); say(c2, 'Pitcher', 'The pitcher walking off.'); }
       }
-      return extra;
+      if (ballCam) ballCam.hasBall = true;
+      return extra + (ball ? roundBall(ball[0], ball[1], '#F3EFE2') : '');
     }
   };
 
@@ -1066,7 +1087,7 @@
     var h = '<h4>Right now</h4>';
     LAST_CAMS.forEach(function (c, i) {
       if (!c.tag) return;
-      h += '<div class="nowrow"><span class="num ' + c.type + '">' + (i + 1) + '</span><div><b>' + c.tag + '</b><span>' + c.text + '</span></div></div>';
+      h += '<div class="nowrow' + (c.hasBall ? ' has-ball' : '') + '"><span class="num ' + c.type + '">' + (i + 1) + '</span><div><b>' + c.tag + (c.hasBall ? '<i class="ballpill">Has the ball</i>' : '') + '</b><span>' + c.text + '</span></div></div>';
     });
     document.getElementById('nowList').innerHTML = h;
     if (sim.after) sim.after(s);
@@ -1117,7 +1138,7 @@
     h += '<span><i class="sw fov"></i>What the camera sees</span>';
     if (sp.cams.some(function (c) { return c.travel; })) h += '<span><i class="sw travel"></i>Handheld path</span>';
     h += '</div>';
-    if (SIMS[id]) h += '<div class="nowlist" id="nowList" aria-live="polite"></div>';
+    if (SIMS[id]) h = h.replace(/<\/div>$/, '<span><i class="sw ring"></i>Has the ball</span></div>') + '<div class="nowlist" id="nowList" aria-live="polite"></div>';
 
     if (sp.notes) {
       h += '<h3 class="sub">General Notes</h3><div class="callout">';
