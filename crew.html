@@ -267,32 +267,32 @@
           tips: ['Between the 30s: pit when the offense is driving left, iso when it’s driving right.', 'Iso when the ball is past the left 30.', 'Switch roles between plays, never during one.'] },
         { x: 52, y: 280, aim: -7, fov: 38, len: 480, type: 'elevated',
           role: 'Left end zone camera', where: 'Behind the left end zone, near hash, on a platform',
-          job: 'Replays, crowd shots, coaches, and views of the sidelines. Up on the platform you also have the straight-down-the-field replay angle.',
+          job: 'Crowd shots, coaches, and views of the sidelines. During plays, the straight-down-the-field angle from up on the platform, which may be the best option for a replay.',
           framing: 'Whatever the director asks for. During plays, frame the action down the field. Between plays, find the crowd, a coach, or the sideline.',
-          tips: ['Your feed is always in the control room, even when you’re not on air. Always have a usable shot.', 'When the offense is driving away from you, you’re behind the quarterback. Try staying on the quarterback even after the throw or handoff. A quarterback getting hit or pressured makes a great replay.', 'Between plays, find something good and tell the director what you have.', 'On field goals and extra points at your end, you have the replay from behind the kick.'] },
+          tips: ['Your feed is always in the control room, even when you’re not on air. Always have a usable shot.', 'When the offense is driving away from you, you’re behind the quarterback. Try staying on the quarterback even after the throw or handoff, tight enough to see the hit or the pressure. That shot may be the best option for a replay.', 'Between plays, find something good and tell the director what you have.', 'On field goals and extra points kicked toward your end, frame the snap and the kick, wide enough to keep both uprights in the shot.'] },
         { x: 948, y: 280, aim: -172, fov: 32, len: 380, type: 'ground',
           role: 'Right end zone camera', where: 'Behind the right end zone, near hash, on the ground',
-          job: 'Replays, crowd shots, coaches, and views of the sidelines. Down low, you get a dramatic replay angle on plays at the right end.',
+          job: 'Crowd shots, coaches, and views of the sidelines. During plays, a low, dramatic angle on the action at the right end, which may be the best option for a replay.',
           framing: 'Whatever the director asks for. During plays, frame the action coming toward you. Between plays, find the crowd, a coach, or the sideline.',
-          tips: ['Your feed is always in the control room, even when you’re not on air. Always have a usable shot.', 'When the offense is driving away from you, you’re behind the quarterback. Try staying on the quarterback even after the throw or handoff. A quarterback getting hit or pressured makes a great replay.', 'Being low makes plays look big. Hold steady during plays at your end.', 'Watch for players running out of the back of the end zone. Protect yourself and the camera.'] },
+          tips: ['Your feed is always in the control room, even when you’re not on air. Always have a usable shot.', 'When the offense is driving away from you, you’re behind the quarterback. Try staying on the quarterback even after the throw or handoff, tight enough to see the hit or the pressure. That shot may be the best option for a replay.', 'Being low makes plays look big. Hold steady during plays at your end.', 'Watch for players running out of the back of the end zone. Protect yourself and the camera.'] },
         { x: 560, y: 420, aim: -110, fov: 40, len: 150, type: 'handheld', travel: [[100, 420], [900, 420]],
           role: 'Sideline handheld', where: 'Wireless, moving along the near sideline',
-          job: 'Replays from angles nobody else has: unique sideline shots, goal-line replays, and shots in the huddle. Also the coin toss and the sideline reporter.',
+          job: 'Angles nobody else has: unique sideline shots, the goal line, and shots in the huddle. Also the coin toss and the sideline reporter.',
           framing: 'Close and personal. Shots the stands cameras can’t get.',
-          tips: ['Try to stay 10 to 20 yards ahead of the play.', 'When the ball is inside the 15-yard line, move to the back corner of the end zone. Your angle is often the best replay on a score.', 'Before kickoff, be at midfield for the coin toss. Be ready with the sideline reporter whenever the director calls for it.', 'Stay behind the white sideline border and out of the team box. If an official asks you to move, move.'] }
+          tips: ['Try to stay 10 to 20 yards ahead of the play.', 'When the ball is inside the 15-yard line, move to the back corner of the end zone. Frame the goal line tight enough to see the ball cross it. Your angle may be the best option for a replay on a score.', 'Before kickoff, be at midfield for the coin toss. Be ready with the sideline reporter whenever the director calls for it.', 'Stay behind the white sideline border and out of the team box. If an official asks you to move, move.'] }
       ],
       roles: [
         ['Game', 'The live shot for every snap. Always the stands camera closest to the ball.', 'Wide before the snap. Both lines plus the safeties, about 25 to 30 yards of field.',
           ['Set the frame before the snap and hold it through any motion.', 'Run play: after the snap, do a slow push in with the zoom. Never get too tight. Keep the players around the ball in frame.', 'Pass play: follow the throw and push in to the receiver.', 'Pan smoothly. Lead the ball instead of chasing it.']],
         ['Pit', 'Tight on the line of scrimmage, where every play starts.', 'The quarterback and the linemen around the ball.',
           ['Frame the quarterback before the snap.', 'On passes, stay on the quarterback through the throw and the hit.', 'On runs, follow the ball out of the pile.']],
-        ['Iso', 'Locked on one player. This is where the tight replays come from.', 'Tight on the likely ball carrier or a key receiver.',
+        ['Iso', 'Locked on one player, tight. This shot may be the best option for a tight replay.', 'Tight on the likely ball carrier or a key receiver.',
           ['Read the formation and pick your player before the snap.', 'If you lose your player, zoom out slowly until you find them. Never whip-pan.', 'Stay on your player after the whistle for the reaction.']]
       ],
       shots: [
         ['Huddle', 'Pit', 'Tight on the quarterback', 'Game sets the wide frame'],
         ['Pre-snap', 'Game', 'Wide on the formation', 'Pit on the quarterback. Iso picks a player'],
-        ['Snap to whistle', 'Game', 'Follow the ball. Slow push in on runs, push in to the receiver on passes', 'Pit and Iso stay tight. Cam 4, 5, and 6 frame replay angles'],
+        ['Snap to whistle', 'Game', 'Follow the ball. Slow push in on runs, push in to the receiver on passes', 'Pit and Iso stay tight. Cam 4, 5, and 6 frame the play from their angles'],
         ['After the whistle', 'Game → Iso', 'Hold the pile about 2 seconds, then cut tight', 'Cam 6 finds a reaction'],
         ['Reaction', 'Cam 6, Cam 4, or Cam 5', 'Sideline, bench, coach, or crowd', 'Game resets for the next play'],
         ['Replay', 'Cam 4, 5, or 6 → Iso', 'End zone or sideline angle, then the tight angle', 'Game holds wide on the field'],
@@ -307,7 +307,7 @@
         ['Kickoff or punt', 'Game stays wide from the kick through the return. Iso stays on the returner. After the return, set roles for the new drive.'],
         ['Turnover', 'Stay wide on Game. Iso usually has the best replay. Cam 6 gets the sideline celebrating. The offense just changed direction, so check roles before the next snap.'],
         ['Sack or quarterback hit', 'Game stays wide. For the replay, use Pit or the end zone camera behind the offense if it stayed on the quarterback.'],
-        ['Penalty flag', 'Hold Game wide. Pit finds the referee for the announcement.'],
+        ['Penalty flag', 'Hold Game wide. Pit finds the White Hat (the referee, who stands behind the offense) for the announcement.'],
         ['Timeout', 'Scorebug comes out. Cam 6 in the huddle. Cam 4 or Cam 5 on the crowd or the coaches. Good time for a replay.']
       ],
       tips: ['Never cut away from the game camera during a play. Viewers need to see the whole field.', 'Show close-ups of heroes (the player who made the great play) and goats (the player who made the mistake) often.', 'Call role switches on headset as soon as the ball crosses a 30: “Past the 30. Two game, one pit, three iso.”', 'Direction only matters between the 30s. Check it after every change of possession.', 'Call the next camera before you cut: “Ready 3… take 3.”', 'Scorebug stays up during play. Take it out for timeouts, quarter breaks, and halftime, and bring it back before the next snap.', 'During timeouts and breaks, use Cam 4, 5, and 6 for the crowd, the band, coaches, and the sideline instead of an empty field.']
@@ -317,7 +317,7 @@
       title: 'Volleyball', venue: 'The Nest', view: [1000, 590], draw: drawVolleyball,
       summary: 'Six cameras. Cam 1 high at center court for the game. Cams 2 and 3 on the near sideline at the 10-foot lines, usually hard cams and sometimes handheld. A slash camera on a platform outside the left corner, an end line camera behind the right end centered on the net, and a net camera on the near pole.',
       notes: [
-        'Never miss a ball going out of bounds on the side of the court closest to you. Shoot a little wider until you’re comfortable, but remember that being too wide can hurt the replay too.',
+        'Never miss a ball going out of bounds on the side of the court closest to you. Shoot a little wider until you’re comfortable, but not so wide that the ball and the players get small.',
         'Volleyball is predictable. The ball goes over the net on the third touch about 90% of the time. Anticipate the action and adjust your framing.'
       ],
       cams: [
@@ -330,25 +330,25 @@
           role: 'Left sideline camera', where: 'Near sideline at the left 10-foot (3-meter) line. Usually a hard cam on a tripod, sometimes handheld',
           job: 'Your half of the court during play. During dead balls, your half and up to the 3-meter line on the other side. Some of the best dead-ball shots come from you.',
           framing: 'A happy medium. Not too tight, since the action is right in front of you, but not the whole half of the gym either. After two touches, tighten up on the front row players about to go for the kill.',
-          tips: ['Own the dig. If a back row player makes a crazy play, stay with them until they rejoin the action. Think replay.', 'Never miss a ball going out of bounds on your half of the court.', 'Hustle. Get the team huddle on your side. When you’re handheld, also get crowd shots when we have a crowd.', 'Before the game, help with color shots.'] },
+          tips: ['Own the dig. If a back row player makes a crazy play, stay with them, tight, until they rejoin the action.', 'Never miss a ball going out of bounds on your half of the court.', 'Hustle. Get the team huddle on your side. When you’re handheld, also get crowd shots when we have a crowd.', 'Before the game, help with color shots.'] },
         { x: 600, y: 494, aim: -69, fov: 28, len: 290, type: 'ground',
           role: 'Right sideline camera', where: 'Near sideline at the right 10-foot (3-meter) line. Usually a hard cam on a tripod, sometimes handheld',
           job: 'Your half of the court during play. During dead balls, your half and up to the 3-meter line on the other side. Some of the best dead-ball shots come from you.',
           framing: 'A happy medium. Not too tight, since the action is right in front of you, but not the whole half of the gym either. After two touches, tighten up on the front row players about to go for the kill.',
-          tips: ['Own the dig. If a back row player makes a crazy play, stay with them until they rejoin the action. Think replay.', 'Never miss a ball going out of bounds on your half of the court.', 'Hustle. Get the team huddle on your side. When you’re handheld, also get crowd shots when we have a crowd.', 'Before the game, help with color shots.'] },
+          tips: ['Own the dig. If a back row player makes a crazy play, stay with them, tight, until they rejoin the action.', 'Never miss a ball going out of bounds on your half of the court.', 'Hustle. Get the team huddle on your side. When you’re handheld, also get crowd shots when we have a crowd.', 'Before the game, help with color shots.'] },
         { x: 92, y: 494, aim: -27, fov: 42, len: 560, type: 'elevated',
           role: 'Slash camera', where: 'On a platform outside the left corner of the court',
           job: 'Focus on the players and team on the far court. After the play, shoot the hero, who will usually be on the far court.',
           framing: 'Once the ball is in play, ¾ court with both 3-meter lines and both antennas on the edges of the net. Tilt and pan with that same framing for the rest of the rally.',
-          tips: ['Be able to shoot the server on the far court at all times.', 'Resist the urge to get too tight. Volleyball is too fast to follow the ball with good framing when you’re tight.', 'Never miss a ball going out of bounds on the near court. It’s extremely important for our replays.', 'Listen to talent for the hero. 95% of the time it’s the player who got the kill, but a libero or DS with a clutch dig can be the hero too.', 'Help with subs if you can. They stand near the scorer’s table with their hands up before coming in.'] },
+          tips: ['Be able to shoot the server on the far court at all times.', 'Resist the urge to get too tight. Volleyball is too fast to follow the ball with good framing when you’re tight.', 'Never miss a ball going out of bounds on the near court. Stay wide enough to see the line.', 'Listen to talent for the hero. 95% of the time it’s the player who got the kill, but a libero or DS with a clutch dig can be the hero too.', 'Help with subs if you can. They stand near the scorer’s table with their hands up before coming in.'] },
         { x: 905, y: 270, aim: 180, fov: 32, len: 570, type: 'ground',
           role: 'End line camera', where: 'Behind the right end line, centered on the net',
           job: 'Focus on the players and team on the far court. After the play, shoot the hero, who will usually be on the far court. You also shoot any interviews.',
           framing: 'Once the ball is in play, ¾ court with both 3-meter lines and both antennas on the edges of the net. Tilt and pan with that same framing for the rest of the rally. When in doubt, wider is always better.',
-          tips: ['Be able to shoot the server on the far court at all times.', 'Always keep at least one antenna in frame and room on the sidelines. Players will chase the ball anywhere, including the benches and stands.', 'Resist the urge to get too tight. Volleyball is too fast to follow the ball with good framing when you’re tight.', 'Never miss a ball going out of bounds on the near court. It’s extremely important for our replays.', 'The hero is usually the player who got the kill, but a libero or DS with a clutch dig can be the hero too.', 'Help with subs if you can. They stand near the scorer’s table with their hands up before coming in.'] },
+          tips: ['Be able to shoot the server on the far court at all times.', 'Always keep at least one antenna in frame and room on the sidelines. Players will chase the ball anywhere, including the benches and stands.', 'Resist the urge to get too tight. Volleyball is too fast to follow the ball with good framing when you’re tight.', 'Never miss a ball going out of bounds on the near court. Stay wide enough to see the line.', 'The hero is usually the player who got the kill, but a libero or DS with a clutch dig can be the hero too.', 'Help with subs if you can. They stand near the scorer’s table with their hands up before coming in.'] },
         { x: 500, y: 452, aim: -90, fov: 50, len: 330, type: 'mounted',
           role: 'Net camera', where: 'Small camera mounted on the near net pole',
-          job: 'A close angle right at the net. Great replays of blocks, tips, and kills.',
+          job: 'A close angle right at the net: blocks, tips, and kills. It may be the best option for a replay of plays at the net.',
           framing: 'Locked off, looking across the top of the net.',
           tips: ['Mount it securely and check it with the officials before the match.', 'Check the framing and the signal before warmups end.', 'If it gets bumped, fix it between sets.'] }
       ],
@@ -361,8 +361,8 @@
       ],
       routine: 'Most points are the server → Cam 1 for the rally → the hero → replay → next server. Replay as many points as you can, and be back on the next server before the serve.',
       situations: [
-        ['Ball out of bounds', 'Whoever is closest must have it: Cam 2 or Cam 3 on their half, and Cam 4 and Cam 5 on their near court. These are key replays.'],
-        ['Big dig in the back court', 'Cam 1 widens to show it. Cam 2 or Cam 3 owns the dig and stays with that player for the replay.'],
+        ['Ball out of bounds', 'Whoever is closest must have it: Cam 2 or Cam 3 on their half, and Cam 4 and Cam 5 on their near court. Never miss these.'],
+        ['Big dig in the back court', 'Cam 1 widens to show it. Cam 2 or Cam 3 owns the dig and stays tight on that player.'],
         ['Block or kill at the net', 'Replay from Cam 6 first, then Cam 4, Cam 5, or the handheld on that side.'],
         ['Substitution', 'Cam 4 and Cam 5 help with subs. They stand near the scorer’s table with their hands up before coming in.'],
         ['Timeout', 'Scorebug comes out. Cam 2 and Cam 3 get the huddle on their side, plus crowd shots when they’re handheld. Good time for replays.'],
@@ -383,7 +383,7 @@
           tips: ['Stay a little ahead of the ball on fast breaks.', 'Keep the hoop in frame when a team is set up on offense.', 'Pan smoothly. Don’t jerk the camera when the ball changes direction.'] },
         { x: 518, y: 522, aim: -54, fov: 18, len: 300, type: 'elevated',
           role: 'Tight camera', where: 'High in the stands, right next to Cam 1',
-          job: 'Tight shots: the ball handler, shooters, heroes, coaches, subs, and reactions. A main replay angle.',
+          job: 'Tight shots: the ball handler, shooters, heroes, coaches, subs, and reactions.',
           framing: 'Tight on the ball handler, or waist up on one player.',
           tips: ['On free throws the nearside corner camera has the shooter. You get subs coming in, the fouler, or something creative.', 'After a basket, find the scorer or the bench.', 'Stay much tighter than Cam 1 so the two shots never look the same.'] },
         { x: 130, y: 492, aim: -62, fov: 40, len: 330, type: 'ground',
@@ -393,9 +393,9 @@
           tips: ['Your feed is always in the control room, even when you’re not on air. Always have a usable shot.', 'Know on every play whether you’re nearside or backside. See Camera Assignments below.', 'Stay off the court and out of the officials’ way. Watch for players running out of bounds toward you.', 'When play is at the far end, find a bench, coach, or crowd reaction.'] },
         { x: 872, y: 492, aim: -151, fov: 42, len: 560, type: 'elevated',
           role: 'Slash camera', where: 'On a platform outside the right corner',
-          job: 'A diagonal angle across the court. One of the best replay angles for shots, blocks, and drives. Between plays, great for crowd and bench shots.',
+          job: 'A diagonal angle across the court on shots, blocks, and drives, which may be the best option for a replay. Between plays, crowd and bench shots.',
           framing: 'Across the court toward the basket the play is headed to.',
-          tips: ['Always have a usable shot. The director may use it for a replay.', 'Know on every play whether you’re nearside or backside. See Camera Assignments below.', 'Follow the play and keep the basket in frame on shots.', 'Between plays, find the crowd or a bench and tell the director what you have.'] }
+          tips: ['Your feed is always in the control room, even when you’re not on air. Always have a usable shot.', 'Know on every play whether you’re nearside or backside. See Camera Assignments below.', 'Follow the play and keep the basket in frame on shots.', 'Between plays, find the crowd or a bench and tell the director what you have.'] }
       ],
       assignNote: '<b>Nearside</b> is the corner camera at the end where the play happened. <b>Backside</b> is the corner camera at the other end. Cam 3 and Cam 4 trade these jobs every time the ball changes ends.',
       assignments: [
@@ -426,7 +426,7 @@
       ],
       shots: [
         ['Bringing the ball up', 'Cam 1', 'Wide, following the ball', 'Cam 2 on the ball handler'],
-        ['Half court offense', 'Cam 1', 'Half court, all ten players', 'Cam 2 on the ball. Cam 3 and Cam 4 hold replay angles'],
+        ['Half court offense', 'Cam 1', 'Half court, all ten players', 'Cam 2 on the ball. Cam 3 and Cam 4 hold their angles on the play'],
         ['Shot', 'Cam 1', 'Stay wide until the ball goes in or out', 'Cam 2 on the shooter'],
         ['Made basket', 'Cam 2 or backside', 'The hero', 'Cam 1 follows the other team up the court'],
         ['Free throws', 'Nearside 3 or 4', 'Tight on the shooter', 'Cam 2 on subs or the fouler. Backside wide for the shot'],
@@ -435,7 +435,7 @@
       routine: 'Most of the game is on Cam 1. Cut to Cam 2 for reactions and free throws. Replay as many plays as you can during dead balls, timeouts, and free throws, and be back on Cam 1 before play starts.',
       situations: [
         ['Timeout', 'Scorebug comes out. Cam 3 on the huddle from a respectful distance, Cam 4 on the crowd. Good time for replays.'],
-        ['Fast break', 'Stay on Cam 1. If it’s headed to the left basket, Cam 3 has the low angle for the replay.']
+        ['Fast break', 'Stay on Cam 1. If it’s headed to the left basket, Cam 3 has the low angle on the finish.']
       ],
       tips: ['Replays only when the ball is dead. Never miss live play.', 'Show close-ups of heroes (the player who made the great play) and goats (the player who made the mistake) often.', 'Scorebug stays up during play. Take it out for timeouts and halftime.', 'Get player introductions on Cam 3 before tip-off.']
     },
@@ -464,13 +464,13 @@
           tips: ['Goal: the primary hero is the scorer. The secondary hero is the player with the assist, or who really got the play going.', 'Own goal: the primary hero is the player credited with the goal. The secondary hero, really the goat, is the defender who scored the own goal.', 'Foul or physical play: the primary hero is the player who got fouled. The secondary hero is the player who committed the foul.', 'Not sure who the secondary hero is? The crowd is always a great option, and you can mix in the crowd when it’s good.', 'Corner on the near side: include the kicker and the goal, then slowly push in as the ball is kicked toward goal. Corner on the far side: just the goal and the mass of players.', 'On subs, get the player coming out. If there are several, include them all, or pick one if they’re far apart.', 'If we don’t have Cam 4, 5, or 6, you get all the referee shots.'] },
         { x: 45, y: 290, aim: 0, fov: 40, len: 480, type: 'ground',
           role: 'Left end zone camera', where: 'Behind the left goal',
-          job: 'Think X’s and O’s while the ball is in play. Your angle is the best look for replays that really dissect the play. You also get coach, bench, and referee shots.',
-          framing: 'Wide at first so the play can develop, then slowly tighter as it gets closer to goal. Don’t shoot so tight that play-by-play and color have nothing to talk about over the replay.',
+          job: 'Think X’s and O’s while the ball is in play: wide enough to show how the whole play develops. Your angle may be the best option for a replay that breaks down the play. You also get coach, bench, and referee shots.',
+          framing: 'Wide at first so the play can develop, then slowly tighter as it gets closer to goal. Don’t shoot so tight that you lose the players around the ball.',
           tips: ['Get all coach and bench shots. Listen to talent here.', 'Know where the referees are at all times. When a physical play happens, find the referee right away. We want to see the yellow or red card.', 'On an offside, find the side judge holding up the flag. Far-side offside: the side judge is on the left side of the field. Near-side offside: the right side.', 'Corner kicks: before the kick, show the players in the box getting set. For the kick, either go wide on the kicker and the goal and push in when the ball is played, or go tight on just the goal and let the action develop.', 'Free kick at the far end: wide enough for the kicker and the goal or target players.', 'Free kick at the near end: iso the kicker before the kick (head to toe or tight), then go back wide for the kick with most of the goal in frame. You can pull out or tilt down as the ball travels toward goal.', 'On subs, get the player coming in. If there are several, include them all, or pick one if they’re far apart.'] },
         { x: 955, y: 290, aim: 180, fov: 40, len: 480, type: 'ground',
           role: 'Right end zone camera', where: 'Behind the right goal',
-          job: 'Think X’s and O’s while the ball is in play. Your angle is the best look for replays that really dissect the play. You also get coach, bench, and referee shots.',
-          framing: 'Wide at first so the play can develop, then slowly tighter as it gets closer to goal. Don’t shoot so tight that play-by-play and color have nothing to talk about over the replay.',
+          job: 'Think X’s and O’s while the ball is in play: wide enough to show how the whole play develops. Your angle may be the best option for a replay that breaks down the play. You also get coach, bench, and referee shots.',
+          framing: 'Wide at first so the play can develop, then slowly tighter as it gets closer to goal. Don’t shoot so tight that you lose the players around the ball.',
           tips: ['Get all coach and bench shots. Listen to talent here.', 'Know where the referees are at all times. When a physical play happens, find the referee right away. We want to see the yellow or red card.', 'On an offside, find the side judge holding up the flag. Far-side offside: the side judge is on the left side of the field. Near-side offside: the right side.', 'Corner kicks: before the kick, show the players in the box getting set. For the kick, either go wide on the kicker and the goal and push in when the ball is played, or go tight on just the goal and let the action develop.', 'Free kick at the far end: wide enough for the kicker and the goal or target players.', 'Free kick at the near end: iso the kicker before the kick (head to toe or tight), then go back wide for the kick with most of the goal in frame. You can pull out or tilt down as the ball travels toward goal.', 'On subs, get the player coming in. If there are several, include them all, or pick one if they’re far apart.'] },
         { x: 600, y: 546, aim: -100, fov: 40, len: 160, type: 'handheld', travel: [[120, 546], [880, 546]],
           role: 'Sideline handheld', where: 'Wireless, roaming the near sideline',
@@ -802,49 +802,142 @@
   var ROLE_TEXT = {
     game: 'Wide on the formation. Slow push in on runs, push in to the receiver on passes.',
     pit: 'Tight on the quarterback and the line.',
-    iso: 'Locked on one player for the replay.'
+    iso: 'Locked on one player, tight.'
   };
 
   var SIMS = {};
 
+  // A dotted flight path (kick, punt, or throw) from p0 to p1, bowed to one side, and the point t of the way along it.
+  function flight(p0, p1, bow, t) {
+    var mx = (p0[0] + p1[0]) / 2, my = (p0[1] + p1[1]) / 2, dx = p1[0] - p0[0], dy = p1[1] - p0[1], len = Math.hypot(dx, dy) || 1;
+    var cp = [mx - dy / len * bow, my + dx / len * bow];
+    var at = [0, 1].map(function (j) { return (1 - t) * (1 - t) * p0[j] + 2 * t * (1 - t) * cp[j] + t * t * p1[j]; });
+    return { at: at, svg: '<path class="throw" d="M' + p0[0].toFixed(1) + ' ' + p0[1].toFixed(1) + ' Q' + cp[0].toFixed(1) + ' ' + cp[1].toFixed(1) + ' ' + p1[0].toFixed(1) + ' ' + p1[1].toFixed(1) + '" style="stroke-width:' + u(3) + ';stroke-dasharray:' + u(2) + ' ' + u(7) + '"/>' };
+  }
+
   SIMS.football = {
-    state: { ball: 25, dir: 1 },
+    state: { ball: 25, dir: 1, m: 'live' },
     labels: true,
     controls: [
+      { type: 'seg', key: 'm', label: 'Moment', opts: [['live', 'Live play'], ['coin', 'Coin toss'], ['kickoff', 'Kickoff'], ['punt', 'Punt'], ['fg', 'Field goal / PAT'], ['td', 'Touchdown'], ['turnover', 'Turnover'], ['flag', 'Penalty flag'], ['timeout', 'Timeout']] },
       { type: 'seg', key: 'dir', label: 'Offense', opts: [[1, 'Driving right →'], [-1, 'Driving left ←']] },
       { type: 'range', key: 'ball', min: 1, max: 99, label: function (s) { return 'Ball on <b>' + yardLabel(s.ball) + '</b>'; } }
     ],
-    hint: function () { return 'Drag the ball or use the slider.'; },
+    hint: function (s) {
+      if (s.m === 'kickoff') return 'Offense is the kicking team. High school kickoffs are from the kicking team’s 40, so the slider doesn’t move the ball.';
+      if (s.m === 'punt' || s.m === 'fg') return 'Offense is the kicking team. Drag the ball or use the slider to set the line of scrimmage.';
+      if (s.m === 'coin') return 'The coin toss is at midfield before kickoff.';
+      if (s.m === 'td') return 'Drag the ball toward either end zone, or use Driving right or left, to pick where the score happens.';
+      return 'Drag the ball or use the slider.';
+    },
     drag: function (s, x) { s.ball = clamp(Math.round((x - 166.7) / 6.667), 1, 99); },
+    // On a touchdown the ball sits in the end zone the offense is attacking, so the direction and the ball move together.
+    onChange: function (s, k) {
+      if (s.m === 'td' && (k === 'dir' || k === 'm')) s.ball = s.dir > 0 ? 97 : 3;
+    },
     apply: function (s, cams) {
-      var ro = roles(s.ball, s.dir), bx = ballX(s.ball), by = 218, d = s.dir, role = {};
+      var m = s.m, by = 218;
+      if (m === 'td') s.dir = s.ball >= 50 ? 1 : -1;
+      var d = s.dir;
+      // Where the ball is for roles: the kickoff spot, the goal line on a score, otherwise the slider.
+      var spot = m === 'kickoff' ? (d > 0 ? 40 : 60) : m === 'td' ? (d > 0 ? 97 : 3) : m === 'coin' ? 50 : s.ball;
+      var ro = roles(spot, d), bx = ballX(spot), role = {}, byRole = {};
       role[ro.game] = 'game'; role[ro.pit] = 'pit'; role[ro.iso] = 'iso';
       [0, 1, 2].forEach(function (i) {
         var c = cams[i], rl = role[i + 1];
+        byRole[rl] = c;
         if (rl === 'game') aim(c, bx, by, 44, 60);
         if (rl === 'pit') aim(c, bx, by, 14, 30);
         if (rl === 'iso') aim(c, clamp(bx + d * 100, 170, 830), 150, 10, 30);
         c.roleTag = rl; c.hasBall = rl === 'game'; say(c, rl.charAt(0).toUpperCase() + rl.slice(1), ROLE_TEXT[rl]);
       });
+      var game = byRole.game, pit = byRole.pit, iso = byRole.iso;
       // The end zone camera the offense is driving away from is behind the quarterback.
       var behind = d > 0 ? cams[3] : cams[4], ahead = d > 0 ? cams[4] : cams[3], qbX = bx - d * 35;
       aim(behind, qbX, by, 14, 30);
-      say(behind, 'Behind the QB', 'The offense is driving away from you. Stay on the quarterback after the throw or handoff for the hit or pressure replay.');
+      say(behind, 'Behind the QB', 'The offense is driving away from you. Stay on the quarterback after the throw or handoff, tight enough to see the hit or the pressure. That shot may be the best option for a replay.');
       aim(ahead, bx, by, 24, 40);
-      say(ahead, 'Play coming at you', 'Frame the play coming toward you. Your angle is a great replay.');
-      var c6 = cams[5], redZone = d > 0 ? s.ball >= 85 : s.ball <= 15;
+      say(ahead, 'Play coming at you', 'Frame the play coming toward you, wide enough to see the blocks and the ball carrier.');
+      var c6 = cams[5], redZone = d > 0 ? spot >= 85 : spot <= 15;
       if (redZone) {
         c6.x = d > 0 ? 905 : 95; c6.y = 412;
-        say(c6, 'Back corner', 'Ball inside the 15. You’re in the back corner of the end zone for the replay on a score.');
+        say(c6, 'Back corner', 'Ball inside the 15. You’re in the back corner of the end zone. Frame the goal line, tight enough to see the ball cross it. Your angle may be the best option for a replay on a score.');
       } else {
         c6.x = Math.round(clamp(bx + d * 100, 120, 880)); c6.y = 420;
-        say(c6, 'Ahead of the play', 'Stay 10 to 20 yards ahead of the play. The ball is on ' + yardLabel(s.ball) + '.');
+        say(c6, 'Ahead of the play', 'Stay 10 to 20 yards ahead of the play. The ball is on ' + yardLabel(spot) + '.');
       }
       aim(c6, bx, by, 36, 30);
-      return footballBall(bx, by) + '<path class="dir-arrow" d="M' + (bx + d * 21) + ' ' + (by - 7) + ' l' + (d * 13) + ' 7 l' + (-d * 13) + ' 7 z"/>';
+
+      var extra = '', ball = [bx, by], arrow = true, f, kicker, target;
+      if (m === 'coin') {
+        arrow = false; ball = null;
+        extra += person(466, 218, 'CAPTAIN', 'batter') + person(534, 218, 'CAPTAIN', 'batter') + person(500, 226, 'REF', 'official', true);
+        c6.x = 540; c6.y = 270; aim(c6, 500, 218, 30, 20); say(c6, 'Coin toss', 'On the field at midfield. The captains, the flip, and the call.');
+        aim(game, 500, 218, 44, 60); say(game, 'Wide backup', 'Hold a wide shot of midfield as the backup for the coin toss.');
+        aim(pit, 500, 218, 14, 30); say(pit, 'Captains', 'Tight on the captains shaking hands.');
+        aim(iso, 500, 218, 10, 30); say(iso, 'Referee', 'The referee and the coin.');
+        [cams[3], cams[4]].forEach(function (c) { aim(c, 500, 395, 30, 30); say(c, 'Crowd or bench', 'Crowd, band, or sideline shots before kickoff. Tell the director what you have.'); });
+        game.hasBall = false;
+      } else if (m === 'kickoff' || m === 'punt') {
+        // Kickoff from the kicking team's 40; a punt from about 13 yards behind the line, with the return man deep.
+        kicker = m === 'kickoff' ? [bx, by] : [ballX(clamp(spot - d * 13, 0, 100)), by];
+        target = [ballX(clamp(m === 'kickoff' ? spot + d * 57 : spot + d * 40, -5, 105)), by + 40];
+        extra += person(kicker[0], kicker[1] + 14, m === 'kickoff' ? 'KICKER' : 'PUNTER', 'batter', true) + person(target[0], target[1], 'RETURNER', 'batter', true);
+        f = flight(kicker, target, -d * 60, 0.65); extra += f.svg; ball = f.at; arrow = false;
+        aim(game, (kicker[0] + target[0]) / 2, by, 60, 120); say(game, 'Wide', 'Stay wide from the kick through the catch and the return.');
+        aim(pit, kicker[0], kicker[1], 14, 30); say(pit, m === 'kickoff' ? 'Kicker' : 'Punter', 'The ' + (m === 'kickoff' ? 'kicker' : 'punter') + ' through the kick, then the coverage team.');
+        aim(iso, target[0], target[1], 12, 30); say(iso, 'Returner', 'Stay tight on the returner, through the catch and the return.');
+        aim(ahead, target[0], target[1], 24, 40); say(ahead, 'Return coming at you', 'The returner and the return coming toward you, wide enough for the blockers.');
+        aim(behind, kicker[0], kicker[1], 18, 30); say(behind, 'Behind the kick', 'The kick from behind, then the coverage running downfield.');
+        c6.x = Math.round(clamp(target[0] - d * 60, 120, 880)); c6.y = 420; aim(c6, target[0], target[1], 34, 30);
+        say(c6, 'Return', 'Get down the sideline toward the return. Tight on the returner and the hits.');
+      } else if (m === 'fg') {
+        // The holder sets up 7 yards behind the line, kicking at the goal posts on the end line.
+        var holder = [ballX(clamp(spot - d * 7, 0, 100)), by], posts = [d > 0 ? 900 : 100, by];
+        extra += person(holder[0], holder[1] + 14, 'KICKER', 'batter', true);
+        f = flight(holder, posts, -d * 40, 0.7); extra += f.svg; ball = f.at; arrow = false;
+        aim(game, (holder[0] + posts[0]) / 2, by, 52, 80); say(game, 'Wide', 'Stay wide through the kick so the snap, the kick, and the uprights are all in the shot.');
+        aim(pit, holder[0], holder[1], 14, 30); say(pit, 'Kicker', 'The snap, hold, and kick. Then the kicker’s reaction.');
+        aim(iso, posts[0], posts[1], 12, 30); say(iso, 'Uprights', 'The ball going through, or missing, the uprights.');
+        aim(ahead, holder[0], holder[1], 22, 40); say(ahead, 'Behind the uprights', 'You’re behind the goal posts they’re kicking toward. Frame the snap and the kick, wide enough for both uprights. Your angle may be the best option for a replay of the kick.');
+        aim(behind, holder[0], holder[1], 14, 30); say(behind, 'Behind the kicker', 'The kick from behind. Lock off so the uprights stay level.');
+        say(c6, 'Kicker’s reaction', 'Be ready for the kicker’s reaction and the sideline.');
+      } else if (m === 'td') {
+        ball = [d > 0 ? 866 : 134, by]; arrow = false;
+        aim(game, ball[0], by, 44, 60); say(game, 'Through the score', 'Stay on Game through the score.');
+        aim(iso, ball[0], by, 10, 30); say(iso, 'Scorer', 'The scorer and the celebration.');
+        aim(pit, ball[0], by, 18, 30); say(pit, 'Celebration', 'The celebration in the end zone, then the bench.');
+        aim(ahead, ball[0], by, 22, 30); say(ahead, 'Score', 'You’re at the end they scored in. Tight on the scorer crossing the goal line. Your angle may be the best option for a replay.');
+        aim(behind, 500, 395, 30, 30); say(behind, 'Crowd', 'The crowd, the band, or the sideline reacting.');
+        aim(c6, ball[0], by, 30, 30); say(c6, 'Goal line', 'In the back corner of the end zone. Tight on the goal line, then the celebration.');
+      } else if (m === 'turnover') {
+        aim(game, bx, by, 44, 60); say(game, 'Wide', 'Stay wide on the takeaway.');
+        aim(iso, bx, by, 10, 30); say(iso, 'Ball', 'Tight on the ball through the fumble or interception. This may be the best option for a replay.');
+        aim(pit, bx, by, 14, 30); say(pit, 'Takeaway', 'The player who made the takeaway.');
+        say(c6, 'Sideline', 'Get the sideline celebrating. The offense just changed direction, so flip Driving right or left before the next snap.');
+      } else if (m === 'flag') {
+        // The White Hat (the referee) announces the penalty and lines up about 12 yards behind the offense.
+        var ref = [ballX(clamp(spot - d * 12, 0, 100)), by - 26];
+        extra += person(ref[0], ref[1], 'WHITE HAT', 'official') + '<rect x="' + (bx - 30) + '" y="' + (by + 22) + '" width="8" height="6" fill="#F2C14E" transform="rotate(20 ' + (bx - 26) + ' ' + (by + 25) + ')"/>';
+        aim(game, bx, by, 44, 60); say(game, 'Wide', 'Hold wide on the field while the flag is out.');
+        aim(pit, ref[0], ref[1], 10, 30); say(pit, 'White Hat', 'Find the White Hat behind the offense for the announcement and the signal.');
+        aim(iso, bx, by, 12, 30); say(iso, 'The foul', 'Tight on the players involved in the foul.');
+        aim(c6, bx, by - 20, 26, 30); say(c6, 'Bench reaction', 'The coach or the bench reacting to the call.');
+      } else if (m === 'timeout') {
+        // Only the game camera holds the field. Everyone else hunts for color, each starting somewhere different.
+        var color = ' Look for color: players, coaches, fans, cheerleaders, the band. Tell the director what you have.';
+        aim(game, bx, by, 44, 60); say(game, 'Wide', 'Stay wide on the field. Scorebug comes out.');
+        aim(pit, bx, by, 16, 30); say(pit, 'Color: players', 'Start with the players in the huddle.' + color);
+        aim(iso, bx, 46, 16, 30); say(iso, 'Color: coaches', 'Start with the coaches on the sideline.' + color);
+        aim(cams[3], 330, 425, 22, 30); say(cams[3], 'Color: fans', 'Start with the fans in the stands.' + color);
+        aim(cams[4], 670, 425, 22, 30); say(cams[4], 'Color: cheer and band', 'Start with the cheerleaders and the band.' + color);
+        aim(c6, bx, by, 26, 20); say(c6, 'Color: in the huddle', 'Get in close on the huddle or the sideline.' + color);
+      }
+      return extra + (ball ? footballBall(ball[0], ball[1]) : '') +
+        (arrow ? '<path class="dir-arrow" d="M' + (bx + d * 21) + ' ' + (by - 7) + ' l' + (d * 13) + ' 7 l' + (-d * 13) + ' 7 z"/>' : '');
     },
     after: function (s) {
-      var z = zoneOf(s.ball);
+      var spot = s.m === 'kickoff' ? (s.dir > 0 ? 40 : 60) : s.m === 'td' ? (s.dir > 0 ? 97 : 3) : s.m === 'coin' ? 50 : s.ball, z = zoneOf(spot);
       document.querySelectorAll('.rot-table').forEach(function (t) {
         t.querySelectorAll('[data-zone]').forEach(function (c) { c.classList.toggle('cur', +t.dataset.dir === s.dir && +c.dataset.zone === z); });
       });
@@ -868,7 +961,7 @@
       aim(c1, s.bx, s.by, 50, 80); say(c1, 'Game', 'Follow the ball. Half court with all ten players when a team sets up.');
       aim(c2, s.bx, s.by, 14, 30); say(c2, 'Tight', 'Tight on the ball handler.');
       aim(near, s.bx, s.by, 28, 40); say(near, 'Nearside', 'You’re close to the action. Low angle on drives, shots, and rebounds.');
-      aim(back, s.bx, s.by, 40, 40); say(back, 'Backside', 'You’re away from the action. Hold a usable replay angle.');
+      aim(back, s.bx, s.by, 40, 40); say(back, 'Backside', 'You’re away from the action. Hold a wide angle on the play.');
       if (m === 'made') {
         say(c1, 'Game', 'Follow the other team up the court.');
         say(c2, 'Hero', 'The hero, or a good assist.');
@@ -943,7 +1036,7 @@
           say(c, 'Dead ball', mine ? 'The point ended on your half. Get the hero or the reaction.' : 'Your half and up to the 3-meter line on the other side. Look for a reaction.');
         }
         if (m === 'out') {
-          if (mine) { aim(c, bx, by, 18, 40); say(c, 'Ball out', 'Never miss a ball going out on your half. It’s a key replay.'); }
+          if (mine) { aim(c, bx, by, 18, 40); say(c, 'Ball out', 'Never miss a ball going out on your half. Frame the line. Your angle may be the best option for a replay of the call.'); }
           else { aim(c, front, by, 26, 40); say(c, 'Your half', 'Hold your half.'); }
         }
         if (m === 'timeout') { aim(c, a[3], 80, 24, 30); say(c, 'Huddle', 'The team huddle on your side.'); }
@@ -965,7 +1058,7 @@
           say(c, 'Hero', 'The hero, usually on your far court. Usually the player who got the kill, sometimes a libero or DS with a clutch dig.');
         }
         if (m === 'out') {
-          if (!ballFar) { aim(c, bx, by, 20, 40); say(c, 'Ball out', 'The ball is out on your near court. Never miss it. It’s a key replay.'); }
+          if (!ballFar) { aim(c, bx, by, 20, 40); say(c, 'Ball out', 'The ball is out on your near court. Never miss it. Frame the line. Your angle may be the best option for a replay of the call.'); }
           else { follow(); say(c, '¾ court', 'Hold your ¾ court framing.'); }
         }
         if (m === 'timeout') { aim(c, VB_TABLE[0], VB_TABLE[1], 34, 20); say(c, 'Crowd or bench', 'Find the crowd or a bench and tell the director what you have.'); }
@@ -973,8 +1066,8 @@
       });
 
       c6.aim = -90; c6.fov = 50; c6.len = 330;
-      say(c6, 'Locked', 'Mounted and locked across the top of the net, so it doesn’t move. Watch it as a replay source.');
-      if ((m === 'rally' || m === 'point') && Math.abs(bx - 500) < 90) say(c6, 'At the net', 'The ball is at the net. Blocks, tips, and kills here are your replay.');
+      say(c6, 'Locked', 'Mounted and locked across the top of the net, so it doesn’t move.');
+      if ((m === 'rally' || m === 'point') && Math.abs(bx - 500) < 90) say(c6, 'At the net', 'The ball is at the net. Blocks, tips, and kills right in front of you. Your angle may be the best option for a replay.');
       // Cam 1 must always have the ball (and on a serve, the server) in its shot.
       keepInShot(c1, m === 'serve' ? [[bx, by], [bx + (left ? 14 : -14), by - 12]] : [[bx, by]]);
       c1.hasBall = m !== 'timeout' && m !== 'sub';
@@ -1008,7 +1101,7 @@
       aim(endCam, bx, by, clamp(18 + dGoal / 18, 18, 44), 40);
       say(endCam, 'Play coming at you', 'X’s and O’s. Wide at first, then slowly tighter as the play gets closer to your goal.');
       aim(otherEnd, bx, by, 40, 40);
-      say(otherEnd, 'Play at the far end', 'X’s and O’s. Stay wide so the replay shows the play develop.');
+      say(otherEnd, 'Play at the far end', 'X’s and O’s. Stay wide so the whole play shows.');
       // Cam 6 stays a little behind the ball, toward the halfway line, moving in proportion to it.
       // That keeps it out of the way of the near-side side judge, who stands level with the play.
       c6.x = Math.round(clamp(500 + (bx - 500) * 0.6, 120, 880)); c6.y = 546;
@@ -1019,7 +1112,7 @@
         aim(c2, gx + (left ? 14 : -14), 290, 9, 30); say(c2, 'Goat', 'Slowly push in on the goalie who gave up the goal until the director cuts off you.');
         aim(cl18, bx, by, 12, 40); say(cl18, 'Primary hero', 'The scorer.');
         aim(other18, bx, by, 18, 40); say(other18, 'Secondary hero', 'The assist or the player who got the play going. If you’re not sure, the crowd.');
-        say(endCam, 'Replay', 'Your angle dissects the goal for the replay.');
+        say(endCam, 'Goal', 'Wide on the goal and the box.');
         aim(otherEnd, bench[0], bench[1], 24, 20); say(otherEnd, 'Bench', 'Coach and bench reactions. Listen to talent.');
         aim(c6, bench[0], bench[1], 26, 20); say(c6, 'Reactions', 'Reactions on the sideline after the goal.');
       } else if (m === 'corner') {
