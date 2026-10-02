@@ -323,17 +323,17 @@
           job: 'Covers every rally. This is the shot the broadcast lives on.',
           framing: 'No tighter than ¾ court. Always both 3-meter lines in the shot, and always the server.',
           tips: ['Keep panning to a minimum. Too much movement makes viewers dizzy.', 'If there’s a dig or a big play in the back court, widen to show it. When that player gets back into normal play, return to normal framing.', 'Always have the server in frame, even the ones who start 30 feet behind the end line. Pay attention.', 'If you need a big pan to find the server and the director is still on your shot after a play, ask the director to get off you first so the move isn’t on air.'] },
-        { x: 400, y: 482, aim: -111, fov: 28, len: 290, type: 'ground',
+        { x: 400, y: 494, aim: -111, fov: 28, len: 290, type: 'ground',
           role: 'Left sideline camera', where: 'Near sideline at the left 10-foot (3-meter) line. Usually a hard cam on a tripod, sometimes handheld',
           job: 'Your half of the court during play. During dead balls, your half and up to the 3-meter line on the other side. Some of the best dead-ball shots come from you.',
           framing: 'A happy medium. Not too tight, since the action is right in front of you, but not the whole half of the gym either. After two touches, tighten up on the front row players about to go for the kill.',
           tips: ['Own the dig. If a back row player makes a crazy play, stay with them until they rejoin the action. Think replay.', 'Never miss a ball going out of bounds on your half of the court.', 'Hustle. Get the team huddle on your side. When you’re handheld, also get crowd shots when we have a crowd.', 'Before the game, help with color shots.'] },
-        { x: 600, y: 482, aim: -69, fov: 28, len: 290, type: 'ground',
+        { x: 600, y: 494, aim: -69, fov: 28, len: 290, type: 'ground',
           role: 'Right sideline camera', where: 'Near sideline at the right 10-foot (3-meter) line. Usually a hard cam on a tripod, sometimes handheld',
           job: 'Your half of the court during play. During dead balls, your half and up to the 3-meter line on the other side. Some of the best dead-ball shots come from you.',
           framing: 'A happy medium. Not too tight, since the action is right in front of you, but not the whole half of the gym either. After two touches, tighten up on the front row players about to go for the kill.',
           tips: ['Own the dig. If a back row player makes a crazy play, stay with them until they rejoin the action. Think replay.', 'Never miss a ball going out of bounds on your half of the court.', 'Hustle. Get the team huddle on your side. When you’re handheld, also get crowd shots when we have a crowd.', 'Before the game, help with color shots.'] },
-        { x: 128, y: 482, aim: -27, fov: 42, len: 560, type: 'elevated',
+        { x: 92, y: 494, aim: -27, fov: 42, len: 560, type: 'elevated',
           role: 'Slash camera', where: 'On a platform outside the left corner of the court',
           job: 'Focus on the players and team on the far court. After the play, shoot the hero, who will usually be on the far court.',
           framing: 'Once the ball is in play, ¾ court with both 3-meter lines and both antennas on the edges of the net. Tilt and pan with that same framing for the rest of the rally.',
@@ -497,7 +497,7 @@
     },
 
     baseball: {
-      title: 'Baseball / Softball', venue: 'Baseball and softball fields', view: [1000, 700], draw: drawBaseball,
+      title: 'Baseball / Softball', venue: 'Baseball and softball fields', view: [1000, 810], viewY: -105, draw: drawBaseball,
       summary: 'Four cameras. Cam 1 in the stands on the third-base side, Cam 2 in the stands behind home plate, Cam 3 in the stands on the first-base side, and Cam 4 on a platform in center field, just left of the batter’s eye.',
       notes: [
         '<b>Manual focus:</b> Cams 1, 2, and 3 shoot through the net, so they stay in manual focus. Autofocus will grab the net instead of the players. Check your focus every time you change your shot.',
@@ -520,7 +520,7 @@
           job: 'Right-handed batters between every pitch, scoring every runner, and the offensive hero on a triple.',
           framing: 'Right-handed batters head to toe with a push in for the first ID, then waist up between every pitch.',
           tips: ['Stay in manual focus. You’re shooting through the net.', 'Score all runners.', '“Make the switch” to the runner coming home.', 'Lefty batter up: the lead runner, or shag the ball if no one is on base.', 'Lefty batter up: the pitcher, runners, or color between pitches.', 'At the end of every other half inning, get the pitcher walking toward your dugout.', 'Offensive hero on a triple.', 'Cross shoot the coach interview.'] },
-        { x: 422, y: 22, aim: 83, fov: 9, len: 600, type: 'elevated',
+        { x: 320, y: -21, aim: 75, fov: 9, len: 700, type: 'elevated',
           role: 'Center field camera', where: 'On a platform beyond the outfield fence, just left of the batter’s eye wall',
           job: 'The main pitch shot, pitcher to batter. Usually static with no operator.',
           framing: 'Pitcher, batter, and catcher in frame.',
@@ -561,29 +561,47 @@
   var STROKE = 'stroke="' + LINE + '" stroke-width="2"';
 
   function drawFootball() {
-    var s = r(100, 40, 800, 360, '#2E7A4C', STROKE) + r(100, 40, 66.7, 360, '#23603B', STROKE) + r(833.3, 40, 66.7, 360, '#23603B', STROKE);
-    for (var i = 1; i < 20; i++) s += l(166.7 + i * 33.33, 40, 166.7 + i * 33.33, 400, i % 2 ? 1 : 2);
+    // 120 x 53⅓ yards at 6.667 px per yard: end lines at x 100 and 900, sidelines at y 40 and 395.6.
+    var s = r(100, 40, 800, 355.6, '#2E7A4C', STROKE) + r(100, 40, 66.7, 355.6, '#23603B', STROKE) + r(833.3, 40, 66.7, 355.6, '#23603B', STROKE);
+    for (var i = 1; i < 20; i++) s += l(166.7 + i * 33.33, 40, 166.7 + i * 33.33, 395.6, i % 2 ? 1 : 2);
     var nums = [10, 20, 30, 40, 50, 40, 30, 20, 10];
-    nums.forEach(function (n, k) { var x = 233.3 + k * 66.67; s += t(x, 84, n, 24, 'class="yard"') + t(x, 380, n, 24, 'class="yard"'); });
-    s += '<line class="thirty" x1="366.7" y1="40" x2="366.7" y2="400"/><line class="thirty" x1="633.3" y1="40" x2="633.3" y2="400"/>';
-    // High school hash marks, one tick per yard
-    for (var y = 0; y <= 100; y++) { var hx = 166.7 + y * 6.667; s += l(hx, 154, hx, 166, 1) + l(hx, 274, hx, 286, 1); }
+    nums.forEach(function (n, k) { var x = 233.3 + k * 66.67; s += t(x, 84, n, 24, 'class="yard"') + t(x, 372, n, 24, 'class="yard"'); });
+    s += '<line class="thirty" x1="366.7" y1="40" x2="366.7" y2="395.6"/><line class="thirty" x1="633.3" y1="40" x2="633.3" y2="395.6"/>';
+    // High school hash marks, 53 ft 4 in from each sideline, one tick per yard
+    for (var y = 0; y <= 100; y++) { var hx = 166.7 + y * 6.667; s += l(hx, 152.5, hx, 164.5, 1) + l(hx, 271.1, hx, 283.1, 1); }
+    // High school goal posts on the end lines, 23 ft 4 in wide
+    s += '<line x1="100" y1="191.9" x2="100" y2="243.7" stroke="#F2C14E" stroke-width="5"/><line x1="900" y1="191.9" x2="900" y2="243.7" stroke="#F2C14E" stroke-width="5"/>';
     return s + t(500, 456, 'NEAR SIDELINE', 18, 'class="lbl"');
   }
+
   function drawVolleyball() {
-    var s = r(150, 80, 700, 380, '#8A5A2B', 'rx="6"') + r(200, 120, 600, 300, '#C2873F', STROKE);
+    // 18 x 9 m court at 33.33 px per meter, with the net over the center line at x 500.
+    var s = r(110, 62, 780, 416, '#8A5A2B', 'rx="6"') + r(200, 120, 600, 300, '#C2873F', STROKE);
     s += l(400, 120, 400, 420) + l(600, 120, 600, 420);
+    // Attack line extensions: dashed, 1.75 m past each sideline
+    [400, 600].forEach(function (x) {
+      s += '<line x1="' + x + '" y1="120" x2="' + x + '" y2="61.7" stroke="' + LINE + '" stroke-width="2" stroke-dasharray="5 6.7"/>';
+      s += '<line x1="' + x + '" y1="420" x2="' + x + '" y2="478.3" stroke="' + LINE + '" stroke-width="2" stroke-dasharray="5 6.7"/>';
+    });
     s += '<line x1="500" y1="100" x2="500" y2="440" stroke="#F3EFE2" stroke-width="6"/>';
     s += '<circle cx="500" cy="100" r="7" fill="#F3EFE2"/><circle cx="500" cy="440" r="7" fill="#F3EFE2"/>';
-    s += gymBenches(46);
+    // Antennas on the net, right over each sideline
+    s += '<line x1="490" y1="120" x2="510" y2="120" stroke="#E0533D" stroke-width="5"/><line x1="490" y1="420" x2="510" y2="420" stroke="#E0533D" stroke-width="5"/>';
+    s += gymBenches(28);
     return s + t(530, 96, 'NET', 12, 'class="lbl dim"') + t(500, 584, 'BLEACHERS', 16, 'class="lbl dim"');
   }
+
   function drawBasketball() {
     var s = r(150, 100, 700, 372, '#C2873F', STROKE) + l(500, 100, 500, 472);
     s += '<circle cx="500" cy="286" r="45" fill="none" ' + STROKE + '/>';
-    s += r(150, 226.5, 141.5, 119, '#A8702F', STROKE) + r(708.5, 226.5, 141.5, 119, '#A8702F', STROKE);
+    // High school (NFHS) court at 7.447 px per foot. Lane: 12 ft wide, free throw line 19 ft from the baseline.
+    s += r(150, 241.3, 141.5, 89.4, '#A8702F', STROKE) + r(708.5, 241.3, 141.5, 89.4, '#A8702F', STROKE);
     s += '<circle cx="291.5" cy="286" r="45" fill="none" ' + STROKE + '/><circle cx="708.5" cy="286" r="45" fill="none" ' + STROKE + '/>';
-    s += '<path d="M150 144.3 A147 147 0 0 1 150 427.7" fill="none" ' + STROKE + '/><path d="M850 144.3 A147 147 0 0 0 850 427.7" fill="none" ' + STROKE + '/>';
+    // Three-point line: a 19 ft 9 in arc around the basket, with straight lines running to the baseline from the basket's depth.
+    s += '<path d="M150 138.9 L189 138.9 A147.1 147.1 0 0 1 189 433.1 L150 433.1" fill="none" ' + STROKE + '/>';
+    s += '<path d="M850 138.9 L811 138.9 A147.1 147.1 0 0 0 811 433.1 L850 433.1" fill="none" ' + STROKE + '/>';
+    // Backboards: 6 ft wide, 4 ft in from the baseline.
+    s += '<line x1="179.8" y1="263.7" x2="179.8" y2="308.3" stroke="#F3EFE2" stroke-width="3"/><line x1="820.2" y1="263.7" x2="820.2" y2="308.3" stroke="#F3EFE2" stroke-width="3"/>';
     s += '<circle cx="189" cy="286" r="7" fill="none" stroke="#E07B39" stroke-width="3"/><circle cx="811" cy="286" r="7" fill="none" stroke="#E07B39" stroke-width="3"/>';
     s += gymBenches(62);
     return s + t(500, 578, 'BLEACHERS', 16, 'class="lbl dim"');
@@ -595,26 +613,46 @@
       r(560, y, 140, 26, '#17402B', 'rx="4" ' + STROKE) + t(630, y + 18, 'HOME BENCH', 12, 'class="lbl"');
   }
   function drawSoccer() {
+    // 115 x 69 yards at 6.957 px per yard: goal lines at x 100 and 900, touchlines at y 50 and 530.
     var s = r(100, 50, 800, 480, '#2E7A4C', STROKE) + l(500, 50, 500, 530);
-    s += '<circle cx="500" cy="290" r="70" fill="none" ' + STROKE + '/>';
-    s += r(100, 137, 125, 306, 'none', STROKE) + r(775, 137, 125, 306, 'none', STROKE);
-    s += r(100, 220.5, 42, 139, 'none', STROKE) + r(858, 220.5, 42, 139, 'none', STROKE);
-    s += r(88, 262, 12, 56, 'rgba(243,239,226,.25)', STROKE) + r(900, 262, 12, 56, 'rgba(243,239,226,.25)', STROKE);
+    s += '<circle cx="500" cy="290" r="69.6" fill="none" ' + STROKE + '/><circle cx="500" cy="290" r="3" fill="#F3EFE2"/>';
+    // Penalty areas 44 x 18 yd, goal areas 20 x 6 yd, goals 8 yd wide
+    s += r(100, 137, 125.2, 306, 'none', STROKE) + r(774.8, 137, 125.2, 306, 'none', STROKE);
+    s += r(100, 220.4, 41.7, 139.1, 'none', STROKE) + r(858.3, 220.4, 41.7, 139.1, 'none', STROKE);
+    s += r(88, 262.2, 12, 55.7, 'rgba(243,239,226,.25)', STROKE) + r(900, 262.2, 12, 55.7, 'rgba(243,239,226,.25)', STROKE);
+    // Penalty spots 12 yd out, and the penalty arcs 10 yd from the spot outside each box
+    s += '<circle cx="183.5" cy="290" r="3" fill="#F3EFE2"/><circle cx="816.5" cy="290" r="3" fill="#F3EFE2"/>';
+    s += '<path d="M225.2 234.6 A69.6 69.6 0 0 1 225.2 345.4" fill="none" ' + STROKE + '/><path d="M774.8 234.6 A69.6 69.6 0 0 0 774.8 345.4" fill="none" ' + STROKE + '/>';
+    // Corner arcs, 1 yd
+    s += '<path d="M107 50 A7 7 0 0 1 100 57" fill="none" ' + STROKE + '/><path d="M893 50 A7 7 0 0 0 900 57" fill="none" ' + STROKE + '/>';
+    s += '<path d="M100 523 A7 7 0 0 1 107 530" fill="none" ' + STROKE + '/><path d="M900 523 A7 7 0 0 0 893 530" fill="none" ' + STROKE + '/>';
     s += r(330, 18, 130, 26, '#17402B', 'rx="4" ' + STROKE) + t(395, 36, 'AWAY BENCH', 12, 'class="lbl"');
     s += r(540, 18, 130, 26, '#17402B', 'rx="4" ' + STROKE) + t(605, 36, 'HOME BENCH', 12, 'class="lbl"');
     return s + t(500, 578, 'NEAR SIDELINE', 18, 'class="lbl"');
   }
+
   function drawBaseball() {
-    var s = '<path d="M500 630 L80 210 A594 594 0 0 1 920 210 Z" fill="#2E7A4C" ' + STROKE + '/>';
-    s += '<path d="M500 630 L337 467 A230 230 0 0 1 663 467 Z" fill="#B07A45"/>';
-    s += '<polygon points="500,618 588,530 500,442 412,530" fill="#2E7A4C"/>';
-    s += '<circle cx="500" cy="545" r="16" fill="#B07A45"/>';
-    s += l(500, 630, 80, 210) + l(500, 630, 920, 210);
-    [[600, 530], [500, 430], [400, 530]].forEach(function (b) { s += r(b[0] - 7, b[1] - 7, 14, 14, '#F3EFE2', 'transform="rotate(45 ' + b[0] + ' ' + b[1] + ')"'); });
-    s += '<polygon points="493,626 507,626 507,633 500,639 493,633" fill="#F3EFE2"/>';
-    s += r(445, 8, 110, 20, '#0D2418', 'rx="3" ' + STROKE) + t(500, 54, 'BATTER’S EYE', 11, 'class="lbl dim"');
-    return s + t(640, 150, 'OUTFIELD', 18, 'class="lbl dim"');
+    // Traced from the aerial of our field and turned so home plate is at the bottom. 1.571 px per foot.
+    // The walls run straight out from each foul pole, parallel to the other foul line, and only curve in center field:
+    // about 354 ft down the right field line, 360 ft down the left field line, and 437 ft to center.
+    // Center field is a circular arc (radius 258, centered at 493.3, 201.6) tangent to both straight walls.
+    var fence = 'L893.3 236.7 L675.5 18.9 A258 258 0 0 0 311.1 18.9 L100 230';
+    var s = '<path d="M500 630 ' + fence + ' Z" fill="#2E7A4C" ' + STROKE + '/>';
+    // Infield dirt to a 95 ft arc measured from the pitcher's rubber
+    s += '<path d="M500 630 L358.5 488.5 A149 149 0 0 1 641.5 488.5 Z" fill="#B07A45"/>';
+    s += '<polygon points="500,616 586,530 500,444 414,530" fill="#2E7A4C"/>';
+    s += '<circle cx="500" cy="535" r="14" fill="#B07A45"/><circle cx="500" cy="630" r="20" fill="#B07A45"/>';
+    s += l(500, 630, 893.3, 236.7) + l(500, 630, 100, 230);
+    [[600, 530], [500, 430], [400, 530]].forEach(function (b) { s += r(b[0] - 6, b[1] - 6, 12, 12, '#F3EFE2', 'transform="rotate(45 ' + b[0] + ' ' + b[1] + ')"'); });
+    s += '<polygon points="495,625 505,625 505,630 500,634 495,630" fill="#F3EFE2"/>';
+    // Batter's eye: a band just behind the center field wall covering most of the arc, with its label inside.
+    s += '<path d="M640.3 -24.8 A270 270 0 0 0 346.3 -24.8" fill="none" stroke="' + LINE + '" stroke-width="24"/>';
+    s += '<path d="M640.3 -24.8 A270 270 0 0 0 346.3 -24.8" fill="none" stroke="#0D2418" stroke-width="20"/>';
+    s += t(493.3, -64.4, 'BATTER’S EYE', 11, 'class="lbl dim"');
+    return s + t(560, 160, 'OUTFIELD', 18, 'class="lbl dim"');
   }
+
+
   function cone(c) {
     var rad = Math.PI / 180, a1 = (c.aim - c.fov / 2) * rad, a2 = (c.aim + c.fov / 2) * rad;
     var x1 = c.x + c.len * Math.cos(a1), y1 = c.y + c.len * Math.sin(a1);
@@ -633,7 +671,7 @@
     var sim = SIMS[sp.id], extra = sim ? sim.apply(sim.state, cams) || '' : '';
     LAST_CAMS = cams;
     cams.forEach(function (c, i) { if (sim && !sim.labels) c.roleTag = null; cones += cone(c); marks += marker(c, i + 1); label += 'Camera ' + (i + 1) + ', ' + c.where + '. '; });
-    return '<svg viewBox="0 0 ' + sp.view[0] + ' ' + sp.view[1] + '" role="img" aria-label="' + label + '">' + sp.draw() + cones + extra + marks + '</svg>';
+    return '<svg viewBox="0 ' + (sp.viewY || 0) + ' ' + sp.view[0] + ' ' + sp.view[1] + '" role="img" aria-label="' + label + '">' + sp.draw() + cones + extra + marks + '</svg>';
   }
 
   // ---------- interactive diagrams ----------
@@ -698,7 +736,7 @@
     hint: function () { return 'Drag the ball or use the slider.'; },
     drag: function (s, x) { s.ball = clamp(Math.round((x - 166.7) / 6.667), 1, 99); },
     apply: function (s, cams) {
-      var ro = roles(s.ball, s.dir), bx = ballX(s.ball), by = 220, d = s.dir, role = {};
+      var ro = roles(s.ball, s.dir), bx = ballX(s.ball), by = 218, d = s.dir, role = {};
       role[ro.game] = 'game'; role[ro.pit] = 'pit'; role[ro.iso] = 'iso';
       [0, 1, 2].forEach(function (i) {
         var c = cams[i], rl = role[i + 1];
@@ -788,14 +826,14 @@
   };
 
   // ---------- volleyball: a camera’s far court is the other side of the net ----------
-  var VB_TABLE = [500, 59];
+  var VB_TABLE = [500, 41];
   SIMS.volleyball = {
     state: { bx: 350, by: 250, m: 'rally' },
     controls: [
       { type: 'seg', key: 'm', label: 'Moment', opts: [['serve', 'Serve'], ['rally', 'Rally'], ['point', 'Point scored'], ['out', 'Ball out'], ['timeout', 'Timeout'], ['sub', 'Substitution']] }
     ],
     hint: function (s) { return s.m === 'serve' ? 'Drag the ball to either side to pick which team is serving.' : 'Drag the ball around the court.'; },
-    drag: function (s, x, y) { s.bx = clamp(x, 155, 845); s.by = clamp(y, 85, 455); },
+    drag: function (s, x, y) { s.bx = clamp(x, 115, 885); s.by = clamp(y, 67, 473); },
     apply: function (s, cams) {
       var c1 = cams[0], c2 = cams[1], c3 = cams[2], c4 = cams[3], c5 = cams[4], c6 = cams[5], m = s.m;
       var left = s.bx < 500, bx = s.bx, by = s.by, extra = '';
@@ -823,7 +861,7 @@
           if (mine) { aim(c, bx, by, 18, 40); say(c, 'Ball out', 'Never miss a ball going out on your half. It’s a key replay.'); }
           else { aim(c, front, by, 26, 40); say(c, 'Your half', 'Hold your half.'); }
         }
-        if (m === 'timeout') { aim(c, a[3], 95, 24, 30); say(c, 'Huddle', 'The team huddle on your side.'); }
+        if (m === 'timeout') { aim(c, a[3], 80, 24, 30); say(c, 'Huddle', 'The team huddle on your side.'); }
       });
 
       // Cam 4 sits on the left, so its far court is the right half. Cam 5 sits on the right, so its far court is the left half.
@@ -937,7 +975,7 @@
 
   // ---------- baseball / softball ----------
   var BASES = { 1: [600, 530], 2: [500, 430], 3: [400, 530] }, BASE_NAME = { 1: 'first', 2: 'second', 3: 'third' };
-  var PITCHER = [500, 545], HOME = [500, 628], SCORING = [445, 588];
+  var PITCHER = [500, 535], HOME = [500, 628], SCORING = [445, 588];
   function runnerMark(p, label) { return '<g class="runner"><circle cx="' + p[0] + '" cy="' + (p[1] - 18) + '" r="9"/><text x="' + p[0] + '" y="' + (p[1] - 14) + '">' + (label || 'R') + '</text></g>'; }
   SIMS.baseball = {
     state: { bat: 'R', run: { 1: false, 2: false, 3: false }, cam4: 'static', m: 'between', bx: 600, by: 330 },
@@ -948,7 +986,7 @@
       { type: 'seg', key: 'm', label: 'Moment', opts: [['between', 'Between pitches'], ['pitch', 'Pitch'], ['inplay', 'Ball in play'], ['steal', 'Steal'], ['score', 'Runner scoring'], ['appeal', 'Swing appeal'], ['k3', 'Strikeout, 3rd out'], ['inning', 'Inning change']] }
     ],
     hint: function (s) { return 'Click a base to add or remove a runner.' + (s.m === 'inplay' ? ' Drag the ball to where it was hit.' : ''); },
-    drag: function (s, x, y) { if (s.m !== 'inplay') return false; s.bx = clamp(x, 90, 910); s.by = clamp(y, 40, 600); },
+    drag: function (s, x, y) { if (s.m !== 'inplay') return false; s.bx = clamp(x, 60, 940); s.by = clamp(y, -70, 600); },
     canDrag: function (s) { return s.m === 'inplay'; },
     onBase: function (s, b) { s.run[b] = !s.run[b]; },
     apply: function (s, cams) {
@@ -980,7 +1018,7 @@
       if (s.bat === 'R' && run[1]) { aim(sideCam, BASES[1][0], BASES[1][1] - 10, 12, 30); say(sideCam, 'Pickoff', 'Righty batting with a runner on first: the pickoff shot.'); }
       else if (any) onLead(sideCam);
       else pitcherOrColor(sideCam);
-      ball = [508, 538]; ballCam = loaded ? null : c2;
+      ball = [508, 528]; ballCam = loaded ? null : c2;
       if (manned && run[2]) { aim(c4, BASES[2][0], BASES[2][1] - 10, 10, 30); say(c4, 'Runner on 2nd', 'Set the runner on second at each new batter.'); }
       else if (manned) { aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'Pitch shot', 'Pitcher to batter, ready for the pitch.'); }
       else staticCam4();
@@ -994,7 +1032,7 @@
         // How deep the ball is hit decides the hit type. Every runner moves up as many bases as the batter,
         // so nobody passes anybody, and a runner pushed past third scores.
         var depth = Math.hypot(s.bx - HOME[0], s.by - HOME[1]);
-        var hit = depth < 380 ? 'single' : depth < 500 ? 'double' : 'triple';
+        var hit = depth < 400 ? 'single' : depth < 560 ? 'double' : 'triple';
         var adv = { single: 1, double: 2, triple: 3 }[hit], onBase = [], scored = 0;
         [3, 2, 1].forEach(function (b) { if (run[b]) { if (b + adv >= 4) scored++; else onBase.push(b + adv); } });
         onBase.forEach(function (b) { extra += runnerMark(BASES[b]); });
