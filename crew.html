@@ -907,7 +907,7 @@
     apply: function (s, cams) {
       var c1 = cams[0], c2 = cams[1], c3 = cams[2], c4 = cams[3], c5 = cams[4], c6 = cams[5], m = s.m;
       var left = s.bx < 500, bx = s.bx, by = s.by, extra = '';
-      if (m === 'serve') { bx = left ? 172 : 828; by = clamp(s.by, 140, 400); extra = person(bx, by + 2, 'SERVER', '', true); }
+      if (m === 'serve') { bx = left ? 172 : 828; by = clamp(s.by, 140, 400); extra = person(bx, by + 2, 'SERVER', 'batter', true); }
       // Cam 1 pans as little as possible, so it only drifts a quarter of the way toward the ball.
       aim(c1, 500 + (bx - 500) * (m === 'serve' ? 0.3 : 0.22), 270 + (by - 270) * 0.22, m === 'serve' ? 66 : 58, 60);
       say(c1, 'Game', '¾ court with both 3-meter lines. Keep panning to a minimum.');
