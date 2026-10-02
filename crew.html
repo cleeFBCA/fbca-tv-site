@@ -169,6 +169,8 @@
   .diagram .person text{font-size:11px;font-weight:800;letter-spacing:.1em;fill:var(--chalk)}
   .diagram .person.flag circle{fill:#E8D44D}
   .diagram .person.batter circle{fill:var(--gold-hi)}
+  .diagram .person.official circle{fill:#E0533D}
+  .diagram .throw{fill:none;stroke:#FFFFFF;stroke-linecap:round}
   .diagram .runner circle{fill:var(--gold-hi);stroke:var(--pine);stroke-width:2}
   .diagram .runner text{font-size:11px;font-weight:800;fill:var(--pine)}
   .diagram .basehit{fill:transparent;cursor:pointer}
@@ -650,7 +652,8 @@
     s += '<path d="M629.6 26.7 A249.4 249.4 0 0 0 358 26.7" fill="none" stroke="' + LINE + '" stroke-width="24"/>';
     s += '<path d="M629.6 26.7 A249.4 249.4 0 0 0 358 26.7" fill="none" stroke="#0D2418" stroke-width="20"/>';
     s += t(493.8, -9.5, 'BATTER’S EYE', 11, 'class="lbl dim"');
-    return s + t(560, 160, 'OUTFIELD', 18, 'class="lbl dim"');
+    // Centered left to right on the field, and halfway between the infield dirt and the center field wall.
+    return s + t(496, 198, 'OUTFIELD', 18, 'class="lbl dim"');
   }
 
 
@@ -992,7 +995,9 @@
       say(endCam, 'Play coming at you', 'X’s and O’s. Wide at first, then slowly tighter as the play gets closer to your goal.');
       aim(otherEnd, bx, by, 40, 40);
       say(otherEnd, 'Play at the far end', 'X’s and O’s. Stay wide so the replay shows the play develop.');
-      c6.x = Math.round(clamp(bx, 120, 880)); c6.y = 546;
+      // Cam 6 stays a little behind the ball, toward the halfway line, moving in proportion to it.
+      // That keeps it out of the way of the near-side side judge, who stands level with the play.
+      c6.x = Math.round(clamp(500 + (bx - 500) * 0.6, 120, 880)); c6.y = 546;
       if (nearSide) { aim(c6, bx, by, 30, 30); say(c6, 'Follow the play', 'Short passes, throw-ins, and goal attempts on your side of the field.'); }
       else { aim(c6, bench[0], bench[1], 22, 20); say(c6, 'Bench and refs', 'The ball is on the far side. Bench, coach, and referee shots.'); }
 
@@ -1016,22 +1021,24 @@
         aim(otherEnd, bx, by, 34, 40); say(otherEnd, 'Far-end free kick', 'Wide enough for the kicker and the goal or target players.');
         say(c2, 'Game', 'Wide on the kick.');
       } else if (m === 'offside') {
-        // Far-side offside: the side judge is on the left half of the far sideline. Near-side: right half of the near sideline.
-        var ar = nearSide ? [700, 538] : [250, 42];
-        extra = person(ar[0], ar[1], 'SIDE JUDGE', 'flag');
+        // The side judge at the ball's end makes the call. One works the left half from the far sideline,
+        // the other works the right half from the near sideline, each standing level with the play.
+        var ar = left ? [clamp(bx, 110, 490), 50] : [clamp(bx, 510, 890), 530];
+        // Labels go on the field side so the far sideline one never covers the bench boxes.
+        extra = person(ar[0], ar[1], 'SIDE JUDGE', 'official', left);
         [c4, c5].forEach(function (c) {
           aim(c, ar[0], ar[1], 10, 30);
-          say(c, 'Side judge', nearSide ? 'Near-side offside: the side judge is on the right side of the field. Get the flag.' : 'Far-side offside: the side judge is on the left side of the field. Get the flag.');
+          say(c, 'Side judge', left ? 'The ball is on the left end, so the side judge on the far sideline makes the call. Get the flag.' : 'The ball is on the right end, so the side judge on the near sideline makes the call. Get the flag.');
         });
       } else if (m === 'foul') {
         var ref = [clamp(bx + 34, 110, 890), clamp(by - 24, 60, 520)];
-        extra = person(ref[0], ref[1], 'REF', 'flag');
+        extra = person(ref[0], ref[1], 'REF', 'official');
         [c4, c5].forEach(function (c) { aim(c, ref[0], ref[1], 10, 30); say(c, 'Referee', 'Find the referee right away. We want to see the yellow or red card.'); });
         aim(cl18, bx, by, 12, 40); say(cl18, 'Primary: fouled', 'The player who got fouled.');
         aim(other18, bx, by, 14, 40); say(other18, 'Secondary: fouler', 'The player who committed the foul.');
         if (nearSide) say(c6, 'Reactions', 'Reactions after the foul call.');
       } else if (m === 'sub') {
-        extra = person(500, 40, 'SUBS');
+        extra = person(500, 40, 'SUBS', 'batter');
         [c1, c3].forEach(function (c) { aim(c, 500, 40, 12, 30); say(c, 'Coming out', 'The player coming out of the game.'); });
         [c4, c5].forEach(function (c) { aim(c, 500, 40, 12, 30); say(c, 'Coming in', 'The player coming into the game.'); });
         say(c2, 'Game', 'Hold wide.');
@@ -1053,20 +1060,20 @@
     state: { view: 'full', bat: 'R', run: { 1: false, 2: false, 3: false }, cam4: 'static', m: 'between', bx: 600, by: 330 },
     // Full field is cropped to the fence. Infield zooms to the diamond and Cams 1 to 3.
     viewBox: function (s) { return s.view === 'infield' ? [285, 330, 430, 380] : [110, -45, 780, 750]; },
-    onChange: function (s, k) { if (k === 'm' && s.m === 'inplay') s.view = 'full'; },
+    onChange: function (s, k) { if (k === 'm' && (s.m === 'inplay' || s.m === 'popfly')) s.view = 'full'; },
     controls: [
       { type: 'seg', key: 'view', label: 'View', opts: [['full', 'Full field'], ['infield', 'Infield']] },
       { type: 'seg', key: 'bat', label: 'Batter', opts: [['R', 'Righty'], ['L', 'Lefty']] },
       { type: 'multi', key: 'run', label: 'Runners', opts: [['1', '1st'], ['2', '2nd'], ['3', '3rd']] },
       { type: 'seg', key: 'cam4', label: 'Cam 4', opts: [['static', 'Static'], ['manned', 'Manned']] },
-      { type: 'seg', key: 'm', label: 'Moment', opts: [['between', 'Between pitches'], ['pitch', 'Pitch'], ['inplay', 'Ball in play'], ['steal', 'Steal'], ['score', 'Runner scoring'], ['appeal', 'Swing appeal'], ['k3', 'Strikeout, 3rd out'], ['inning', 'Inning change']] }
+      { type: 'seg', key: 'm', label: 'Moment', opts: [['between', 'Between pitches'], ['pitch', 'Pitch'], ['inplay', 'Ball in play'], ['popfly', 'Pop fly'], ['steal', 'Steal'], ['score', 'Runner scoring'], ['appeal', 'Swing appeal'], ['k3', 'Strikeout, 3rd out'], ['inning', 'Inning change']] }
     ],
     hint: function (s) {
-      return 'Click a base to add or remove a runner.' + (s.m === 'inplay' ? (s.view === 'full' ? ' Drag the ball to where it was hit.' : ' Switch to Full field to drag the ball into the outfield.') : '') +
+      return 'Click a base to add or remove a runner.' + (s.m === 'inplay' || s.m === 'popfly' ? (s.view === 'full' ? (s.m === 'popfly' ? ' Drag the ball to where it’s caught.' : ' Drag the ball to where it was hit.') : ' Switch to Full field to drag the ball into the outfield.') : '') +
         (s.view === 'infield' ? ' Cam 4 is off the top of the view in center field.' : '');
     },
-    drag: function (s, x, y) { if (s.m !== 'inplay') return false; s.bx = clamp(x, 60, 940); s.by = clamp(y, -15, 600); },
-    canDrag: function (s) { return s.m === 'inplay'; },
+    drag: function (s, x, y) { if (s.m !== 'inplay' && s.m !== 'popfly') return false; s.bx = clamp(x, 60, 940); s.by = clamp(y, -15, 600); },
+    canDrag: function (s) { return s.m === 'inplay' || s.m === 'popfly'; },
     onBase: function (s, b) { s.run[b] = !s.run[b]; },
     apply: function (s, cams) {
       var c1 = cams[0], c2 = cams[1], c3 = cams[2], c4 = cams[3], m = s.m, run = s.run;
@@ -1075,11 +1082,13 @@
       var lead = run[3] ? 3 : run[2] ? 2 : run[1] ? 1 : 0, any = !!lead, loaded = run[1] && run[2] && run[3];
       var manned = s.cam4 === 'manned', extra = '';
 
+      // On a steal the runner who is going is drawn on the move instead of on their base.
+      var stealFrom = m !== 'steal' ? 0 : run[3] ? 3 : run[1] ? 1 : run[2] ? 2 : 0;
       // Once the ball is in play the batter is running, so they’re drawn on the bases instead of at the plate.
-      if (m !== 'inplay') extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH', 'batter');
+      if (m !== 'inplay' && m !== 'popfly') extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH', 'batter');
       [1, 2, 3].forEach(function (b) {
         var p = BASES[b];
-        if (run[b] && m !== 'inplay') extra += runnerMark(p);
+        if (run[b] && m !== 'inplay' && b !== stealFrom) extra += runnerMark(p);
         extra += '<circle class="basehit" data-base="' + b + '" cx="' + p[0] + '" cy="' + (p[1] - u(6)) + '" r="' + u(24) + '"><title>Runner on ' + BASE_NAME[b] + '</title></circle>';
       });
 
@@ -1094,7 +1103,8 @@
       else { aim(c2, PITCHER[0], PITCHER[1], 8, 30); say(c2, 'Pitcher', 'The pitcher between every pitch.'); }
       aim(batCam, batter[0], batter[1], 8, 20);
       say(batCam, 'Batter', 'Waist up on the batter between every pitch. Head to toe with a push in for the first ID.');
-      if (s.bat === 'R' && run[1]) { aim(sideCam, BASES[1][0], BASES[1][1] - 10, 12, 30); say(sideCam, 'Pickoff', 'Righty batting with a runner on first: the pickoff shot.'); }
+      // The lead runner comes first. The pickoff shot is for when the lead runner is the one on first.
+      if (s.bat === 'R' && lead === 1) { aim(sideCam, BASES[1][0], BASES[1][1] - 10, 12, 30); say(sideCam, 'Lead runner: pickoff', 'Righty batting with the lead runner on first: the pickoff shot.'); }
       else if (any) onLead(sideCam);
       else pitcherOrColor(sideCam);
       ball = [508, 528]; ballCam = loaded ? null : c2;
@@ -1140,14 +1150,46 @@
         else say(c4, 'Static', 'Locked on the pitcher-to-batter shot, so it doesn’t move. Switch Cam 4 to Manned to see it follow the play.');
         c2.hasBall = true;
         return extra + baseballBall(s.bx, s.by);
+      } else if (m === 'popfly') {
+        // A pop up: the fielder settles under it, the batter heads up the line, and runners hold or tag up.
+        extra += person(s.bx, s.by + u(16), 'FIELDER', 'batter', true);
+        var outOfBox = [540, 590];
+        extra += person(outOfBox[0], outOfBox[1], 'BATTER', 'batter', true);
+        aim(c2, s.bx, s.by, 20, 50); say(c2, 'Pop fly', 'Follow the ball up and stay with the fielder underneath it through the catch.');
+        aim(batCam, outOfBox[0], outOfBox[1], 12, 30); say(batCam, 'Batter', 'Follow the batter out of the box. If they pop out, get the reaction.');
+        if (any) {
+          var lp = BASES[lead]; aim(sideCam, lp[0], lp[1] - 10, 12, 30);
+          say(sideCam, 'Runners', 'Watch the lead runner at ' + BASE_NAME[lead] + '. Runners hold, or tag up and run once the ball is caught.');
+        } else { aim(sideCam, s.bx, s.by, 16, 40); say(sideCam, 'Fielder', 'The fielder making the catch.'); }
+        if (run[3]) { aim(c3, BASES[3][0], BASES[3][1] - 10, 12, 30); say(c3, 'Sac fly', 'Runner on third. If they tag up after the catch, make the switch and score them.'); }
+        if (manned && Math.abs(s.bx - 500) < 60 && s.by < 520) { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Up the middle', 'Popped up the middle. Feel free to stay with the ball.'); }
+        else if (manned) { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Fielder', 'Follow the ball to the fielder.'); }
+        else say(c4, 'Static', 'Locked on the pitcher-to-batter shot, so it doesn’t move.');
+        c2.hasBall = true;
+        return extra + baseballBall(s.bx, s.by);
       } else if (m === 'steal') {
         var from = run[1] ? 1 : run[2] ? 2 : 0;
-        if (!from) { say(c2, 'Add a runner', 'Click first or second base to add a runner, then watch the steal.'); }
+        if (run[3]) {
+          // A runner breaking from third is a squeeze play. The catcher keeps the ball for the play at the plate.
+          extra += person(SCORING[0], SCORING[1], 'SQUEEZE', 'batter', true);
+          aim(c2, (SCORING[0] + HOME[0]) / 2, (SCORING[1] + HOME[1]) / 2, 26, 40);
+          say(c2, 'Squeeze play', 'The runner from third coming home, the catcher, and the umpire on the call at the plate.');
+          aim(c3, SCORING[0], SCORING[1], 12, 30); say(c3, 'Score the runner', 'Make the switch to the runner coming home from third, then score them.');
+          aim(c1, SCORING[0], SCORING[1], 12, 30); say(c1, 'Runner from third', 'You’re right behind the play. Follow the runner breaking from third all the way home.');
+          ball = [HOME[0], HOME[1] + 12]; ballCam = c2;
+        } else if (!from) { say(c2, 'Add a runner', 'Click a base to add a runner, then watch the steal.'); }
         else {
           var a = BASES[from], b = BASES[from + 1];
+          extra += runnerMark([a[0] + (b[0] - a[0]) * 0.6, a[1] + (b[1] - a[1]) * 0.6]);
           aim(c2, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 30, 60); say(c2, 'Steal', 'Keep the runner and the ball in frame.');
-          // The catcher’s throw is on its way to the base being stolen.
-          ball = [(HOME[0] + b[0]) / 2, (HOME[1] + b[1]) / 2]; ballCam = c2;
+          // The catcher’s throw: a dashed arc from the plate to the bag, bowed toward the mound so it
+          // doesn’t sit on top of the foul line, with the ball most of the way there.
+          var p0 = [HOME[0], HOME[1] + 8], mx = (p0[0] + b[0]) / 2, my = (p0[1] + b[1]) / 2;
+          var dx = b[0] - p0[0], dy = b[1] - p0[1], len = Math.hypot(dx, dy), nx = -dy / len, ny = dx / len;
+          if (nx * (PITCHER[0] - mx) + ny * (PITCHER[1] - my) < 0) { nx = -nx; ny = -ny; }
+          var cp = [mx + nx * 30, my + ny * 30], tt = 0.8;
+          extra += '<path class="throw" d="M' + p0[0] + ' ' + p0[1] + ' Q' + cp[0].toFixed(1) + ' ' + cp[1].toFixed(1) + ' ' + b[0] + ' ' + b[1] + '" style="stroke-width:' + u(3) + ';stroke-dasharray:' + u(2) + ' ' + u(7) + '"/>';
+          ball = [0, 1].map(function (j) { return (1 - tt) * (1 - tt) * p0[j] + 2 * tt * (1 - tt) * cp[j] + tt * tt * b[j]; }); ballCam = c2;
           if (manned && from === 1) { aim(c4, 530, 480, 30, 40); say(c4, 'Reveal the steal', 'Pull out to reveal the steal of second.'); }
         }
       } else if (m === 'score') {
