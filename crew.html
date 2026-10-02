@@ -695,6 +695,14 @@
     c.aim = Math.atan2(dy, dx) * 180 / Math.PI; c.fov = fov; c.len = Math.round(Math.hypot(dx, dy) + (pad == null ? 40 : pad));
   }
   function say(c, tag, text) { c.tag = tag; c.text = text; }
+  // Widen and lengthen a camera's view cone just enough that every point given is inside it.
+  function keepInShot(c, pts) {
+    pts.forEach(function (p) {
+      var ang = Math.atan2(p[1] - c.y, p[0] - c.x) * 180 / Math.PI, off = Math.abs(((ang - c.aim + 540) % 360) - 180);
+      if (off + 6 > c.fov / 2) c.fov = Math.min(150, 2 * (off + 6));
+      c.len = Math.max(c.len, Math.round(Math.hypot(p[0] - c.x, p[1] - c.y) + 30));
+    });
+  }
   function roundBall(x, y, fill) { return '<circle class="ballr" cx="' + x + '" cy="' + y + '" r="' + u(9) + '" fill="' + fill + '" style="stroke-width:' + u(2) + '"/>'; }
   // A volleyball: white with three curved seams swirling out from the middle, each with a parallel seam beside it.
   function volleyballBall(x, y) {
@@ -911,8 +919,12 @@
       var c1 = cams[0], c2 = cams[1], c3 = cams[2], c4 = cams[3], c5 = cams[4], c6 = cams[5], m = s.m;
       var left = s.bx < 500, bx = s.bx, by = s.by, extra = '';
       if (m === 'serve') { bx = left ? 172 : 828; by = clamp(s.by, 140, 400); extra = person(bx, by + 2, 'SERVER', 'batter', true); }
-      // Cam 1 pans as little as possible, so it only drifts a quarter of the way toward the ball.
-      aim(c1, 500 + (bx - 500) * (m === 'serve' ? 0.3 : 0.22), 270 + (by - 270) * 0.22, m === 'serve' ? 66 : 58, 60);
+      // Cam 1 follows the ball with a very wide shot: centered on the ball wherever it goes, and reaching
+      // across the whole court so the play around the ball is always in frame.
+      aim(c1, bx, by, 80, 140);
+      // Don't let it swing so far sideways that half the shot is the bleachers. The ball stays in frame either way.
+      c1.aim = clamp(c1.aim, -180 + c1.fov / 2, -c1.fov / 2);
+      c1.len = Math.max(c1.len, 470);
       say(c1, 'Game', '¾ court with both 3-meter lines. Keep panning to a minimum.');
       if (m === 'serve') say(c1, 'Game', 'Wide with the server in frame. Some servers start far behind the end line.');
       if (m === 'rally' && (bx < 300 || bx > 700)) say(c1, 'Widen', 'Big play in the back court. Widen to show it, then return to normal framing when the player rejoins the action.');
@@ -963,6 +975,8 @@
       c6.aim = -90; c6.fov = 50; c6.len = 330;
       say(c6, 'Locked', 'Mounted and locked across the top of the net, so it doesn’t move. Watch it as a replay source.');
       if ((m === 'rally' || m === 'point') && Math.abs(bx - 500) < 90) say(c6, 'At the net', 'The ball is at the net. Blocks, tips, and kills here are your replay.');
+      // Cam 1 must always have the ball (and on a serve, the server) in its shot.
+      keepInShot(c1, m === 'serve' ? [[bx, by], [bx + (left ? 14 : -14), by - 12]] : [[bx, by]]);
       c1.hasBall = m !== 'timeout' && m !== 'sub';
       return extra + (m === 'serve' ? volleyballBall(bx + (left ? 14 : -14), by - 12) : volleyballBall(bx, by));
     }
