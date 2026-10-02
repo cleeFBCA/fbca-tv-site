@@ -151,7 +151,7 @@
   .chip.pit{background:rgba(242,193,78,.12);border-color:var(--gold);color:var(--gold-hi)}
   .chip.iso{background:var(--pine);border-color:var(--chalk-dim);color:var(--chalk)}
   .diagram .thirty{stroke:var(--gold-hi);stroke-width:3;stroke-dasharray:8 5}
-  .diagram .ball ellipse{fill:#7A4A21;stroke:#F3EFE2;stroke-width:2} .diagram .ball path{fill:#F3EFE2}
+  .diagram .dir-arrow{fill:#F3EFE2}
   .diagram .role{font-size:15px;font-weight:800;letter-spacing:.12em}
   .diagram .role.game{fill:var(--gold-hi)} .diagram .role.pit{fill:var(--chalk)} .diagram .role.iso{fill:var(--chalk-dim)}
   .rot-tables{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:12px}
@@ -168,6 +168,7 @@
   .diagram .person circle{fill:var(--chalk);stroke:var(--pine);stroke-width:2}
   .diagram .person text{font-size:11px;font-weight:800;letter-spacing:.1em;fill:var(--chalk)}
   .diagram .person.flag circle{fill:#E8D44D}
+  .diagram .person.batter circle{fill:var(--gold-hi)}
   .diagram .runner circle{fill:var(--gold-hi);stroke:var(--pine);stroke-width:2}
   .diagram .runner text{font-size:11px;font-weight:800;fill:var(--pine)}
   .diagram .basehit{fill:transparent;cursor:pointer}
@@ -497,7 +498,7 @@
     },
 
     baseball: {
-      title: 'Baseball / Softball', venue: 'Baseball and softball fields', view: [1000, 810], viewY: -105, draw: drawBaseball,
+      title: 'Baseball / Softball', venue: 'Baseball and softball fields', view: [1000, 750], viewY: -45, draw: drawBaseball,
       summary: 'Four cameras. Cam 1 in the stands on the third-base side, Cam 2 in the stands behind home plate, Cam 3 in the stands on the first-base side, and Cam 4 on a platform in center field, just left of the batter’s eye.',
       notes: [
         '<b>Manual focus:</b> Cams 1, 2, and 3 shoot through the net, so they stay in manual focus. Autofocus will grab the net instead of the players. Check your focus every time you change your shot.',
@@ -520,7 +521,7 @@
           job: 'Right-handed batters between every pitch, scoring every runner, and the offensive hero on a triple.',
           framing: 'Right-handed batters head to toe with a push in for the first ID, then waist up between every pitch.',
           tips: ['Stay in manual focus. You’re shooting through the net.', 'Score all runners.', '“Make the switch” to the runner coming home.', 'Lefty batter up: the lead runner, or shag the ball if no one is on base.', 'Lefty batter up: the pitcher, runners, or color between pitches.', 'At the end of every other half inning, get the pitcher walking toward your dugout.', 'Offensive hero on a triple.', 'Cross shoot the coach interview.'] },
-        { x: 320, y: -21, aim: 75, fov: 9, len: 700, type: 'elevated',
+        { x: 332, y: 29, aim: 75, fov: 9, len: 640, type: 'elevated',
           role: 'Center field camera', where: 'On a platform beyond the outfield fence, just left of the batter’s eye wall',
           job: 'The main pitch shot, pitcher to batter. Usually static with no operator.',
           framing: 'Pitcher, batter, and catcher in frame.',
@@ -634,21 +635,21 @@
   function drawBaseball() {
     // Traced from the aerial of our field and turned so home plate is at the bottom. 1.571 px per foot.
     // The walls run straight out from each foul pole, parallel to the other foul line, and only curve in center field:
-    // about 354 ft down the right field line, 360 ft down the left field line, and 437 ft to center.
-    // Center field is a circular arc (radius 258, centered at 493.3, 201.6) tangent to both straight walls.
-    var fence = 'L893.3 236.7 L675.5 18.9 A258 258 0 0 0 311.1 18.9 L100 230';
+    // about 326 ft down the right field line, 331 ft down the left field line, and 402 ft to center.
+    // Center field is a circular arc (radius 237.4, centered at 493.8, 235.9) tangent to both straight walls.
+    var fence = 'L861.8 268.2 L661.5 67.8 A237.4 237.4 0 0 0 326.2 67.8 L132 262';
     var s = '<path d="M500 630 ' + fence + ' Z" fill="#2E7A4C" ' + STROKE + '/>';
     // Infield dirt to a 95 ft arc measured from the pitcher's rubber
     s += '<path d="M500 630 L358.5 488.5 A149 149 0 0 1 641.5 488.5 Z" fill="#B07A45"/>';
     s += '<polygon points="500,616 586,530 500,444 414,530" fill="#2E7A4C"/>';
     s += '<circle cx="500" cy="535" r="14" fill="#B07A45"/><circle cx="500" cy="630" r="20" fill="#B07A45"/>';
-    s += l(500, 630, 893.3, 236.7) + l(500, 630, 100, 230);
+    s += l(500, 630, 861.8, 268.2) + l(500, 630, 132, 262);
     [[600, 530], [500, 430], [400, 530]].forEach(function (b) { s += r(b[0] - 6, b[1] - 6, 12, 12, '#F3EFE2', 'transform="rotate(45 ' + b[0] + ' ' + b[1] + ')"'); });
     s += '<polygon points="495,625 505,625 505,630 500,634 495,630" fill="#F3EFE2"/>';
     // Batter's eye: a band just behind the center field wall covering most of the arc, with its label inside.
-    s += '<path d="M640.3 -24.8 A270 270 0 0 0 346.3 -24.8" fill="none" stroke="' + LINE + '" stroke-width="24"/>';
-    s += '<path d="M640.3 -24.8 A270 270 0 0 0 346.3 -24.8" fill="none" stroke="#0D2418" stroke-width="20"/>';
-    s += t(493.3, -64.4, 'BATTER’S EYE', 11, 'class="lbl dim"');
+    s += '<path d="M629.6 26.7 A249.4 249.4 0 0 0 358 26.7" fill="none" stroke="' + LINE + '" stroke-width="24"/>';
+    s += '<path d="M629.6 26.7 A249.4 249.4 0 0 0 358 26.7" fill="none" stroke="#0D2418" stroke-width="20"/>';
+    s += t(493.8, -9.5, 'BATTER’S EYE', 11, 'class="lbl dim"');
     return s + t(560, 160, 'OUTFIELD', 18, 'class="lbl dim"');
   }
 
@@ -659,19 +660,26 @@
     var x2 = c.x + c.len * Math.cos(a2), y2 = c.y + c.len * Math.sin(a2);
     return '<path class="fov" d="M' + c.x + ' ' + c.y + ' L' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' A' + c.len + ' ' + c.len + ' 0 0 1 ' + x2.toFixed(1) + ' ' + y2.toFixed(1) + ' Z"/>';
   }
+  // UI is how many diagram units one "normal" unit takes up. It drops below 1 when a diagram zooms in,
+  // so camera markers, runners, and labels stay the same size on screen instead of growing.
+  var UI = 1;
+  function u(v) { return +(v * UI).toFixed(2); }
   function marker(c, n) {
     var s = c.travel ? '<line class="travel" x1="' + c.travel[0][0] + '" y1="' + c.travel[0][1] + '" x2="' + c.travel[1][0] + '" y2="' + c.travel[1][1] + '"/>' : '';
-    if (c.hasBall) s += '<circle class="ballring" cx="' + c.x + '" cy="' + c.y + '" r="25"/>';
-    return s + '<g class="cam ' + c.type + '"><circle cx="' + c.x + '" cy="' + c.y + '" r="17"/><text x="' + c.x + '" y="' + (c.y + 7) + '">' + n + '</text></g>' +
+    if (c.hasBall) s += '<circle class="ballring" cx="' + c.x + '" cy="' + c.y + '" r="' + u(25) + '" style="stroke-width:' + u(3) + '"/>';
+    return s + '<g class="cam ' + c.type + '"><circle cx="' + c.x + '" cy="' + c.y + '" r="' + u(17) + '" style="stroke-width:' + u(3) + '"/><text x="' + c.x + '" y="' + (c.y + u(7)) + '" style="font-size:' + u(20) + 'px">' + n + '</text></g>' +
       (c.roleTag ? '<text class="role ' + c.roleTag + '" x="' + c.x + '" y="' + (c.y + 44) + '">' + c.roleTag.toUpperCase() + '</text>' : '');
   }
 
   function diagram(sp) {
     var cams = sp.cams.map(function (c) { return Object.assign({}, c); }), cones = '', marks = '', label = sp.title + ' camera positions: ';
-    var sim = SIMS[sp.id], extra = sim ? sim.apply(sim.state, cams) || '' : '';
+    var sim = SIMS[sp.id];
+    var vb = sim && sim.viewBox ? sim.viewBox(sim.state) : [0, sp.viewY || 0, sp.view[0], sp.view[1]];
+    UI = vb[2] / 1000;
+    var extra = sim ? sim.apply(sim.state, cams) || '' : '';
     LAST_CAMS = cams;
     cams.forEach(function (c, i) { if (sim && !sim.labels) c.roleTag = null; cones += cone(c); marks += marker(c, i + 1); label += 'Camera ' + (i + 1) + ', ' + c.where + '. '; });
-    return '<svg viewBox="0 ' + (sp.viewY || 0) + ' ' + sp.view[0] + ' ' + sp.view[1] + '" role="img" aria-label="' + label + '">' + sp.draw() + cones + extra + marks + '</svg>';
+    return '<svg viewBox="' + vb.join(' ') + '" role="img" aria-label="' + label + '">' + sp.draw() + cones + extra + marks + '</svg>';
   }
 
   // ---------- interactive diagrams ----------
@@ -684,9 +692,71 @@
     c.aim = Math.atan2(dy, dx) * 180 / Math.PI; c.fov = fov; c.len = Math.round(Math.hypot(dx, dy) + (pad == null ? 40 : pad));
   }
   function say(c, tag, text) { c.tag = tag; c.text = text; }
-  function roundBall(x, y, fill) { return '<circle class="ballr" cx="' + x + '" cy="' + y + '" r="9" fill="' + fill + '"/>'; }
+  function roundBall(x, y, fill) { return '<circle class="ballr" cx="' + x + '" cy="' + y + '" r="' + u(9) + '" fill="' + fill + '" style="stroke-width:' + u(2) + '"/>'; }
+  // A volleyball: white with three curved seams swirling out from the middle, each with a parallel seam beside it.
+  function volleyballBall(x, y) {
+    var r = u(10), k = function (v) { return +v.toFixed(2); }, d = '';
+    function pt(ang, rad) { var a = ang * Math.PI / 180; return k(x + rad * Math.cos(a)) + ' ' + k(y + rad * Math.sin(a)); }
+    for (var i = 0; i < 3; i++) {
+      var a0 = -90 + 120 * i;
+      d += 'M' + x + ' ' + y + ' Q' + pt(a0, r * 0.62) + ' ' + pt(a0 + 62, r);
+      d += ' M' + pt(a0 - 28, r * 0.5) + ' Q' + pt(a0 + 8, r * 1.02) + ' ' + pt(a0 + 40, r);
+    }
+    var h = '<g class="volleyball"><circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#F7F4EA"/>';
+    h += '<path d="' + d + '" fill="none" stroke="#9AA3A0" stroke-width="' + u(1.1) + '"/>';
+    return h + '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" style="stroke:#0D2418;stroke-width:' + u(1.4) + '"/></g>';
+  }
+  // A basketball: orange with black seams, one straight across each way and two curving down the sides.
+  function basketballBall(x, y) {
+    var r = u(10), k = function (v) { return +v.toFixed(2); }, w = u(1.1);
+    var h = '<g class="basketball"><circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#E07B39"/>';
+    h += '<path d="M' + k(x - r) + ' ' + y + ' H' + k(x + r) + ' M' + x + ' ' + k(y - r) + ' V' + k(y + r) +
+      ' M' + k(x - r * 0.72) + ' ' + k(y - r * 0.69) + ' Q' + k(x - r * 0.18) + ' ' + y + ' ' + k(x - r * 0.72) + ' ' + k(y + r * 0.69) +
+      ' M' + k(x + r * 0.72) + ' ' + k(y - r * 0.69) + ' Q' + k(x + r * 0.18) + ' ' + y + ' ' + k(x + r * 0.72) + ' ' + k(y + r * 0.69) +
+      '" fill="none" stroke="#1A1A1A" stroke-width="' + w + '"/>';
+    return h + '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="#1A1A1A" stroke-width="' + u(1.4) + '"/></g>';
+  }
+  // A football: pointed brown leather, a white stripe near each tip, and white laces across the middle.
+  function footballBall(x, y) {
+    var h = '<g class="football"><path d="M' + (x - 15) + ' ' + y + ' Q' + x + ' ' + (y - 16) + ' ' + (x + 15) + ' ' + y + ' Q' + x + ' ' + (y + 16) + ' ' + (x - 15) + ' ' + y + ' Z" fill="#7A3E1D" stroke="#2A1408" stroke-width="1.2"/>';
+    [-9, 9].forEach(function (dx) { h += '<line x1="' + (x + dx) + '" y1="' + (y - 4.6) + '" x2="' + (x + dx) + '" y2="' + (y + 4.6) + '" stroke="#F3EFE2" stroke-width="1.6"/>'; });
+    h += '<line x1="' + (x - 5) + '" y1="' + y + '" x2="' + (x + 5) + '" y2="' + y + '" stroke="#F3EFE2" stroke-width="1"/>';
+    [-3.75, -1.25, 1.25, 3.75].forEach(function (dx) { h += '<line x1="' + (x + dx) + '" y1="' + (y - 1.8) + '" x2="' + (x + dx) + '" y2="' + (y + 1.8) + '" stroke="#F3EFE2" stroke-width="0.9"/>'; });
+    return h + '</g>';
+  }
+  // A soccer ball: one black pentagon facing us, five more around the edge, and the seams between them.
+  function soccerBall(x, y) {
+    var r = u(10), k = function (v) { return +v.toFixed(2); };
+    function pent(cx, cy, pr, rot) {
+      var pts = [];
+      for (var i = 0; i < 5; i++) { var a = (rot + 72 * i) * Math.PI / 180; pts.push(k(cx + pr * Math.cos(a)) + ',' + k(cy + pr * Math.sin(a))); }
+      return pts.join(' ');
+    }
+    var h = '<clipPath id="sbclip"><circle cx="' + x + '" cy="' + y + '" r="' + r + '"/></clipPath>';
+    h += '<g class="soccer"><circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#F7F4EA"/><g clip-path="url(#sbclip)">';
+    h += '<polygon points="' + pent(x, y, r * 0.36, -90) + '" fill="#111"/>';
+    for (var i = 0; i < 5; i++) {
+      var a = (-90 + 72 * i) * Math.PI / 180;
+      h += '<line x1="' + k(x + r * 0.36 * Math.cos(a)) + '" y1="' + k(y + r * 0.36 * Math.sin(a)) + '" x2="' + k(x + r * 0.8 * Math.cos(a)) + '" y2="' + k(y + r * 0.8 * Math.sin(a)) + '" stroke="#111" stroke-width="' + u(0.9) + '"/>';
+      h += '<polygon points="' + pent(x + r * 1.02 * Math.cos(a), y + r * 1.02 * Math.sin(a), r * 0.34, -90 + 72 * i + 180) + '" fill="#111"/>';
+    }
+    return h + '</g><circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" style="stroke:#0D2418;stroke-width:' + u(1.5) + '"/></g>';
+  }
+  // A baseball: white with the two curved red seams and their stitches.
+  function baseballBall(x, y) {
+    var r = u(9), k = function (v) { return +v.toFixed(2); };
+    var seam = function (d) {
+      var x0 = k(x + d * r * 0.62), xm = k(x + d * r * 0.18), y0 = k(y - r * 0.78), y1 = k(y + r * 0.78);
+      return 'M' + x0 + ' ' + y0 + ' Q' + xm + ' ' + y + ' ' + x0 + ' ' + y1;
+    };
+    var seams = seam(-1) + ' ' + seam(1);
+    return '<g class="baseball"><circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#F7F4EA" style="stroke:#0D2418;stroke-width:' + u(1.5) + '"/>' +
+      '<path d="' + seams + '" fill="none" stroke="#D0342C" stroke-width="' + u(1.1) + '"/>' +
+      '<path d="' + seams + '" fill="none" stroke="#D0342C" stroke-width="' + u(3) + '" stroke-dasharray="' + u(0.9) + ' ' + u(1.6) + '"/></g>';
+  }
   function person(x, y, label, cls, below) {
-    return '<g class="person ' + (cls || '') + '"><circle cx="' + x + '" cy="' + y + '" r="8"/>' + (label ? '<text x="' + x + '" y="' + (below ? y + 24 : y - 14) + '">' + label + '</text>' : '') + '</g>';
+    return '<g class="person ' + (cls || '') + '"><circle cx="' + x + '" cy="' + y + '" r="' + u(8) + '" style="stroke-width:' + u(2) + '"/>' +
+      (label ? '<text x="' + x + '" y="' + (below ? y + u(24) : y - u(14)) + '" style="font-size:' + u(11) + 'px">' + label + '</text>' : '') + '</g>';
   }
 
   // ---------- football: game, pit, and iso rotate at the 30s ----------
@@ -760,7 +830,7 @@
         say(c6, 'Ahead of the play', 'Stay 10 to 20 yards ahead of the play. The ball is on ' + yardLabel(s.ball) + '.');
       }
       aim(c6, bx, by, 36, 30);
-      return '<g class="ball"><ellipse cx="' + bx + '" cy="' + by + '" rx="13" ry="8"/><path d="M' + (bx + d * 20) + ' ' + (by - 7) + ' l' + (d * 13) + ' 7 l' + (-d * 13) + ' 7 z"/></g>';
+      return footballBall(bx, by) + '<path class="dir-arrow" d="M' + (bx + d * 21) + ' ' + (by - 7) + ' l' + (d * 13) + ' 7 l' + (-d * 13) + ' 7 z"/>';
     },
     after: function (s) {
       var z = zoneOf(s.ball);
@@ -821,7 +891,7 @@
       }
       c1.hasBall = m !== 'ft' && m !== 'end';
       if (m === 'ft') near.hasBall = true;
-      return extra + (m === 'ft' ? roundBall(ft[0] + (left ? 12 : -12), ft[1] - 10, '#E07B39') : roundBall(s.bx, s.by, '#E07B39'));
+      return extra + (m === 'ft' ? basketballBall(ft[0] + (left ? 12 : -12), ft[1] - 10) : basketballBall(s.bx, s.by));
     }
   };
 
@@ -891,7 +961,7 @@
       say(c6, 'Locked', 'Mounted and locked across the top of the net, so it doesn’t move. Watch it as a replay source.');
       if ((m === 'rally' || m === 'point') && Math.abs(bx - 500) < 90) say(c6, 'At the net', 'The ball is at the net. Blocks, tips, and kills here are your replay.');
       c1.hasBall = m !== 'timeout' && m !== 'sub';
-      return extra + (m === 'serve' ? roundBall(bx + (left ? 14 : -14), by - 12, '#F3EFE2') : roundBall(bx, by, '#F3EFE2'));
+      return extra + (m === 'serve' ? volleyballBall(bx + (left ? 14 : -14), by - 12) : volleyballBall(bx, by));
     }
   };
 
@@ -969,24 +1039,33 @@
       }
       c2.hasBall = m !== 'goal' && m !== 'sub';
       if (m === 'goal') cl18.hasBall = true;
-      return extra + roundBall(bx, by, '#F3EFE2');
+      return extra + soccerBall(bx, by);
     }
   };
 
   // ---------- baseball / softball ----------
   var BASES = { 1: [600, 530], 2: [500, 430], 3: [400, 530] }, BASE_NAME = { 1: 'first', 2: 'second', 3: 'third' };
   var PITCHER = [500, 535], HOME = [500, 628], SCORING = [445, 588];
-  function runnerMark(p, label) { return '<g class="runner"><circle cx="' + p[0] + '" cy="' + (p[1] - 18) + '" r="9"/><text x="' + p[0] + '" y="' + (p[1] - 14) + '">' + (label || 'R') + '</text></g>'; }
+  function runnerMark(p, label) {
+    return '<g class="runner"><circle cx="' + p[0] + '" cy="' + (p[1] - u(18)) + '" r="' + u(9) + '" style="stroke-width:' + u(2) + '"/><text x="' + p[0] + '" y="' + (p[1] - u(14)) + '" style="font-size:' + u(11) + 'px">' + (label || 'R') + '</text></g>';
+  }
   SIMS.baseball = {
-    state: { bat: 'R', run: { 1: false, 2: false, 3: false }, cam4: 'static', m: 'between', bx: 600, by: 330 },
+    state: { view: 'full', bat: 'R', run: { 1: false, 2: false, 3: false }, cam4: 'static', m: 'between', bx: 600, by: 330 },
+    // Full field is cropped to the fence. Infield zooms to the diamond and Cams 1 to 3.
+    viewBox: function (s) { return s.view === 'infield' ? [285, 330, 430, 380] : [110, -45, 780, 750]; },
+    onChange: function (s, k) { if (k === 'm' && s.m === 'inplay') s.view = 'full'; },
     controls: [
+      { type: 'seg', key: 'view', label: 'View', opts: [['full', 'Full field'], ['infield', 'Infield']] },
       { type: 'seg', key: 'bat', label: 'Batter', opts: [['R', 'Righty'], ['L', 'Lefty']] },
       { type: 'multi', key: 'run', label: 'Runners', opts: [['1', '1st'], ['2', '2nd'], ['3', '3rd']] },
       { type: 'seg', key: 'cam4', label: 'Cam 4', opts: [['static', 'Static'], ['manned', 'Manned']] },
       { type: 'seg', key: 'm', label: 'Moment', opts: [['between', 'Between pitches'], ['pitch', 'Pitch'], ['inplay', 'Ball in play'], ['steal', 'Steal'], ['score', 'Runner scoring'], ['appeal', 'Swing appeal'], ['k3', 'Strikeout, 3rd out'], ['inning', 'Inning change']] }
     ],
-    hint: function (s) { return 'Click a base to add or remove a runner.' + (s.m === 'inplay' ? ' Drag the ball to where it was hit.' : ''); },
-    drag: function (s, x, y) { if (s.m !== 'inplay') return false; s.bx = clamp(x, 60, 940); s.by = clamp(y, -70, 600); },
+    hint: function (s) {
+      return 'Click a base to add or remove a runner.' + (s.m === 'inplay' ? (s.view === 'full' ? ' Drag the ball to where it was hit.' : ' Switch to Full field to drag the ball into the outfield.') : '') +
+        (s.view === 'infield' ? ' Cam 4 is off the top of the view in center field.' : '');
+    },
+    drag: function (s, x, y) { if (s.m !== 'inplay') return false; s.bx = clamp(x, 60, 940); s.by = clamp(y, -15, 600); },
     canDrag: function (s) { return s.m === 'inplay'; },
     onBase: function (s, b) { s.run[b] = !s.run[b]; },
     apply: function (s, cams) {
@@ -997,11 +1076,11 @@
       var manned = s.cam4 === 'manned', extra = '';
 
       // Once the ball is in play the batter is running, so they’re drawn on the bases instead of at the plate.
-      if (m !== 'inplay') extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH');
+      if (m !== 'inplay') extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH', 'batter');
       [1, 2, 3].forEach(function (b) {
         var p = BASES[b];
         if (run[b] && m !== 'inplay') extra += runnerMark(p);
-        extra += '<circle class="basehit" data-base="' + b + '" cx="' + p[0] + '" cy="' + (p[1] - 6) + '" r="24"><title>Runner on ' + BASE_NAME[b] + '</title></circle>';
+        extra += '<circle class="basehit" data-base="' + b + '" cx="' + p[0] + '" cy="' + (p[1] - u(6)) + '" r="' + u(24) + '"><title>Runner on ' + BASE_NAME[b] + '</title></circle>';
       });
 
       function onLead(c, tag) { var p = BASES[lead]; aim(c, p[0], p[1] - 10, 10, 30); say(c, tag || 'Lead runner', 'The lead runner at ' + BASE_NAME[lead] + '.'); }
@@ -1032,12 +1111,12 @@
         // How deep the ball is hit decides the hit type. Every runner moves up as many bases as the batter,
         // so nobody passes anybody, and a runner pushed past third scores.
         var depth = Math.hypot(s.bx - HOME[0], s.by - HOME[1]);
-        var hit = depth < 400 ? 'single' : depth < 560 ? 'double' : 'triple';
+        var hit = depth < 368 ? 'single' : depth < 515 ? 'double' : 'triple';
         var adv = { single: 1, double: 2, triple: 3 }[hit], onBase = [], scored = 0;
         [3, 2, 1].forEach(function (b) { if (run[b]) { if (b + adv >= 4) scored++; else onBase.push(b + adv); } });
         onBase.forEach(function (b) { extra += runnerMark(BASES[b]); });
         var br = BASES[adv], newLead = Math.max.apply(null, onBase.concat([adv]));
-        extra += person(br[0], br[1] + 18, 'BATTER', '', true);
+        extra += person(br[0], br[1] + 18, 'BATTER', 'batter', true);
         if (scored) extra += person(SCORING[0], SCORING[1], scored > 1 ? scored + ' SCORE' : 'SCORES', 'flag', true);
         aim(c2, s.bx, s.by, 30, 60); say(c2, 'Ball in play', 'Follow the ball and the defense. Include the umpire on the call at any base.');
         function shag(c) { aim(c, s.bx, s.by, 18, 40); say(c, 'Shag', 'No one on base: shag the ball.'); }
@@ -1060,7 +1139,7 @@
         else if (manned) { aim(c4, br[0], br[1], 10, 20); say(c4, 'Batter', 'Follow the batter on the base hit.'); }
         else say(c4, 'Static', 'Locked on the pitcher-to-batter shot, so it doesn’t move. Switch Cam 4 to Manned to see it follow the play.');
         c2.hasBall = true;
-        return extra + roundBall(s.bx, s.by, '#F3EFE2');
+        return extra + baseballBall(s.bx, s.by);
       } else if (m === 'steal') {
         var from = run[1] ? 1 : run[2] ? 2 : 0;
         if (!from) { say(c2, 'Add a runner', 'Click first or second base to add a runner, then watch the steal.'); }
@@ -1097,7 +1176,7 @@
         else { aim(c2, PITCHER[0], PITCHER[1], 20, 30); say(c2, 'Pitcher', 'The pitcher walking off.'); }
       }
       if (ballCam) ballCam.hasBall = true;
-      return extra + (ball ? roundBall(ball[0], ball[1], '#F3EFE2') : '');
+      return extra + (ball ? baseballBall(ball[0], ball[1]) : '');
     }
   };
 
@@ -1148,6 +1227,7 @@
         var k = b.dataset.key, v = b.dataset.val;
         if (b.dataset.type === 'multi') s[k][v] = !s[k][v];
         else s[k] = /^-?\d+$/.test(v) ? +v : v;
+        if (sim.onChange) sim.onChange(s, k);
         updateSim(sp);
       });
     });
