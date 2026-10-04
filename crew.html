@@ -219,7 +219,8 @@
 
     <div class="intro">
       Pick a sport to see where every camera goes, what each operator is responsible for, and how the
-      director switches between them. If the director changes the plan for a game, follow the director.
+      director switches between them. On the field, click a camera to turn what it sees on or off. If the
+      director changes the plan for a game, follow the director.
     </div>
 
     <div class="picker" role="tablist" aria-label="Sport">
@@ -248,17 +249,17 @@
           role: 'Stands camera, left', where: 'Near-side stands, left 25-yard line',
           job: 'Rotates between game, pit, and iso. You’re the game camera when the ball is between the left goal line and the left 30.',
           framing: 'Depends on your role. See Game, Pit, and Iso below.',
-          tips: ['Between the 30s: pit when the offense is driving right, iso when it’s driving left.', 'Iso when the ball is past the right 30.', 'Switch roles between plays, never during one.'] },
+          tips: ['Between the 30s: pit when the offense is driving right, iso when it’s driving left.', 'Iso when the ball is past the right 30.', 'Switch roles between plays, never during one.', 'Kickoffs and punts: shoot the kicker or punter, or the returner, whichever is farther down the field from you. That’s your most head-on shot.'] },
         { x: 500, y: 505, type: 'elevated',
           role: 'Stands camera, center', where: 'Near-side stands, on the 50-yard line',
           job: 'Game camera whenever the ball is between the 30s. Pit when the ball is inside either 30.',
           framing: 'Depends on your role. See Game, Pit, and Iso below.',
-          tips: ['You never shoot iso.', 'Between the 30s you’re the main shot. Never leave the ball.', 'Switch roles between plays, never during one.'] },
+          tips: ['You never shoot iso.', 'Between the 30s you’re the main shot. Never leave the ball.', 'Switch roles between plays, never during one.', 'You’re the game camera on every kickoff and punt, wherever the ball is.', 'Flag during or after a play: get to the White Hat quickly and tight, so the director can cut to it.'] },
         { x: 667, y: 505, type: 'elevated',
           role: 'Stands camera, right', where: 'Near-side stands, right 25-yard line',
           job: 'Rotates between game, pit, and iso. You’re the game camera when the ball is between the right 30 and the right goal line.',
           framing: 'Depends on your role. See Game, Pit, and Iso below.',
-          tips: ['Between the 30s: pit when the offense is driving left, iso when it’s driving right.', 'Iso when the ball is past the left 30.', 'Switch roles between plays, never during one.'] },
+          tips: ['Between the 30s: pit when the offense is driving left, iso when it’s driving right.', 'Iso when the ball is past the left 30.', 'Switch roles between plays, never during one.', 'Kickoffs and punts: shoot the kicker or punter, or the returner, whichever is farther down the field from you. That’s your most head-on shot.'] },
         { x: 52, y: 280, aim: -7, fov: 38, len: 480, type: 'elevated',
           role: 'Left end zone camera', where: 'Behind the left end zone, near hash, on a platform',
           job: 'Crowd shots, coaches, and views of the sidelines. During plays, the straight-down-the-field angle from up on the platform, which may be the best option for a replay.',
@@ -276,18 +277,18 @@
           tips: ['Try to stay 10 to 20 yards ahead of the play.', 'When the ball is inside the 15-yard line, move to the back corner of the end zone. Frame the goal line tight enough to see the ball cross it. Your angle may be the best option for a replay on a score.', 'Before kickoff, be at midfield for the coin toss. Be ready with the sideline reporter whenever the director calls for it.', 'Stay behind the white sideline border and out of the team box. If an official asks you to move, move.'] }
       ],
       roles: [
-        ['Game', 'The live shot for every snap. Always the stands camera closest to the ball.', 'Wide before the snap. Both lines plus the safeties, about 25 to 30 yards of field.',
-          ['Set the frame before the snap and hold it through any motion.', 'Run play: after the snap, do a slow push in with the zoom. Never get too tight. Keep the players around the ball in frame.', 'Pass play: follow the throw and push in to the receiver.', 'Pan smoothly. Lead the ball instead of chasing it.']],
-        ['Pit', 'Tight on the line of scrimmage, where every play starts.', 'The quarterback and the linemen around the ball.',
-          ['Frame the quarterback before the snap.', 'On passes, stay on the quarterback through the throw and the hit.', 'On runs, follow the ball out of the pile.']],
-        ['Iso', 'Locked on one player, tight. This shot may be the best option for a tight replay.', 'Tight on the likely ball carrier or a key receiver.',
-          ['Read the formation and pick your player before the snap.', 'If you lose your player, zoom out slowly until you find them. Never whip-pan.', 'Stay on your player after the whistle for the reaction.']]
+        ['Game', 'The live shot for every snap. Always the stands camera closest to the ball, so the shot is as head-on with the line of scrimmage as possible.', 'All 11 players on offense, with the deepest player in the backfield right at the edge of the frame. Most of the defense will be in the shot too, but deep safeties and corners don’t have to be in every play.',
+          ['Set the frame before the snap and hold it through any motion.', 'Receivers split really wide: once the offense is set, you can push past the top or bottom group of receivers. Leave out the whole group, never half of it, and do it before the snap.', 'After the snap, slowly push toward the pocket, then follow the run or the pass as the play develops.', 'When the play is over, push to the hero, but never tighter than head to toe. That leaves the director a tighter cut to another camera.', 'Once the director cuts away from you, widen back out to your game framing so the director can see the offense set up.', 'Pan smoothly. Lead the ball instead of chasing it.']],
+        ['Pit', 'A tighter version of the game shot. Always the stands camera behind the play and closest to the game camera.', 'Both lines, plus every offensive player in the backfield.',
+          ['Set your frame on the lines and the backfield before the snap.', 'Follow the run or the pass as the play develops, like the game camera but tighter.']],
+        ['Iso', 'Locked on a receiver or a group of receivers. Whichever stands camera is left after game and pit. This shot may be the best option for a tight replay.', 'Tight on a receiver, or a group of receivers lined up together.',
+          ['Read the formation and pick your receiver or group before the snap.', 'If the ball is thrown to your group, push in to the player who catches it.', 'If you lose your player, zoom out slowly until you find them. Never whip-pan.', 'Stay on your player after the whistle for the reaction.']]
       ],
       shots: [
         ['Huddle', 'Pit', 'Tight on the quarterback', 'Game sets the wide frame'],
-        ['Pre-snap', 'Game', 'Wide on the formation', 'Pit on the quarterback. Iso picks a player'],
-        ['Snap to whistle', 'Game', 'Follow the ball. Slow push in on runs, push in to the receiver on passes', 'Pit and Iso stay tight. Cam 4, 5, and 6 frame the play from their angles'],
-        ['After the whistle', 'Game → Iso', 'Hold the pile about 2 seconds, then cut tight', 'Cam 6 finds a reaction'],
+        ['Pre-snap', 'Game', 'All 11 on offense, deepest back at the edge of the frame', 'Pit on both lines and the backfield. Iso picks a receiver or group'],
+        ['Snap to whistle', 'Game', 'Slow push toward the pocket, then follow the run or the pass', 'Pit follows the play, tighter. Iso pushes in to the catch. Cam 4, 5, and 6 frame the play from their angles'],
+        ['After the whistle', 'Game → Iso', 'Game pushes to the hero, no tighter than head to toe, then cut tight', 'Game widens back out once you cut away. Cam 6 finds a reaction'],
         ['Reaction', 'Cam 6, Cam 4, or Cam 5', 'Sideline, bench, coach, or crowd', 'Game resets for the next play'],
         ['Replay', 'Cam 4, 5, or 6 → Iso', 'End zone or sideline angle, then the tight angle', 'Game holds wide on the field'],
         ['Back to live', 'Game', 'Wide on the next huddle', 'Did the ball cross a 30? Switch roles now']
@@ -296,15 +297,16 @@
       situations: [
         ['Coin toss', 'Cam 6 at midfield on the captains and the flip. Game holds wide as a backup.'],
         ['Sideline reporter', 'Cam 6 with the reporter. Make sure the reporter is framed and ready before the director cuts to you.'],
-        ['Touchdown', 'Stay on Game through the score. Then Iso or Cam 6 for the celebration. Replay from Cam 6 at the goal line or the end zone camera at that end (Cam 4 left, Cam 5 right).'],
+        ['Touchdown', 'Stay on Game through the score. The camera that was game for the play then sticks with the hero, usually until the next drive, so you can always cut to them celebrating on the bench. Iso or Cam 6 for the celebration. Replay from Cam 6 at the goal line or the end zone camera at that end (Cam 4 left, Cam 5 right).'],
         ['Field goal or extra point', 'Game stays wide through the kick. The end zone camera at that end has the replay. Then Pit or Cam 6 for the kicker’s reaction.'],
-        ['Kickoff or punt', 'Game stays wide from the kick through the return. Iso stays on the returner. After the return, set roles for the new drive.'],
+        ['Kickoff or punt', 'Cam 2 is the game camera on every kickoff and punt, wherever the ball is, and stays wide from the kick through the return. Cam 1 and Cam 3 each shoot the kicker or punter, or the returner, whichever is farther down the field from them, for the most head-on shot. After the return, set roles for the new drive.'],
         ['Turnover', 'Stay wide on Game. Iso usually has the best replay. Cam 6 gets the sideline celebrating. The offense just changed direction, so check roles before the next snap.'],
         ['Sack or quarterback hit', 'Game stays wide. For the replay, use Pit or the end zone camera behind the offense if it stayed on the quarterback.'],
-        ['Penalty flag', 'Hold Game wide. Pit finds the White Hat (the referee, who stands behind the offense) for the announcement.'],
+        ['Penalty before the snap', 'The game camera makes a slow, gentle push to the White Hat (the referee, who stands behind the offense) for the call.'],
+        ['Penalty during or after the play', 'Cam 2 gets to the White Hat quickly, with a tight shot you can cut to, whatever its role on the play.'],
         ['Timeout', 'Scorebug comes out. Cam 6 in the huddle. Cam 4 or Cam 5 on the crowd or the coaches. Good time for a replay.']
       ],
-      tips: ['Never cut away from the game camera during a play. Viewers need to see the whole field.', 'Show close-ups of heroes (the player who made the great play) and goats (the player who made the mistake) often.', 'Call role switches on headset as soon as the ball crosses a 30: “Past the 30. Two game, one pit, three iso.”', 'Direction only matters between the 30s. Check it after every change of possession.', 'Call the next camera before you cut: “Ready 3… take 3.”', 'Scorebug stays up during play. Take it out for timeouts, quarter breaks, and halftime, and bring it back before the next snap.', 'During timeouts and breaks, use Cam 4, 5, and 6 for the crowd, the band, coaches, and the sideline instead of an empty field.']
+      tips: ['Never cut away from the game camera during a play. Viewers need to see the whole field.', 'Show close-ups of heroes (the player who made the great play) and goats (the player who made the mistake) often.', 'Call role switches on headset as soon as the ball crosses a 30: “Past the 30. Two game, one pit, three iso.”', 'Direction only matters between the 30s. Check it after every change of possession.', 'Call the next camera before you cut: “Ready 3… take 3.”', 'Scorebug stays up during play. Take it out for timeouts, quarter breaks, and halftime, and bring it back before the next snap.', 'During timeouts and breaks, use Cam 4, 5, and 6 for the crowd, the band, coaches, and the sideline instead of an empty field.', 'Between plays, the stands cameras not on game help with the far side coach and bench, excited fans, and hero shots of players who just made a key play or that the announcers are talking about.']
     },
 
     volleyball: {
@@ -786,9 +788,9 @@
   }
 
   var ROLE_TEXT = {
-    game: 'Wide on the formation. Slow push in on runs, push in to the receiver on passes.',
-    pit: 'Tight on the quarterback and the line.',
-    iso: 'Locked on one player, tight.'
+    game: 'All 11 on offense, deepest back at the edge of the frame. After the snap, slowly push toward the pocket, then follow the run or the pass.',
+    pit: 'Both lines and the offensive backfield. Follow the run or the pass, tighter than game.',
+    iso: 'A receiver or group of receivers. Push in to the player who catches it.'
   };
 
   var SIMS = {};
@@ -805,7 +807,7 @@
     state: { ball: 25, dir: 1, m: 'live' },
     labels: true,
     controls: [
-      { type: 'seg', key: 'm', label: 'Moment', opts: [['live', 'Live play'], ['coin', 'Coin toss'], ['kickoff', 'Kickoff'], ['punt', 'Punt'], ['fg', 'Field goal / PAT'], ['td', 'Touchdown'], ['turnover', 'Turnover'], ['flag', 'Penalty flag'], ['timeout', 'Timeout']] },
+      { type: 'seg', key: 'm', label: 'Moment', opts: [['live', 'Live play'], ['coin', 'Coin toss'], ['kickoff', 'Kickoff'], ['punt', 'Punt'], ['fg', 'Field goal / PAT'], ['td', 'Touchdown'], ['turnover', 'Turnover'], ['flagpre', 'Penalty before the snap'], ['flagpost', 'Penalty during or after the play'], ['timeout', 'Timeout']] },
       { type: 'seg', key: 'dir', label: 'Offense', opts: [[1, 'Driving right →'], [-1, 'Driving left ←']] },
       { type: 'range', key: 'ball', min: 1, max: 99, label: function (s) { return 'Ball on <b>' + yardLabel(s.ball) + '</b>'; } }
     ],
@@ -856,7 +858,28 @@
 
       var extra = '', ball = [bx, by], arrow = true, f, kicker, target;
       // On a live play, the quarterback lines up a few yards behind the ball.
-      if (m === 'live') extra += person(qbX, by, 'QB', 'batter', true);
+      // Iso is locked on a key receiver lined up wide and downfield of the ball.
+      if (m === 'live') {
+        // The running back lines up a few yards behind the quarterback.
+        var rb = [bx - d * 58, by];
+        extra += person(qbX, by, 'QB', 'batter', true) + person(rb[0], rb[1], 'RB', 'batter', true) + person(clamp(bx + d * 100, 170, 830), 150, 'RECEIVER', 'batter');
+        // Five offensive linemen shoulder to shoulder on the line, just behind the ball, with the center in the middle.
+        var line = [-2, -1, 0, 1, 2].map(function (k) { return [bx - d * 12, by + k * 17]; });
+        line.forEach(function (p, k) { extra += person(p[0], p[1], k === 0 ? 'LINE' : '', 'batter'); });
+        // Four defensive linemen across from them, on the other side of the ball.
+        var dline = [-1.5, -0.5, 0.5, 1.5].map(function (k) { return [bx + d * 14, by + k * 17]; });
+        dline.forEach(function (p, k) { extra += person(p[0], p[1], k === 3 ? 'D-LINE' : '', '', true); });
+        // Pit frames both lines and the backfield edge to edge: each side of the frame just touches the outside player.
+        var edges = [], pitPlayers = line.concat(dline, [[qbX, by], rb]);
+        pitPlayers.forEach(function (p) {
+          var a = Math.atan2(p[1] - pit.y, p[0] - pit.x) * 180 / Math.PI, dist = Math.hypot(p[0] - pit.x, p[1] - pit.y), r = Math.asin(u(8) / dist) * 180 / Math.PI;
+          edges.push(a - r, a + r);
+        });
+        var lo = Math.min.apply(null, edges), hi = Math.max.apply(null, edges);
+        pit.aim = (lo + hi) / 2; pit.fov = hi - lo;
+        pit.len = Math.round(Math.max.apply(null, pitPlayers.map(function (p) { return Math.hypot(p[0] - pit.x, p[1] - pit.y); })) + 30);
+        say(pit, 'Pit', 'Both lines and the offensive backfield, edge to edge. Follow the run or the pass, tighter than game.');
+      }
       if (m === 'coin') {
         arrow = false; ball = null;
         extra += person(466, 218, 'CAPTAIN', 'batter') + person(534, 218, 'CAPTAIN', 'batter') + person(500, 226, 'REF', 'official', true);
@@ -872,9 +895,18 @@
         target = [ballX(clamp(m === 'kickoff' ? spot + d * 57 : spot + d * 40, -5, 105)), by + 40];
         extra += person(kicker[0], kicker[1] + 14, m === 'kickoff' ? 'KICKER' : 'PUNTER', 'batter', true) + person(target[0], target[1], 'RETURNER', 'batter', true);
         f = flight(kicker, target, -d * 60, 0.65); extra += f.svg; ball = f.at; arrow = false;
-        aim(game, (kicker[0] + target[0]) / 2, by, 60, 120); say(game, 'Wide', 'Stay wide from the kick through the catch and the return.');
-        aim(pit, kicker[0], kicker[1], 14, 30); say(pit, m === 'kickoff' ? 'Kicker' : 'Punter', 'The ' + (m === 'kickoff' ? 'kicker' : 'punter') + ' through the kick, then the coverage team.');
-        aim(iso, target[0], target[1], 12, 30); say(iso, 'Returner', 'Stay tight on the returner, through the catch and the return.');
+        // Cam 2 is the game camera on every kick. Cam 1 and Cam 3 each take whichever of the kicker and the returner
+        // is farther down the field from them, for the most head-on shot.
+        var c1 = cams[0], c2 = cams[1], c3 = cams[2], kWord = m === 'kickoff' ? 'kicker' : 'punter';
+        var kickerRight = kicker[0] > target[0];
+        [c1, c2, c3].forEach(function (c) { c.hasBall = false; c.roleTag = 'iso'; });
+        c2.roleTag = 'game'; c2.hasBall = true;
+        aim(c2, (kicker[0] + target[0]) / 2, by, 60, 120); say(c2, 'Game', 'You’re game on every kick. Stay wide from the kick through the catch and the return.');
+        [[c1, kickerRight], [c3, !kickerRight]].forEach(function (a) {
+          var c = a[0];
+          if (a[1]) { aim(c, kicker[0], kicker[1], 14, 30); say(c, kWord.charAt(0).toUpperCase() + kWord.slice(1), 'The ' + kWord + ' is farther down the field from you. The ' + kWord + ' through the kick, then the coverage team.'); }
+          else { aim(c, target[0], target[1], 12, 30); say(c, 'Returner', 'The returner is farther down the field from you. Stay tight through the catch and the return.'); }
+        });
         aim(ahead, target[0], target[1], 24, 40); say(ahead, 'Return coming at you', 'The returner and the return coming toward you, wide enough for the blockers.');
         aim(behind, kicker[0], kicker[1], 18, 30); say(behind, 'Behind the kick', 'The kick from behind, then the coverage running downfield.');
         c6.x = Math.round(clamp(target[0] - d * 60, 120, 880)); c6.y = 420; aim(c6, target[0], target[1], 34, 30);
@@ -893,8 +925,8 @@
       } else if (m === 'td') {
         ball = [d > 0 ? 866 : 134, by]; arrow = false;
         extra += person(ball[0] - d * 26, by, 'HERO', 'batter', true);
-        aim(game, ball[0], by, 44, 60); say(game, 'Through the score', 'Stay on Game through the score.');
-        aim(iso, ball[0], by, 10, 30); say(iso, 'Scorer', 'The scorer and the celebration.');
+        aim(game, ball[0] - d * 26, by, 14, 40); say(game, 'Stick with the hero', 'Stay with the play through the score, then stick with the hero, usually until the next drive, so the director can cut to them celebrating on the bench.');
+        aim(iso, 500, 46, 30, 30); say(iso, 'Far side bench', 'The far side coach and bench reacting.');
         aim(pit, ball[0], by, 18, 30); say(pit, 'Celebration', 'The celebration in the end zone, then the bench.');
         aim(ahead, ball[0], by, 22, 30); say(ahead, 'Score', 'You’re at the end they scored in. Tight on the scorer crossing the goal line. Your angle may be the best option for a replay.');
         aim(behind, 500, 395, 30, 30); say(behind, 'Crowd', 'The crowd, the band, or the sideline reacting.');
@@ -906,13 +938,17 @@
         aim(iso, bx, by, 10, 30); say(iso, 'Ball', 'Tight on the ball through the fumble or interception. This may be the best option for a replay.');
         aim(pit, bx - d * 26, by, 14, 30); say(pit, 'Takeaway', 'The hero: the player who made the takeaway.');
         say(c6, 'Sideline', 'Get the sideline celebrating. The offense just changed direction, so flip Driving right or left before the next snap.');
-      } else if (m === 'flag') {
+      } else if (m === 'flagpre' || m === 'flagpost') {
         // The White Hat (the referee) announces the penalty and lines up about 12 yards behind the offense.
         var ref = [ballX(clamp(spot - d * 12, 0, 100)), by - 26];
         extra += person(ref[0], ref[1], 'WHITE HAT', 'official') + '<rect x="' + (bx - 30) + '" y="' + (by + 22) + '" width="8" height="6" fill="#F2C14E" transform="rotate(20 ' + (bx - 26) + ' ' + (by + 25) + ')"/>';
-        aim(game, bx, by, 44, 60); say(game, 'Wide', 'Hold wide on the field while the flag is out.');
-        aim(pit, ref[0], ref[1], 10, 30); say(pit, 'White Hat', 'Find the White Hat behind the offense for the announcement and the signal.');
-        aim(iso, bx, by, 12, 30); say(iso, 'The foul', 'Tight on the players involved in the foul.');
+        // Before the snap the game camera gets the White Hat. During or after the play it's Cam 2, whatever its role.
+        var whiteHat = m === 'flagpre' ? game : cams[1];
+        [game, pit, iso].forEach(function (c) { if (c !== whiteHat) { aim(c, bx, by, 12, 30); say(c, 'The foul', 'Tight on the players involved in the foul.'); } });
+        if (m === 'flagpost' && game !== whiteHat) { aim(game, bx, by, 44, 60); say(game, 'Game', 'Hold wide on the field.'); }
+        aim(whiteHat, ref[0], ref[1], 10, 30);
+        say(whiteHat, 'White Hat', m === 'flagpre' ? 'You’re game. Make a slow, gentle push to the White Hat for the call.' : 'Get to the White Hat quickly and tight, so the director can cut to it.');
+        whiteHat.hasBall = false;
         aim(c6, bx, by - 20, 26, 30); say(c6, 'Bench reaction', 'The coach or the bench reacting to the call.');
       } else if (m === 'timeout') {
         // Only the game camera holds the field. Everyone else hunts for color, each starting somewhere different.
