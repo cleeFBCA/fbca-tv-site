@@ -220,13 +220,6 @@
       director switches between them. If the director changes the plan for a game, follow the director.
     </div>
 
-    <div class="callout">
-      <strong>How the broadcast works:</strong> every camera feeds the control room. The director calls the
-      shots, and the technical director (TD) switches between cameras. Your feed is always in front of the
-      director, even when you’re not on air, so always have a usable shot. Listen on headset and tell the
-      director what you have. Cameras on tripods are called <b>hard cams</b>.
-    </div>
-
     <div class="picker" role="tablist" aria-label="Sport">
       <button type="button" role="tab" data-sport="football"><span aria-hidden="true">🏈</span>Football</button>
       <button type="button" role="tab" data-sport="volleyball"><span aria-hidden="true">🏐</span>Volleyball</button>
@@ -1403,6 +1396,7 @@
     updateSim(sp);
   }
 
+  var BROADCAST_NOTE = '<strong>How the broadcast works:</strong> every camera feeds the control room. The director calls the shots, and the technical director (TD) switches between cameras. Your feed is always in front of the director, even when you’re not on air, so always have a usable shot. Listen on headset and tell the director what you have. Cameras on tripods are called <b>hard cams</b>.';
   var TYPE_LABEL = { elevated: 'Hard cam, elevated', ground: 'Hard cam, floor', handheld: 'Handheld', mounted: 'Mounted' };
 
   function render(id) {
@@ -1420,11 +1414,10 @@
     h += '</div>';
     if (SIMS[id]) h = h.replace(/<\/div>$/, '<span><i class="sw ring"></i>Has the ball</span></div>') + '<div class="nowlist" id="nowList" aria-live="polite"></div>';
 
-    if (sp.notes) {
-      h += '<h3 class="sub">General Notes</h3><div class="callout">';
-      sp.notes.forEach(function (n) { h += '<p>' + n + '</p>'; });
-      h += '</div>';
-    }
+    // Every sport's General Notes start with how the broadcast works, then that sport's own notes.
+    h += '<h3 class="sub">General Notes</h3><div class="callout">';
+    [BROADCAST_NOTE].concat(sp.notes || []).forEach(function (n) { h += '<p>' + n + '</p>'; });
+    h += '</div>';
 
     h += '<h3 class="sub">Cameras</h3><div class="cards">';
     sp.cams.forEach(function (c, i) {
