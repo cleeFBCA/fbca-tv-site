@@ -96,6 +96,8 @@
   .diagram .travel{stroke:#F3EFE2;stroke-width:3;stroke-dasharray:10 7;opacity:.8}
   .diagram .cam circle{stroke-width:3}
   .diagram .cam text{font-weight:800;font-size:20px}
+  .diagram .cam{cursor:pointer}
+  .diagram .cam.off{opacity:.45}
   .cam.elevated circle{fill:var(--gold);stroke:var(--pine)} .cam.elevated text{fill:var(--pine)}
   .cam.ground circle{fill:var(--pine);stroke:var(--gold)} .cam.ground text{fill:var(--gold-hi)}
   .cam.handheld circle{fill:var(--chalk);stroke:var(--pine)} .cam.handheld text{fill:var(--pine)}
@@ -650,7 +652,7 @@
   function marker(c, n) {
     var s = c.travel ? '<line class="travel" x1="' + c.travel[0][0] + '" y1="' + c.travel[0][1] + '" x2="' + c.travel[1][0] + '" y2="' + c.travel[1][1] + '"/>' : '';
     if (c.hasBall) s += '<circle class="ballring" cx="' + c.x + '" cy="' + c.y + '" r="' + u(25) + '" style="stroke-width:' + u(3) + '"/>';
-    return s + '<g class="cam ' + c.type + '"><circle cx="' + c.x + '" cy="' + c.y + '" r="' + u(17) + '" style="stroke-width:' + u(3) + '"/><text x="' + c.x + '" y="' + (c.y + u(7)) + '" style="font-size:' + u(20) + 'px">' + n + '</text></g>' +
+    return s + '<g class="cam ' + c.type + (c.off ? ' off' : '') + '" data-cam="' + (n - 1) + '"><title>Camera ' + n + ': click to ' + (c.off ? 'show' : 'hide') + ' what it sees</title><circle cx="' + c.x + '" cy="' + c.y + '" r="' + u(17) + '" style="stroke-width:' + u(3) + '"/><text x="' + c.x + '" y="' + (c.y + u(7)) + '" style="font-size:' + u(20) + 'px">' + n + '</text></g>' +
       (c.roleTag ? '<text class="role ' + c.roleTag + '" x="' + c.x + '" y="' + (c.y + 44) + '">' + c.roleTag.toUpperCase() + '</text>' : '');
   }
 
@@ -661,9 +663,13 @@
     UI = vb[2] / 1000;
     var extra = sim ? sim.apply(sim.state, cams) || '' : '';
     LAST_CAMS = cams;
-    cams.forEach(function (c, i) { if (sim && !sim.labels) c.roleTag = null; cones += cone(c); marks += marker(c, i + 1); label += 'Camera ' + (i + 1) + ', ' + c.where + '. '; });
+    var hidden = HIDDEN[sp.id] || {};
+    cams.forEach(function (c, i) { if (sim && !sim.labels) c.roleTag = null; c.off = !!hidden[i]; if (!c.off) cones += cone(c); marks += marker(c, i + 1); label += 'Camera ' + (i + 1) + ', ' + c.where + '. '; });
     return '<svg viewBox="' + vb.join(' ') + '" role="img" aria-label="' + label + '">' + sp.draw() + cones + extra + marks + '</svg>';
   }
+
+  // Cameras whose view cone the viewer clicked off, by sport and camera index. Kept while switching moments.
+  var HIDDEN = {};
 
   // ---------- interactive diagrams ----------
   // Each sport in SIMS has a state, its controls, and apply(), which aims every camera for the
@@ -1132,7 +1138,10 @@
         // The goat is the player who committed the foul, right next to the ball.
         var goat = [clamp(bx - 18, 110, 890), clamp(by + 6, 60, 520)];
         extra = person(ref[0], ref[1], 'REF', 'official') + person(goat[0], goat[1], 'GOAT', 'batter', true);
-        aim(c2, goat[0], goat[1], 12, 40); keepInShot(c2, [ref]);
+        // Tight on the goat and the ref: the edges of the frame sit just outside the two of them.
+        var aGoat = Math.atan2(goat[1] - c2.y, goat[0] - c2.x) * 180 / Math.PI, aRef = Math.atan2(ref[1] - c2.y, ref[0] - c2.x) * 180 / Math.PI;
+        c2.aim = (aGoat + aRef) / 2; c2.fov = Math.abs(aGoat - aRef) + 3;
+        c2.len = Math.round(Math.max(Math.hypot(goat[0] - c2.x, goat[1] - c2.y), Math.hypot(ref[0] - c2.x, ref[1] - c2.y)) + 25);
         say(c2, 'Goat', 'Stay with the player who committed the foul. Include the referee for a warning or card.');
         say(on18, 'Replay', 'Your angle on the foul is a replay option.');
       } else if (m === 'sub') {
@@ -1386,6 +1395,11 @@
     }
     function move(e) { var p = toSvg(e); sim.drag(s, p.x, p.y); updateSim(sp); }
     fig.addEventListener('pointerdown', function (e) {
+      var cam = e.target.closest && e.target.closest('[data-cam]');
+      if (cam) {
+        var hid = HIDDEN[sp.id] = HIDDEN[sp.id] || {}, i = +cam.dataset.cam;
+        hid[i] = !hid[i]; updateSim(sp); return;
+      }
       var base = e.target.closest && e.target.closest('[data-base]');
       if (base && sim.onBase) { sim.onBase(s, base.dataset.base); updateSim(sp); return; }
       if (!sim.drag || (sim.canDrag && !sim.canDrag(s))) return;
@@ -1409,7 +1423,7 @@
     Object.keys(TYPE_LABEL).forEach(function (k) {
       if (sp.cams.some(function (c) { return c.type === k; })) h += '<span><i class="dot ' + k + '"></i>' + TYPE_LABEL[k] + '</span>';
     });
-    h += '<span><i class="sw fov"></i>What the camera sees</span>';
+    h += '<span><i class="sw fov"></i>What the camera sees (click a camera to hide or show it)</span>';
     if (sp.cams.some(function (c) { return c.travel; })) h += '<span><i class="sw travel"></i>Handheld path</span>';
     h += '</div>';
     if (SIMS[id]) h = h.replace(/<\/div>$/, '<span><i class="sw ring"></i>Has the ball</span></div>') + '<div class="nowlist" id="nowList" aria-live="polite"></div>';
