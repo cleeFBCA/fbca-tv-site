@@ -504,7 +504,7 @@
           role: 'Main game camera', where: 'In the stands behind home plate',
           job: 'The main defensive and ball-in-play camera. Framing, framing, framing.',
           framing: 'Set the defense. Include the umpire on the call at any base.',
-          tips: ['Stay in manual focus. You’re shooting through the net.', 'The pitcher between every pitch.', 'Steals: keep the runner and the ball in frame.', 'Swing appeals: the umpire in the direction the batter is facing.', 'When the bases are loaded, set the table.', 'A good camera for beauty shots.'] },
+          tips: ['Stay in manual focus. You’re shooting through the net.', 'The pitcher between every pitch.', 'Steals: keep the runner and the ball in frame.', 'Runner scoring: medium on the fielder through the throw, then follow the ball home for the play at the plate: the runner, the catcher, and the umpire on the call.', 'Swing appeals: the umpire in the direction the batter is facing.', 'When the bases are loaded, set the table.', 'A good camera for beauty shots.'] },
         { x: 670, y: 500, aim: 144, fov: 16, len: 230, type: 'elevated',
           role: 'First base camera', where: 'In the stands on the first-base side',
           job: 'Right-handed batters between every pitch, scoring every runner, and the offensive hero on a triple.',
@@ -1187,14 +1187,14 @@
       // On a steal the runner who is going is drawn on the move instead of on their base.
       var stealFrom = m !== 'steal' ? 0 : run[3] ? 3 : run[1] ? 1 : run[2] ? 2 : 0;
       // On a runner scoring, the lead runner (from third, or else second) is drawn on the way home instead,
-      // and everyone behind them moves up a base as the batter heads to first.
+      // and everyone behind them is halfway down the base path to the next base as the batter heads to first.
       var scoreFrom = m !== 'score' ? 0 : run[3] ? 3 : run[2] ? 2 : 0;
       // Once the ball is in play the batter is running, so they’re drawn on the bases instead of at the plate.
       // On a runner scoring, the batter who drove them in is already running to first as the hero.
       if (m !== 'inplay' && m !== 'popfly' && !(m === 'score' && (run[2] || run[3]))) extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH', 'batter');
       [1, 2, 3].forEach(function (b) {
         var p = BASES[b];
-        if (run[b] && m !== 'inplay' && b !== stealFrom && b !== scoreFrom) extra += runnerMark(scoreFrom ? BASES[b + 1] : p);
+        if (run[b] && m !== 'inplay' && b !== stealFrom && b !== scoreFrom) extra += runnerMark(scoreFrom ? [(p[0] + BASES[b + 1][0]) / 2, (p[1] + BASES[b + 1][1]) / 2] : p);
         extra += '<circle class="basehit" data-base="' + b + '" cx="' + p[0] + '" cy="' + (p[1] - u(6)) + '" r="' + u(24) + '"><title>Runner on ' + BASE_NAME[b] + '</title></circle>';
       });
 
@@ -1305,11 +1305,11 @@
           var rr = run[3] ? [450, 580] : [410, 510];
           extra += person(rr[0], rr[1], 'SCORING', 'flag', true);
           aim(c3, rr[0], rr[1], 12, 30); say(c3, 'Score the runner', 'Make the switch to the runner coming home, then score them crossing the plate.');
-          aim(c2, (rr[0] + HOME[0]) / 2, (rr[1] + HOME[1]) / 2, 30, 40); say(c2, 'Play at the plate', 'The runner, the throw, and the umpire on the call at home.');
-          // The throw home comes from where the ball was last hit (drag it on Ball in play), caught most of the way in.
-          var thr = flight([s.bx, s.by], [HOME[0], HOME[1] - 8], 20, 0.8);
-          extra += person(s.bx, s.by + u(16), 'FIELDER', 'batter', true) + thr.svg;
-          ball = thr.at; ballCam = c2; keepInShot(c2, [ball]);
+          say(c2, 'Fielder to the plate', 'Medium on the fielder through the throw, then follow the ball home for the play at the plate: the runner, the catcher, and the umpire on the call.');
+          // The throw home comes from where the ball was last hit (drag it on Ball in play), just out of the fielder's hand.
+          var thr = flight([s.bx, s.by], [HOME[0], HOME[1] - 8], 20, 0.12);
+          extra += person(s.bx, s.by, 'FIELDER', 'batter') + thr.svg;
+          ball = thr.at; ballCam = c2; aim(c2, s.bx, s.by, 30, 60);
           extra += person(585, 545, 'HERO', 'batter', true);
           aim(c1, 585, 545, 14, 30); say(c1, 'Offensive hero', 'The offensive hero on the RBI.');
           if (run[3] && run[2]) say(c3, 'Score all runners', 'Score the runner from third, then make the switch to the next runner coming home.');
