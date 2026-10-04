@@ -213,7 +213,7 @@
 <main>
   <div class="wrap">
     <h1 class="doc-title">Camera Operator Guide</h1>
-    <p class="effective">For the Eagles on the Air crew · Last updated September 2026</p>
+    <p class="effective">For the Eagles on the Air crew · Last updated October 2026</p>
 
     <div class="intro">
       Pick a sport to see where every camera goes, what each operator is responsible for, and how the
@@ -441,61 +441,49 @@
 
     soccer: {
       title: 'Soccer', venue: 'Eagle Stadium', view: [1000, 640], draw: drawSoccer,
-      summary: 'Six cameras. Cam 2 at midfield is the game camera, with Cam 1 and Cam 3 on the left and right 18-yard lines getting heroes. Cam 4 and Cam 5 behind the goals, and Cam 6 roaming the near sideline.',
+      summary: 'Four cameras, all in the near-side stands. Cam 1 and Cam 2 sit together at midfield: Cam 1 is the game camera, and Cam 2 is the high tight camera. Cam 3 and Cam 4 are on the left and right 18-yard lines.',
       notes: [
-        'The <b>near side</b> is the sideline by the home bleachers and press box, where Cams 1, 2, 3, and 6 are. The <b>far side</b> is the other sideline, where the team benches are: away team to the left of the midfield line, home team to the right.'
+        'The <b>near side</b> is the sideline by the home bleachers and press box, where all four cameras are. The <b>far side</b> is the other sideline, where the team benches are: away team to the left of the midfield line, home team to the right.'
       ],
       cams: [
-        { x: 225, y: 608, aim: -84, fov: 20, len: 340, type: 'elevated',
-          role: 'Left 18 camera', where: 'Near side, at the left 18-yard line',
-          job: 'Always getting heroes. You get the primary hero when the play is on the near side of the field, and the secondary hero when it’s on the far side.',
-          framing: 'Wider when the play is on the near side (think offside), tighter when it’s on the far side.',
-          tips: ['Goal: the primary hero is the scorer. The secondary hero is the player with the assist, or who really got the play going.', 'Own goal: the primary hero is the player credited with the goal. The secondary hero, really the goat, is the defender who scored the own goal.', 'Foul or physical play: the primary hero is the player who got fouled. The secondary hero is the player who committed the foul.', 'Not sure who the secondary hero is? The crowd is always a great option, and you can mix in the crowd when it’s good.', 'Corner on the near side: include the kicker and the goal, then slowly push in as the ball is kicked toward goal. Corner on the far side: just the goal and the mass of players.', 'On subs, get the player coming out. If there are several, include them all, or pick one if they’re far apart.', 'If we don’t have Cam 4, 5, or 6, you get all the referee shots.'] },
         { x: 500, y: 608, aim: -90, fov: 55, len: 570, type: 'elevated',
-          role: 'Main game camera', where: 'Near side, at midfield',
-          job: 'You are the main game camera. Keep the ball in the shot almost all the time.',
-          framing: 'Wide enough to see players on the far wings, but not so wide you include stragglers or empty space. Leave more room ahead of the ball than behind it, so you lead the play.',
-          tips: ['Don’t follow a high kick. Let the ball leave the frame and drop back into play. Same for a ball going far out of play, like a missed shot into empty stands.', 'You can get a little tighter as the ball gets closer to goal, and when the ball is in the far corners.', 'Once the action crosses midfield toward a goal, show the ball and the goal together.', 'When a goal is scored, slowly push in on the goat (the goalie who just gave up the goal) until the director cuts off you.'] },
-        { x: 775, y: 608, aim: -96, fov: 20, len: 340, type: 'elevated',
-          role: 'Right 18 camera', where: 'Near side, at the right 18-yard line',
-          job: 'Always getting heroes. You get the primary hero when the play is on the near side of the field, and the secondary hero when it’s on the far side.',
-          framing: 'Wider when the play is on the near side (think offside), tighter when it’s on the far side.',
-          tips: ['Goal: the primary hero is the scorer. The secondary hero is the player with the assist, or who really got the play going.', 'Own goal: the primary hero is the player credited with the goal. The secondary hero, really the goat, is the defender who scored the own goal.', 'Foul or physical play: the primary hero is the player who got fouled. The secondary hero is the player who committed the foul.', 'Not sure who the secondary hero is? The crowd is always a great option, and you can mix in the crowd when it’s good.', 'Corner on the near side: include the kicker and the goal, then slowly push in as the ball is kicked toward goal. Corner on the far side: just the goal and the mass of players.', 'On subs, get the player coming out. If there are several, include them all, or pick one if they’re far apart.', 'If we don’t have Cam 4, 5, or 6, you get all the referee shots.'] },
-        { x: 45, y: 290, aim: 0, fov: 40, len: 480, type: 'ground',
-          role: 'Left end zone camera', where: 'Behind the left goal',
-          job: 'Think X’s and O’s while the ball is in play: wide enough to show how the whole play develops. Your angle may be the best option for a replay that breaks down the play. You also get coach, bench, and referee shots.',
-          framing: 'Wide at first so the play can develop, then slowly tighter as it gets closer to goal. Don’t shoot so tight that you lose the players around the ball.',
-          tips: ['Get all coach and bench shots. Listen to talent here.', 'Know where the referees are at all times. When a physical play happens, find the referee right away. We want to see the yellow or red card.', 'On an offside, find the side judge holding up the flag. Far-side offside: the side judge is on the left side of the field. Near-side offside: the right side.', 'Corner kicks: before the kick, show the players in the box getting set. For the kick, either go wide on the kicker and the goal and push in when the ball is played, or go tight on just the goal and let the action develop.', 'Free kick at the far end: wide enough for the kicker and the goal or target players.', 'Free kick at the near end: iso the kicker before the kick (head to toe or tight), then go back wide for the kick with most of the goal in frame. You can pull out or tilt down as the ball travels toward goal.', 'On subs, get the player coming in. If there are several, include them all, or pick one if they’re far apart.'] },
-        { x: 955, y: 290, aim: 180, fov: 40, len: 480, type: 'ground',
-          role: 'Right end zone camera', where: 'Behind the right goal',
-          job: 'Think X’s and O’s while the ball is in play: wide enough to show how the whole play develops. Your angle may be the best option for a replay that breaks down the play. You also get coach, bench, and referee shots.',
-          framing: 'Wide at first so the play can develop, then slowly tighter as it gets closer to goal. Don’t shoot so tight that you lose the players around the ball.',
-          tips: ['Get all coach and bench shots. Listen to talent here.', 'Know where the referees are at all times. When a physical play happens, find the referee right away. We want to see the yellow or red card.', 'On an offside, find the side judge holding up the flag. Far-side offside: the side judge is on the left side of the field. Near-side offside: the right side.', 'Corner kicks: before the kick, show the players in the box getting set. For the kick, either go wide on the kicker and the goal and push in when the ball is played, or go tight on just the goal and let the action develop.', 'Free kick at the far end: wide enough for the kicker and the goal or target players.', 'Free kick at the near end: iso the kicker before the kick (head to toe or tight), then go back wide for the kick with most of the goal in frame. You can pull out or tilt down as the ball travels toward goal.', 'On subs, get the player coming in. If there are several, include them all, or pick one if they’re far apart.'] },
-        { x: 600, y: 546, aim: -100, fov: 40, len: 160, type: 'handheld', travel: [[120, 546], [880, 546]],
-          role: 'Sideline handheld', where: 'Wireless, roaming the near sideline',
-          job: 'Stay active. Your goal is to be on program (on air) as many times as the other cameras.',
-          framing: 'Close and personal: reactions, coaches, benches, and referees.',
-          tips: ['Always help with bench, coach, and referee shots.', 'Great for reactions after a foul call or a goal.', 'Follow short passes and throw-ins close to you, and goal attempts on your side of the field.', 'On the end line, get creative on goal kicks and corner kicks.', 'Get fan shots when there are fans. There usually aren’t many at soccer games.', 'Before the game, be really active getting coach and player shots, and be creative with color shots.'] }
+          role: 'Game camera', where: 'Near-side stands, high at midfield',
+          job: 'The most important camera on the show. Almost the whole match is on your shot, so stay rock solid from start to finish.',
+          framing: 'Wide and clean, so viewers can follow the ball and see the spacing between players. Keep the ball near the center, with extra room in the direction of play.',
+          tips: ['Anticipate passes, transitions, and long balls. Adjust your framing smoothly.', 'Breathe with the game. When play is in a tight area, slowly zoom in on the action. When the ball is switched or cleared, widen back out to show the full shape of play.', 'Unlike football, no other camera takes over the game during live play. Cutting away at the wrong time loses the viewer, so never leave the ball.'] },
+        { x: 555, y: 608, aim: -90, fov: 14, len: 400, type: 'elevated',
+          role: 'High tight camera', where: 'Near-side stands, right next to Cam 1',
+          job: 'Storytelling and replays. Follow the ball like Cam 1, but tighter, on individual players and the immediate action. You also get the close-ups and reactions that build the story of the match.',
+          framing: 'The ball and the player on the ball, head to toe, plus the closest defender.',
+          tips: ['Your shot is a key replay angle for everything that happens between stoppages.', 'After a shot on goal, stay on the shooter or goal scorer so the director can cut to them live.', 'On subs, get the player coming into the match.', 'On a foul, stay with the player who committed it. Include the referee when a warning or card is given.', 'Set pieces depend on where they are and what the other cameras have. On corners, especially on the far side, frame the player taking the corner and pull out as the kick is delivered into the box.', 'This camera takes situational awareness, quick reactions, and a feel for the story. It usually goes to one of our top operators.'] },
+        { x: 225, y: 608, aim: -84, fov: 28, len: 340, type: 'elevated',
+          role: 'Left 18 camera', where: 'Near-side stands, at the left 18-yard line',
+          job: 'The offside angle when play is on your half, and dramatic replay angles on crosses, shots, and defensive plays.',
+          framing: 'Play on your half: wider, with the ball and the last defender both in frame. Play on the far half: a medium shot following the ball.',
+          tips: ['Your shot is the replay that shows offside calls. When play is on your half, always keep the last defender in frame.', 'When play is on the far half, the director may give you a different job, like a wider look at how the teams are set up.', 'During attacks, your angle is often the best replay of a cross, a shot, or a big defensive play.', 'Corner kick at the other end of the field: frame the player taking the corner and the entire goal. After the kick, steadily but slowly zoom in to the action at the goal. Shoot it like you’re live, in case we need it for a replay.', 'On a goal or an offside call, hold your shot for a couple of seconds before you move, so we have a good replay.', 'After a goal at the other end of the field, get the goalie who gave up the goal. Cam 2 has the goal scorer.'] },
+        { x: 775, y: 608, aim: -96, fov: 28, len: 340, type: 'elevated',
+          role: 'Right 18 camera', where: 'Near-side stands, at the right 18-yard line',
+          job: 'The offside angle when play is on your half, and dramatic replay angles on crosses, shots, and defensive plays.',
+          framing: 'Play on your half: wider, with the ball and the last defender both in frame. Play on the far half: a medium shot following the ball.',
+          tips: ['Your shot is the replay that shows offside calls. When play is on your half, always keep the last defender in frame.', 'When play is on the far half, the director may give you a different job, like a wider look at how the teams are set up.', 'During attacks, your angle is often the best replay of a cross, a shot, or a big defensive play.', 'Corner kick at the other end of the field: frame the player taking the corner and the entire goal. After the kick, steadily but slowly zoom in to the action at the goal. Shoot it like you’re live, in case we need it for a replay.', 'On a goal or an offside call, hold your shot for a couple of seconds before you move, so we have a good replay.', 'After a goal at the other end of the field, get the goalie who gave up the goal. Cam 2 has the goal scorer.'] }
       ],
       shots: [
-        ['Build-up play', 'Cam 2', 'Ball in frame, leading the play', 'Cam 1 and Cam 3 on heroes. Cam 4 and Cam 5 on the X’s and O’s'],
-        ['Attack on goal', 'Cam 2', 'Ball and goal together, a little tighter', 'Cam 4 or Cam 5 lets the play develop'],
-        ['Goal', 'Cam 2 → Cam 1 or Cam 3', 'Push in on the goat, then the scorer', 'The other 18 camera on the secondary hero. Cam 6 on reactions'],
-        ['Replay', 'Cam 4 or Cam 5', 'End zone angle that dissects the play', 'Wait for a stop in play'],
-        ['Foul or card', 'Cam 4 or Cam 5', 'The referee showing the card', 'Cam 1 or Cam 3 on the player fouled and the fouler'],
-        ['Restart', 'Cam 2', 'Wide on the kickoff or restart', 'Cam 6 on throw-ins near it']
+        ['Build-up play', 'Cam 1', 'Wide and clean, ball near the center, room in the direction of play', 'Cam 2 tight on the player on the ball. Cam 3 and Cam 4 on the ball and the last defender on their half, or a medium follow on the far half'],
+        ['Play in a tight area', 'Cam 1', 'Slowly zoom in on the action', 'Cam 2 tight on the player on the ball'],
+        ['Switch or clearance', 'Cam 1', 'Widen back out to show the full shape of play', 'Everyone back to following the ball'],
+        ['Shot or goal', 'Cam 1 → Cam 2', 'The shooter or goal scorer', 'The 18 camera on that end holds for a couple of seconds for the replay. The other 18 camera holds too, then gets the goalie'],
+        ['Foul or card', 'Cam 2', 'The player who committed the foul, plus the referee for a card', 'Cam 3 or Cam 4 has a replay angle'],
+        ['Replay', 'Cam 2, Cam 3, or Cam 4', 'Cam 2 for the tight look. Cam 3 or Cam 4 for offside, crosses, and shots', 'Wait for a stop in play']
       ],
-      routine: 'Stay on Cam 2 while the ball is live. When play stops, go to heroes, the referee, coaches, and replays, then back to Cam 2 before the restart. Replay as many plays as you can.',
+      routine: 'Stay on Cam 1 while the ball is live. Soccer relies on that one angle, so only cut away when play stops. Then go to Cam 2 for the player and the story, and to replays from Cam 2, Cam 3, or Cam 4. Be back on Cam 1 before the restart.',
       situations: [
-        ['Goal', 'Cam 2 slowly pushes in on the goat until the director cuts away. Cam 1 or Cam 3 has the scorer, and the other has the assist or the crowd. Replay from Cam 4 or Cam 5.'],
-        ['Own goal', 'The primary hero is the player credited with the goal. The secondary hero (the goat) is the defender who scored it.'],
-        ['Corner kick', 'Cam 4 or Cam 5 shows the players in the box getting set, then the kick. Cam 1 or Cam 3 follows its corner kick rules. Cam 6 can get creative from the end line.'],
-        ['Offside', 'Cam 4 or Cam 5 finds the side judge holding up the flag.'],
-        ['Foul or card', 'Cam 4 or Cam 5 finds the referee showing the card. Cam 1 or Cam 3 gets the player fouled and the player who fouled. Cam 6 gets reactions.'],
-        ['Substitution', 'Cam 1 and Cam 3 get the player coming out. Cam 4 and Cam 5 get the player coming in.'],
-        ['Short on cameras', 'If we don’t have Cam 4, 5, or 6, Cam 1 and Cam 3 get all the referee shots.']
+        ['Goal', 'Cam 2 stays on the goal scorer so you can cut to them live. Cam 3 and Cam 4 hold their shots for a couple of seconds for the replay. Then the 18 camera at the other end gets the goalie who gave up the goal. Replay from Cam 2, or from the 18 camera on that end.'],
+        ['Corner kick', 'Cam 1 holds wide on the box. Cam 2 frames the player taking the corner and pulls out as the kick is delivered, especially on far-side corners. The 18 camera on that end has the replay of the cross. The 18 camera at the other end frames the player taking the corner and the entire goal, then steadily but slowly zooms in to the action at the goal after the kick.'],
+        ['Offside', 'Cam 3 and Cam 4 hold their shots for a couple of seconds before moving. Replay from the 18 camera on that half. It has the ball and the last defender in frame.'],
+        ['Foul or card', 'Cam 2 stays with the player who committed the foul and includes the referee for a warning or card.'],
+        ['Substitution', 'Cam 2 gets the player coming into the match.']
       ],
-      tips: ['The ball is almost always live. Stay on Cam 2 until play stops.', 'Show close-ups of heroes (the player who made the great play) and goats (the player who made the mistake) often.', 'Listen to talent for coach, bench, and hero shots.', 'Scorebug stays up during play. Take it out at halftime.']
+      tips: ['The ball is almost always live. Stay on Cam 1 until play stops.', 'Cam 2 tells the story. Show close-ups of heroes (the player who made the great play) and goats (the player who made the mistake) often.', 'Use Cam 3 and Cam 4 to show offside calls and for dramatic replays of crosses and shots.', 'Scorebug stays up during play. Take it out at halftime.']
     },
 
     baseball: {
@@ -868,6 +856,8 @@
       aim(c6, bx, by, 36, 30);
 
       var extra = '', ball = [bx, by], arrow = true, f, kicker, target;
+      // On a live play, the quarterback lines up a few yards behind the ball.
+      if (m === 'live') extra += person(qbX, by, 'QB', 'batter', true);
       if (m === 'coin') {
         arrow = false; ball = null;
         extra += person(466, 218, 'CAPTAIN', 'batter') + person(534, 218, 'CAPTAIN', 'batter') + person(500, 226, 'REF', 'official', true);
@@ -903,6 +893,7 @@
         say(c6, 'Kicker’s reaction', 'Be ready for the kicker’s reaction and the sideline.');
       } else if (m === 'td') {
         ball = [d > 0 ? 866 : 134, by]; arrow = false;
+        extra += person(ball[0] - d * 26, by, 'HERO', 'batter', true);
         aim(game, ball[0], by, 44, 60); say(game, 'Through the score', 'Stay on Game through the score.');
         aim(iso, ball[0], by, 10, 30); say(iso, 'Scorer', 'The scorer and the celebration.');
         aim(pit, ball[0], by, 18, 30); say(pit, 'Celebration', 'The celebration in the end zone, then the bench.');
@@ -910,9 +901,11 @@
         aim(behind, 500, 395, 30, 30); say(behind, 'Crowd', 'The crowd, the band, or the sideline reacting.');
         aim(c6, ball[0], by, 30, 30); say(c6, 'Goal line', 'In the back corner of the end zone. Tight on the goal line, then the celebration.');
       } else if (m === 'turnover') {
+        // The player who made the takeaway has the ball.
+        extra += person(bx - d * 26, by, 'HERO', 'batter', true);
         aim(game, bx, by, 44, 60); say(game, 'Wide', 'Stay wide on the takeaway.');
         aim(iso, bx, by, 10, 30); say(iso, 'Ball', 'Tight on the ball through the fumble or interception. This may be the best option for a replay.');
-        aim(pit, bx, by, 14, 30); say(pit, 'Takeaway', 'The player who made the takeaway.');
+        aim(pit, bx - d * 26, by, 14, 30); say(pit, 'Takeaway', 'The hero: the player who made the takeaway.');
         say(c6, 'Sideline', 'Get the sideline celebrating. The offense just changed direction, so flip Driving right or left before the next snap.');
       } else if (m === 'flag') {
         // The White Hat (the referee) announces the penalty and lines up about 12 yards behind the offense.
@@ -961,17 +954,22 @@
       aim(c2, s.bx, s.by, 14, 30); say(c2, 'Tight', 'Tight on the ball handler.');
       aim(near, s.bx, s.by, 28, 40); say(near, 'Nearside', 'You’re close to the action. Low angle on drives, shots, and rebounds.');
       aim(back, s.bx, s.by, 40, 40); say(back, 'Backside', 'You’re away from the action. Hold a wide angle on the play.');
+      // Coaches stand in front of their benches: away on the left, home on the right.
+      var coach = [s.bx < 500 ? 370 : 630, 96], nextTo = [clamp(s.bx + (left ? 18 : -18), 160, 840), s.by];
       if (m === 'made') {
+        extra = person(nextTo[0], nextTo[1], 'HERO', 'batter', true);
         say(c1, 'Game', 'Follow the other team up the court.');
         say(c2, 'Hero', 'The hero, or a good assist.');
         aim(back, s.bx, s.by, 16, 40); say(back, 'Backside: hero', 'Always the hero.');
         say(near, 'Nearside: hero or bench', 'The hero if you can get them, or the bench reacting.');
       } else if (m === 'turnover') {
-        aim(c2, BK_BENCHES[0], BK_BENCHES[1], 30, 20); say(c2, 'Coach', 'The coach of the team that turned it over.');
+        extra = person(nextTo[0], nextTo[1], 'GOAT', 'batter', true) + person(s.bx, clamp(s.by - 24, 110, 460), 'HERO', 'batter') + person(coach[0], coach[1], 'COACH', 'batter', true);
+        aim(c2, coach[0], coach[1], 14, 20); say(c2, 'Coach', 'The coach of the team that turned it over.');
         aim(back, s.bx, s.by, 16, 40); say(back, 'Backside: turned it over', 'The player who turned it over (last touch or bad pass).');
         aim(near, s.bx, s.by, 20, 40); say(near, 'Nearside: forced it', 'The player who forced the turnover, or the inbound.');
       } else if (m === 'foul') {
-        say(c2, 'Fouler', 'The player who committed the foul, then their coach.');
+        extra = person(nextTo[0], nextTo[1], 'GOAT', 'batter', true);
+        aim(c2, nextTo[0], nextTo[1], 12, 30); say(c2, 'Fouler', 'The goat: the player who committed the foul, then their coach.');
         aim(near, s.bx, s.by, 30, 40); say(near, 'Nearside: floor', 'Pick up all the players getting up off the floor, then the fouler, then the shooter at the line or the inbound.');
         aim(back, BK_BENCHES[0], BK_BENCHES[1], 30, 20); say(back, 'Backside: fouler or fans', 'The fouler leaving the game if they’re near the bench. If not, booing fans or color.');
       } else if (m === 'ft') {
@@ -981,14 +979,15 @@
         aim(near, ft[0], ft[1], 9, 30); say(near, 'Nearside: shooter', 'Tight on the shooter.');
         aim(back, hoop[0], hoop[1], 34, 60); say(back, 'Backside: wide', 'Wide for the shot. On the last free throw, push to the shooter on a make, or the rebounder on a miss.');
       } else if (m === 'sub') {
-        extra = person(ft[0], ft[1], 'SHOOTER');
+        extra = person(ft[0], ft[1], 'SHOOTER') + person(500, 96, 'SUBS', 'batter', true);
         say(c1, 'Game', 'Hold wide.');
         aim(c2, BK_TABLE[0], BK_TABLE[1], 26, 20); say(c2, 'Subs in', 'Subs coming in. Start wide to show the scorer’s table, then push tight to the star.');
         aim(back, BK_TABLE[0], BK_TABLE[1], 30, 20); say(back, 'Backside: backup', 'Backup shot of subs coming in if Cam 2 is on air, or subs leaving if the nearside camera has the shooter at the line.');
         aim(near, ft[0], ft[1], 12, 30); say(near, 'Nearside: line or exits', 'The shooter at the line, or players leaving the game.');
       } else if (m === 'end') {
+        extra = person(nextTo[0], nextTo[1], 'HERO', 'batter', true) + person(s.bx, clamp(s.by - 24, 110, 460), 'GOAT', 'batter') + person(coach[0], coach[1], 'COACH', 'batter', true);
         aim(c1, (s.bx + 500) / 2, (s.by + 286) / 2, 75, 80); say(c1, 'Atmosphere', 'An easy pull out from the final play to show the atmosphere, or push in to the winning bench.');
-        aim(c2, s.bx < 500 ? 370 : 630, BK_BENCHES[1], 24, 20); say(c2, 'Winning coach', 'The winning coach through the handshake, then the star player or players.');
+        aim(c2, coach[0], coach[1], 14, 20); say(c2, 'Winning coach', 'The winning coach through the handshake, then the star player or players.');
         aim(near, s.bx, s.by, 16, 40); say(near, 'Nearside: hero and goat', 'On a buzzer beater, the hero and the goat at the final shot, then coming back to the bench. If not, frame the star player or the winning coach coming toward you.');
         aim(back, (s.bx + 500) / 2, (s.by + BK_BENCHES[1]) / 2, 30, 40); say(back, 'Backside: hero and goat', 'On a buzzer beater, the hero and the goat coming back to the bench. If not, frame the star player or the winning coach coming toward you.');
       }
@@ -999,7 +998,7 @@
   };
 
   // ---------- volleyball: a camera’s far court is the other side of the net ----------
-  var VB_TABLE = [500, 41];
+  var VB_TABLE = [500, 41], VB_SUBS = [600, 68];
   SIMS.volleyball = {
     state: { bx: 350, by: 250, m: 'rally' },
     controls: [
@@ -1011,6 +1010,9 @@
       var c1 = cams[0], c2 = cams[1], c3 = cams[2], c4 = cams[3], c5 = cams[4], c6 = cams[5], m = s.m;
       var left = s.bx < 500, bx = s.bx, by = s.by, extra = '';
       if (m === 'serve') { bx = left ? 172 : 828; by = clamp(s.by, 140, 400); extra = person(bx, by + 2, 'SERVER', 'batter', true); }
+      // The hero who won the point is right where the ball ended up. Subs wait by the scorer's table.
+      if (m === 'point') extra = person(bx + (left ? -16 : 16), by, 'HERO', 'batter', true);
+      if (m === 'sub') extra = person(VB_SUBS[0], VB_SUBS[1], 'SUBS', 'batter', true);
       // Cam 1 follows the ball with a very wide shot: centered on the ball wherever it goes, and reaching
       // across the whole court so the play around the ball is always in frame.
       aim(c1, bx, by, 80, 140);
@@ -1061,7 +1063,7 @@
           else { follow(); say(c, '¾ court', 'Hold your ¾ court framing.'); }
         }
         if (m === 'timeout') { aim(c, VB_TABLE[0], VB_TABLE[1], 34, 20); say(c, 'Crowd or bench', 'Find the crowd or a bench and tell the director what you have.'); }
-        if (m === 'sub') { aim(c, VB_TABLE[0], VB_TABLE[1], 14, 20); say(c, 'Subs', 'Help with subs. They stand near the scorer’s table with their hands up before coming in.'); }
+        if (m === 'sub') { aim(c, VB_SUBS[0], VB_SUBS[1], 14, 20); say(c, 'Subs', 'Help with subs. They stand near the scorer’s table with their hands up before coming in.'); }
       });
 
       c6.aim = -90; c6.fov = 50; c6.len = 330;
@@ -1074,84 +1076,78 @@
     }
   };
 
-  // ---------- soccer: near side is the sideline by the home bleachers ----------
-  var SOC_BENCH = { left: [395, 31], right: [605, 31] };
+  // ---------- soccer: all four cameras are in the near-side stands ----------
   SIMS.soccer = {
     state: { bx: 620, by: 360, m: 'live' },
     controls: [
-      { type: 'seg', key: 'm', label: 'Moment', opts: [['live', 'Live play'], ['goal', 'Goal'], ['corner', 'Corner kick'], ['freekick', 'Free kick'], ['offside', 'Offside'], ['foul', 'Foul or card'], ['sub', 'Substitution']] }
+      { type: 'seg', key: 'm', label: 'Moment', opts: [['live', 'Live play'], ['goal', 'Goal'], ['corner', 'Corner kick'], ['offside', 'Offside'], ['foul', 'Foul or card'], ['sub', 'Substitution']] }
     ],
     hint: function (s) { return s.m === 'corner' ? 'Drag the ball toward a corner to pick which corner.' : 'Drag the ball around the field.'; },
     drag: function (s, x, y) { s.bx = clamp(x, 105, 895); s.by = clamp(y, 55, 525); },
     apply: function (s, cams) {
-      var c1 = cams[0], c2 = cams[1], c3 = cams[2], c4 = cams[3], c5 = cams[4], c6 = cams[5], m = s.m;
+      var c1 = cams[0], c2 = cams[1], c3 = cams[2], c4 = cams[3], m = s.m;
       var left = s.bx < 500, nearSide = s.by > 290, bx = s.bx, by = s.by, extra = '';
-      var endCam = left ? c4 : c5, otherEnd = left ? c5 : c4, cl18 = left ? c1 : c3, other18 = left ? c3 : c1;
-      var gx = left ? 100 : 900, bench = SOC_BENCH[left ? 'left' : 'right'];
+      // The 18 camera on the ball's half has the offside angle. The other one follows the ball.
+      var on18 = left ? c3 : c4, off18 = left ? c4 : c3, gx = left ? 100 : 900;
       if (m === 'corner') { bx = left ? 106 : 894; by = nearSide ? 524 : 56; }
-      var inBox = bx < 225 || bx > 775, dGoal = Math.abs(bx - gx);
+      var inBox = bx < 225 || bx > 775;
+      // The goalie stands on the goal line, in the middle of the goal.
+      var goalie = [gx + (left ? 14 : -14), 290];
 
-      aim(c2, bx, by, inBox ? 30 : 48, 80);
-      say(c2, 'Game', inBox ? 'The ball is near goal. Show the ball and the goal together, a little tighter.' : 'Ball in frame. Leave more room ahead of the ball than behind it to lead the play.');
-      [c1, c3].forEach(function (c) {
-        aim(c, bx, by, nearSide ? 28 : 16, 40);
-        say(c, 'Heroes', nearSide ? 'Ball on the near side: shoot wider (think offside), ready for the hero.' : 'Ball on the far side: shoot tighter, ready for the hero.');
-      });
-      aim(endCam, bx, by, clamp(18 + dGoal / 18, 18, 44), 40);
-      say(endCam, 'Play coming at you', 'X’s and O’s. Wide at first, then slowly tighter as the play gets closer to your goal.');
-      aim(otherEnd, bx, by, 40, 40);
-      say(otherEnd, 'Play at the far end', 'X’s and O’s. Stay wide so the whole play shows.');
-      // Cam 6 stays a little behind the ball, toward the halfway line, moving in proportion to it.
-      // That keeps it out of the way of the near-side side judge, who stands level with the play.
-      c6.x = Math.round(clamp(500 + (bx - 500) * 0.6, 120, 880)); c6.y = 546;
-      if (nearSide) { aim(c6, bx, by, 30, 30); say(c6, 'Follow the play', 'Short passes, throw-ins, and goal attempts on your side of the field.'); }
-      else { aim(c6, bench[0], bench[1], 22, 20); say(c6, 'Bench and refs', 'The ball is on the far side. Bench, coach, and referee shots.'); }
+      aim(c1, bx, by, inBox ? 32 : 48, 80);
+      say(c1, 'Game', inBox ? 'Play is in a tight area. Slowly zoom in on the action.' : 'Wide and clean. Ball near the center, with extra room in the direction of play.');
+      aim(c2, bx, by, 12, 40);
+      say(c2, 'High tight', 'The ball and the player on it, head to toe, plus the closest defender.');
+      aim(on18, bx, by, 30, 40);
+      say(on18, 'Offside angle', 'Play is on your half. Wider, with the ball and the last defender in frame.');
+      aim(off18, bx, by, 18, 40);
+      say(off18, 'Medium follow', 'Play is on the far half. A medium shot following the ball, unless the director asks for something else.');
 
       if (m === 'goal') {
-        aim(c2, gx + (left ? 14 : -14), 290, 9, 30); say(c2, 'Goat', 'Slowly push in on the goalie who gave up the goal until the director cuts off you.');
-        aim(cl18, bx, by, 12, 40); say(cl18, 'Primary hero', 'The scorer.');
-        aim(other18, bx, by, 18, 40); say(other18, 'Secondary hero', 'The assist or the player who got the play going. If you’re not sure, the crowd.');
-        say(endCam, 'Goal', 'Wide on the goal and the box.');
-        aim(otherEnd, bench[0], bench[1], 24, 20); say(otherEnd, 'Bench', 'Coach and bench reactions. Listen to talent.');
-        aim(c6, bench[0], bench[1], 26, 20); say(c6, 'Reactions', 'Reactions on the sideline after the goal.');
+        aim(c1, gx + (left ? 70 : -70), 290, 40, 80); say(c1, 'Game', 'Hold wide on the goal.');
+        // The scorer stands just behind the ball, on the side away from the goal.
+        var hero = [left ? Math.max(bx + 16, 150) : Math.min(bx - 16, 850), by];
+        extra = person(hero[0], hero[1], 'HERO', 'batter', true) + person(goalie[0], goalie[1], 'GOALIE', 'batter');
+        aim(c2, hero[0], hero[1], 12, 40);
+        say(c2, 'Goal scorer', 'Stay on the goal scorer so the director can cut to them live.');
+        say(on18, 'Hold for the replay', 'Hold your shot for a couple of seconds so we have a good replay of the goal.');
+        aim(off18, goalie[0], goalie[1], 8, 30);
+        say(off18, 'Goalie', 'Hold your shot for a couple of seconds for the replay, then get the goalie who gave up the goal. Cam 2 has the goal scorer.');
       } else if (m === 'corner') {
-        aim(c2, gx + (left ? 70 : -70), 290, 40, 80); say(c2, 'Game', 'Wide on the box.');
-        aim(endCam, gx + (left ? 60 : -60), 290, 34, 40);
-        say(endCam, 'Corner', 'Before the kick, the players in the box getting set. For the kick, either wide on the kicker and the goal and push in, or tight on the goal and let it develop.');
-        if (nearSide) { aim(cl18, (bx + gx) / 2, (by + 290) / 2, 32, 40); say(cl18, 'Near-side corner', 'Include the player taking the kick and the goal, then slowly push in as the ball is kicked toward goal.'); }
-        else { aim(cl18, gx, 290, 18, 40); say(cl18, 'Far-side corner', 'Just the goal and the mass of players.'); }
-        say(other18, 'Crowd or secondary', 'The crowd, or be ready for a secondary hero.');
-        if (nearSide) { c6.x = left ? 120 : 880; aim(c6, gx + (left ? 50 : -50), 290, 34, 30); say(c6, 'End line', 'On the end line. Get creative on the corner kick.'); }
-      } else if (m === 'freekick') {
-        aim(endCam, bx, by, 12, 40); say(endCam, 'Near-end free kick', 'Iso the kicker before the kick (head to toe or tight), then back wide with most of the goal for the kick. Pull out or tilt down as the ball travels.');
-        aim(otherEnd, bx, by, 34, 40); say(otherEnd, 'Far-end free kick', 'Wide enough for the kicker and the goal or target players.');
-        say(c2, 'Game', 'Wide on the kick.');
+        var kicker = [bx + (left ? -10 : 10), by + (nearSide ? 10 : -10)];
+        extra = person(kicker[0], kicker[1], 'KICKER', 'batter', nearSide) + person(goalie[0], goalie[1], 'GOALIE', 'batter');
+        aim(c1, gx + (left ? 70 : -70), 290, 40, 80); say(c1, 'Game', 'Wide on the box.');
+        aim(c2, kicker[0], kicker[1], 12, 40);
+        say(c2, nearSide ? 'Near-side corner' : 'Far-side corner', 'Frame the player taking the corner, then pull out as the kick is delivered into the box.');
+        aim(on18, gx + (left ? 60 : -60), 290, 30, 40); say(on18, 'Cross into the box', 'Ready for a dramatic replay of the cross and the shot.');
+        // From the other end of the field, the corner and the whole goal fit in one long shot.
+        // One edge of the frame sits just behind the corner flag, the other just outside the far post.
+        var flag = [bx + (left ? -8 : 8), by + (nearSide ? 8 : -8)], post = [gx, nearSide ? 252 : 328];
+        var aFlag = Math.atan2(flag[1] - off18.y, flag[0] - off18.x) * 180 / Math.PI, aPost = Math.atan2(post[1] - off18.y, post[0] - off18.x) * 180 / Math.PI;
+        off18.aim = (aFlag + aPost) / 2; off18.fov = Math.abs(aFlag - aPost) + 4;
+        off18.len = Math.round(Math.max(Math.hypot(flag[0] - off18.x, flag[1] - off18.y), Math.hypot(post[0] - off18.x, post[1] - off18.y)) + 20);
+        say(off18, 'Corner and goal', 'Frame the player taking the corner and the entire goal. After the kick, steadily but slowly zoom in to the action at the goal. Shoot it like you’re live, in case we need it for a replay.');
       } else if (m === 'offside') {
-        // The side judge at the ball's end makes the call. One works the left half from the far sideline,
-        // the other works the right half from the near sideline, each standing level with the play.
-        var ar = left ? [clamp(bx, 110, 490), 50] : [clamp(bx, 510, 890), 530];
-        // Labels go on the field side so the far sideline one never covers the bench boxes.
-        extra = person(ar[0], ar[1], 'SIDE JUDGE', 'official', left);
-        [c4, c5].forEach(function (c) {
-          aim(c, ar[0], ar[1], 10, 30);
-          say(c, 'Side judge', left ? 'The ball is on the left end, so the side judge on the far sideline makes the call. Get the flag.' : 'The ball is on the right end, so the side judge on the near sideline makes the call. Get the flag.');
-        });
+        // The last defender is a step closer to the goal than the ball.
+        var last = [clamp(bx + (left ? -50 : 50), 110, 890), clamp(by + 30, 60, 520)];
+        extra = person(last[0], last[1], 'LAST DEFENDER', 'batter', true);
+        keepInShot(on18, [last]);
+        say(on18, 'Offside replay', 'Your frame has the ball and the last defender. That’s the replay for the call. Hold it for a couple of seconds before you move.');
+        say(off18, 'Hold', 'Hold your shot for a couple of seconds before you move, in case it’s needed for a replay.');
       } else if (m === 'foul') {
         var ref = [clamp(bx + 34, 110, 890), clamp(by - 24, 60, 520)];
-        extra = person(ref[0], ref[1], 'REF', 'official');
-        [c4, c5].forEach(function (c) { aim(c, ref[0], ref[1], 10, 30); say(c, 'Referee', 'Find the referee right away. We want to see the yellow or red card.'); });
-        aim(cl18, bx, by, 12, 40); say(cl18, 'Primary: fouled', 'The player who got fouled.');
-        aim(other18, bx, by, 14, 40); say(other18, 'Secondary: fouler', 'The player who committed the foul.');
-        if (nearSide) say(c6, 'Reactions', 'Reactions after the foul call.');
+        // The goat is the player who committed the foul, right next to the ball.
+        var goat = [clamp(bx - 18, 110, 890), clamp(by + 6, 60, 520)];
+        extra = person(ref[0], ref[1], 'REF', 'official') + person(goat[0], goat[1], 'GOAT', 'batter', true);
+        aim(c2, goat[0], goat[1], 12, 40); keepInShot(c2, [ref]);
+        say(c2, 'Goat', 'Stay with the player who committed the foul. Include the referee for a warning or card.');
+        say(on18, 'Replay', 'Your angle on the foul is a replay option.');
       } else if (m === 'sub') {
         extra = person(500, 40, 'SUBS', 'batter');
-        [c1, c3].forEach(function (c) { aim(c, 500, 40, 12, 30); say(c, 'Coming out', 'The player coming out of the game.'); });
-        [c4, c5].forEach(function (c) { aim(c, 500, 40, 12, 30); say(c, 'Coming in', 'The player coming into the game.'); });
-        say(c2, 'Game', 'Hold wide.');
-        aim(c6, 500, 40, 24, 20); say(c6, 'Bench', 'Bench and coach shots.');
+        aim(c2, 500, 40, 12, 30); say(c2, 'Coming in', 'The player coming into the match.');
+        say(c1, 'Game', 'Hold wide.');
       }
-      c2.hasBall = m !== 'goal' && m !== 'sub';
-      if (m === 'goal') cl18.hasBall = true;
+      c1.hasBall = m !== 'sub';
       return extra + soccerBall(bx, by);
     }
   };
@@ -1191,7 +1187,8 @@
       // On a steal the runner who is going is drawn on the move instead of on their base.
       var stealFrom = m !== 'steal' ? 0 : run[3] ? 3 : run[1] ? 1 : run[2] ? 2 : 0;
       // Once the ball is in play the batter is running, so they’re drawn on the bases instead of at the plate.
-      if (m !== 'inplay' && m !== 'popfly') extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH', 'batter');
+      // On a runner scoring, the batter who drove them in is already running to first as the hero.
+      if (m !== 'inplay' && m !== 'popfly' && !(m === 'score' && (run[2] || run[3]))) extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH', 'batter');
       [1, 2, 3].forEach(function (b) {
         var p = BASES[b];
         if (run[b] && m !== 'inplay' && b !== stealFrom) extra += runnerMark(p);
@@ -1308,6 +1305,7 @@
           aim(c3, rr[0], rr[1], 12, 30); say(c3, 'Score the runner', 'Make the switch to the runner coming home, then score them crossing the plate.');
           aim(c2, (rr[0] + HOME[0]) / 2, (rr[1] + HOME[1]) / 2, 30, 40); say(c2, 'Play at the plate', 'The runner, the throw, and the umpire on the call at home.');
           ball = [545, 575]; ballCam = c2;
+          extra += person(585, 545, 'HERO', 'batter', true);
           aim(c1, 585, 545, 14, 30); say(c1, 'Offensive hero', 'The offensive hero on the RBI.');
           if (run[3] && run[2]) say(c3, 'Score all runners', 'Score the runner from third, then make the switch to the next runner coming home.');
         }
@@ -1318,6 +1316,7 @@
         ball = [500, 642]; ballCam = null;
       } else if (m === 'k3' || m === 'inning') {
         ball = null; ballCam = null;
+        extra += person(PITCHER[0], PITCHER[1], 'PITCHER', 'batter', true);
         [c1, c3].forEach(function (c) { aim(c, PITCHER[0], PITCHER[1], 12, 30); say(c, 'Pitcher to dugout', 'At the end of every other half inning, the pitcher walking toward your dugout.'); });
         if (m === 'k3' && manned) { aim(c4, PITCHER[0], PITCHER[1], 8, 30); say(c4, 'Pitcher to dugout', 'Third out was a strikeout. Push in on the pitcher and follow them into the dugout.'); }
         if (m === 'inning') { aim(c2, 500, 330, 70, 120); say(c2, 'Beauty shot', 'A good time for a beauty shot. Scorebug comes out.'); }
