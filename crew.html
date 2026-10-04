@@ -1186,14 +1186,15 @@
 
       // On a steal the runner who is going is drawn on the move instead of on their base.
       var stealFrom = m !== 'steal' ? 0 : run[3] ? 3 : run[1] ? 1 : run[2] ? 2 : 0;
-      // On a runner scoring, the lead runner (from third, or else second) is drawn on the way home instead.
+      // On a runner scoring, the lead runner (from third, or else second) is drawn on the way home instead,
+      // and everyone behind them moves up a base as the batter heads to first.
       var scoreFrom = m !== 'score' ? 0 : run[3] ? 3 : run[2] ? 2 : 0;
       // Once the ball is in play the batter is running, so they’re drawn on the bases instead of at the plate.
       // On a runner scoring, the batter who drove them in is already running to first as the hero.
       if (m !== 'inplay' && m !== 'popfly' && !(m === 'score' && (run[2] || run[3]))) extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH', 'batter');
       [1, 2, 3].forEach(function (b) {
         var p = BASES[b];
-        if (run[b] && m !== 'inplay' && b !== stealFrom && b !== scoreFrom) extra += runnerMark(p);
+        if (run[b] && m !== 'inplay' && b !== stealFrom && b !== scoreFrom) extra += runnerMark(scoreFrom ? BASES[b + 1] : p);
         extra += '<circle class="basehit" data-base="' + b + '" cx="' + p[0] + '" cy="' + (p[1] - u(6)) + '" r="' + u(24) + '"><title>Runner on ' + BASE_NAME[b] + '</title></circle>';
       });
 
