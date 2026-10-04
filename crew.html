@@ -517,7 +517,7 @@
           tips: [],
           groups: [
             ['When it’s static', ['Lock off the pitcher-to-batter shot before the game.', 'Check the framing between innings.']],
-            ['When it’s manned', ['Follow the batter on a base hit or walk.', 'Feel free to stay with the ball if it’s hit straight up the middle.', 'If the third out is a strikeout, push in on the pitcher and follow them into the dugout.', 'Always know when a runner is on first. Pull out to reveal a steal of second.', 'Set the runner on second at each new batter.']]
+            ['When it’s manned', ['Follow the batter on a base hit or walk.', 'Feel free to stay with the ball if it’s hit straight up the middle.', 'If the third out is a strikeout, push in on the pitcher and follow them into the dugout.', 'Always know when a runner is on first. Pull out to reveal a steal of second.', 'Between pitches, stay on the pitcher, catcher, and batter, framed the same as for the pitch. Changing your shot between pitches risks missing the next pitch.']]
           ] }
       ],
       shots: [
@@ -1211,8 +1211,7 @@
       else if (any) onLead(sideCam);
       else pitcherOrColor(sideCam);
       ball = [508, 528]; ballCam = loaded ? null : c2;
-      if (manned && run[2]) { aim(c4, BASES[2][0], BASES[2][1] - 10, 10, 30); say(c4, 'Runner on 2nd', 'Set the runner on second at each new batter.'); }
-      else if (manned) { aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'Pitch shot', 'Pitcher to batter, ready for the pitch.'); }
+      if (manned) { aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'Pitch shot', 'Stay on the pitcher, catcher, and batter, framed the same as for the pitch. Changing your shot between pitches risks missing the next pitch.'); }
       else staticCam4();
 
       if (m === 'pitch') {
