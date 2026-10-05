@@ -300,7 +300,7 @@
       situations: [
         ['Coin toss', 'Cam 6 at midfield on the captains and the flip. Game holds wide as a backup.'],
         ['Sideline reporter', 'Cam 6 with the reporter. Make sure the reporter is framed and ready before the director cuts to you.'],
-        ['Touchdown', 'Stay on Game through the score. The camera that was game for the play then sticks with the hero, usually until the next drive, so you can always cut to them celebrating on the bench. Iso or Cam 6 for the celebration. If the iso camera’s player scored, iso holds the shot through the whole celebration, then switches to a color shot while the replay runs. Replay from Cam 6 at the goal line or the end zone camera at that end (Cam 4 left, Cam 5 right).'],
+        ['Touchdown', 'Stay on Game through the score. The camera that was game for the play then sticks with the hero, usually until the PAT, so you can always cut to them celebrating on the bench. Iso or Cam 6 for the celebration. If the iso camera’s player scored, iso holds the shot through the whole celebration, then switches to a color shot while the replay runs. Replay from Cam 6 at the goal line or the end zone camera at that end (Cam 4 left, Cam 5 right).'],
         ['Field goal or extra point', 'Game stays wide through the kick. The end zone camera at that end has the replay. Then Pit or Cam 6 for the kicker’s reaction.'],
         ['Kickoff or punt', 'Cam 2 is the game camera on every kickoff and punt, wherever the ball is, and stays wide from the kick through the return. Cam 1 and Cam 3 each shoot the kicker or punter, or the returner, whichever is farther down the field from them, for the most head-on shot. After the return, set roles for the new drive.'],
         ['Turnover', 'Stay wide on Game. Iso usually has the best replay. Cam 6 gets the sideline celebrating. The offense just changed direction, so check roles before the next snap.'],
@@ -928,7 +928,7 @@
       } else if (m === 'td') {
         ball = [d > 0 ? 866 : 134, by]; arrow = false;
         extra += person(ball[0] - d * 26, by, 'HERO', 'batter', true);
-        aim(game, ball[0] - d * 26, by, 14, 40); say(game, 'Stick with the hero', 'Stay with the play through the score, then stick with the hero, usually until the next drive, so the director can cut to them celebrating on the bench.');
+        aim(game, ball[0] - d * 26, by, 14, 40); say(game, 'Stick with the hero', 'Stay with the play through the score, then stick with the hero, usually until the PAT, so the director can cut to them celebrating on the bench.');
         aim(iso, ball[0] - d * 26, by, 10, 30); say(iso, 'Celebration', 'If your player scored, hold your shot through the whole celebration. Then switch to a color shot while the replay runs.');
         aim(pit, ball[0], by, 18, 30); say(pit, 'Celebration', 'The celebration in the end zone, then the bench.');
         aim(ahead, ball[0], by, 22, 30); say(ahead, 'Score', 'You’re at the end they scored in. Tight on the scorer crossing the goal line. Your angle may be the best option for a replay.');
