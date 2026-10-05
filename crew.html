@@ -810,7 +810,7 @@
     state: { ball: 25, dir: 1, m: 'live' },
     labels: true,
     controls: [
-      { type: 'seg', key: 'm', label: 'Moment', opts: [['live', 'Live play'], ['coin', 'Coin toss'], ['kickoff', 'Kickoff'], ['punt', 'Punt'], ['fg', 'Field goal / PAT'], ['td', 'Touchdown'], ['turnover', 'Turnover'], ['flagpre', 'Penalty before the snap'], ['flagpost', 'Penalty during or after the play'], ['timeout', 'Timeout']] },
+      { type: 'seg', key: 'm', label: 'Situation', opts: [['live', 'Live play'], ['coin', 'Coin toss'], ['kickoff', 'Kickoff'], ['punt', 'Punt'], ['fg', 'Field goal / PAT'], ['td', 'Touchdown'], ['turnover', 'Turnover'], ['flagpre', 'Penalty before the snap'], ['flagpost', 'Penalty during or after the play'], ['timeout', 'Timeout']] },
       { type: 'seg', key: 'dir', label: 'Offense', opts: [[1, 'Driving right →'], [-1, 'Driving left ←']] },
       { type: 'range', key: 'ball', min: 1, max: 99, label: function (s) { return 'Ball on <b>' + yardLabel(s.ball) + '</b>'; } }
     ],
@@ -984,7 +984,7 @@
   SIMS.basketball = {
     state: { bx: 640, by: 300, m: 'live' },
     controls: [
-      { type: 'seg', key: 'm', label: 'Moment', opts: [['live', 'Live play'], ['made', 'Made basket'], ['turnover', 'Turnover'], ['foul', 'Foul'], ['ft', 'Free throw'], ['sub', 'Substitution'], ['end', 'End of game']] }
+      { type: 'seg', key: 'm', label: 'Situation', opts: [['live', 'Live play'], ['made', 'Made basket'], ['turnover', 'Turnover'], ['foul', 'Foul'], ['ft', 'Free throw'], ['sub', 'Substitution'], ['end', 'End of game']] }
     ],
     hint: function () { return 'Drag the ball around the court. Cam 3 and Cam 4 swap nearside and backside as it crosses half court.'; },
     drag: function (s, x, y) { s.bx = clamp(x, 155, 845); s.by = clamp(y, 105, 467); },
@@ -1045,7 +1045,7 @@
   SIMS.volleyball = {
     state: { bx: 350, by: 250, m: 'rally' },
     controls: [
-      { type: 'seg', key: 'm', label: 'Moment', opts: [['serve', 'Serve'], ['rally', 'Rally'], ['point', 'Point scored'], ['out', 'Ball out'], ['timeout', 'Timeout'], ['sub', 'Substitution']] }
+      { type: 'seg', key: 'm', label: 'Situation', opts: [['serve', 'Serve'], ['rally', 'Rally'], ['point', 'Point scored'], ['out', 'Ball out'], ['timeout', 'Timeout'], ['sub', 'Substitution']] }
     ],
     hint: function (s) { return s.m === 'serve' ? 'Drag the ball to either side to pick which team is serving.' : 'Drag the ball around the court.'; },
     drag: function (s, x, y) { s.bx = clamp(x, 115, 885); s.by = clamp(y, 67, 473); },
@@ -1123,7 +1123,7 @@
   SIMS.soccer = {
     state: { bx: 620, by: 360, m: 'live' },
     controls: [
-      { type: 'seg', key: 'm', label: 'Moment', opts: [['live', 'Live play'], ['goal', 'Goal'], ['corner', 'Corner kick'], ['offside', 'Offside'], ['foul', 'Foul or card'], ['sub', 'Substitution']] }
+      { type: 'seg', key: 'm', label: 'Situation', opts: [['live', 'Live play'], ['goal', 'Goal'], ['corner', 'Corner kick'], ['offside', 'Offside'], ['foul', 'Foul or card'], ['sub', 'Substitution']] }
     ],
     hint: function (s) { return s.m === 'corner' ? 'Drag the ball toward a corner to pick which corner.' : 'Drag the ball around the field.'; },
     drag: function (s, x, y) { s.bx = clamp(x, 105, 895); s.by = clamp(y, 55, 525); },
@@ -1214,7 +1214,7 @@
       { type: 'seg', key: 'bat', label: 'Batter', opts: [['R', 'Righty'], ['L', 'Lefty']] },
       { type: 'multi', key: 'run', label: 'Runners', opts: [['1', '1st'], ['2', '2nd'], ['3', '3rd']] },
       { type: 'seg', key: 'cam4', label: 'Cam 4', opts: [['static', 'Static'], ['manned', 'Manned']] },
-      { type: 'seg', key: 'm', label: 'Moment', opts: [['between', 'Between pitches'], ['pitch', 'Pitch'], ['inplay', 'Ball in play'], ['popfly', 'Pop fly'], ['steal', 'Steal'], ['score', 'Runner scoring'], ['appeal', 'Swing appeal'], ['k3', 'Strikeout, 3rd out'], ['inning', 'Inning change']] }
+      { type: 'seg', key: 'm', label: 'Situation', opts: [['between', 'Between pitches'], ['pitch', 'Pitch'], ['inplay', 'Ball in play'], ['popfly', 'Pop fly'], ['steal', 'Steal'], ['score', 'Runner scoring'], ['appeal', 'Swing appeal'], ['k3', 'Strikeout, 3rd out'], ['inning', 'Inning change']] }
     ],
     hint: function (s) {
       return 'Click a base to add or remove a runner.' + (s.m === 'inplay' || s.m === 'popfly' ? (s.view === 'full' ? (s.m === 'popfly' ? ' Drag the ball to where it’s caught.' : ' Drag the ball to where it was hit.') : ' Switch to Full field to drag the ball into the outfield.') : '') +
