@@ -243,6 +243,9 @@
   var SPORTS = {
     football: {
       title: 'Football', venue: 'Eagle Stadium', view: [1000, 570], draw: drawFootball, rotation: true,
+      notes: [
+        'The <b>near side</b> is the home sideline, with the home bench and fans, where the stands cameras and Cam 6 are. The <b>far side</b> is the visitors’ sideline, with their bench and fans.'
+      ],
       summary: 'Six cameras. Three in the near-side stands at the left 25, the 50, and the right 25, trading the game, pit, and iso jobs as the ball moves. One behind each end zone on the near hash, and one wireless handheld on the near sideline.',
       cams: [
         { x: 333, y: 505, type: 'elevated',
@@ -304,9 +307,9 @@
         ['Sack or quarterback hit', 'Game stays wide. For the replay, use Pit or the end zone camera behind the offense if it stayed on the quarterback.'],
         ['Penalty before the snap', 'The game camera makes a slow, gentle push to the White Hat (the referee, who stands behind the offense) for the call.'],
         ['Penalty during or after the play', 'Cam 2 gets to the White Hat quickly, with a tight shot you can cut to, whatever its role on the play.'],
-        ['Timeout', 'Scorebug comes out. Cam 6 in the huddle. Cam 4 or Cam 5 on the crowd or the coaches. Good time for a replay.']
+        ['Timeout', 'Scorebug comes out. Cam 1 and Cam 5 on the visitors: their fans, bench, coach, or huddle. Cam 4 and Cam 6 on the home team: their fans, bench, coach, or huddle. Cam 3 on the cheerleaders if they’re doing a cheer, or other color around the stadium. Everyone looks and listens for storylines, like a key player in the game, and grabs that player in iso. Good time for a replay.']
       ],
-      tips: ['Never cut away from the game camera during a play. Viewers need to see the whole field.', 'Show close-ups of heroes (the player who made the great play) and goats (the player who made the mistake) often.', 'Call role switches on headset as soon as the ball crosses a 30: “Past the 30. Two game, one pit, three iso.”', 'Direction only matters between the 30s. Check it after every change of possession.', 'Call the next camera before you cut: “Ready 3… take 3.”', 'Scorebug stays up during play. Take it out for timeouts, quarter breaks, and halftime, and bring it back before the next snap.', 'During timeouts and breaks, use Cam 4, 5, and 6 for the crowd, the band, coaches, and the sideline instead of an empty field.', 'Between plays, the stands cameras not on game help with the far side coach and bench, excited fans, and hero shots of players who just made a key play or that the announcers are talking about.']
+      tips: ['Never cut away from the game camera during a play. Viewers need to see the whole field.', 'Show close-ups of heroes (the player who made the great play) and goats (the player who made the mistake) often.', 'Call role switches on headset as soon as the ball crosses a 30: “Past the 30. Two game, one pit, three iso.”', 'Direction only matters between the 30s. Check it after every change of possession.', 'Call the next camera before you cut: “Ready 3… take 3.”', 'Scorebug stays up during play. Take it out for timeouts, quarter breaks, and halftime, and bring it back before the next snap.', 'During quarter breaks and halftime, use Cam 4, 5, and 6 for the crowd, the band, coaches, and the sideline instead of an empty field.', 'Between plays, the stands cameras not on game help with the far side coach and bench, excited fans, and hero shots of players who just made a key play or that the announcers are talking about.']
     },
 
     volleyball: {
@@ -951,14 +954,19 @@
         whiteHat.hasBall = false;
         aim(c6, bx, by - 20, 26, 30); say(c6, 'Bench reaction', 'The coach or the bench reacting to the call.');
       } else if (m === 'timeout') {
-        // Only the game camera holds the field. Everyone else hunts for color, each starting somewhere different.
-        var color = ' Look for color: players, coaches, fans, cheerleaders, the band. Tell the director what you have.';
-        aim(game, bx, by, 44, 60); say(game, 'Wide', 'Stay wide on the field. Scorebug comes out.');
-        aim(pit, bx, by, 16, 30); say(pit, 'Color: players', 'Start with the players in the huddle.' + color);
-        aim(iso, bx, 46, 16, 30); say(iso, 'Color: coaches', 'Start with the coaches on the sideline.' + color);
-        aim(cams[3], 330, 425, 22, 30); say(cams[3], 'Color: fans', 'Start with the fans in the stands.' + color);
-        aim(cams[4], 670, 425, 22, 30); say(cams[4], 'Color: cheer and band', 'Start with the cheerleaders and the band.' + color);
-        aim(c6, bx, by, 26, 20); say(c6, 'Color: in the huddle', 'Get in close on the huddle or the sideline.' + color);
+        // Home is the near sideline, visitors the far sideline. Each team huddles in front of its own bench.
+        // Cams 1 and 5 take the visitors, Cams 4 and 6 the home team, and Cam 3 the cheerleaders or other color.
+        var story = ' Look and listen for storylines, like a key player in the game, and grab that player in iso.';
+        var awayHuddle = [500, 62], homeHuddle = [500, 372];
+        extra += person(awayHuddle[0], awayHuddle[1], 'VISITOR HUDDLE', '') + person(homeHuddle[0], homeHuddle[1], 'HOME HUDDLE', 'batter');
+        ball = null; arrow = false;
+        [cams[0], cams[1], cams[2]].forEach(function (c) { c.hasBall = false; });
+        aim(cams[0], 430, 30, 24, 30); say(cams[0], 'Visitors', 'The visitors’ fans, bench, coach, or huddle.' + story);
+        aim(cams[1], 500, 290, 60, 60); say(cams[1], 'Wide', 'Stay wide on the field. Scorebug comes out.');
+        aim(cams[2], 790, 440, 24, 30); say(cams[2], 'Cheer or color', 'The cheerleaders if they’re doing a cheer, or other color shots around the stadium.' + story);
+        aim(cams[3], homeHuddle[0], homeHuddle[1], 22, 40); say(cams[3], 'Home team', 'The home team’s fans, bench, coach, or huddle.' + story);
+        aim(cams[4], awayHuddle[0], awayHuddle[1], 22, 40); say(cams[4], 'Visitors', 'The visitors’ fans, bench, coach, or huddle.' + story);
+        c6.x = 560; c6.y = 420; aim(c6, homeHuddle[0], homeHuddle[1], 34, 20); say(c6, 'Home team', 'The home team’s fans, bench, coach, or huddle.' + story);
       }
       return extra + (ball ? footballBall(ball[0], ball[1]) : '') +
         (arrow ? '<path class="dir-arrow" d="M' + (bx + d * 21) + ' ' + (by - 7) + ' l' + (d * 13) + ' 7 l' + (-d * 13) + ' 7 z"/>' : '');
