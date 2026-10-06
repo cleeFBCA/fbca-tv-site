@@ -7,7 +7,7 @@
 // doesn't answer within a few seconds, the saved copy is shown instead.
 // Fonts change rarely, so they come from the saved copy first.
 
-const CACHE = 'eota-crew-v1';
+const CACHE = 'eota-crew-v2';
 const PAGE = '/crew';
 const PRECACHE = [PAGE, '/crew.webmanifest', '/crew-icon-192.png', '/crew-icon-512.png'];
 const FONTS_CSS = 'https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap';
