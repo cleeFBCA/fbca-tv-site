@@ -1,0 +1,15 @@
+{
+  "name": "EOTA Camera Operator Guide",
+  "short_name": "EOTA Crew",
+  "description": "Camera positions, shot lists, and director tips for each sport, for the Eagles on the Air crew.",
+  "id": "/crew",
+  "start_url": "/crew",
+  "scope": "/crew",
+  "display": "standalone",
+  "background_color": "#0D2418",
+  "theme_color": "#0D2418",
+  "icons": [
+    { "src": "/crew-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/crew-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
