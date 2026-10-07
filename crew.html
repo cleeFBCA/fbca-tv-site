@@ -496,6 +496,7 @@
       title: 'Baseball / Softball', venue: 'Baseball and softball fields', view: [1000, 750], viewY: -45, draw: drawBaseball,
       summary: 'Four cameras. Cam 1 in the stands on the third-base side, Cam 2 in the stands behind home plate, Cam 3 in the stands on the first-base side, and Cam 4 on a platform in center field, just left of the batter’s eye.',
       notes: [
+        '<b>Dugouts:</b> The home dugout is on the third-base line. The away dugout is on the first-base line.',
         '<b>Manual focus:</b> Cams 1, 2, and 3 shoot through the net, so they stay in manual focus. Autofocus will grab the net instead of the players. Check your focus every time you change your shot.',
         '<b>Set the table</b> means a shot that shows the runners on base. <b>Set the defense</b> means a shot that shows where the fielders are standing.',
         '<b>First ID</b> is the first time a batter is shown in an at-bat, usually with a lower third graphic showing their name, number, and stats. Frame them head to toe and push in, then go waist up between every pitch after that.'
@@ -515,16 +516,12 @@
           role: 'First base camera', where: 'In the stands on the first-base side',
           job: 'Right-handed batters between every pitch, scoring every runner, and the offensive hero on a triple.',
           framing: 'Right-handed batters head to toe with a push in for the first ID, then waist up between every pitch.',
-          tips: ['Stay in manual focus. You’re shooting through the net.', 'Score all runners.', '“Make the switch” to the runner coming home.', 'Lefty batter up: the lead runner, or shag the ball if no one is on base.', 'Lefty batter up: the pitcher, runners, or color between pitches.', 'At the end of every other half inning, get the pitcher walking toward your dugout.', 'Offensive hero on a triple.', 'Cross shoot the coach interview.'] },
+          tips: ['Stay in manual focus. You’re shooting through the net.', 'Score all runners.', '“Make the switch” to the runner coming home.', 'Lefty batter up: the lead runner, or shag the ball if no one is on base.', 'Lefty batter up: the pitcher, runners, or color between pitches.', 'Strikeout, righty or lefty: when a home team batter strikes out, follow them back toward the home dugout on the third-base line for the reaction. Get off them before they reach the dugout.', 'Righty strikes out: push in on the batter for the reaction first. If it’s an away team batter, go to the home team’s catcher, the umpire, or the batter, whatever works.', 'At the end of every other half inning, get the pitcher walking toward your dugout.', 'Offensive hero on a triple.', 'Cross shoot the coach interview.'] },
         { x: 332, y: 29, aim: 75, fov: 9, len: 640, type: 'elevated',
           role: 'Center field camera', where: 'On a platform beyond the outfield fence, just left of the batter’s eye wall',
-          job: 'The main pitch shot, pitcher to batter. Usually static with no operator.',
+          job: 'The main pitch shot, pitcher to batter.',
           framing: 'Pitcher, batter, and catcher in frame.',
-          tips: [],
-          groups: [
-            ['When it’s static', ['Lock off the pitcher-to-batter shot before the game.', 'Check the framing between innings.']],
-            ['When it’s manned', ['Follow the batter on a base hit or walk.', 'Feel free to stay with the ball if it’s hit straight up the middle.', 'If the third out is a strikeout, push in on the pitcher and follow them into the dugout.', 'Always know when a runner is on first. Pull out to reveal a steal of second.', 'Between pitches, stay on the pitcher, catcher, and batter, framed the same as for the pitch. Changing your shot between pitches risks missing the next pitch.']]
-          ] }
+          tips: ['Follow the batter on a base hit or walk.', 'Feel free to stay with the ball if it’s hit straight up the middle.', 'If the third out is a strikeout, push in on the pitcher and follow them into the dugout.', 'Always know when a runner is on first. Pull out to reveal a steal of second.', 'Between pitches, stay on the pitcher, catcher, and batter, framed the same as for the pitch. Changing your shot between pitches risks missing the next pitch.'] }
       ],
       shots: [
         ['Between pitches', 'Cam 1 or Cam 3', 'Batter waist up: Cam 1 for lefties, Cam 3 for righties', 'Cam 2 on the pitcher. The other side camera on runners or color'],
@@ -537,11 +534,12 @@
       routine: 'Most pitches are the batter (Cam 1 for lefties, Cam 3 for righties) → Cam 2 on the pitcher → Cam 4 for the pitch. A ball in play goes to Cam 2, then heroes and replays. Replay as many plays as you can, and be back on Cam 4 before the next pitch.',
       situations: [
         ['Home run', 'Cam 2 follows the ball. Cam 3 scores the runner crossing the plate. Then the dugout greeting them, and replays.'],
-        ['Steal', 'Cam 2 keeps the runner and the ball in frame. If Cam 4 is manned, it pulls out to reveal a steal of second.'],
+        ['Steal', 'Cam 2 keeps the runner and the ball in frame. Cam 4 pulls out to reveal a steal of second.'],
         ['Pickoff', 'Cam 1 has it with a righty batting and a runner on first.'],
         ['Swing appeal', 'Cam 2 on the umpire in the direction the batter is facing.'],
+        ['Strikeout', 'Cam 3 follows a home team batter back toward the home dugout on the third-base line for the reaction, and gets off them before the dugout. On a righty, Cam 3 pushes in on the batter first. If it’s an away team batter, the home team’s catcher, the umpire, or the batter.'],
         ['Bases loaded', 'Cam 2 sets the table.'],
-        ['Strikeout for the third out', 'If Cam 4 is manned, it pushes in on the pitcher and follows them into the dugout.'],
+        ['Strikeout for the third out', 'Cam 4 pushes in on the pitcher and follows them into the dugout.'],
         ['Inning change', 'Scorebug comes out. Cam 1 or Cam 3 gets the pitcher walking toward its dugout. Then crowd, color, or a replay. Bring the scorebug back before the first pitch.'],
         ['Coach interview', 'Cam 1 and Cam 3 cross shoot.']
       ],
@@ -641,6 +639,12 @@
     s += l(500, 630, 861.8, 268.2) + l(500, 630, 132, 262);
     [[600, 530], [500, 430], [400, 530]].forEach(function (b) { s += r(b[0] - 6, b[1] - 6, 12, 12, '#F3EFE2', 'transform="rotate(45 ' + b[0] + ' ' + b[1] + ')"'); });
     s += '<polygon points="495,625 505,625 505,630 500,634 495,630" fill="#F3EFE2"/>';
+    // Dugouts in foul territory, parallel to the foul line and centered across from third and first:
+    // home on the third-base line, away on the first-base line.
+    [[370.3, 559.7, 45, 'HOME DUGOUT'], [629.7, 559.7, -45, 'AWAY DUGOUT']].forEach(function (d) {
+      var rot = 'transform="rotate(' + d[2] + ' ' + d[0] + ' ' + d[1] + ')"';
+      s += r(d[0] - 42, d[1] - 9, 84, 18, '#17402B', 'rx="3" ' + STROKE + ' ' + rot) + t(d[0], d[1] + 3, d[3], 8, 'class="lbl" ' + rot);
+    });
     // Batter's eye: a band just behind the center field wall covering most of the arc, with its label inside.
     s += '<path d="M629.6 26.7 A249.4 249.4 0 0 0 358 26.7" fill="none" stroke="' + LINE + '" stroke-width="24"/>';
     s += '<path d="M629.6 26.7 A249.4 249.4 0 0 0 358 26.7" fill="none" stroke="#0D2418" stroke-width="20"/>';
@@ -1225,7 +1229,7 @@
     return '<g class="runner"><circle cx="' + p[0] + '" cy="' + (p[1] - u(18)) + '" r="' + u(9) + '" style="stroke-width:' + u(2) + '"/><text x="' + p[0] + '" y="' + (p[1] - u(14)) + '" style="font-size:' + u(11) + 'px">' + (label || 'R') + '</text></g>';
   }
   SIMS.baseball = {
-    state: { view: 'full', bat: 'R', run: { 1: false, 2: false, 3: false }, cam4: 'static', m: 'between', bx: 600, by: 330 },
+    state: { view: 'full', bat: 'R', run: { 1: false, 2: false, 3: false }, m: 'between', bx: 600, by: 330 },
     // Full field is cropped to the fence. Infield zooms to the diamond and Cams 1 to 3.
     viewBox: function (s) { return s.view === 'infield' ? [285, 330, 430, 380] : [110, -45, 780, 750]; },
     onChange: function (s, k) { if (k === 'm' && (s.m === 'inplay' || s.m === 'popfly')) s.view = 'full'; },
@@ -1233,8 +1237,7 @@
       { type: 'seg', key: 'view', label: 'View', opts: [['full', 'Full field'], ['infield', 'Infield']] },
       { type: 'seg', key: 'bat', label: 'Batter', opts: [['R', 'Righty'], ['L', 'Lefty']] },
       { type: 'multi', key: 'run', label: 'Runners', opts: [['1', '1st'], ['2', '2nd'], ['3', '3rd']] },
-      { type: 'seg', key: 'cam4', label: 'Cam 4', opts: [['static', 'Static'], ['manned', 'Manned']] },
-      { type: 'seg', key: 'm', label: 'Situation', opts: [['between', 'Between pitches'], ['pitch', 'Pitch'], ['inplay', 'Ball in play'], ['popfly', 'Pop fly'], ['steal', 'Steal'], ['score', 'Runner scoring'], ['appeal', 'Swing appeal'], ['k3', 'Strikeout, 3rd out'], ['inning', 'Inning change']] }
+      { type: 'seg', key: 'm', label: 'Situation', opts: [['between', 'Between pitches'], ['pitch', 'Pitch'], ['inplay', 'Ball in play'], ['popfly', 'Pop fly'], ['steal', 'Steal'], ['score', 'Runner scoring'], ['appeal', 'Swing appeal'], ['kh', 'Strikeout, home batter'], ['ka', 'Strikeout, away batter'], ['k3', 'Strikeout, 3rd out'], ['inning', 'Inning change']] }
     ],
     hint: function (s) {
       return 'Click a base to add or remove a runner.' + (s.m === 'inplay' || s.m === 'popfly' ? (s.view === 'full' ? (s.m === 'popfly' ? ' Drag the ball to where it’s caught.' : ' Drag the ball to where it was hit.') : ' Switch to Full field to drag the ball into the outfield.') : '') +
@@ -1248,7 +1251,7 @@
       var batter = s.bat === 'R' ? [482, 622] : [518, 622];
       var batCam = s.bat === 'R' ? c3 : c1, sideCam = s.bat === 'R' ? c1 : c3;
       var lead = run[3] ? 3 : run[2] ? 2 : run[1] ? 1 : 0, any = !!lead, loaded = run[1] && run[2] && run[3];
-      var manned = s.cam4 === 'manned', extra = '';
+      var extra = '';
 
       // On a steal the runner who is going is drawn on the move instead of on their base.
       var stealFrom = m !== 'steal' ? 0 : run[3] ? 3 : run[1] ? 1 : run[2] ? 2 : 0;
@@ -1257,7 +1260,8 @@
       var scoreFrom = m !== 'score' ? 0 : run[3] ? 3 : run[2] ? 2 : 0;
       // Once the ball is in play the batter is running, so they’re drawn on the bases instead of at the plate.
       // On a runner scoring, the batter who drove them in is already running to first as the hero.
-      if (m !== 'inplay' && m !== 'popfly' && !(m === 'score' && (run[2] || run[3]))) extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH', 'batter');
+      // On a strikeout, the batter is drawn walking back to their dugout instead.
+      if (m !== 'inplay' && m !== 'popfly' && m !== 'kh' && m !== 'ka' && !(m === 'score' && (run[2] || run[3]))) extra += person(batter[0], batter[1], s.bat === 'R' ? 'RH' : 'LH', 'batter');
       [1, 2, 3].forEach(function (b) {
         var p = BASES[b];
         if (run[b] && m !== 'inplay' && b !== stealFrom && b !== scoreFrom) extra += runnerMark(scoreFrom ? [(p[0] + BASES[b + 1][0]) / 2, (p[1] + BASES[b + 1][1]) / 2] : p);
@@ -1266,7 +1270,6 @@
 
       function onLead(c, tag) { var p = BASES[lead]; aim(c, p[0], p[1] - 10, 10, 30); say(c, tag || 'Lead runner', 'The lead runner at ' + BASE_NAME[lead] + '.'); }
       function pitcherOrColor(c) { aim(c, PITCHER[0], PITCHER[1], 14, 30); say(c, 'Pitcher or color', 'The pitcher, runners, or color between pitches.'); }
-      function staticCam4() { aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'Static', 'Locked on the pitcher-to-batter shot.'); }
       // Where the ball is in each moment, and which camera has it.
       var ball = null, ballCam = null;
 
@@ -1280,8 +1283,7 @@
       else if (any) onLead(sideCam);
       else pitcherOrColor(sideCam);
       ball = [508, 528]; ballCam = loaded ? null : c2;
-      if (manned) { aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'Pitch shot', 'Stay on the pitcher, catcher, and batter, framed the same as for the pitch. Changing your shot between pitches risks missing the next pitch.'); }
-      else staticCam4();
+      aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'Pitch shot', 'Stay on the pitcher, catcher, and batter, framed the same as for the pitch. Changing your shot between pitches risks missing the next pitch.');
 
       if (m === 'pitch') {
         aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'On air', 'The pitch: pitcher to batter.');
@@ -1316,9 +1318,8 @@
         else if (s.bat === 'L') { if (any) newLeadRunner(c3); else shag(c3); }
         else { aim(c3, br[0], br[1], 14, 30); say(c3, 'Batter', 'Follow the batter. If it turns into a triple, you have the offensive hero.'); }
         // Cam 4
-        if (manned && Math.abs(s.bx - 500) < 60 && s.by < 520) { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Up the middle', 'Hit straight up the middle. Feel free to stay with the ball.'); }
-        else if (manned) { aim(c4, br[0], br[1], 10, 20); say(c4, 'Batter', 'Follow the batter on the base hit.'); }
-        else say(c4, 'Static', 'Locked on the pitcher-to-batter shot, so it doesn’t move. Switch Cam 4 to Manned to see it follow the play.');
+        if (Math.abs(s.bx - 500) < 60 && s.by < 520) { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Up the middle', 'Hit straight up the middle. Feel free to stay with the ball.'); }
+        else { aim(c4, br[0], br[1], 10, 20); say(c4, 'Batter', 'Follow the batter on the base hit.'); }
         c2.hasBall = true;
         return extra + baseballBall(s.bx, s.by);
       } else if (m === 'popfly') {
@@ -1333,9 +1334,8 @@
           say(sideCam, 'Runners', 'Watch the lead runner at ' + BASE_NAME[lead] + '. Runners hold, or tag up and run once the ball is caught.');
         } else { aim(sideCam, s.bx, s.by, 16, 40); say(sideCam, 'Fielder', 'The fielder making the catch.'); }
         if (run[3]) { aim(c3, BASES[3][0], BASES[3][1] - 10, 12, 30); say(c3, 'Sac fly', 'Runner on third. If they tag up after the catch, make the switch and score them.'); }
-        if (manned && Math.abs(s.bx - 500) < 60 && s.by < 520) { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Up the middle', 'Popped up the middle. Feel free to stay with the ball.'); }
-        else if (manned) { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Fielder', 'Follow the ball to the fielder.'); }
-        else say(c4, 'Static', 'Locked on the pitcher-to-batter shot, so it doesn’t move.');
+        if (Math.abs(s.bx - 500) < 60 && s.by < 520) { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Up the middle', 'Popped up the middle. Feel free to stay with the ball.'); }
+        else { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Fielder', 'Follow the ball to the fielder.'); }
         c2.hasBall = true;
         return extra + baseballBall(s.bx, s.by);
       } else if (m === 'steal') {
@@ -1361,7 +1361,7 @@
           var cp = [mx + nx * 30, my + ny * 30], tt = 0.8;
           extra += '<path class="throw" d="M' + p0[0] + ' ' + p0[1] + ' Q' + cp[0].toFixed(1) + ' ' + cp[1].toFixed(1) + ' ' + b[0] + ' ' + b[1] + '" style="stroke-width:' + u(3) + ';stroke-dasharray:' + u(2) + ' ' + u(7) + '"/>';
           ball = [0, 1].map(function (j) { return (1 - tt) * (1 - tt) * p0[j] + 2 * tt * (1 - tt) * cp[j] + tt * tt * b[j]; }); ballCam = c2;
-          if (manned && from === 1) { aim(c4, 530, 480, 30, 40); say(c4, 'Reveal the steal', 'Pull out to reveal the steal of second.'); }
+          if (from === 1) { aim(c4, 530, 480, 30, 40); say(c4, 'Reveal the steal', 'Pull out to reveal the steal of second.'); }
         }
       } else if (m === 'score') {
         if (!run[3] && !run[2]) {
@@ -1385,11 +1385,26 @@
         extra += person(ump[0], ump[1], 'UMP', 'flag');
         aim(c2, ump[0], ump[1], 10, 30); say(c2, 'Base umpire', 'The umpire in the direction the batter is facing.');
         ball = [500, 642]; ballCam = null;
+      } else if (m === 'kh' || m === 'ka') {
+        // The batter who struck out walks back toward their own dugout: home on the third-base line, away on the first-base line.
+        var homeK = m === 'kh', walk = homeK ? [438, 598] : [562, 598];
+        extra += person(walk[0], walk[1], 'BATTER', 'batter', true);
+        ball = [500, 642]; ballCam = null;
+        if (homeK) {
+          aim(c3, walk[0], walk[1], 10, 30);
+          say(c3, 'Strikeout victim', (s.bat === 'R' ? 'Push in on the batter for the reaction first. Then f' : 'F') + 'ollow them back toward the home dugout on the third-base line. Get off them before they reach the dugout.');
+        } else if (s.bat === 'R') {
+          aim(c3, 500, 632, 14, 30);
+          say(c3, 'Reaction', 'Push in on the batter for the reaction first. Then the home team’s catcher, the umpire, or the batter, whatever works.');
+        } else {
+          aim(c3, PITCHER[0], PITCHER[1], 12, 30); say(c3, 'Pitcher', 'An away team lefty struck out. Get the pitcher.');
+        }
+        if (s.bat === 'L') { aim(c1, walk[0], walk[1], 10, 30); say(c1, 'Batter', 'Stay with the batter for the reaction.'); }
       } else if (m === 'k3' || m === 'inning') {
         ball = null; ballCam = null;
         extra += person(PITCHER[0], PITCHER[1], 'PITCHER', 'batter', true);
         [c1, c3].forEach(function (c) { aim(c, PITCHER[0], PITCHER[1], 12, 30); say(c, 'Pitcher to dugout', 'At the end of every other half inning, the pitcher walking toward your dugout.'); });
-        if (m === 'k3' && manned) { aim(c4, PITCHER[0], PITCHER[1], 8, 30); say(c4, 'Pitcher to dugout', 'Third out was a strikeout. Push in on the pitcher and follow them into the dugout.'); }
+        if (m === 'k3') { aim(c4, PITCHER[0], PITCHER[1], 8, 30); say(c4, 'Pitcher to dugout', 'Third out was a strikeout. Push in on the pitcher and follow them into the dugout.'); }
         if (m === 'inning') { aim(c2, 500, 330, 70, 120); say(c2, 'Beauty shot', 'A good time for a beauty shot. Scorebug comes out.'); }
         else { aim(c2, PITCHER[0], PITCHER[1], 20, 30); say(c2, 'Pitcher', 'The pitcher walking off.'); }
       }
