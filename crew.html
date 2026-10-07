@@ -866,20 +866,34 @@
       aim(c6, bx, by, 36, 30);
 
       var extra = '', ball = [bx, by], arrow = true, f, kicker, target;
-      // On a live play, the quarterback lines up a few yards behind the ball.
-      // Iso is locked on a key receiver lined up wide and downfield of the ball.
+      // On a live play, all 22 are set before the snap: a shotgun offense with three receivers
+      // against a nickel defense. Iso is locked on the far-side receiver split out wide.
       if (m === 'live') {
+        var px = function (x) { return clamp(x, 106, 894); };
         // The running back lines up a few yards behind the quarterback.
         var rb = [bx - d * 58, by];
-        extra += person(qbX, by, 'QB', 'batter', true) + person(rb[0], rb[1], 'RB', 'batter', true) + person(clamp(bx + d * 100, 170, 830), 150, 'RECEIVER', 'batter');
-        // Five offensive linemen shoulder to shoulder on the line, just behind the ball, with the center in the middle.
-        var line = [-2, -1, 0, 1, 2].map(function (k) { return [bx - d * 12, by + k * 17]; });
-        line.forEach(function (p, k) { extra += person(p[0], p[1], k === 0 ? 'LINE' : '', 'batter'); });
+        // Five offensive linemen shoulder to shoulder on the line, just behind the ball, with the center in the middle,
+        // and the tight end on the end of the line on the near side.
+        var line = [-2, -1, 0, 1, 2].map(function (k) { return [bx - d * 12, by + k * 17]; }), te = [bx - d * 12, by + 51];
+        // Receivers: one split wide on the far side, a slot just inside him, and one split wide on the near side.
+        var wideFar = [px(bx - d * 12), 104], slot = [px(bx - d * 24), 136], wideNear = [px(bx - d * 24), 332];
+        var offense = line.concat([te, [qbX, by], rb, wideFar, slot, wideNear]);
+        extra += person(qbX, by, 'QB', 'batter', true) + person(rb[0], rb[1], 'RB', 'batter', true) + person(te[0], te[1], 'TE', 'batter', true);
+        extra += person(wideFar[0], wideFar[1], 'RECEIVER', 'batter') + person(slot[0], slot[1], '', 'batter') + person(wideNear[0], wideNear[1], '', 'batter');
+        line.forEach(function (p, k) { extra += person(p[0], p[1], k === 0 ? 'OL' : '', 'batter'); });
         // Four defensive linemen across from them, on the other side of the ball.
         var dline = [-1.5, -0.5, 0.5, 1.5].map(function (k) { return [bx + d * 14, by + k * 17]; });
-        dline.forEach(function (p, k) { extra += person(p[0], p[1], k === 3 ? 'D-LINE' : '', '', true); });
+        dline.forEach(function (p, k) { extra += person(p[0], p[1], k === 3 ? 'DL' : '', '', true); });
+        // Two linebackers 5 yards off the ball, a nickel back over the slot, corners over the wide receivers, and two safeties deep.
+        [[px(bx + d * 36), by - 17, 'LB'], [px(bx + d * 36), by + 28, ''], [px(bx + d * 40), 136, ''],
+          [px(bx + d * 46), 104, 'CB'], [px(bx + d * 46), 332, ''], [px(bx + d * 85), 160, 'SAFETY'], [px(bx + d * 85), 280, '']].forEach(function (p) {
+          extra += person(p[0], p[1], p[2], '');
+        });
+        // Game keeps all 11 on offense in the frame, out to the receivers split wide.
+        keepInShot(game, offense);
+        aim(iso, wideFar[0], wideFar[1], 10, 30);
         // Pit frames both lines and the backfield edge to edge: each side of the frame just touches the outside player.
-        var edges = [], pitPlayers = line.concat(dline, [[qbX, by], rb]);
+        var edges = [], pitPlayers = line.concat(dline, [te, [qbX, by], rb]);
         pitPlayers.forEach(function (p) {
           var a = Math.atan2(p[1] - pit.y, p[0] - pit.x) * 180 / Math.PI, dist = Math.hypot(p[0] - pit.x, p[1] - pit.y), r = Math.asin(u(8) / dist) * 180 / Math.PI;
           edges.push(a - r, a + r);
