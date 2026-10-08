@@ -502,7 +502,7 @@
         '<b>First ID</b> is the first time a batter is shown in an at-bat, usually with a lower third graphic showing their name, number, and stats. Frame them head to toe and push in, then go waist up between every pitch after that.'
       ],
       cams: [
-        { x: 330, y: 500, aim: 36, fov: 16, len: 230, type: 'elevated',
+        { x: 400.3, y: 570.3, aim: 24, fov: 16, len: 230, type: 'elevated',
           role: 'Third base camera', where: 'In the stands on the third-base side',
           job: 'Left-handed batters between every pitch, and the offensive hero on a single, double, RBI, or bunt.',
           framing: 'Left-handed batters head to toe with a push in for the first ID, then waist up between every pitch.',
@@ -512,11 +512,11 @@
           job: 'The main defensive and ball-in-play camera. Framing, framing, framing.',
           framing: 'Set the defense. Include the umpire on the call at any base.',
           tips: ['Stay in manual focus. You’re shooting through the net.', 'The pitcher between every pitch.', 'Steals: keep the runner and the ball in frame.', 'Runner scoring: medium on the fielder through the throw, then follow the ball home for the play at the plate: the runner, the catcher, and the umpire on the call.', 'Swing appeals: the umpire in the direction the batter is facing.', 'When the bases are loaded, set the table.', 'A good camera for beauty shots.'] },
-        { x: 670, y: 500, aim: 144, fov: 16, len: 230, type: 'elevated',
+        { x: 599.7, y: 570.3, aim: 156, fov: 16, len: 230, type: 'elevated',
           role: 'First base camera', where: 'In the stands on the first-base side',
           job: 'Right-handed batters between every pitch, scoring every runner, and the offensive hero on a triple.',
           framing: 'Right-handed batters head to toe with a push in for the first ID, then waist up between every pitch.',
-          tips: ['Stay in manual focus. You’re shooting through the net.', 'Score all runners.', '“Make the switch” to the runner coming home.', 'Lefty batter up: the lead runner, or shag the ball if no one is on base.', 'Lefty batter up: the pitcher, runners, or color between pitches.', 'Strikeout, righty or lefty: when a home team batter strikes out, follow them back toward the home dugout on the third-base line for the reaction. Get off them before they reach the dugout.', 'Righty strikes out: push in on the batter for the reaction first. If it’s an away team batter, go to the home team’s catcher, the umpire, or the batter, whatever works.', 'At the end of every other half inning, get the pitcher walking toward your dugout.', 'Offensive hero on a triple.', 'Cross shoot the coach interview.'] },
+          tips: ['Stay in manual focus. You’re shooting through the net.', 'Score all runners.', '“Make the switch” to the runner coming home.', 'Lefty batter up: the lead runner, or shag the ball if no one is on base.', 'Lefty batter up, no one on: the pitcher, or color, between pitches.', 'Lefty batter up, runner on first: the pickoff shot at first.', 'Lefty batter up, runner on second or third: alternate between the pitcher and the runner.', 'Lefty batter up, runner on third: a shot with the runner and the catcher works well for passed balls, wild pitches, and squeeze attempts.', 'Strikeout, righty or lefty: when a home team batter strikes out, follow them back toward the home dugout on the third-base line for the reaction. Get off them before they reach the dugout.', 'Righty strikes out: push in on the batter for the reaction first. If it’s an away team batter, go to the home team’s catcher, the umpire, or the batter, whatever works.', 'Righty batter up, home run: the batter or pitcher reacting, then pick up the hitter at third and follow them home and into the dugout.', 'Righty batter up, pickoff throw to first: the catcher.', 'Righty batter up, steal of second: the catcher.', 'Righty batter up, steal of third: go with the throw.', 'At the end of every other half inning, get the pitcher walking toward your dugout.', 'Offensive hero on a triple.', 'Cross shoot the coach interview.'] },
         { x: 332, y: 29, aim: 75, fov: 9, len: 640, type: 'elevated',
           role: 'Center field camera', where: 'On a platform beyond the outfield fence, just left of the batter’s eye wall',
           job: 'The main pitch shot, pitcher to batter.',
@@ -533,9 +533,9 @@
       ],
       routine: 'Most pitches are the batter (Cam 1 for lefties, Cam 3 for righties) → Cam 2 on the pitcher → Cam 4 for the pitch. A ball in play goes to Cam 2, then heroes and replays. Replay as many plays as you can, and be back on Cam 4 before the next pitch.',
       situations: [
-        ['Home run', 'Cam 2 follows the ball. Cam 3 scores the runner crossing the plate. Then the dugout greeting them, and replays.'],
-        ['Steal', 'Cam 2 keeps the runner and the ball in frame. Cam 4 pulls out to reveal a steal of second.'],
-        ['Pickoff', 'Cam 1 has it with a righty batting and a runner on first.'],
+        ['Home run', 'Cam 2 follows the ball. Cam 3 scores the runner crossing the plate. With a righty batting and no one on, Cam 3 gets the batter or pitcher reacting, then picks up the hitter at third and follows them home and into the dugout. Then the dugout greeting them, and replays.'],
+        ['Steal', 'Cam 2 keeps the runner and the ball in frame. Cam 4 pulls out to reveal a steal of second. With a righty batting, Cam 3 takes the catcher on a steal of second and goes with the throw on a steal of third.'],
+        ['Pickoff', 'With a righty batting and a runner on first, Cam 1 has it and Cam 3 takes the catcher on the throw to first. With a lefty batting, Cam 3 has it.'],
         ['Swing appeal', 'Cam 2 on the umpire in the direction the batter is facing.'],
         ['Strikeout', 'Cam 3 follows a home team batter back toward the home dugout on the third-base line for the reaction, and gets off them before the dugout. On a righty, Cam 3 pushes in on the batter first. If it’s an away team batter, the home team’s catcher, the umpire, or the batter.'],
         ['Bases loaded', 'Cam 2 sets the table.'],
@@ -639,9 +639,9 @@
     s += l(500, 630, 861.8, 268.2) + l(500, 630, 132, 262);
     [[600, 530], [500, 430], [400, 530]].forEach(function (b) { s += r(b[0] - 6, b[1] - 6, 12, 12, '#F3EFE2', 'transform="rotate(45 ' + b[0] + ' ' + b[1] + ')"'); });
     s += '<polygon points="495,625 505,625 505,630 500,634 495,630" fill="#F3EFE2"/>';
-    // Dugouts in foul territory, parallel to the foul line and centered across from third and first:
+    // Dugouts in foul territory, parallel to the foul line, running toward the outfield from across third and first:
     // home on the third-base line, away on the first-base line.
-    [[370.3, 559.7, 45, 'HOME DUGOUT'], [629.7, 559.7, -45, 'AWAY DUGOUT']].forEach(function (d) {
+    [[340.6, 530, 45, 'HOME DUGOUT'], [659.4, 530, -45, 'AWAY DUGOUT']].forEach(function (d) {
       var rot = 'transform="rotate(' + d[2] + ' ' + d[0] + ' ' + d[1] + ')"';
       s += r(d[0] - 42, d[1] - 9, 84, 18, '#17402B', 'rx="3" ' + STROKE + ' ' + rot) + t(d[0], d[1] + 3, d[3], 8, 'class="lbl" ' + rot);
     });
@@ -1279,8 +1279,14 @@
       aim(batCam, batter[0], batter[1], 8, 20);
       say(batCam, 'Batter', 'Waist up on the batter between every pitch. Head to toe with a push in for the first ID.');
       // The lead runner comes first. The pickoff shot is for when the lead runner is the one on first.
-      if (s.bat === 'R' && lead === 1) { aim(sideCam, BASES[1][0], BASES[1][1] - 10, 12, 30); say(sideCam, 'Lead runner: pickoff', 'Righty batting with the lead runner on first: the pickoff shot.'); }
+      if (lead === 1) { aim(sideCam, BASES[1][0], BASES[1][1] - 10, 12, 30); say(sideCam, 'Lead runner: pickoff', (s.bat === 'R' ? 'Righty' : 'Lefty') + ' batting with the lead runner on first: the pickoff shot.'); }
+      else if (any && s.bat === 'L') {
+        // With a lefty up, Cam 3 trades off between the pitcher and the lead runner at second or third.
+        aim(c3, BASES[lead][0], BASES[lead][1] - 10, 12, 30);
+        say(c3, 'Pitcher and runner', 'Alternate between the pitcher and the runner at ' + BASE_NAME[lead] + '.' + (lead === 3 ? ' A shot with the runner and the catcher works well for passed balls, wild pitches, and squeeze attempts.' : ''));
+      }
       else if (any) onLead(sideCam);
+      else if (s.bat === 'L') { aim(c3, PITCHER[0], PITCHER[1], 14, 30); say(c3, 'Pitcher or color', 'No one on: the pitcher, or color, between pitches.'); }
       else pitcherOrColor(sideCam);
       ball = [508, 528]; ballCam = loaded ? null : c2;
       aim(c4, HOME[0], HOME[1], 9, 0); say(c4, 'Pitch shot', 'Stay on the pitcher, catcher, and batter, framed the same as for the pitch. Changing your shot between pitches risks missing the next pitch.');
@@ -1362,6 +1368,10 @@
           extra += '<path class="throw" d="M' + p0[0] + ' ' + p0[1] + ' Q' + cp[0].toFixed(1) + ' ' + cp[1].toFixed(1) + ' ' + b[0] + ' ' + b[1] + '" style="stroke-width:' + u(3) + ';stroke-dasharray:' + u(2) + ' ' + u(7) + '"/>';
           ball = [0, 1].map(function (j) { return (1 - tt) * (1 - tt) * p0[j] + 2 * tt * (1 - tt) * cp[j] + tt * tt * b[j]; }); ballCam = c2;
           if (from === 1) { aim(c4, 530, 480, 30, 40); say(c4, 'Reveal the steal', 'Pull out to reveal the steal of second.'); }
+          if (s.bat === 'R') {
+            if (from === 1) { aim(c3, HOME[0], HOME[1] + 10, 10, 30); say(c3, 'Catcher', 'Steal of second: the catcher.'); }
+            else { aim(c3, (p0[0] + b[0]) / 2, (p0[1] + b[1]) / 2, 30, 50); say(c3, 'Go with the throw', 'Steal of third: go with the catcher’s throw to third.'); }
+          }
         }
       } else if (m === 'score') {
         if (!run[3] && !run[2]) {
