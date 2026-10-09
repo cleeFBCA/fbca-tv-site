@@ -506,7 +506,7 @@
           role: 'Third base camera', where: 'In the stands on the third-base side',
           job: 'Left-handed batters between every pitch, and the offensive hero on a single, double, RBI, or bunt.',
           framing: 'Left-handed batters head to toe with a push in for the first ID, then waist up between every pitch.',
-          tips: ['Stay in manual focus. You’re shooting through the net.', 'Offensive hero on a single, double, RBI, or bunt.', 'Righty batter up: the lead runner, then the trailing runners after the runner touches third. If no one is on base, shag the ball.', 'Righty batter up: the pitcher, runners, or color between pitches.', 'At the end of every other half inning, get the pitcher walking toward your dugout.', 'Pickoff shot when a righty is batting and there’s a runner on first.', 'Cross shoot the coach interview.'] },
+          tips: ['Stay in manual focus. You’re shooting through the net.', 'Offensive hero on a single, double, RBI, or bunt.', 'Righty batter up: the lead runner, then the trailing runners after the runner touches third. If no one is on base, shag the ball.', 'Righty batter up, no one on, ball hit: go with the throw, or stay for the infield hero. If the batter is safe, stay on a close-up of them. If they’re out and it’s a home team batter, follow them to the home dugout.', 'Righty batter up, runners on: drop the lead runner after they round third, unless there could be a close play at the plate. End the play on a close-up of the batter-runner.', 'Righty batter up, runners on, fly ball out: reset to the lead runner, or bring a home team batter back to the dugout.', 'Righty batter up: the pitcher, runners, or color between pitches.', 'Between pitches, alternate between the pitcher and the batter.', 'Strikeout, righty or lefty: when a home team batter strikes out, follow them back to the home dugout on your side. Get off them before they reach the dugout.', 'Home run, righty or lefty: follow the batter around the bases. Rounding second, either go wide and push to a close-up, or go tight and pull out to head to toe rounding third. Stay with the batter into the dugout.', 'At the end of every other half inning, get the pitcher walking toward your dugout.', 'Pickoff shot when a righty is batting and there’s a runner on first.', 'Cross shoot the coach interview.'] },
         { x: 500, y: 672, aim: -90, fov: 50, len: 560, type: 'elevated',
           role: 'Main game camera', where: 'In the stands behind home plate',
           job: 'The main defensive and ball-in-play camera. Framing, framing, framing.',
@@ -533,11 +533,11 @@
       ],
       routine: 'Most pitches are the batter (Cam 1 for lefties, Cam 3 for righties) → Cam 2 on the pitcher → Cam 4 for the pitch. A ball in play goes to Cam 2, then heroes and replays. Replay as many plays as you can, and be back on Cam 4 before the next pitch.',
       situations: [
-        ['Home run', 'Cam 2 follows the ball. Cam 3 scores the runner crossing the plate. With a righty batting and no one on, Cam 3 gets the batter or pitcher reacting, then picks up the hitter at third and follows them home and into the dugout. Then the dugout greeting them, and replays.'],
+        ['Home run', 'Cam 2 follows the ball. Cam 3 scores the runner crossing the plate. With a righty batting and no one on, Cam 3 gets the batter or pitcher reacting, then picks up the hitter at third and follows them home and into the dugout. Cam 1 follows the batter around the bases and into the dugout. Then the dugout greeting them, and replays.'],
         ['Steal', 'Cam 2 keeps the runner and the ball in frame. Cam 4 pulls out to reveal a steal of second. With a righty batting, Cam 3 takes the catcher on a steal of second and goes with the throw on a steal of third.'],
         ['Pickoff', 'With a righty batting and a runner on first, Cam 1 has it and Cam 3 takes the catcher on the throw to first. With a lefty batting, Cam 3 has it.'],
         ['Swing appeal', 'Cam 2 on the umpire in the direction the batter is facing.'],
-        ['Strikeout', 'Cam 3 follows a home team batter back toward the home dugout on the third-base line for the reaction, and gets off them before the dugout. On a righty, Cam 3 pushes in on the batter first. If it’s an away team batter, the home team’s catcher, the umpire, or the batter.'],
+        ['Strikeout', 'Cam 1 follows a home team batter back to the home dugout and gets off them before the dugout. Cam 3 follows a home team batter back toward the home dugout on the third-base line for the reaction, and gets off them before the dugout. On a righty, Cam 3 pushes in on the batter first. If it’s an away team batter, the home team’s catcher, the umpire, or the batter.'],
         ['Bases loaded', 'Cam 2 sets the table.'],
         ['Strikeout for the third out', 'Cam 4 pushes in on the pitcher and follows them into the dugout.'],
         ['Inning change', 'Scorebug comes out. Cam 1 or Cam 3 gets the pitcher walking toward its dugout. Then crowd, color, or a replay. Bring the scorebug back before the first pitch.'],
@@ -1269,7 +1269,7 @@
       });
 
       function onLead(c, tag) { var p = BASES[lead]; aim(c, p[0], p[1] - 10, 10, 30); say(c, tag || 'Lead runner', 'The lead runner at ' + BASE_NAME[lead] + '.'); }
-      function pitcherOrColor(c) { aim(c, PITCHER[0], PITCHER[1], 14, 30); say(c, 'Pitcher or color', 'The pitcher, runners, or color between pitches.'); }
+      function pitcherOrColor(c) { aim(c, PITCHER[0], PITCHER[1], 14, 30); say(c, 'Pitcher or color', 'The pitcher, runners, or color between pitches.' + (c === c1 ? ' Or alternate between the pitcher and the batter.' : '')); }
       // Where the ball is in each moment, and which camera has it.
       var ball = null, ballCam = null;
 
@@ -1277,7 +1277,7 @@
       if (loaded) { aim(c2, 500, 500, 50, 100); say(c2, 'Set the table', 'Bases loaded. Show all the runners.'); }
       else { aim(c2, PITCHER[0], PITCHER[1], 8, 30); say(c2, 'Pitcher', 'The pitcher between every pitch.'); }
       aim(batCam, batter[0], batter[1], 8, 20);
-      say(batCam, 'Batter', 'Waist up on the batter between every pitch. Head to toe with a push in for the first ID.');
+      say(batCam, 'Batter', 'Waist up on the batter between every pitch. Head to toe with a push in for the first ID.' + (batCam === c1 ? ' Alternate between the batter and the pitcher.' : ''));
       // The lead runner comes first. The pickoff shot is for when the lead runner is the one on first.
       if (lead === 1) { aim(sideCam, BASES[1][0], BASES[1][1] - 10, 12, 30); say(sideCam, 'Lead runner: pickoff', (s.bat === 'R' ? 'Righty' : 'Lefty') + ' batting with the lead runner on first: the pickoff shot.'); }
       else if (any && s.bat === 'L') {
@@ -1315,7 +1315,10 @@
           say(c, 'Lead runner', 'The lead runner, now headed to ' + BASE_NAME[newLead] + (s.bat === 'R' ? ', then the trailing runners after the runner touches third.' : '.'));
         }
         // Cam 1
-        if (s.bat === 'R') { if (any) newLeadRunner(c1); else shag(c1); }
+        if (s.bat === 'R') {
+          if (any) { newLeadRunner(c1); c1.text += ' Stay with them if there could be a close play at the plate. End the play on a close-up of the batter-runner.'; }
+          else { shag(c1); c1.text = 'No one on base: shag the ball. Go with the throw, or stay for the infield hero. If the batter is safe, stay on a close-up of them. If they’re out and it’s a home team batter, follow them to the home dugout.'; }
+        }
         else if (hit !== 'triple') hero(c1);
         else if (any) newLeadRunner(c1); else shag(c1);
         // Cam 3
@@ -1337,7 +1340,7 @@
         aim(batCam, outOfBox[0], outOfBox[1], 12, 30); say(batCam, 'Batter', 'Follow the batter out of the box. If they pop out, get the reaction.');
         if (any) {
           var lp = BASES[lead]; aim(sideCam, lp[0], lp[1] - 10, 12, 30);
-          say(sideCam, 'Runners', 'Watch the lead runner at ' + BASE_NAME[lead] + '. Runners hold, or tag up and run once the ball is caught.');
+          say(sideCam, 'Runners', 'Watch the lead runner at ' + BASE_NAME[lead] + '. Runners hold, or tag up and run once the ball is caught.' + (sideCam === c1 ? ' Once it’s caught, reset to the lead runner, or bring a home team batter back to the dugout.' : ''));
         } else { aim(sideCam, s.bx, s.by, 16, 40); say(sideCam, 'Fielder', 'The fielder making the catch.'); }
         if (run[3]) { aim(c3, BASES[3][0], BASES[3][1] - 10, 12, 30); say(c3, 'Sac fly', 'Runner on third. If they tag up after the catch, make the switch and score them.'); }
         if (Math.abs(s.bx - 500) < 60 && s.by < 520) { aim(c4, s.bx, s.by, 16, 40); say(c4, 'Up the middle', 'Popped up the middle. Feel free to stay with the ball.'); }
@@ -1409,7 +1412,8 @@
         } else {
           aim(c3, PITCHER[0], PITCHER[1], 12, 30); say(c3, 'Pitcher', 'An away team lefty struck out. Get the pitcher.');
         }
-        if (s.bat === 'L') { aim(c1, walk[0], walk[1], 10, 30); say(c1, 'Batter', 'Stay with the batter for the reaction.'); }
+        if (homeK) { aim(c1, walk[0], walk[1], 10, 30); say(c1, 'Strikeout victim', 'Follow them back to the home dugout on your side. Get off them before they reach the dugout.'); }
+        else if (s.bat === 'L') { aim(c1, walk[0], walk[1], 10, 30); say(c1, 'Batter', 'Stay with the batter for the reaction.'); }
       } else if (m === 'k3' || m === 'inning') {
         ball = null; ballCam = null;
         extra += person(PITCHER[0], PITCHER[1], 'PITCHER', 'batter', true);
