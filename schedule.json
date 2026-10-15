@@ -5,7 +5,7 @@
   "timezone": "America/Chicago",
   "streamUrl": "https://cdn3.wowza.com/1/dWs2d1hVSlFlQlFH/c2RJVUtM/hls/live/playlist.m3u8",
   "archiveUrl": "https://www.youtube.com/@eaglesontheair",
-  "updated": "2026-07-14T17:30:00-05:00",
+  "updated": "2026-10-15T12:00:00-05:00",
   "games": [
      
     {
@@ -105,6 +105,168 @@
       "opponent": "St. Joseph High School Victoria",
       "homeAway": "away",
       "location": "Memorial Stadium",
+      "notes": null
+    },
+    {
+      "id": "2026-11-13-gsoc-village-school",
+      "start": "2026-11-13T17:00:00-06:00",
+      "sport": "Girls Soccer",
+      "opponent": "The Village School",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2026-11-13-bsoc-village-school",
+      "start": "2026-11-13T19:00:00-06:00",
+      "sport": "Boys Soccer",
+      "opponent": "The Village School",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2026-11-17-gbb-legacy-prep",
+      "start": "2026-11-17T18:00:00-06:00",
+      "sport": "Girls Basketball",
+      "opponent": "Legacy Preparatory Christian Academy",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2026-11-17-bbb-fbcha",
+      "start": "2026-11-17T19:30:00-06:00",
+      "sport": "Boys Basketball",
+      "opponent": "Fort Bend Christian Homeschool Association",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2026-12-01-gsoc-bay-area-christian",
+      "start": "2026-12-01T17:30:00-06:00",
+      "sport": "Girls Soccer",
+      "opponent": "Bay Area Christian School",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2026-12-01-bsoc-bay-area-christian",
+      "start": "2026-12-01T19:00:00-06:00",
+      "sport": "Boys Soccer",
+      "opponent": "Bay Area Christian School",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2027-01-07-gsoc-tbd",
+      "start": "2027-01-07T17:00:00-06:00",
+      "sport": "Girls Soccer",
+      "opponent": "TBD",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2027-01-07-bsoc-tbd",
+      "start": "2027-01-07T19:00:00-06:00",
+      "sport": "Boys Soccer",
+      "opponent": "TBD",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2027-01-18-gsoc-st-josephs-victoria",
+      "start": "2027-01-18T17:00:00-06:00",
+      "sport": "Girls Soccer",
+      "opponent": "St. Joseph High School Victoria",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2027-01-18-bsoc-st-josephs-victoria",
+      "start": "2027-01-18T19:00:00-06:00",
+      "sport": "Boys Soccer",
+      "opponent": "St. Joseph High School Victoria",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2027-01-22-gbb-second-baptist",
+      "start": "2027-01-22T18:00:00-06:00",
+      "sport": "Girls Basketball",
+      "opponent": "Second Baptist School",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2027-01-22-bbb-second-baptist",
+      "start": "2027-01-22T19:30:00-06:00",
+      "sport": "Boys Basketball",
+      "opponent": "Second Baptist School",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2027-01-29-gbb-cypress-christian",
+      "start": "2027-01-29T18:00:00-06:00",
+      "sport": "Girls Basketball",
+      "opponent": "Cypress Christian School",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2027-01-29-bbb-cypress-christian",
+      "start": "2027-01-29T19:30:00-06:00",
+      "sport": "Boys Basketball",
+      "opponent": "Cypress Christian School",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2027-02-02-gbb-st-josephs-victoria",
+      "start": "2027-02-02T18:00:00-06:00",
+      "sport": "Girls Basketball",
+      "opponent": "St. Joseph High School Victoria",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2027-02-02-bbb-st-josephs-victoria",
+      "start": "2027-02-02T19:30:00-06:00",
+      "sport": "Boys Basketball",
+      "opponent": "St. Joseph High School Victoria",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
+      "id": "2027-02-09-gsoc-tbd",
+      "start": "2027-02-09T17:00:00-06:00",
+      "sport": "Girls Soccer",
+      "opponent": "TBD",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
+      "notes": null
+    },
+    {
+      "id": "2027-02-09-bsoc-tbd",
+      "start": "2027-02-09T19:00:00-06:00",
+      "sport": "Boys Soccer",
+      "opponent": "TBD",
+      "homeAway": "home",
+      "location": "Eagle Stadium",
       "notes": null
     }
   ]
