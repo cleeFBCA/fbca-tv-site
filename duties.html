@@ -127,7 +127,8 @@
   .kitpanel h2{font-family:'Big Shoulders Display';font-weight:800;font-size:1.3rem;letter-spacing:.03em;text-transform:uppercase}
   .kitpanel .sub{margin:2px 0 6px;font-size:.92rem}
   .kitpanel h3{display:flex;align-items:center;gap:8px}
-  .kitpanel h3 .kit{font-size:1.05rem}
+  .kitpanel h3 .kit{font-size:1.05rem;color:var(--chalk)}
+  .kitpanel h3 .sec{font:600 .8rem 'Barlow';letter-spacing:.04em;text-transform:none;color:var(--chalk-dim)}
   .inv h3{margin-top:22px}
   .inv .duty>summary{padding:12px 16px}
   .inv .duty>summary .kit{font-size:1.05rem}
@@ -344,10 +345,17 @@
   }
   const chip = (name) => `<span class="kit"><i style="background:${kitColor(name)}"></i>${esc(name)}</span>`;
 
-  /** What a cell on the Assignments tab names: kits from the Equipment tab, and anything else as written. */
+  /**
+   * What a cell on the Assignments tab names: kits from the Equipment tab, by
+   * the box's name ("Audio Bag") or its section's ("Announcer Kit", which brings
+   * every box in that section), and anything else as written.
+   */
   function kitsIn(text) {
     if (!text) return [];
-    return text.split(/\s*[,;+&\n]\s*/).filter(Boolean).map((part) => state.kitByName[part.toLowerCase()] || { name: part, extra: true });
+    return text.split(/\s*[,;+&\n]\s*/).filter(Boolean).flatMap((part) => {
+      const key = part.toLowerCase();
+      return state.kitByName[key] ? [state.kitByName[key]] : state.kitsBySection[key] || [{ name: part, extra: true }];
+    });
   }
   /** A kit's items as checklist text: "Camera: Canon XA25", or just "Sled" when the part and item match. */
   const itemText = ([part, item]) => (item.toLowerCase() === part.toLowerCase() || !part ? item : `${part}: ${item}`);
@@ -376,7 +384,12 @@
     const games = data.games.filter((g) => g.date >= today);
     // Start on the setup the next game needs.
     state = { ...data, games, secs, mode: modeOf(games[0]), equipment: data.equipment || [], kitByName: {} };
-    for (const sec of state.equipment) for (const k of sec.kits) state.kitByName[k.name.toLowerCase()] = { ...k, section: sec.title };
+    state.kitsBySection = {};
+    for (const sec of state.equipment) {
+      const kits = sec.kits.map((k) => ({ ...k, section: sec.title }));
+      kits.forEach((k) => { state.kitByName[k.name.toLowerCase()] = k; });
+      state.kitsBySection[sec.title.toLowerCase()] = kits;
+    }
 
     $('gate').hidden = true;
     $('app').hidden = false;
@@ -514,7 +527,7 @@
     const body = kits.length
       ? kits.map((k) => k.extra
           ? `<ul class="checks">${item(k.name)}</ul>`
-          : `<h3>${chip(k.name)}<span>kit</span></h3><ul class="checks">${k.items.map((it) => item(itemText(it))).join('')}</ul>`).join('')
+          : `<h3>${chip(k.name)}${k.section && k.section.toLowerCase() !== k.name.toLowerCase() ? `<span class="sec">${esc(k.section)}</span>` : ''}</h3><ul class="checks">${k.items.map((it) => item(itemText(it))).join('')}</ul>`).join('')
       : '<p>No equipment assigned yet for this game.</p>';
     box.innerHTML = `<div class="kitpanel md"><h2>${esc(position)}${who ? ` · ${esc(who)}` : ''}</h2>
       <p class="sub">${w.tag || w.text} · ${esc(g.sport)} ${g.ha.toLowerCase() === 'away' ? 'at' : 'vs.'} ${esc(g.opponent)}${g.call ? ` · call ${esc(g.call)}` : ''}</p>
