@@ -348,15 +348,31 @@
   /**
    * What a cell on the Assignments tab names: kits from the Equipment tab, by
    * the box's name ("Audio Bag") or its section's ("Announcer Kit", which brings
-   * every box in that section), and anything else as written.
+   * every box in that section); single items out of a box, by the item ("Ecoflow
+   * River 2") or its column ("Tripod 1"), when only one item has that name; and
+   * anything else as written. Items from the same box are grouped together.
    */
   function kitsIn(text) {
     if (!text) return [];
-    return text.split(/\s*[,;+&\n]\s*/).filter(Boolean).flatMap((part) => {
+    const out = [];
+    for (const part of text.split(/\s*[,;+&\n]\s*/).filter(Boolean)) {
       const key = part.toLowerCase();
-      return state.kitByName[key] ? [state.kitByName[key]] : state.kitsBySection[key] || [{ name: part, extra: true }];
-    });
+      if (state.kitByName[key]) { out.push(state.kitByName[key]); continue; }
+      if (state.kitsBySection[key]) { out.push(...state.kitsBySection[key]); continue; }
+      const hit = state.itemIndex[key];
+      if (hit && hit.length === 1) {
+        const { kit, i } = hit[0];
+        const group = out.find((o) => o.partial && o.name === kit.name);
+        if (group) { group.items.push(kit.items[i]); group.picked.push(i); group.labels.push(part); }
+        else out.push({ ...kit, items: [kit.items[i]], picked: [i], labels: [part], partial: true });
+        continue;
+      }
+      out.push({ name: part, extra: true });
+    }
+    return out;
   }
+  /** How an assignment shows on a game: the kit's name, or the items picked from it. */
+  const kitLabel = (k) => (k.partial ? k.labels.join(', ') : k.name);
   /** A kit's items as checklist text: "Camera: Canon XA25", or just "Sled" when the part and item match. */
   const itemText = ([part, item]) => (item.toLowerCase() === part.toLowerCase() || !part ? item : `${part}: ${item}`);
 
@@ -385,9 +401,15 @@
     // Start on the setup the next game needs.
     state = { ...data, games, secs, mode: modeOf(games[0]), equipment: data.equipment || [], kitByName: {} };
     state.kitsBySection = {};
+    state.itemIndex = {}; // an item's name or its column's name → every { kit, i } it could mean
     for (const sec of state.equipment) {
       const kits = sec.kits.map((k) => ({ ...k, section: sec.title }));
-      kits.forEach((k) => { state.kitByName[k.name.toLowerCase()] = k; });
+      kits.forEach((k) => {
+        state.kitByName[k.name.toLowerCase()] = k;
+        k.items.forEach(([part, item], i) => {
+          for (const name of new Set([part.toLowerCase(), item.toLowerCase()].filter(Boolean))) (state.itemIndex[name] ??= []).push({ kit: k, i });
+        });
+      });
       state.kitsBySection[sec.title.toLowerCase()] = kits;
     }
 
@@ -423,7 +445,7 @@
         const w = when(g.date);
         const slots = g.crew.filter((c) => c[1] || c[2] || showOpen).map(([pos, name, kit]) => {
           const cls = ['slot', name ? '' : 'open', me && name === me ? 'me-slot' : ''].filter(Boolean).join(' ');
-          const kits = kitsIn(kit).map((k) => chip(k.name)).join(' ');
+          const kits = kitsIn(kit).map((k) => chip(kitLabel(k))).join(' ');
           return `<button class="${cls}" data-pos="${esc(pos)}" data-mode-of="${modeOf(g)}" data-game="${gi}"><span class="pos">${esc(pos)}</span><span class="who">${name ? esc(name) : 'Open'}</span>${kits ? `<span class="kits">${kits}</span>` : ''}</button>`;
         }).join('');
         return `<article class="game">
@@ -454,7 +476,7 @@
     box.innerHTML = `<h2>${esc(me)}’s games</h2>` + (jobs.length
       ? '<ul>' + jobs.map(({ g, gi, pos, kit }) => {
           const w = when(g.date);
-          const kits = kitsIn(kit).map((k) => chip(k.name)).join(' ');
+          const kits = kitsIn(kit).map((k) => chip(kitLabel(k))).join(' ');
           return `<li><b>${w.tag || w.text}</b> · ${esc(g.sport)} ${g.ha.toLowerCase() === 'away' ? 'at' : 'vs.'} ${esc(g.opponent)} · <a href="#" data-pos="${esc(pos)}" data-mode-of="${modeOf(g)}" data-game="${gi}">${esc(pos)}</a>${kits ? ' · ' + kits : ''}${g.call ? ` · call ${esc(g.call)}` : ''}</li>`;
         }).join('') + '</ul>'
       : '<p>You’re not signed up for any upcoming games.</p>');
@@ -494,11 +516,18 @@
       const out = g.crew.flatMap(([pos, who, kit]) => kitsIn(kit).map((k) => ({ k, pos, who })));
       if (!out.length) continue;
       const w = when(g.date);
-      const used = new Set(out.map((o) => o.k.name.toLowerCase()));
-      const rest = state.equipment.flatMap((sec) => sec.kits).filter((k) => !used.has(k.name.toLowerCase()));
+      // What stays behind: whole boxes nobody has, and the items left in boxes only partly taken.
+      const whole = new Set(out.filter((o) => !o.k.partial && !o.k.extra).map((o) => o.k.name));
+      const picked = {};
+      out.filter((o) => o.k.partial).forEach((o) => o.k.picked.forEach((i) => (picked[o.k.name] ??= new Set()).add(i)));
+      const rest = state.equipment.flatMap((sec) => sec.kits).filter((k) => !whole.has(k.name)).map((k) => {
+        if (!picked[k.name]) return esc(k.name);
+        const left = k.items.filter((_, i) => !picked[k.name].has(i)).map(itemText);
+        return left.length ? `${esc(k.name)} (${left.map(esc).join(', ')})` : '';
+      }).filter(Boolean);
       html += `<div class="out"><span class="when">${w.tag || w.text}</span> · ${esc(g.sport)} ${g.ha.toLowerCase() === 'away' ? 'at' : 'vs.'} ${esc(g.opponent)}
-        <ul>${out.map(({ k, pos, who }) => `<li>${chip(k.name)} <span>${esc(pos)}${who ? ` · ${esc(who)}` : ''}</span></li>`).join('')}</ul>
-        ${rest.length ? `<div class="rest">Not assigned: ${rest.map((k) => esc(k.name)).join(', ')}</div>` : ''}</div>`;
+        <ul>${out.map(({ k, pos, who }) => `<li>${chip(kitLabel(k))} <span>${esc(pos)}${who ? ` · ${esc(who)}` : ''}</span></li>`).join('')}</ul>
+        ${rest.length ? `<div class="rest">Not assigned: ${rest.join(', ')}</div>` : ''}</div>`;
     }
     // Every kit on the Equipment tab.
     html += state.equipment.map((sec) => `<div class="inv"><h3 class="md-h">${esc(sec.title)}</h3>` + sec.kits.map((k) =>
