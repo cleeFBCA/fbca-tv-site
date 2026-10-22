@@ -350,7 +350,7 @@
    * the box's name ("Audio Bag") or its section's ("Announcer Kit", which brings
    * every box in that section); single items out of a box, by the item ("Ecoflow
    * River 2") or its column ("Tripod 1"), when only one item has that name; and
-   * anything else as written. Items from the same box are grouped together.
+   * anything else as written. Each item stays separate, like each battery.
    */
   function kitsIn(text) {
     if (!text) return [];
@@ -362,9 +362,7 @@
       const hit = state.itemIndex[key];
       if (hit && hit.length === 1) {
         const { kit, i } = hit[0];
-        const group = out.find((o) => o.partial && o.name === kit.name);
-        if (group) { group.items.push(kit.items[i]); group.picked.push(i); group.labels.push(part); }
-        else out.push({ ...kit, items: [kit.items[i]], picked: [i], labels: [part], partial: true });
+        out.push({ ...kit, items: [kit.items[i]], picked: [i], labels: [part], partial: true });
         continue;
       }
       out.push({ name: part, extra: true });
@@ -546,7 +544,13 @@
     const g = state.games[gi], box = $('kitpanel');
     const entry = g && g.crew.find((c) => c[0] === position);
     if (!entry) { box.innerHTML = ''; return; }
-    const [, who, kit] = entry, w = when(g.date), kits = kitsIn(kit);
+    const [, who, kit] = entry, w = when(g.date), kits = [];
+    // Items picked from the same box go under that box's heading.
+    for (const k of kitsIn(kit)) {
+      const same = k.partial && kits.find((o) => o.partial && o.name === k.name);
+      if (same) same.items = [...same.items, ...k.items];
+      else kits.push(k);
+    }
     const key = `kit:${g.date}:${slug(g.sport)}:${slug(position)}`;
     let n = 0;
     const item = (text) => {
