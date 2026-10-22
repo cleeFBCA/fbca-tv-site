@@ -346,7 +346,7 @@
   const chip = (name) => `<span class="kit"><i style="background:${kitColor(name)}"></i>${esc(name)}</span>`;
 
   /**
-   * What a cell on the Assignments tab names: kits from the Equipment tab, by
+   * What a cell on the Assignments tab names, one thing per comma: kits from the Equipment tab, by
    * the box's name ("Audio Bag") or its section's ("Announcer Kit", which brings
    * every box in that section); single items out of a box, by the item ("Ecoflow
    * River 2") or its column ("Tripod 1"), when only one item has that name; and
@@ -355,7 +355,7 @@
   function kitsIn(text) {
     if (!text) return [];
     const out = [];
-    for (const part of text.split(/\s*[,;+&\n]\s*/).filter(Boolean)) {
+    for (const part of text.split(/\s*,\s*/).filter(Boolean)) {
       const key = part.toLowerCase();
       if (state.kitByName[key]) { out.push(state.kitByName[key]); continue; }
       if (state.kitsBySection[key]) { out.push(...state.kitsBySection[key]); continue; }
