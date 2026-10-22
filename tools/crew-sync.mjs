@@ -199,11 +199,16 @@ function scheduleRows(rows) {
 }
 
 /**
- * The Equipment tab: sections of kits. A section starts with a header row (its
- * title in column A, then a part name per column), has one row per kit (the
- * kit's name in column A, then what it uses for each part), and ends at a
- * blank row.
+ * The Equipment tab: sections of kits, separated by blank rows. A section
+ * starts with a header row: its title in column A, then a part name per column.
+ * Each row under it is a kit (the kit's name in column A, then what it uses for
+ * each part). A row with no name is a kit named after the section. A cell that
+ * says "n/a" means the kit doesn't have that part.
+ *
+ * A header row with only a title starts a list instead: one box, named by the
+ * title, with an item on each row below it.
  */
+const NONE = /^(n\/?a|none|-+)$/i;
 function equipmentSections(rows) {
   const sections = [];
   let current = null;
@@ -212,13 +217,19 @@ function equipmentSections(rows) {
     const cols = Object.keys(row).map(Number).sort((a, b) => a - b);
     if (!cols.length) continue;
     if (!current || !rows[r - 1]) {
-      current = { title: clean(row[1]), parts: cols.filter((c) => c > 1).map((c) => [c, clean(row[c])]), kits: [] };
+      const parts = cols.filter((c) => c > 1).map((c) => [c, clean(row[c])]);
+      current = { title: clean(row[1]), parts, kits: parts.length ? [] : [{ name: clean(row[1]), items: [] }] };
       sections.push(current);
       continue;
     }
-    const name = clean(row[1]);
-    if (!name) continue;
-    current.kits.push({ name, items: current.parts.map(([c, part]) => [part, clean(row[c])]).filter(([, v]) => v) });
+    if (!current.parts.length) {
+      // A list: the row's cells, read left to right, are one item.
+      const text = cols.map((c) => clean(row[c])).filter(Boolean).join(' · ');
+      if (text) current.kits[0].items.push(['', text]);
+      continue;
+    }
+    const name = clean(row[1]) || current.title;
+    current.kits.push({ name, items: current.parts.map(([c, part]) => [part, clean(row[c])]).filter(([, v]) => v && !NONE.test(v)) });
   }
   return sections.map(({ title, parts, kits }) => ({ title, parts: parts.map((p) => p[1]), kits }));
 }
