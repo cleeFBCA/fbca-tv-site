@@ -203,7 +203,8 @@ function scheduleRows(rows) {
  * starts with a header row: its title in column A, then a part name per column.
  * Each row under it is a kit (the kit's name in column A, then what it uses for
  * each part). A row with no name is a kit named after the section. A cell that
- * says "n/a" means the kit doesn't have that part.
+ * says "n/a" means the kit doesn't have that part, and a cell listing several
+ * things separated by commas is one item each.
  *
  * A header row with only a title starts a list instead: one box, named by the
  * title, with an item on each row below it.
@@ -225,11 +226,12 @@ function equipmentSections(rows) {
     if (!current.parts.length) {
       // A list: the row's cells, read left to right, are one item.
       const text = cols.map((c) => clean(row[c])).filter(Boolean).join(' · ');
-      if (text) current.kits[0].items.push(['', text]);
+      for (const v of text.split(/\s*,\s*/)) if (v) current.kits[0].items.push(['', v]);
       continue;
     }
+    // A cell listing several things, "HDMI, SDI", is one item per comma.
     const name = clean(row[1]) || current.title;
-    current.kits.push({ name, items: current.parts.map(([c, part]) => [part, clean(row[c])]).filter(([, v]) => v && !NONE.test(v)) });
+    current.kits.push({ name, items: current.parts.flatMap(([c, part]) => clean(row[c]).split(/\s*,\s*/).map((v) => [part, v])).filter(([, v]) => v && !NONE.test(v)) });
   }
   return sections.map(({ title, parts, kits }) => ({ title, parts: parts.map((p) => p[1]), kits }));
 }

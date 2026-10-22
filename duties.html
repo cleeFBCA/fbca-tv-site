@@ -86,12 +86,12 @@
   .meta{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--chalk-dim);font-size:.95rem;margin-top:4px}
   .meta b{color:var(--chalk)}
   .ha{font-weight:700;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--chalk-dim);border-radius:999px;padding:1px 8px;color:var(--chalk)}
-  .crew{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px;margin-top:14px}
-  .slot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 8px;text-align:left;font:inherit;color:inherit;background:var(--pine);border:1px solid var(--line);border-radius:8px;padding:7px 10px;cursor:pointer}
+  .crew{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(170px,100%),1fr));gap:6px;margin-top:14px}
+  .slot{display:flex;flex-wrap:wrap;justify-content:space-between;align-content:flex-start;gap:2px 8px;min-width:0;text-align:left;font:inherit;color:inherit;background:var(--pine);border:1px solid var(--line);border-radius:8px;padding:7px 10px;cursor:pointer}
   .slot:hover{border-color:var(--gold)}
   .slot .pos{color:var(--chalk-dim);font-size:.88rem}
   .slot .who{font-weight:700}
-  .slot .kits{width:100%;display:flex;flex-wrap:wrap;gap:4px 10px}
+  .slot .kits{width:100%;display:flex;flex-direction:column;gap:3px;margin-top:4px}
   .slot.open .who{color:var(--chalk-dim);font-weight:500;opacity:.6}
   .slot.me-slot{background:rgba(217,165,33,.18);border-color:var(--gold)}
   .notes{margin-top:10px;font-size:.9rem;color:var(--chalk-dim)}
@@ -122,7 +122,9 @@
   .also{font-size:.92rem;color:var(--chalk-dim);margin-top:12px}
   .kit{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:.85rem;white-space:nowrap}
   .kit i{width:12px;height:12px;border-radius:50%;border:1px solid rgba(243,239,226,.55);flex:none}
-  .slot .kit{font-size:.8rem;color:var(--chalk-dim);font-weight:600}
+  .slot .kit{font-size:.8rem;color:var(--chalk-dim);font-weight:600;white-space:normal;align-items:flex-start;overflow-wrap:anywhere}
+  .slot .kit i{margin-top:2px}
+  .mine .kit{margin-right:4px}
   .kitpanel{background:rgba(217,165,33,.08);border:1px solid rgba(217,165,33,.4);border-radius:var(--radius);padding:16px;margin-bottom:14px}
   .kitpanel h2{font-family:'Big Shoulders Display';font-weight:800;font-size:1.3rem;letter-spacing:.03em;text-transform:uppercase}
   .kitpanel .sub{margin:2px 0 6px;font-size:.92rem}
@@ -149,8 +151,8 @@
 
   @media (max-width:640px){
     .brand-name{font-size:1.05rem}
-    .crew{grid-template-columns:1fr 1fr}
-    .slot{flex-direction:column;gap:0}
+    .crew{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .slot{flex-direction:column;justify-content:flex-start;gap:0}
   }
 </style>
 </head>
@@ -474,7 +476,7 @@
     box.innerHTML = `<h2>${esc(me)}’s games</h2>` + (jobs.length
       ? '<ul>' + jobs.map(({ g, gi, pos, kit }) => {
           const w = when(g.date);
-          const kits = kitsIn(kit).map((k) => chip(kitLabel(k))).join(' ');
+          const kits = kitsIn(kit).map((k) => chip(kitLabel(k))).join(', ');
           return `<li><b>${w.tag || w.text}</b> · ${esc(g.sport)} ${g.ha.toLowerCase() === 'away' ? 'at' : 'vs.'} ${esc(g.opponent)} · <a href="#" data-pos="${esc(pos)}" data-mode-of="${modeOf(g)}" data-game="${gi}">${esc(pos)}</a>${kits ? ' · ' + kits : ''}${g.call ? ` · call ${esc(g.call)}` : ''}</li>`;
         }).join('') + '</ul>'
       : '<p>You’re not signed up for any upcoming games.</p>');
