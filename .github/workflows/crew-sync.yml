@@ -1,0 +1,54 @@
+# Copies the crew signup spreadsheet to fbca.tv/duties every 15 minutes,
+# encrypted with the crew password. See tools/crew-sync.mjs.
+#
+# Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   SIGNUP_SHEET_URL  the "Anyone with the link" share link to the spreadsheet
+#   CREW_PASSWORD     the password crew members type on fbca.tv/duties
+
+name: Sync crew signups
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crew-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Read the signup sheet
+        env:
+          SIGNUP_SHEET_URL: ${{ secrets.SIGNUP_SHEET_URL }}
+          CREW_PASSWORD: ${{ secrets.CREW_PASSWORD }}
+        run: |
+          if [ -z "$SIGNUP_SHEET_URL" ] || [ -z "$CREW_PASSWORD" ]; then
+            echo "::notice::Add the SIGNUP_SHEET_URL and CREW_PASSWORD secrets to start syncing."
+            exit 0
+          fi
+          node tools/crew-sync.mjs
+
+      - name: Commit if the signups changed
+        run: |
+          if git diff --quiet -- duties-signups.json; then
+            echo "No changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git add duties-signups.json
+          git commit -m "Sync crew signups from the signup sheet"
+          git push

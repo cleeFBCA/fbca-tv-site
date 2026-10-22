@@ -266,4 +266,71 @@ feed is actually broadcasting and that `streamUrl` in `schedule.json` is correct
 
 ---
 
+## 11. The crew duties page (fbca.tv/duties)
+
+A password-protected page for the crew. It shows who signed up for each upcoming
+game and a duty card for each position: equipment, setup, testing, operating,
+and strike, plus the full equipment list. Everyone shares one password.
+
+**How it stays private on a public site.** The page itself (`duties.html`) holds
+nothing private. The crew data lives in two encrypted files, and the page
+decrypts them in the browser once the password is typed:
+
+| File | What it is | Where it comes from |
+|---|---|---|
+| `duties-signups.json` | Upcoming games and who signed up for each position | Written automatically from the signup spreadsheet |
+| `duties-guide.json` | The duty cards and equipment list | Written by hand with `tools/crew-guide.mjs` |
+
+Without the password both files are unreadable, even on GitHub. The password
+must be strong (four or more random words), because anyone can download the
+encrypted files and try guesses offline.
+
+**The signups update themselves.** A GitHub Action
+(`.github/workflows/crew-sync.yml`) downloads the signup spreadsheet from
+OneDrive every 15 minutes and commits a new `duties-signups.json` when anything
+changed. It needs two repository secrets, set in GitHub under **Settings →
+Secrets and variables → Actions**:
+
+- `SIGNUP_SHEET_URL`: the spreadsheet's share link, set to **Anyone with the link can view**.
+- `CREW_PASSWORD`: the crew password.
+
+How the sheet is read: each tab is a season and each row a game. Every column
+with a number above its header in row 1 is a position. Rows with no date
+(including "Playoff") are skipped, and so are past games. Times are PM unless
+they say AM. Names are shown as typed.
+
+If the signups stop updating, check the Action's runs under the **Actions** tab.
+"Couldn't download the sheet" means the share link was changed or turned off.
+Make a new "Anyone with the link" link and update `SIGNUP_SHEET_URL`.
+
+**Editing the duty cards.** The readable version of the guide is a Markdown file
+kept outside this repo (on Chris's Mac at
+`~/Developer/eota-crew-private/duties-guide.md`). To edit it:
+
+1. Edit the `.md` file. Each position is a `# ` heading matching its column in
+   the sheet (`# Director`, `# Cam 2`). `# Camera` covers every Cam column and
+   `# Utility` every Utility column. A list item written `- [ ] ...` becomes a
+   checkbox. Away games use a different setup, so a heading ending in `(Home)`
+   or `(Away)` only shows for that setup, like `## Equipment (Away)` or
+   `# Equipment list (Away)`. Untagged headings show for both. The page picks
+   the setup from the game's H/A column.
+2. Run `node tools/crew-guide.mjs seal path/to/duties-guide.md` and type the
+   crew password.
+3. Commit and push `duties-guide.json`.
+
+On another computer, get an editable copy back with
+`node tools/crew-guide.mjs open duties-guide.md`.
+
+**Changing the password.**
+
+1. Update the `CREW_PASSWORD` secret.
+2. Delete `duties-guide.json` and `duties-signups.json`.
+3. Run `node tools/crew-guide.mjs seal ...` with the new password.
+4. Commit, push, and run the **Sync crew signups** Action by hand (Actions tab →
+   Run workflow).
+
+Crew members who saved the old password are asked for the new one.
+
+---
+
 *Last updated: July 2026.*
