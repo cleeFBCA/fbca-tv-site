@@ -52,6 +52,15 @@
     padding:8px 14px;border-radius:8px;transition:color .15s,background .15s}
   .back:hover{color:var(--gold-hi);background:rgba(217,165,33,.08)}
 
+  .duties-link{display:flex;align-items:center;gap:14px;margin:14px 0 8px;padding:14px 18px;border-radius:10px;
+    background:rgba(217,165,33,.08);border:1px solid rgba(217,165,33,.4);color:var(--chalk);text-decoration:none;
+    transition:background .15s,border-color .15s}
+  .duties-link:hover{background:rgba(217,165,33,.14);border-color:var(--gold)}
+  .duties-link b{display:block;font-family:'Big Shoulders Display';font-weight:800;font-size:1.15rem;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--gold-hi)}
+  .duties-link span{color:var(--chalk-dim);font-size:.95rem}
+  .duties-link .go{margin-left:auto;font-size:1.4rem;color:var(--gold)}
+
   main{padding:44px 0 70px}
   .doc-title{
     font-family:'Big Shoulders Display';font-weight:800;
@@ -228,6 +237,11 @@
       director switches between them. On the field, click a camera to turn what it sees on or off. If the
       director changes the plan for a game, follow the director.
     </div>
+
+    <a class="duties-link" href="/duties">
+      <div><b>Crew Duties</b><span>Your position and equipment checklist for each game. Password required.</span></div>
+      <span class="go" aria-hidden="true">→</span>
+    </a>
 
     <div class="picker" role="tablist" aria-label="Sport">
       <button type="button" role="tab" data-sport="football"><span aria-hidden="true">🏈</span>Football</button>
