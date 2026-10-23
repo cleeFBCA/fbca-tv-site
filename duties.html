@@ -459,7 +459,7 @@
             ${g.game ? `<span>Game <b>${esc(g.game)}</b></span>` : ''}
             ${g.show ? `<span>Show #${esc(g.show)}</span>` : ''}
           </div>
-          <div class="crew">${slots}</div>
+          ${slots ? `<div class="crew">${slots}</div>` : `<p class="notes">No one has signed up yet. ${g.crew.length} positions open.</p>`}
           ${g.notes.length ? `<div class="notes">Also on the sheet: ${g.notes.map(esc).join(', ')}</div>` : ''}
         </article>`;
       }).join('');
