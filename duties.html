@@ -290,6 +290,16 @@
     return [...picked.values()];
   }
 
+  // A line ending in "{Baseball, Softball}" is only for those sports. With no game
+  // picked, it shows with a label instead.
+  function sportTag(text) {
+    const m = text.match(/^(.*?)\s*\{([^}]+)\}\s*$/);
+    if (!m) return { text, show: true };
+    const sports = m[2].split(/\s*,\s*/).filter(Boolean);
+    if (!state.sport) return { text: `**${sports.join(', ')} only:** ${m[1]}`, show: true };
+    return { text: m[1], show: sports.some((sp) => state.sport.toLowerCase().includes(sp.toLowerCase())) };
+  }
+
   /** Renders a section's lines for one setup. Checkboxes remember their state under `key`. */
   function render(lines, key, mode) {
     let html = '', list = null, para = [], n = 0, skip = false;
@@ -309,13 +319,15 @@
       else if (skip) continue;
       else if (!line.trim()) { endPara(); endList(); }
       else if ((m = line.match(/^\s*[-*]\s+\[( |x)\]\s+(.+)/i))) {
+        // Count every checkbox, shown or not, so each keeps its saved state.
+        const id = `${key}:${n++}`, t = sportTag(m[2]);
+        if (!t.show) continue;
         endPara(); open('ul', 'checks');
-        const id = `${key}:${n++}`;
         const checked = store.get('eota-duties-check:' + id) === '1';
-        html += `<li><label><input type="checkbox" data-check="${esc(id)}"${checked ? ' checked' : ''}><span>${inline(m[2])}</span></label></li>`;
+        html += `<li><label><input type="checkbox" data-check="${esc(id)}"${checked ? ' checked' : ''}><span>${inline(t.text)}</span></label></li>`;
       }
-      else if ((m = line.match(/^\s*[-*]\s+(.+)/))) { endPara(); open('ul'); html += '<li>' + inline(m[1]) + '</li>'; }
-      else if ((m = line.match(/^\s*\d+[.)]\s+(.+)/))) { endPara(); open('ol'); html += '<li>' + inline(m[1]) + '</li>'; }
+      else if ((m = line.match(/^\s*[-*]\s+(.+)/))) { const t = sportTag(m[1]); if (t.show) { endPara(); open('ul'); html += '<li>' + inline(t.text) + '</li>'; } }
+      else if ((m = line.match(/^\s*\d+[.)]\s+(.+)/))) { const t = sportTag(m[1]); if (t.show) { endPara(); open('ol'); html += '<li>' + inline(t.text) + '</li>'; } }
       else { endList(); para.push(line.trim()); }
     }
     endPara(); endList();
@@ -493,7 +505,7 @@
     state.byId = byId;
     document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
     const next = state.games.find((g) => modeOf(g) === mode);
-    $('setupHint').textContent = next ? `Next ${mode} game: ${when(next.date).tag || when(next.date).text}` : '';
+    $('setupHint').textContent = state.sport ? `Showing steps for ${state.sport}` : next ? `Next ${mode} game: ${when(next.date).tag || when(next.date).text}` : '';
     // Keep the same cards open across the switch.
     const open = [...document.querySelectorAll('.duty[open]')].map((d) => d.id);
     renderDuties();
@@ -578,7 +590,9 @@
 
   /** Opens the duty cards for a position from a game or "my games". */
   function openDuty(position, mode, gi) {
-    if (mode && mode !== state.mode) setMode(mode);
+    const g = gi == null ? null : state.games[+gi];
+    state.sport = g ? g.sport : null;
+    setMode(mode || state.mode);
     const ids = cardsFor(position, state.byId);
     renderKitPanel(position, gi == null ? -1 : +gi);
     tab('duties');
@@ -615,7 +629,11 @@
   document.querySelector('.tabs').addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
-    if (b.dataset.tab === 'duties') $('kitpanel').innerHTML = '';
+    if (b.dataset.tab === 'duties' && (state.sport || $('kitpanel').innerHTML)) {
+      $('kitpanel').innerHTML = '';
+      state.sport = null;
+      setMode(state.mode);
+    }
     tab(b.dataset.tab);
   });
 

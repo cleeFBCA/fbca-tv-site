@@ -19,7 +19,8 @@
 // item written "- [ ] ..." becomes a checkbox. "# Equipment list" is the
 // master list. A heading ending in "(Home)" or "(Away)" only shows for that
 // setup, like "## Equipment (Away)" or "# Equipment list (Away)". Untagged
-// headings show for both.
+// headings show for both. A line ending in "{Baseball, Softball}" only shows
+// at games of those sports.
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createInterface } from 'node:readline';

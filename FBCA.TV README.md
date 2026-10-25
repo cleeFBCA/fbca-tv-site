@@ -313,7 +313,8 @@ kept outside this repo (on Chris's Mac at
    is the Scorebug column's card. A list item written `- [ ] ...` becomes a
    checkbox. Away games use a different setup, so a heading ending in `(Home)`
    or `(Away)` only shows for that setup, like `## Equipment (Away)` or
-   `# Equipment list (Away)`. Untagged headings show for both. The page picks
+   `# Equipment list (Away)`. Untagged headings show for both. A single line
+   ending in `{Baseball, Softball}` only shows at games of those sports. The page picks
    the setup from the game's H/A column.
 2. Run `node tools/crew-guide.mjs seal path/to/duties-guide.md` and type the
    crew password.
