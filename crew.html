@@ -287,7 +287,7 @@
           role: 'Left end zone camera', where: 'Behind the left end zone, near hash, on a platform',
           job: 'Crowd shots, coaches, and views of the sidelines. During plays, the straight-down-the-field angle from up on the platform, which may be the best option for a replay.',
           framing: 'Whatever the director asks for. During plays, frame the action down the field. Between plays, find the crowd, a coach, or the sideline.',
-          tips: ['Your feed is always in the control room, even when you’re not on air. Always have a usable shot.', 'When the offense is driving away from you, you’re behind the quarterback. Try staying on the quarterback even after the throw or handoff, tight enough to see the hit or the pressure. That shot may be the best option for a replay.', 'Between plays, find something good and tell the director what you have.', 'On field goals and extra points kicked toward your end, frame the snap and the kick, wide enough to keep both uprights in the shot.'] },
+          tips: ['Your feed is always in the control room, even when you’re not on air. Always have a usable shot.', 'When the offense is driving away from you, you’re behind the quarterback. Try staying on the quarterback even after the throw or handoff, tight enough to see the hit or the pressure. That shot may be the best option for a replay.', 'Between plays, find something good.', 'On field goals and extra points kicked toward your end, frame the snap and the kick, wide enough to keep both uprights in the shot.'] },
         { x: 948, y: 280, aim: -172, fov: 32, len: 380, type: 'ground',
           role: 'Right end zone camera', where: 'Behind the right end zone, near hash, on the ground',
           job: 'Crowd shots, coaches, and views of the sidelines. During plays, a low, dramatic angle on the action at the right end, which may be the best option for a replay.',
@@ -414,7 +414,7 @@
           role: 'Slash camera', where: 'On a platform outside the right corner',
           job: 'A diagonal angle across the court on shots, blocks, and drives, which may be the best option for a replay. Between plays, crowd and bench shots.',
           framing: 'Across the court toward the basket the play is headed to.',
-          tips: ['Your feed is always in the control room, even when you’re not on air. Always have a usable shot.', 'Know on every play whether you’re nearside or backside. See Camera Assignments below.', 'Follow the play and keep the basket in frame on shots.', 'Between plays, find the crowd or a bench and tell the director what you have.'] }
+          tips: ['Your feed is always in the control room, even when you’re not on air. Always have a usable shot.', 'Know on every play whether you’re nearside or backside. See Camera Assignments below.', 'Follow the play and keep the basket in frame on shots.', 'Between plays, find the crowd or a bench.'] }
       ],
       assignNote: '<b>Nearside</b> is the corner camera at the end where the play happened. <b>Backside</b> is the corner camera at the other end. Cam 3 and Cam 4 trade these jobs every time the ball changes ends.',
       assignments: [
@@ -928,7 +928,7 @@
         aim(game, 500, 218, 44, 60); say(game, 'Wide backup', 'Hold a wide shot of midfield as the backup for the coin toss.');
         aim(pit, 500, 218, 14, 30); say(pit, 'Captains', 'Tight on the captains shaking hands.');
         aim(iso, 500, 218, 10, 30); say(iso, 'Referee', 'The referee and the coin.');
-        [cams[3], cams[4]].forEach(function (c) { aim(c, 500, 395, 30, 30); say(c, 'Crowd or bench', 'Crowd, band, or sideline shots before kickoff. Tell the director what you have.'); });
+        [cams[3], cams[4]].forEach(function (c) { aim(c, 500, 395, 30, 30); say(c, 'Crowd or bench', 'Crowd, band, or sideline shots before kickoff.'); });
         game.hasBall = false;
       } else if (m === 'kickoff' || m === 'punt') {
         // Kickoff from the kicking team's 40; a punt from about 13 yards behind the line, with the return man deep.
@@ -1143,7 +1143,7 @@
           if (!ballFar) { aim(c, bx, by, 20, 40); say(c, 'Ball out', 'The ball is out on your near court. Never miss it. Frame the line. Your angle may be the best option for a replay of the call.'); }
           else { follow(); say(c, '¾ court', 'Hold your ¾ court framing.'); }
         }
-        if (m === 'timeout') { aim(c, VB_TABLE[0], VB_TABLE[1], 34, 20); say(c, 'Crowd or bench', 'Find the crowd or a bench and tell the director what you have.'); }
+        if (m === 'timeout') { aim(c, VB_TABLE[0], VB_TABLE[1], 34, 20); say(c, 'Crowd or bench', 'Find the crowd or a bench.'); }
         if (m === 'sub') { aim(c, VB_SUBS[0], VB_SUBS[1], 14, 20); say(c, 'Subs', 'Help with subs. They stand near the scorer’s table with their hands up before coming in.'); }
       });
 
@@ -1517,7 +1517,7 @@
     updateSim(sp);
   }
 
-  var BROADCAST_NOTE = '<strong>How the broadcast works:</strong> every camera feeds the control room. The director calls the shots, and the technical director (TD) switches between cameras. Your feed is always in front of the director, even when you’re not on air, so always have a usable shot. Listen on headset and tell the director what you have. Cameras on tripods are called <b>hard cams</b>.';
+  var BROADCAST_NOTE = '<strong>How the broadcast works:</strong> every camera feeds the control room. The director calls the shots, and the technical director (TD) switches between cameras. Your feed is always in front of the director, even when you’re not on air, so always have a usable shot. Listen on headset. Cameras on tripods are called <b>hard cams</b>.';
   var TYPE_LABEL = { elevated: 'Hard cam, elevated', ground: 'Hard cam, floor', handheld: 'Handheld', mounted: 'Mounted' };
 
   function render(id) {
