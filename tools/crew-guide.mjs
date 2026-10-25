@@ -13,7 +13,8 @@
 //
 // The guide's format: a "# " heading per position, matching the column names
 // in the signup sheet ("# Director", "# Cam 2"). "# Camera" covers every Cam
-// column without its own heading, and "# Utility" every Utility column. Under
+// column without its own heading, and "# Utility" every Utility column. A
+// trailing "Op" is fine: "# Scorebug Op" is the Scorebug column's card. Under
 // each, "## " sections like Equipment, Setup, Test, Operate, and Strike. A list
 // item written "- [ ] ..." becomes a checkbox. "# Equipment list" is the
 // master list. A heading ending in "(Home)" or "(Away)" only shows for that

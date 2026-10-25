@@ -273,7 +273,8 @@
     const out = [];
     for (const line of md.split(/\r?\n/)) {
       const h = line.match(/^#\s+(.+)/);
-      if (h) { const t = tagged(h[1]); out.push({ title: t.text, id: slug(t.text), tag: t.tag, lines: [] }); }
+      // "Scorebug Op" is the Scorebug column's card: a trailing "Op" isn't part of the position's name.
+      if (h) { const t = tagged(h[1]); out.push({ title: t.text, id: slug(t.text.replace(/\s+op(erator)?\.?$/i, '')), tag: t.tag, lines: [] }); }
       else if (out.length) out[out.length - 1].lines.push(line);
     }
     return out;

@@ -309,7 +309,8 @@ kept outside this repo (on Chris's Mac at
 
 1. Edit the `.md` file. Each position is a `# ` heading matching its column in
    the sheet (`# Director`, `# Cam 2`). `# Camera` covers every Cam column and
-   `# Utility` every Utility column. A list item written `- [ ] ...` becomes a
+   `# Utility` every Utility column. A trailing "Op" is fine: `# Scorebug Op`
+   is the Scorebug column's card. A list item written `- [ ] ...` becomes a
    checkbox. Away games use a different setup, so a heading ending in `(Home)`
    or `(Away)` only shows for that setup, like `## Equipment (Away)` or
    `# Equipment list (Away)`. Untagged headings show for both. The page picks
