@@ -49,6 +49,9 @@
   main{padding:28px 0 60px}
   h1{font-family:'Big Shoulders Display';font-weight:800;font-size:clamp(2rem,6vw,2.6rem);letter-spacing:.03em;text-transform:uppercase;line-height:1.05}
   .sub{color:var(--chalk-dim);margin-top:6px}
+  .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .links a{display:inline-flex;align-items:center;gap:6px;font:600 .95rem 'Barlow';color:var(--chalk);text-decoration:none;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--pine)}
+  .links a:hover{border-color:var(--chalk-dim)}
 
   /* Password screen */
   .gate{max-width:420px;margin:8vh auto 0;background:var(--field);border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:var(--radius);padding:26px 22px}
@@ -184,6 +187,7 @@
     <div id="app" hidden>
       <h1>Crew Duties</h1>
       <p class="sub">Who's working each game, and how to do each job.</p>
+      <div class="links" id="links" hidden></div>
 
       <div class="me">
         <label for="who">I am</label>
@@ -427,6 +431,12 @@
       state.kitsBySection[sec.title.toLowerCase()] = kits;
     }
 
+    // The guide's "# Links" section: each "- [Name](url)" is a button above "I am".
+    const linkSec = secs.find((s) => s.id === 'links');
+    const links = (linkSec ? linkSec.lines : []).map((l) => l.match(/^\s*[-*]\s*\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/)).filter(Boolean);
+    $('links').innerHTML = links.map(([, name, url]) => `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(name)} ↗</a>`).join('');
+    $('links').hidden = !links.length;
+
     $('gate').hidden = true;
     $('app').hidden = false;
     $('lock').hidden = false;
@@ -515,7 +525,7 @@
   }
 
   function renderDuties() {
-    const cards = Object.values(state.byId).filter((s) => s.id !== 'equipmentlist');
+    const cards = Object.values(state.byId).filter((s) => s.id !== 'equipmentlist' && s.id !== 'links');
     $('duties').innerHTML = cards.map((s) => {
       const { html, checks } = render(s.lines, s.id, state.mode);
       return `<details class="duty" id="duty-${s.id}"><summary><h2>${esc(s.title)}</h2></summary>
