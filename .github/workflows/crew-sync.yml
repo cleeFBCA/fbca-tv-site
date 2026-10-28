@@ -1,5 +1,7 @@
-# Copies the crew signup spreadsheet to fbca.tv/duties every 15 minutes,
-# encrypted with the crew password. See tools/crew-sync.mjs.
+# Copies the crew signup spreadsheet to fbca.tv/duties, encrypted with the crew
+# password. See tools/crew-sync.mjs. A Cloudflare Worker starts it every 10
+# minutes (workers/crew-sync-trigger); the schedule below is a slower backup,
+# because GitHub runs scheduled workflows only every few hours in practice.
 #
 # Needs two repository secrets (Settings → Secrets and variables → Actions):
 #   SIGNUP_SHEET_URL  the "Anyone with the link" share link to the spreadsheet

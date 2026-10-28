@@ -1,0 +1,7 @@
+name = "eota-crew-sync-trigger"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+workers_dev = false
+
+[triggers]
+crons = ["*/10 * * * *"]
