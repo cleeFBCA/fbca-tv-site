@@ -1,0 +1,35 @@
+# Checks schedule.json whenever it changes, and once a day compares it with the
+# crew signup sheet. A failed run means the website or the iOS app could show the
+# wrong schedule (or none), and GitHub emails whoever last edited this workflow.
+# See tools/check-schedule.mjs. Uses the CREW_PASSWORD secret to read the signups.
+
+name: Check schedule
+
+on:
+  push:
+    paths:
+      - schedule.json
+      - tools/check-schedule.mjs
+      - .github/workflows/schedule-check.yml
+  schedule:
+    - cron: '0 12 * * *'   # 7 AM in Houston during daylight time, 6 AM otherwise
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check schedule.json and compare it with the signup sheet
+        env:
+          CREW_PASSWORD: ${{ secrets.CREW_PASSWORD }}
+        run: node tools/check-schedule.mjs

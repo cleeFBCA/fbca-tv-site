@@ -135,6 +135,7 @@ The file looks like this (abbreviated):
 | `homeAway` | Yes* | `"home"`, `"away"`, or `null` for special events. Controls whether it reads "vs" or "at". |
 | `location` | Optional | Venue name. Use `null` if unknown. |
 | `notes` | Optional | Short badge text like `"Homecoming"` or `"Senior Night"`. Use `null` for none. |
+| `status` | Optional | `"cancelled"` or `"postponed"`. The website shows it; app 1.0 ignores it (unknown fields are skipped when decoding), so to stop app reminders for a cancelled game, delete the game instead. |
 
 ### ⚠️ Date format — read this carefully
 Dates use **ISO 8601 with a timezone offset**:

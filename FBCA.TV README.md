@@ -114,14 +114,55 @@ Field by field:
   unknown.
 - **`notes`** — optional short label shown as a gold badge, e.g. `"Homecoming"`,
   `"Senior Night"`, `"Season Opener"`. Use `null` if there is none.
+- **`status`** — optional. Leave it out (or `null`) for a normal game. Set it to
+  `"cancelled"` or `"postponed"` when a broadcast won't happen. See below.
+
+### Cancelled or postponed games
+
+Add `"status": "cancelled"` (or `"postponed"`) to the game instead of deleting it:
+
+```json
+  "notes": null,
+  "status": "cancelled"
+}
+```
+
+On the website the game stays in the schedule, faded, with its time crossed out
+and a CANCELLED or POSTPONED label. It never shows as LIVE, STARTING SOON, or
+REPLAY, and the countdown skips it. When a postponed game gets a new date, add
+it as a new game with a new `id` and leave the old one marked postponed.
+
+The iOS app (version 1.0) ignores `status` for now, so it still lists the game
+and fires reminders for it. To stop app reminders for a cancelled game, delete
+the game from the file instead. The app cancels a reminder for a deleted game
+the next time someone opens it.
 
 ### Important formatting rules (JSON is picky)
 
 - Every entry except the **last** one must be followed by a comma.
 - Text values go in `"double quotes"`. Numbers and `null` do not.
-- If you break the formatting, the schedule may stop loading. If that happens,
-  paste the whole file into a free "JSON validator" website — it will point to
-  the exact line with the mistake.
+- If you break the formatting, the schedule may stop loading. In the app, one
+  bad entry blanks the whole schedule.
+
+### The automatic check
+
+Every time `schedule.json` changes, GitHub runs `tools/check-schedule.mjs`
+(Actions → **Check schedule**). Within a minute or two it shows a green check or a
+red X next to the commit, and GitHub emails you if it fails. Open the failed run
+to see what's wrong, in plain words, like *"has the wrong time-zone offset for
+that date, so it shows at 4:00 PM instead of 5:00 PM. Use -06:00"*. It checks:
+
+- The file is valid JSON, and has every field the app needs.
+- Dates are in the exact format the app reads, with the right `-05:00` / `-06:00`
+  offset for that date.
+- Every `id` is different, `homeAway` is `home`/`away`, sports are spelled right.
+
+Once a day it also compares upcoming games with the crew signup sheet (date,
+sport, game time, home/away, and TBD opponents) and fails if they disagree, so
+the two schedules can't drift apart. Opponent names are allowed to differ
+("FBCHA" in the sheet, the full name here). Special Events aren't compared.
+To run it yourself: `node tools/check-schedule.mjs` (add `CREW_PASSWORD=...` in
+front to include the signup sheet).
 
 ### Do NOT delete old games
 

@@ -329,6 +329,13 @@
     display:inline-block;background:var(--tally);color:#fff;font-size:.8rem;font-weight:700;
     letter-spacing:.1em;padding:4px 11px;border-radius:999px;margin-left:8px;vertical-align:middle;
   }
+  .game.off{opacity:.62}
+  .game.off:hover{border-color:var(--line);transform:none}
+  .game.off .time .clock{text-decoration:line-through}
+  .game .time .status-tag{
+    display:inline-block;border:1px solid var(--chalk-dim);color:var(--chalk);font-size:.8rem;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;padding:3px 11px;border-radius:999px;margin-left:8px;vertical-align:middle;
+  }
   .sched-note{margin-top:16px;color:var(--chalk-dim);font-size:1.05rem}
 
   /* ---------- Archives ---------- */
@@ -572,6 +579,12 @@ function isSpecialEvent(g){ return (g.sport || "").toLowerCase() === "special ev
 function matchupText(g){
   return isSpecialEvent(g) ? g.opponent : `FBCA Eagles ${vsAt(g)} ${g.opponent}`;
 }
+/* A game marked "status": "cancelled" or "postponed" in schedule.json stays in
+   the list with a label, but never counts as live, starting soon, next, or a replay. */
+function isOff(g){
+  const s = (g.status || "").toLowerCase();
+  return s === "cancelled" || s === "canceled" || s === "postponed";
+}
 function isLiveWindow(d, now){
   return now >= new Date(d.getTime() - LIVE_LEAD_MIN*60e3) &&
          now <= new Date(d.getTime() + LIVE_DURATION_HRS*3600e3);
@@ -627,15 +640,20 @@ function renderRundown(){
     return;
   }
   el.innerHTML = filtered.map(g => {
-    const live = isLiveWindow(g.d, now);
+    const off = isOff(g);
+    const live = !off && isLiveWindow(g.d, now);
     const badge = g.notes ? `<span class="note-badge">${g.notes}</span>` : "";
     const loc = g.location ? `<div class="loc">${g.homeAway === "away" ? "Away — " : "Home — "}${g.location}</div>` : "";
     const label = `${g.sport}: ${matchupText(g)}, add to calendar`;
-    return `<div class="game" data-game-id="${g.id}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${label}">
+    const status = off ? `<span class="status-tag">${g.status.toLowerCase()}</span>` : "";
+    // A cancelled or postponed game isn't clickable: there's nothing to add to a calendar.
+    const open = off ? `class="game off" aria-label="${g.sport}: ${matchupText(g)}, ${g.status.toLowerCase()}"`
+                     : `class="game" data-game-id="${g.id}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${label}"`;
+    return `<div ${open}>
       <div class="date"><small>${MONTHS[g.d.getMonth()]}</small><b>${g.d.getDate()}</b><small>${g.d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase()}</small></div>
       <div class="info"><div class="sport">${g.sport}</div>
         <div class="teams">${matchupText(g)}${badge}</div>${loc}</div>
-      <div class="time">${fmtTime(g.d)}${live ? '<span class="live-tag">LIVE</span>' : ''}</div>
+      <div class="time"><span class="clock">${fmtTime(g.d)}</span>${live ? '<span class="live-tag">LIVE</span>' : ''}${status}</div>
     </div>`;
   }).join("");
 }
@@ -823,19 +841,21 @@ function getBroadcastState(){
   const now = new Date();
 
   // 1) Is any game currently in its live window (15 min before → 3 hrs after)?
-  const live = allUpcoming.find(g => isLiveWindow(g.d, now));
+  const on = allUpcoming.filter(g => !isOff(g));
+  const live = on.find(g => isLiveWindow(g.d, now));
   if (live) return { type: "live", game: live };
 
   // 2) Is the next game starting within the hour (but not live yet)?
-  const next = allUpcoming[0];
+  const next = on[0];
   if (next && next.d > now && (next.d - now) <= SOON_WINDOW_MIN*60e3){
     return { type: "soon", game: next };
   }
 
   // 3) Otherwise, if we have a recent past broadcast, the stream is most
   //    likely showing a replay of it — say so, so nobody thinks it's live.
-  if (allPast.length){
-    return { type: "replay", game: allPast[0] };
+  const lastPlayed = allPast.find(g => !isOff(g));
+  if (lastPlayed){
+    return { type: "replay", game: lastPlayed };
   }
 
   // 4) No live game, nothing starting soon, no past game on record —
@@ -876,7 +896,8 @@ function renderBroadcastStatus(){
     ltMatchup.textContent = matchupText(g);
     ltWhen.textContent = g.d.toLocaleDateString('en-US',{weekday:'short', month:'short', day:'numeric'}) + " · " + fmtTime(g.d);
     // If a future game exists, still count down to it during a replay-less window
-    if (allUpcoming[0] && allUpcoming[0].d > new Date()) countdownTarget = allUpcoming[0].d;
+    const upNext = allUpcoming.find(g => !isOff(g));
+    if (upNext && upNext.d > new Date()) countdownTarget = upNext.d;
 
   } else if (state.type === "upcoming"){
     const g = state.game;
