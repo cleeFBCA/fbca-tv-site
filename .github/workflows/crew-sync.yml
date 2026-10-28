@@ -52,3 +52,18 @@ jobs:
           git add duties-signups.json
           git commit -m "Sync crew signups from the signup sheet"
           git push
+
+      # GitHub turns off scheduled workflows after 60 days with no commits, which
+      # would stop this sync over a quiet summer. After 45 quiet days, an empty
+      # commit keeps it running.
+      - name: Keep the schedule alive
+        run: |
+          git pull --quiet --rebase
+          last=$(git log -1 --format=%ct)
+          if [ $(( $(date +%s) - last )) -lt $(( 45 * 86400 )) ]; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "Keep the crew sync running (no commits in 45 days)"
+          git push
