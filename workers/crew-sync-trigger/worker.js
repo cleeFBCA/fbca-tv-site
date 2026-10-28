@@ -1,4 +1,4 @@
-// Starts the "Sync crew signups" GitHub workflow every 10 minutes.
+// Starts the "Sync crew signups" GitHub workflow every 5 minutes.
 //
 // GitHub's own schedule for that workflow is best effort and in practice runs
 // every few hours, so new signups were slow to reach fbca.tv/duties. Cloudflare's

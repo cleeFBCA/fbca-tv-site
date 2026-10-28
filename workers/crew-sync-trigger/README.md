@@ -1,6 +1,6 @@
 # Crew sync trigger (Cloudflare Worker)
 
-Starts the **Sync crew signups** GitHub workflow every 10 minutes, because
+Starts the **Sync crew signups** GitHub workflow every 5 minutes, because
 GitHub's own schedule only runs it every few hours. Free on Cloudflare's
 Workers free plan. It has no web address; it only runs on its schedule.
 
@@ -20,7 +20,7 @@ Workers free plan. It has no web address; it only runs on its schedule.
 ## Check it's working
 
 - GitHub: fbca-tv-site → Actions → Sync crew signups. Runs marked
-  "workflow_dispatch" should appear every 10 minutes.
+  "workflow_dispatch" should appear every 5 minutes.
 - Cloudflare: Workers & Pages → eota-crew-sync-trigger → Logs. An error like
   `GitHub said 401` means the token expired or was deleted: make a new one
   (step 1) and save it again (step 3).

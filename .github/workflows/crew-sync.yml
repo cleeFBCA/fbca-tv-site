@@ -1,5 +1,5 @@
 # Copies the crew signup spreadsheet to fbca.tv/duties, encrypted with the crew
-# password. See tools/crew-sync.mjs. A Cloudflare Worker starts it every 10
+# password. See tools/crew-sync.mjs. A Cloudflare Worker starts it every 5
 # minutes (workers/crew-sync-trigger); the schedule below is a slower backup,
 # because GitHub runs scheduled workflows only every few hours in practice.
 #
