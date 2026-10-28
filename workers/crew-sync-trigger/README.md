@@ -15,12 +15,16 @@ Workers free plan. It has no web address; it only runs on its schedule.
    - Generate, and copy the token.
 2. In this folder, sign in to Cloudflare: `npx wrangler login`
 3. Deploy: `npx wrangler deploy`
-4. Save the token in Cloudflare (paste it when asked): `npx wrangler secret put GITHUB_TOKEN`
+4. Copy the token, then save it in Cloudflare straight from the clipboard:
+   `pbpaste | npx wrangler secret put GITHUB_TOKEN`
+   (Typing it at a prompt works in Terminal, but not from Claude Code's `!`
+   commands: they can't take typed input and save an empty token, which shows
+   up as `GitHub said 401` in the logs.)
 
 ## Check it's working
 
 - GitHub: fbca-tv-site → Actions → Sync crew signups. Runs marked
   "workflow_dispatch" should appear every 5 minutes.
 - Cloudflare: Workers & Pages → eota-crew-sync-trigger → Logs. An error like
-  `GitHub said 401` means the token expired or was deleted: make a new one
-  (step 1) and save it again (step 3).
+  `GitHub said 401` means the token is empty, expired, or deleted: regenerate it
+  on GitHub (step 1) and save it again (step 4).

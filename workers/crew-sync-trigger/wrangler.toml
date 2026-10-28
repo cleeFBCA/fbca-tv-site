@@ -5,3 +5,7 @@ workers_dev = false
 
 [triggers]
 crons = ["*/5 * * * *"]
+
+# Keep a log of each run (free), so a failed run shows why: Worker → Logs.
+[observability]
+enabled = true
