@@ -126,21 +126,21 @@
       "notes": null
     },
     {
-      "id": "2026-11-17-gbb-legacy-prep",
-      "start": "2026-11-17T18:00:00-06:00",
-      "sport": "Girls Basketball",
-      "opponent": "Legacy Preparatory Christian Academy",
+      "id": "2026-11-19-gsoc-cypress-christian",
+      "start": "2026-11-19T17:00:00-06:00",
+      "sport": "Girls Soccer",
+      "opponent": "Cypress Christian School",
       "homeAway": "home",
-      "location": "The Nest",
+      "location": "Eagle Stadium",
       "notes": null
     },
     {
-      "id": "2026-11-17-bbb-fbcha",
-      "start": "2026-11-17T19:30:00-06:00",
-      "sport": "Boys Basketball",
-      "opponent": "Fort Bend Christian Homeschool Association",
+      "id": "2026-11-19-bsoc-cypress-christian",
+      "start": "2026-11-19T19:00:00-06:00",
+      "sport": "Boys Soccer",
+      "opponent": "Cypress Christian School",
       "homeAway": "home",
-      "location": "The Nest",
+      "location": "Eagle Stadium",
       "notes": null
     },
     {
@@ -174,7 +174,7 @@
       "id": "2027-01-07-bsoc-tbd",
       "start": "2027-01-07T19:00:00-06:00",
       "sport": "Boys Soccer",
-      "opponent": "TBD",
+      "opponent": "Monsignor Kelly Catholic High School",
       "homeAway": "home",
       "location": "Eagle Stadium",
       "notes": null
@@ -240,7 +240,7 @@
       "opponent": "St. Joseph High School Victoria",
       "homeAway": "home",
       "location": "The Nest",
-      "notes": null
+      "notes": "Senior Night"
     },
     {
       "id": "2027-02-02-bbb-st-josephs-victoria",
@@ -249,7 +249,7 @@
       "opponent": "St. Joseph High School Victoria",
       "homeAway": "home",
       "location": "The Nest",
-      "notes": null
+      "notes": "Senior Night"
     },
     {
       "id": "2027-02-09-gsoc-tbd",
