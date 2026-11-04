@@ -15,8 +15,11 @@
     soccer-scorebug.html       -> control page (operator)
     soccer-scorebug.html#bug   -> 1920x1080 output on a magenta (#FF00FF) key background
 
-  The output carries the scorebug, a drop-down under the bug (goals, cards,
-  subs), a lower third, and a starting-lineup field graphic.
+  The output carries the scorebug (with added time and card counts), a
+  drop-down under the bug (goals, cards, subs), a lower third, a penalty
+  shootout tracker, and one full-screen panel at a time: starting lineups,
+  halftime/full-time score, match stats, matchup, player spotlight, up next,
+  and around-the-district scores.
 
   The control page is the only writer. It saves state to localStorage and
   broadcasts it to the output window, so both must be open in the same browser
@@ -77,14 +80,19 @@
     display: flex; justify-content: center; align-items: flex-end; gap: 8px;
     overflow: hidden;
   }
-  .sb .cards i {
-    display: block; width: 24px; height: 34px; background: var(--tally);
-    transform: translateY(110%);
+  .sb .cards > * {
+    display: block; transform: translateY(110%);
     transition: transform .45s cubic-bezier(.2, 1.4, .4, 1);
   }
-  .sb .cards i.up { transform: translateY(0); }
+  .sb .cards i { width: 24px; height: 34px; background: var(--tally); }
+  /* Yellow cards: one smaller card with the count on it, after any reds. */
+  .sb .cards b.yc {
+    order: 2; width: 19px; height: 27px; background: var(--card-y); color: var(--pine);
+    display: grid; place-items: center; font-size: 19px; font-weight: 800;
+  }
+  .sb .cards > .up { transform: translateY(0); }
   /* With the bug at the bottom, the drop-down pops up in the same spot, so cards duck while it's on. */
-  .sb.pos-bl.drop-on .cards i, .sb.pos-br.drop-on .cards i { transform: translateY(110%); }
+  .sb.pos-bl.drop-on .cards > *, .sb.pos-br.drop-on .cards > * { transform: translateY(110%); }
   .sb .name {
     display: flex; align-items: center; justify-content: center;
     min-width: 132px; padding: 0 22px;
@@ -109,6 +117,12 @@
     font-size: 48px; font-weight: 700; font-variant-numeric: tabular-nums;
   }
   .sb .clock.off { display: none; }
+  .sb .added {
+    display: grid; place-items: center; padding: 0 14px;
+    background: var(--gold); color: var(--pine);
+    font-size: 36px; font-weight: 800; font-variant-numeric: tabular-nums;
+  }
+  .sb .added[hidden] { display: none; }
 
   /* Drop-down under the bug (pops up instead when the bug sits at the bottom) */
   .drop {
@@ -123,7 +137,11 @@
   .drop .dteam { padding: 0 18px; font-weight: 800; }
   .drop .dlabel { gap: 10px; padding: 0 18px; background: var(--gold); color: var(--pine); font-weight: 800; letter-spacing: .08em; }
   .drop .dmin { padding-left: 18px; color: var(--gold-hi); font-weight: 800; }
-  .drop .dtext { padding: 0 24px 0 14px; }
+  .drop .dtext { padding: 0 24px 0 14px; gap: 12px; }
+  .drop .dtext .off { margin-left: 14px; color: var(--chalk-dim); }
+  .arr { display: block; width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; }
+  .arr.in { border-bottom: 16px solid #3CC47C; }
+  .arr.out { border-top: 16px solid var(--tally); }
   .cardicon { display: block; width: 16px; height: 23px; }
   .cardicon.y { background: var(--card-y); }
   .cardicon.r { background: var(--tally); }
@@ -176,6 +194,103 @@
   .xi .xsubs[hidden] { display: none; }
   .xi .xsubs .lbl { flex: 0 0 auto; border: 2px solid var(--chalk); padding: 3px 14px 1px; font-size: 22px; font-weight: 800; letter-spacing: .16em; }
   .xi .xsubs .list { font-size: 25px; font-weight: 600; letter-spacing: .05em; color: var(--chalk-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Full-screen panels: one at a time. Each is an opaque card with hard outer edges. */
+  .pn { position: absolute; }
+  .pn.hidden { clip-path: inset(0 0 100% 0); }
+  .pn .ph {
+    height: 76px; display: flex; align-items: center; justify-content: center; gap: 22px;
+    background: linear-gradient(#FBF8EF, #D6D0BE); color: var(--pine);
+    font-size: 44px; font-weight: 800; letter-spacing: .12em; white-space: nowrap;
+    border-bottom: 5px solid var(--gold);
+  }
+  .pn .ph small { font-size: 30px; letter-spacing: .1em; color: var(--turf); }
+  .pn .ph small:empty { display: none; }
+  .pn .pb { background: var(--pine); color: var(--chalk); }
+  .pn .pf { height: 8px; background: var(--gold); }
+  .tcell { display: flex; align-items: center; justify-content: center; font-weight: 800; white-space: nowrap; overflow: hidden; }
+
+  /* Halftime / full-time score */
+  #pScore { left: 360px; top: 320px; width: 1200px; }
+  #pScore .row { display: grid; grid-template-columns: 1fr 170px 170px 1fr; height: 176px; }
+  #pScore .tcell { font-size: 74px; letter-spacing: .03em; padding: 0 20px; }
+  #pScore .num { display: grid; place-items: center; background: var(--chalk); color: var(--pine); font-size: 128px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #pScore .num + .num { border-left: 4px solid var(--pine); }
+  #pScore .goals { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 20px 40px 24px; }
+  #pScore .goals[hidden] { display: none; }
+  #pScore .goals div { white-space: pre-line; text-align: center; font-size: 30px; font-weight: 700; letter-spacing: .06em; line-height: 1.35; color: var(--chalk-dim); }
+
+  /* Match stats */
+  #pStats { left: 460px; top: 160px; width: 1000px; }
+  #pStats .tm { display: grid; grid-template-columns: 1fr 1fr; height: 82px; }
+  #pStats .tcell { justify-content: space-between; padding: 0 30px; font-size: 48px; }
+  #pStats .stat { display: grid; grid-template-columns: 140px 1fr 140px; align-items: center; height: 70px; border-top: 1px solid rgba(243,239,226,.1); }
+  #pStats .v { text-align: center; font-size: 48px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #pStats .lbl { text-align: center; font-size: 25px; font-weight: 700; letter-spacing: .14em; color: var(--chalk-dim); }
+  #pStats .bar { display: flex; height: 8px; margin-top: 8px; background: rgba(243,239,226,.12); }
+
+  /* Matchup */
+  #pMatch { left: 260px; top: 240px; width: 1400px; }
+  #pMatch .body { display: grid; grid-template-columns: 1fr 300px 1fr; align-items: center; padding: 44px 30px 40px; }
+  #pMatch .side { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  #pMatch .side svg { width: 170px; height: 204px; margin-bottom: 10px; }
+  #pMatch .tname { font-size: 80px; font-weight: 800; letter-spacing: .03em; line-height: 1; white-space: nowrap; }
+  #pMatch .rec { font-size: 34px; font-weight: 700; letter-spacing: .1em; color: var(--chalk-dim); }
+  #pMatch .mid { text-align: center; }
+  #pMatch .vs { font-size: 96px; font-weight: 800; color: var(--gold-hi); line-height: 1; }
+  #pMatch .when { margin-top: 18px; font-size: 30px; font-weight: 700; letter-spacing: .06em; }
+  #pMatch .venue { margin-top: 6px; font-size: 26px; font-weight: 600; letter-spacing: .06em; color: var(--chalk-dim); }
+
+  /* Player spotlight */
+  #pSpot { left: 260px; top: 250px; width: 1400px; display: grid; grid-template-columns: 440px 1fr; height: 528px; border-bottom: 8px solid var(--gold); }
+  #pSpot .photo { position: relative; display: grid; place-items: center; overflow: hidden; }
+  #pSpot .photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #pSpot .photo .bignum { font-size: 300px; font-weight: 800; line-height: 1; }
+  #pSpot .info { background: var(--pine); color: var(--chalk); padding: 42px 56px; display: flex; flex-direction: column; }
+  #pSpot .kicker { font-size: 26px; font-weight: 800; letter-spacing: .22em; color: var(--gold); }
+  #pSpot .pname { font-size: 108px; font-weight: 800; line-height: .95; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pSpot .meta { font-size: 36px; font-weight: 700; letter-spacing: .08em; color: var(--gold-hi); margin-top: 10px; }
+  #pSpot .stats { display: flex; gap: 28px; margin-top: auto; }
+  #pSpot .stats > div { flex: 1; border-top: 4px solid var(--gold); padding-top: 10px; }
+  #pSpot .stats b { display: block; font-size: 92px; font-weight: 800; line-height: 1; }
+  #pSpot .stats span { font-size: 24px; font-weight: 700; letter-spacing: .1em; color: var(--chalk-dim); }
+
+  /* Up next */
+  #pNext { left: 410px; top: 190px; width: 1100px; }
+  #pNext .game { display: grid; grid-template-columns: 190px 1fr auto; align-items: center; height: 104px; border-top: 1px solid rgba(243,239,226,.1); }
+  #pNext .date { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--gold); color: var(--pine); line-height: 1; }
+  #pNext .date small { font-size: 24px; font-weight: 800; letter-spacing: .16em; }
+  #pNext .date b { font-size: 44px; font-weight: 800; }
+  #pNext .what { padding: 0 30px; line-height: 1.05; min-width: 0; }
+  #pNext .what small { display: block; font-size: 25px; font-weight: 700; letter-spacing: .12em; color: var(--gold-hi); }
+  #pNext .what b { display: block; font-size: 42px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pNext .where { padding-right: 30px; text-align: right; line-height: 1.1; }
+  #pNext .where b { display: block; font-size: 36px; font-weight: 800; }
+  #pNext .where span { font-size: 22px; font-weight: 600; letter-spacing: .06em; color: var(--chalk-dim); }
+  #pNext .watch { height: 66px; display: grid; place-items: center; font-size: 32px; font-weight: 800; letter-spacing: .18em; color: var(--gold-hi); border-top: 1px solid rgba(243,239,226,.1); }
+
+  /* Around the district */
+  #pOthers { left: 410px; top: 220px; width: 1100px; }
+  #pOthers .game { display: grid; grid-template-columns: 1fr 96px 96px 1fr 170px; align-items: center; height: 86px; border-top: 1px solid rgba(243,239,226,.1); }
+  #pOthers .t { padding: 0 24px; font-size: 40px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pOthers .t.a { text-align: right; }
+  #pOthers .n { height: 100%; display: grid; place-items: center; background: var(--chalk); color: var(--pine); font-size: 52px; font-weight: 800; }
+  #pOthers .n + .n { border-left: 3px solid var(--pine); }
+  #pOthers .st { padding-right: 24px; text-align: right; font-size: 26px; font-weight: 700; letter-spacing: .1em; color: var(--chalk-dim); }
+  #pOthers .raw { grid-column: 1 / -1; padding: 0 24px; font-size: 36px; font-weight: 700; }
+
+  /* Penalty shootout tracker (sits low, can run with the bug) */
+  #pShoot { left: 560px; bottom: 70px; width: 800px; }
+  #pShoot .ph { height: 54px; font-size: 30px; }
+  #pShoot .kr { display: grid; grid-template-columns: 210px 1fr 96px; height: 80px; }
+  #pShoot .kr + .kr { border-top: 2px solid var(--field); }
+  #pShoot .tcell { font-size: 44px; padding: 0 14px; }
+  #pShoot .dots { display: flex; align-items: center; gap: 14px; padding: 0 24px; background: var(--pine); }
+  #pShoot .dot { width: 44px; height: 44px; border-radius: 50%; border: 3px solid rgba(243,239,226,.35); display: grid; place-items: center; }
+  #pShoot .dot.g { background: #2FA866; border-color: #2FA866; }
+  #pShoot .dot.m { background: var(--tally); border-color: var(--tally); }
+  #pShoot .dot svg { width: 24px; height: 24px; }
+  #pShoot .tot { display: grid; place-items: center; background: var(--chalk); color: var(--pine); font-size: 56px; font-weight: 800; }
 
   /* ---------- Control mode ---------- */
   body.ctl { background: var(--pine); color: var(--chalk); font-family: var(--font-body); }
@@ -248,7 +363,7 @@
   .warn:empty { display: none; }
   kbd { font: 600 12px var(--font-body); background: var(--pine); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
   .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
-  .tabs button { flex: 1 1 0; min-height: 40px; padding: 8px; font-size: 15px; }
+  .tabs button { flex: 1 1 auto; white-space: nowrap; min-height: 40px; padding: 8px 12px; font-size: 15px; }
   [data-pane][hidden] { display: none; }
   .l3-list { list-style: none; margin: 12px 0 0; padding: 0; }
   .l3-list li {
@@ -263,6 +378,24 @@
   @media (max-width: 560px) { .lineup-cols { grid-template-columns: 1fr; } }
   .lineup-cols h3 { font-family: var(--font-display); text-transform: uppercase; font-size: 20px; margin: 0; }
   .count { font-size: 13px; color: var(--chalk-dim); margin-top: 4px; }
+  .pane-h { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; font-size: 16px; color: var(--gold-hi); margin: 18px 0 6px; }
+  .pane-h:first-child { margin-top: 0; }
+  .counter { display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .counter b { min-width: 26px; text-align: center; font-size: 18px; }
+  .stat-table { width: 100%; border-collapse: collapse; }
+  .stat-table th { font: 700 13px var(--font-body); color: var(--chalk-dim); text-align: center; padding: 4px; }
+  .stat-table td { padding: 5px 2px; border-top: 1px solid var(--line); }
+  .stat-table td:first-child { font-size: 15px; }
+  .goal-row { display: grid; grid-template-columns: 90px 64px 1fr auto; gap: 6px; align-items: center; margin-top: 6px; }
+  .goal-row input { padding: 7px 8px; }
+  .goal-row .gteam { font-family: var(--font-display); font-weight: 800; font-size: 18px; text-transform: uppercase; }
+  .spot-stats { display: grid; grid-template-columns: 1fr 2fr; gap: 6px 10px; }
+  .panel-note { font-size: 14px; color: var(--chalk-dim); margin: 0; align-self: center; }
+  .panel-note b { color: var(--tally); }
+  .shoot-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: center; }
+  .shoot-cols h3 { font-family: var(--font-display); text-transform: uppercase; font-size: 22px; margin: 0 0 6px; }
+  .shoot-seq { font-size: 22px; letter-spacing: 3px; min-height: 30px; }
+  .preview-list { font-size: 14px; color: var(--chalk-dim); line-height: 1.6; margin: 8px 0 0; padding-left: 18px; }
 </style>
 </head>
 <body>
@@ -272,7 +405,7 @@
     <div class="row">
       <div class="team home"><div class="cards" id="sbHomeReds"></div><div class="name" id="sbHome">FBCA</div><div class="score" id="sbHomeScore">0</div></div>
       <div class="team away"><div class="cards" id="sbAwayReds"></div><div class="name" id="sbAway">AWAY</div><div class="score" id="sbAwayScore">0</div></div>
-      <div class="status"><div class="period" id="sbPeriod">1ST</div><div class="clock" id="sbClock">40:00</div></div>
+      <div class="status"><div class="period" id="sbPeriod">1ST</div><div class="clock" id="sbClock">40:00</div><div class="added" id="sbAdded" hidden></div></div>
     </div>
     <div class="drop wipe hidden" id="drop">
       <div class="dteam" id="dTeam"></div>
@@ -323,6 +456,63 @@
     <div id="xPlayers"></div>
     <div class="xsubs" id="xSubs"><div class="lbl">Substitutes</div><div class="list" id="xSubsList"></div></div>
   </div>
+
+  <div class="pn wipe hidden" id="pScore">
+    <div class="ph" id="psLabel">Halftime</div>
+    <div class="row">
+      <div class="tcell" id="psHome"></div><div class="num" id="psHomeN"></div>
+      <div class="num" id="psAwayN"></div><div class="tcell" id="psAway"></div>
+    </div>
+    <div class="pb goals" id="psGoals"><div id="psHomeG"></div><div id="psAwayG"></div></div>
+    <div class="pf"></div>
+  </div>
+
+  <div class="pn wipe hidden" id="pStats">
+    <div class="ph">Match stats <small id="pstPeriod"></small></div>
+    <div class="tm"><div class="tcell" id="pstHome"></div><div class="tcell" id="pstAway"></div></div>
+    <div class="pb" id="pstRows"></div>
+    <div class="pf"></div>
+  </div>
+
+  <div class="pn wipe hidden" id="pMatch">
+    <div class="ph"><span id="pmTitle"></span><small id="pmSub"></small></div>
+    <div class="pb body">
+      <div class="side" id="pmHome"></div>
+      <div class="mid"><div class="vs">VS</div><div class="when" id="pmWhen"></div><div class="venue" id="pmVenue"></div></div>
+      <div class="side" id="pmAway"></div>
+    </div>
+    <div class="pf"></div>
+  </div>
+
+  <div class="pn wipe hidden" id="pSpot">
+    <div class="photo" id="spPhoto"></div>
+    <div class="info">
+      <div class="kicker">Player spotlight</div>
+      <div class="pname" id="spName"></div>
+      <div class="meta" id="spMeta"></div>
+      <div class="stats" id="spStats"></div>
+    </div>
+  </div>
+
+  <div class="pn wipe hidden" id="pNext">
+    <div class="ph">Next on Eagles on the Air</div>
+    <div class="pb" id="pnRows"></div>
+    <div class="pb watch">Watch live at FBCA.TV</div>
+    <div class="pf"></div>
+  </div>
+
+  <div class="pn wipe hidden" id="pOthers">
+    <div class="ph" id="poTitle"></div>
+    <div class="pb" id="poRows"></div>
+    <div class="pf"></div>
+  </div>
+
+  <div class="pn wipe hidden" id="pShoot">
+    <div class="ph">Penalty shootout</div>
+    <div class="kr" id="pkHome"></div>
+    <div class="kr" id="pkAway"></div>
+    <div class="pf"></div>
+  </div>
 </div>
 
 <div id="control">
@@ -349,6 +539,11 @@
           <button data-p="OT1">OT1</button><button data-p="OT2">OT2</button>
           <button data-p="HALF">Half</button><button data-p="FINAL">Final</button>
         </div>
+        <label>Added time on the bug (clears when the period changes)</label>
+        <div class="counter" style="justify-content:flex-start">
+          <button class="small" data-added="-1">&minus;</button><b id="cAdded">+0</b><button class="small" data-added="1">+</button>
+          <button class="small" data-added="0">Clear</button>
+        </div>
       </div>
 
       <div class="card">
@@ -360,6 +555,8 @@
             <div class="row-btns"><button data-score="home" data-d="-1">&minus;</button><button data-score="home" data-d="1">+</button></div>
             <div class="reds-ctl"><i class="cardicon r"></i> Red cards <b id="cHomeReds">0</b>
               <button class="small" data-reds="home" data-d="-1">&minus;</button><button class="small" data-reds="home" data-d="1">+</button></div>
+            <div class="reds-ctl" style="margin-top:6px"><i class="cardicon y"></i> Yellow cards <b id="cHomeYellows">0</b>
+              <button class="small" data-yellows="home" data-d="-1">&minus;</button><button class="small" data-yellows="home" data-d="1">+</button></div>
           </div>
           <div class="team-ctl away-ctl">
             <div class="tname" id="cAway">AWAY</div>
@@ -367,15 +564,17 @@
             <div class="row-btns"><button data-score="away" data-d="-1">&minus;</button><button data-score="away" data-d="1">+</button></div>
             <div class="reds-ctl"><i class="cardicon r"></i> Red cards <b id="cAwayReds">0</b>
               <button class="small" data-reds="away" data-d="-1">&minus;</button><button class="small" data-reds="away" data-d="1">+</button></div>
+            <div class="reds-ctl" style="margin-top:6px"><i class="cardicon y"></i> Yellow cards <b id="cAwayYellows">0</b>
+              <button class="small" data-yellows="away" data-d="-1">&minus;</button><button class="small" data-yellows="away" data-d="1">+</button></div>
           </div>
         </div>
         <div class="row-btns" style="margin-top:12px"><button id="btnSwap">Swap sides ⇄</button></div>
         <p class="side-note" id="sideNote"></p>
-        <p class="hint">Adding a goal or red card fills in the Drop-down tab for you. Add the player and press Show.</p>
+        <p class="hint">Adding a goal or card fills in the Drop-down tab for you. Add the player and press Show. The goal scorer's name also goes into the goal list for the halftime and full-time panel.</p>
         <p class="keys">
           <kbd>Space</kbd> start/stop &nbsp; <kbd>Q</kbd>/<kbd>A</kbd> left team +/&minus; &nbsp;
           <kbd>P</kbd>/<kbd>L</kbd> right team +/&minus;<br>
-          <kbd>H</kbd> show/hide bug &nbsp; <kbd>D</kbd> show/hide drop-down &nbsp; <kbd>T</kbd> show/hide lower third
+          <kbd>H</kbd> show/hide bug &nbsp; <kbd>D</kbd> show/hide drop-down &nbsp; <kbd>T</kbd> show/hide lower third &nbsp; <kbd>Esc</kbd> take down full-screen graphic
         </p>
       </div>
     </div>
@@ -388,13 +587,21 @@
           <button id="btnShow">Hide bug</button>
           <button id="btnOpen">Open output window</button>
         </div>
+        <div class="row-btns" style="margin:0">
+          <p class="panel-note" id="panelNote"></p>
+          <button id="btnPanelHide" style="flex:0 0 auto">Take down</button>
+        </div>
       </div>
 
       <div class="card">
         <div class="tabs" id="tabs">
           <button data-tab="drop" class="active">Drop-down</button>
           <button data-tab="l3">Lower third</button>
+          <button data-tab="stats">Stats &amp; score</button>
+          <button data-tab="pre">Pregame</button>
           <button data-tab="xi">Lineups</button>
+          <button data-tab="pk">Shootout</button>
+          <button data-tab="next">Up next</button>
           <button data-tab="setup">Setup</button>
         </div>
 
@@ -405,13 +612,14 @@
             <div><label for="dType">Type</label>
               <select id="dType">
                 <option value="GOAL">Goal</option><option value="YELLOW CARD">Yellow card</option>
-                <option value="RED CARD">Red card</option><option value="SUBSTITUTION">Substitution</option>
+                <option value="RED CARD">Red card</option><option value="SUB">Substitution</option>
                 <option value="CUSTOM">Custom…</option>
               </select></div>
           </div>
           <div id="dCustomWrap" hidden><label for="dCustom">Custom label</label><input id="dCustom" maxlength="20" placeholder="e.g. SAVE, CORNER"></div>
-          <label for="dTextIn">Text</label>
+          <label for="dTextIn" id="dTextLabel">Text</label>
           <input id="dTextIn" maxlength="40" placeholder="#10 Sarah Smith">
+          <div id="dOutWrap" hidden><label for="dOutIn">Player off</label><input id="dOutIn" maxlength="40" placeholder="#7 Jane Doe"></div>
           <div class="two">
             <div><label for="dMinIn">Minute (blank uses the clock)</label><input id="dMinIn" maxlength="6" placeholder="auto"></div>
             <div><label for="dSecs">Auto-hide after (sec, 0 = stay)</label><input id="dSecs" type="number" min="0" max="120" value="8"></div>
@@ -439,6 +647,70 @@
           </div>
           <p class="hint">Save lower thirds before the game (announcers, key players), then show them from the list with one click.</p>
           <ul class="l3-list" id="l3List"></ul>
+        </div>
+
+        <!-- Stats & score -->
+        <div data-pane="stats" hidden>
+          <div class="pane-h">Match stats</div>
+          <table class="stat-table">
+            <thead><tr><th></th><th id="stHomeH">FBCA</th><th id="stAwayH">AWAY</th></tr></thead>
+            <tbody id="statRows"></tbody>
+          </table>
+          <p class="hint">Cards here are the same counts as the Score card and the bug.</p>
+          <div class="row-btns" style="margin-top:10px"><button class="primary" data-panel="stats">Show match stats</button></div>
+
+          <div class="pane-h">Score panel</div>
+          <label for="psLabelSel">Title</label>
+          <select id="psLabelSel">
+            <option value="auto">Automatic (Halftime, Final, or the current half)</option>
+            <option>HALFTIME</option><option>FULL TIME</option><option>FINAL</option><option>FINAL · OT</option>
+          </select>
+          <label>Goals (added when you press + on a score; names fill in from the goal drop-down)</label>
+          <div id="goalLog"></div>
+          <div class="row-btns" style="margin-top:12px"><button class="primary" data-panel="score">Show score panel</button></div>
+        </div>
+
+        <!-- Pregame -->
+        <div data-pane="pre" hidden>
+          <div class="pane-h">Matchup</div>
+          <div class="two">
+            <div><label for="mTitle">Title</label><input id="mTitle" data-match="title" maxlength="30" placeholder="Girls Soccer"></div>
+            <div><label for="mSub">Subtitle</label><input id="mSub" data-match="sub" maxlength="30" placeholder="District game"></div>
+          </div>
+          <div class="two">
+            <div><label for="mHomeRec" id="mHomeRecL">FBCA record</label><input id="mHomeRec" data-match="homeRec" maxlength="16" placeholder="8-2-1"></div>
+            <div><label for="mAwayRec" id="mAwayRecL">AWAY record</label><input id="mAwayRec" data-match="awayRec" maxlength="16" placeholder="6-4-0"></div>
+          </div>
+          <div class="two">
+            <div><label for="mWhen">Date and time</label><input id="mWhen" data-match="when" maxlength="40"></div>
+            <div><label for="mVenue">Venue</label><input id="mVenue" data-match="venue" maxlength="40"></div>
+          </div>
+          <p class="hint">Picking a game in Setup fills in the title, date and venue.</p>
+          <div class="row-btns" style="margin-top:10px"><button class="primary" data-panel="match">Show matchup</button></div>
+
+          <div class="pane-h">Player spotlight</div>
+          <div class="two">
+            <div><label for="spTeam">Team</label><select id="spTeam"><option value="home">FBCA</option><option value="away">AWAY</option></select></div>
+            <div><label for="spNum">Number</label><input id="spNum" maxlength="3" inputmode="numeric"></div>
+          </div>
+          <label for="spNameIn">Name</label><input id="spNameIn" maxlength="30" placeholder="Sarah Smith">
+          <div class="two">
+            <div><label for="spPos">Position</label><input id="spPos" maxlength="20" placeholder="Forward"></div>
+            <div><label for="spYear">Class</label><input id="spYear" maxlength="20" placeholder="Senior"></div>
+          </div>
+          <label>Stats (number, then what it is)</label>
+          <div class="spot-stats">
+            <input id="spV1" maxlength="6" placeholder="14"><input id="spL1" maxlength="20" placeholder="Goals">
+            <input id="spV2" maxlength="6" placeholder="9"><input id="spL2" maxlength="20" placeholder="Assists">
+            <input id="spV3" maxlength="6" placeholder="3"><input id="spL3" maxlength="20" placeholder="Game winners">
+          </div>
+          <label for="spFile">Photo (optional; without one, the jersey number shows)</label>
+          <div class="set-row"><input type="file" id="spFile" accept="image/*"><button id="spPhotoClear">Remove</button></div>
+          <div class="row-btns" style="margin-top:12px">
+            <button class="primary" id="btnSpShow">Show spotlight</button>
+            <button id="btnSpSave">Save to list</button>
+          </div>
+          <ul class="l3-list" id="spList"></ul>
         </div>
 
         <!-- Lineups -->
@@ -477,11 +749,47 @@
           </div>
           <p class="hint">List the goalkeeper first, then defenders, midfielders, and forwards. Within each line, go from the team's left side to its right. The graphic shows the field from behind the team's own goal, so left is left on screen. Last names fit best.</p>
           <div class="row-btns" style="margin-top:12px">
-            <button class="primary" data-xishow="home" id="btnXiHome">Show FBCA lineup</button>
-            <button class="primary" data-xishow="away" id="btnXiAway">Show AWAY lineup</button>
+            <button class="primary" data-panel="xi-home" id="btnXiHome">Show FBCA lineup</button>
+            <button class="primary" data-panel="xi-away" id="btnXiAway">Show AWAY lineup</button>
           </div>
-          <div class="row-btns"><button id="btnXiHide">Hide lineup</button></div>
-          <p class="hint">The scorebug and lower third step aside while a lineup is on screen and come back when it's hidden.</p>
+        </div>
+
+        <!-- Shootout -->
+        <div data-pane="pk" hidden>
+          <div class="shoot-cols">
+            <div>
+              <h3 id="pkHomeT">FBCA</h3>
+              <div class="shoot-seq" id="pkHomeSeq"></div>
+              <div class="row-btns"><button data-pk="home" data-r="g">Scored</button><button data-pk="home" data-r="m">Missed</button></div>
+              <button class="small" data-pkundo="home">Undo last</button>
+            </div>
+            <div>
+              <h3 id="pkAwayT">AWAY</h3>
+              <div class="shoot-seq" id="pkAwaySeq"></div>
+              <div class="row-btns"><button data-pk="away" data-r="g">Scored</button><button data-pk="away" data-r="m">Missed</button></div>
+              <button class="small" data-pkundo="away">Undo last</button>
+            </div>
+          </div>
+          <div class="row-btns" style="margin-top:14px">
+            <button class="primary" id="btnPkShow">Show shootout</button>
+            <button class="danger" id="btnPkReset">Clear shootout</button>
+          </div>
+          <p class="hint">The tracker sits at the bottom center and can stay up with the scorebug. It shows 5 kicks per team and adds more for sudden death.</p>
+        </div>
+
+        <!-- Up next -->
+        <div data-pane="next" hidden>
+          <div class="pane-h">Next on Eagles on the Air</div>
+          <p class="hint">Pulls the next broadcasts of any sport from the schedule. Anything starting within the next hour is skipped, so tonight's game isn't listed.</p>
+          <div class="row-btns" style="margin-top:8px"><button id="btnNextLoad">Refresh from schedule</button></div>
+          <ol class="preview-list" id="nextPreview"></ol>
+          <div class="row-btns" style="margin-top:10px"><button class="primary" data-panel="next">Show up next</button></div>
+
+          <div class="pane-h">Around the district</div>
+          <label for="oTitle">Title</label><input id="oTitle" maxlength="30">
+          <label for="oRaw">Scores, one per line: Team 2 - 1 Team (status)</label>
+          <textarea id="oRaw" class="subs" placeholder="Village 2 - 1 Kinkaid (Final)&#10;St. John's 0 - 0 Episcopal (Half)"></textarea>
+          <div class="row-btns" style="margin-top:10px"><button class="primary" data-panel="others">Show scores</button></div>
         </div>
 
         <!-- Setup -->
@@ -524,21 +832,40 @@
   const HOME_COLORS = { bg: '#17402B', fg: '#F2C14E' };
   const NEUTRAL_COLORS = { bg: '#0D2418', fg: '#F2C14E' };
 
+  // Tracked stats, in the order they appear on the stats panel. Cards come from the bug counts.
+  const STATS = [['shots', 'Shots'], ['sog', 'Shots on goal'], ['corners', 'Corners'], ['fouls', 'Fouls'],
+                 ['offsides', 'Offsides'], ['saves', 'Saves']];
+  const blankStats = () => Object.fromEntries(STATS.map(([k]) => [k, 0]));
+  const blankSpot = () => ({ team: 'home', num: '', name: '', pos: '', year: '', stats: [{ v: '', l: '' }, { v: '', l: '' }, { v: '', l: '' }], photo: '' });
+
   const defaults = () => ({
-    home: 'FBCA', away: 'AWAY', homeScore: 0, awayScore: 0, homeReds: 0, awayReds: 0,
+    home: 'FBCA', away: 'AWAY', homeScore: 0, awayScore: 0, homeReds: 0, awayReds: 0, homeYellows: 0, awayYellows: 0,
     awayBg: '#1F3A93', awayFg: '#FFFFFF',
     period: '1ST', halfMin: 40, otMin: 10, dir: 'down', pos: 'tl', visible: true, swap: false,
-    len: 40 * 60000, base: 0, running: false, startedAt: 0,
-    drop: { on: false, team: 'home', label: 'GOAL', minute: '', text: '', until: 0 },
+    len: 40 * 60000, base: 0, running: false, startedAt: 0, added: 0,
+    drop: { on: false, team: 'home', label: 'GOAL', minute: '', text: '', out: '', until: 0 },
     l3: { on: false, name: '', stat: '', team: 'home', until: 0 },
     l3List: [],
-    lineupShow: '',
+    // One full-screen graphic at a time: '', 'xi-home', 'xi-away', 'score', 'stats', 'match', 'spot', 'next', 'others'
+    panel: '',
+    goals: [],
+    stats: { home: blankStats(), away: blankStats() },
+    scoreLabel: 'auto',
+    match: { title: '', sub: '', homeRec: '', awayRec: '', when: '', venue: '' },
+    spot: blankSpot(), spotList: [],
+    next: [],
+    others: { title: 'Around the district', raw: '' },
+    shoot: { on: false, home: [], away: [] },
     xi: {
       home: { formation: '4-4-2', coach: '', raw: '', subs: '', kit: '', kitNum: '' },
       away: { formation: '4-4-2', coach: '', raw: '', subs: '', kit: '', kitNum: '' }
     }
   });
-  const merge = raw => Object.assign(defaults(), raw);
+  const merge = raw => {
+    const out = Object.assign(defaults(), raw);
+    delete out.lineupShow; // replaced by `panel`
+    return out;
+  };
 
   const load = () => {
     try {
@@ -609,6 +936,19 @@
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const cardIcon = label => label === 'YELLOW CARD' ? el('i', 'cardicon y') : label === 'RED CARD' ? el('i', 'cardicon r') : null;
+  const xiSide = () => s.panel.startsWith('xi-') ? s.panel.slice(3) : '';
+  const PANEL_NAMES = { 'xi-home': () => s.home + ' lineup', 'xi-away': () => s.away + ' lineup', score: () => 'Score panel',
+                        stats: () => 'Match stats', match: () => 'Matchup', spot: () => 'Player spotlight',
+                        next: () => 'Up next', others: () => 'Around the district' };
+  const scoreTitle = () => s.scoreLabel !== 'auto' ? s.scoreLabel
+    : s.period === 'HALF' ? 'HALFTIME' : s.period === 'FINAL' ? 'FINAL' : s.period.startsWith('OT') ? 'OVERTIME' : s.period + ' HALF';
+  const goalsText = side => s.goals.filter(g => g.side === side).map(g => (g.name ? g.name + ' ' : 'Goal ') + (g.min ? g.min + "'" : '')).join('\n');
+  const fmtGame = (iso, opts) => new Date(iso).toLocaleString('en-US', { timeZone: 'America/Chicago', ...opts });
+  // "Village 2 - 1 Kinkaid (Final)" -> parts; anything else shows as plain text.
+  const parseScoreLine = line => {
+    const m = line.match(/^(.*?)\s+(\d+)\s*[-–]\s*(\d+)\s+(.*?)(?:\s*\(([^)]*)\))?$/);
+    return m ? { a: m[1], an: m[2], bn: m[3], b: m[4], st: m[5] || '' } : { raw: line };
+  };
 
   // ---------- Output mode ----------
   if (isBug) {
@@ -622,26 +962,32 @@
     let prev = { homeScore: s.homeScore, awayScore: s.awayScore };
     const flash = e => { e.classList.remove('flash'); void e.offsetWidth; e.classList.add('flash'); };
     // Add or remove cards one at a time so each new card animates up and each removed one slides down.
-    const reds = (box, n) => {
-      const live = [...box.children].filter(c => !c.dataset.leaving);
-      while (live.length < Math.min(n, 4)) {
+    const cards = (box, reds, yellows) => {
+      const live = [...box.querySelectorAll('i')].filter(c => !c.dataset.leaving);
+      while (live.length < Math.min(reds, 4)) {
         const card = el('i'); box.append(card); void card.offsetWidth; card.classList.add('up'); live.push(card);
       }
-      while (live.length > n) {
+      while (live.length > reds) {
         const card = live.pop(); card.dataset.leaving = '1'; card.classList.remove('up');
         setTimeout(() => card.remove(), 500);
       }
+      let yc = box.querySelector('b.yc');
+      if (!yc) { yc = el('b', 'yc'); box.append(yc); void yc.offsetWidth; }
+      if (yellows > 0) yc.textContent = yellows > 1 ? yellows : '';
+      yc.classList.toggle('up', yellows > 0);
     };
 
     const renderBug = () => {
-      const lineupUp = !!s.lineupShow;
-      $('sb').className = 'sb wipe pos-' + s.pos + (s.visible && !lineupUp ? '' : ' hidden') + (s.drop.on ? ' drop-on' : '') + (s.swap ? ' swapped' : '');
+      const panelUp = !!s.panel;
+      $('sb').className = 'sb wipe pos-' + s.pos + (s.visible && !panelUp ? '' : ' hidden') + (s.drop.on ? ' drop-on' : '') + (s.swap ? ' swapped' : '');
       $('sbHome').textContent = s.home;
       $('sbAway').textContent = s.away;
       $('sbAway').style.background = s.awayBg;
       $('sbAway').style.color = s.awayFg;
-      reds($('sbHomeReds'), s.homeReds);
-      reds($('sbAwayReds'), s.awayReds);
+      cards($('sbHomeReds'), s.homeReds, s.homeYellows);
+      cards($('sbAwayReds'), s.awayReds, s.awayYellows);
+      $('sbAdded').hidden = !s.added || clockOff(s);
+      $('sbAdded').textContent = '+' + s.added;
       $('sbHomeScore').textContent = s.homeScore;
       $('sbAwayScore').textContent = s.awayScore;
       $('sbPeriod').textContent = periodLabel(s.period);
@@ -663,13 +1009,18 @@
       $('dLabel').replaceChildren(...(icon ? [icon] : []), d.label);
       $('dMin').textContent = d.minute ? d.minute.replace(/'?$/, "'") : '';
       $('dMin').hidden = !d.minute;
-      $('dText').textContent = d.text;
-      $('dText').hidden = !d.text;
+      if (d.label === 'SUB' && d.out) {
+        // Substitution: green arrow for the player coming on, red for the player going off.
+        $('dText').replaceChildren(el('i', 'arr in'), el('span', null, d.text), el('i', 'arr out'), el('span', 'off', d.out));
+      } else {
+        $('dText').textContent = d.text;
+      }
+      $('dText').hidden = !d.text && !d.out;
     };
 
     const renderL3 = () => {
       const l = s.l3;
-      $('l3').classList.toggle('hidden', !l.on || !!s.lineupShow);
+      $('l3').classList.toggle('hidden', !l.on || !!s.panel || s.shoot.on);
       if (!l.on) return;
       const c = colorsFor(l.team);
       $('l3Name').textContent = l.name;
@@ -722,7 +1073,7 @@
     };
 
     const renderXI = () => {
-      const side = s.lineupShow;
+      const side = xiSide();
       $('xi').classList.toggle('hidden', !side);
       if (!side) return;
       const c = colorsFor(side), kit = kitFor(side), cfg = s.xi[side];
@@ -751,7 +1102,148 @@
       $('xSubsList').textContent = subs.map(p => (p.num ? p.num + ' ' : '') + p.name).join('  ·  ');
     };
 
-    const render = () => { renderBug(); renderDrop(); renderL3(); renderXI(); };
+    // ----- Full-screen panels and the shootout tracker -----
+    const teamCell = (node, side, text) => {
+      const c = colorsFor(side);
+      node.style.background = c.bg; node.style.color = c.fg;
+      if (text != null) node.textContent = text;
+      return node;
+    };
+    const shield = (side) => {
+      const c = colorsFor(side), name = teamName(side);
+      const svg = svgEl('svg', { viewBox: '0 0 100 120' });
+      svg.append(
+        svgEl('path', { d: 'M6 6 H94 V56 Q94 96 50 114 Q6 96 6 56 Z', fill: c.bg, stroke: '#D9A521', 'stroke-width': '5' }),
+        svgEl('path', { d: 'M14 14 H86 V56 Q86 89 50 105 Q14 89 14 56 Z', fill: 'none', stroke: '#F2C14E', 'stroke-opacity': '.5', 'stroke-width': '2' })
+      );
+      const t = svgEl('text', { x: 50, y: 68, 'text-anchor': 'middle', fill: c.fg, 'font-weight': '800',
+                                'font-size': name.length <= 4 ? 32 : name.length <= 6 ? 24 : 19, 'font-family': 'Big Shoulders Display, Impact, sans-serif' });
+      t.textContent = name;
+      svg.append(t);
+      return svg;
+    };
+    // Dark opponent colors vanish on the dark stats panel, so their bar falls back to chalk.
+    const barColor = hexColor => {
+      const n = parseInt(hexColor.slice(1), 16);
+      const lum = (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255;
+      return lum < .22 ? '#F3EFE2' : hexColor;
+    };
+
+    const renderScorePanel = () => {
+      $('psLabel').textContent = scoreTitle();
+      teamCell($('psHome'), 'home', s.home); teamCell($('psAway'), 'away', s.away);
+      $('psHomeN').textContent = s.homeScore; $('psAwayN').textContent = s.awayScore;
+      $('psHomeG').textContent = goalsText('home'); $('psAwayG').textContent = goalsText('away');
+      $('psGoals').hidden = !s.goals.length;
+    };
+
+    const renderStatsPanel = () => {
+      $('pstPeriod').textContent = s.period === 'HALF' ? '· Halftime' : s.period === 'FINAL' ? '· Final' : '';
+      const nameScore = (side, score) => [el('span', null, teamName(side)), el('span', null, score)];
+      teamCell($('pstHome'), 'home').replaceChildren(...nameScore('home', s.homeScore));
+      teamCell($('pstAway'), 'away').replaceChildren(...nameScore('away', s.awayScore));
+      const rows = STATS.map(([k, label]) => [label, s.stats.home[k] || 0, s.stats.away[k] || 0])
+        .concat([['Yellow cards', s.homeYellows, s.awayYellows], ['Red cards', s.homeReds, s.awayReds]]);
+      $('pstRows').replaceChildren(...rows.map(([label, h, a]) => {
+        const row = el('div', 'stat');
+        const mid = el('div');
+        const bar = el('div', 'bar');
+        if (h + a > 0) {
+          const hb = el('div'), ab = el('div');
+          hb.style.cssText = `width:${100 * h / (h + a)}%;background:#F2C14E`;
+          ab.style.cssText = `width:${100 * a / (h + a)}%;background:${barColor(s.awayBg)}`;
+          bar.append(hb, ab);
+        }
+        mid.append(el('div', 'lbl', label), bar);
+        row.append(el('div', 'v', h), mid, el('div', 'v', a));
+        return row;
+      }));
+    };
+
+    const renderMatchPanel = () => {
+      const m = s.match;
+      $('pmTitle').textContent = m.title || 'Soccer';
+      $('pmSub').textContent = m.sub;
+      for (const side of ['home', 'away']) {
+        const rec = side === 'home' ? m.homeRec : m.awayRec;
+        $(side === 'home' ? 'pmHome' : 'pmAway').replaceChildren(shield(side), el('div', 'tname', teamName(side)), el('div', 'rec', rec));
+      }
+      $('pmWhen').textContent = m.when;
+      $('pmVenue').textContent = m.venue;
+    };
+
+    const renderSpotPanel = () => {
+      const p = s.spot, c = colorsFor(p.team);
+      const photo = $('spPhoto');
+      photo.style.background = c.bg;
+      if (p.photo) { const img = el('img'); img.src = p.photo; img.alt = ''; photo.replaceChildren(img); }
+      else { const n = el('div', 'bignum', p.num ? '#' + p.num : ''); n.style.color = c.fg; photo.replaceChildren(n); }
+      $('spName').textContent = p.name;
+      $('spMeta').textContent = [p.num && '#' + p.num, p.pos, p.year, teamName(p.team)].filter(Boolean).join(' · ');
+      $('spStats').replaceChildren(...p.stats.filter(x => x.v || x.l).map(x => {
+        const box = el('div'); box.append(el('b', null, x.v), el('span', null, x.l)); return box;
+      }));
+    };
+
+    const renderNextPanel = () => {
+      $('pnRows').replaceChildren(...s.next.map(g => {
+        const row = el('div', 'game');
+        const date = el('div', 'date');
+        date.append(el('small', null, fmtGame(g.start, { weekday: 'short' })), el('b', null, fmtGame(g.start, { month: 'short', day: 'numeric' })));
+        const what = el('div', 'what');
+        what.append(el('small', null, g.sport), el('b', null, (g.homeAway === 'away' ? 'at ' : 'vs ') + g.opponent));
+        const where = el('div', 'where');
+        where.append(el('b', null, fmtGame(g.start, { hour: 'numeric', minute: '2-digit' })), el('span', null, g.location || ''));
+        row.append(date, what, where);
+        return row;
+      }));
+    };
+
+    const renderOthersPanel = () => {
+      $('poTitle').textContent = s.others.title || 'Around the district';
+      const lines = s.others.raw.split('\n').map(l => l.trim()).filter(Boolean);
+      $('poRows').replaceChildren(...lines.map(line => {
+        const g = parseScoreLine(line), row = el('div', 'game');
+        if (g.raw) row.append(el('div', 'raw', g.raw));
+        else row.append(el('div', 't a', g.a), el('div', 'n', g.an), el('div', 'n', g.bn), el('div', 't', g.b), el('div', 'st', g.st));
+        return row;
+      }));
+    };
+
+    const KICK_ICON = { g: 'M5 12.5 L10 17.5 L19 7', m: 'M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5' };
+    const renderShootout = () => {
+      $('pShoot').classList.toggle('hidden', !s.shoot.on || !!s.panel);
+      if (!s.shoot.on) return;
+      const slots = Math.min(10, Math.max(5, s.shoot.home.length, s.shoot.away.length));
+      for (const side of ['home', 'away']) {
+        const kicks = s.shoot[side];
+        const dots = el('div', 'dots');
+        for (let i = 0; i < slots; i++) {
+          const r = kicks[i], dot = el('div', 'dot' + (r ? ' ' + r : ''));
+          if (r) {
+            const svg = svgEl('svg', { viewBox: '0 0 24 24' });
+            svg.append(svgEl('path', { d: KICK_ICON[r], fill: 'none', stroke: '#fff', 'stroke-width': '3.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+            dot.append(svg);
+          }
+          dots.append(dot);
+        }
+        $(side === 'home' ? 'pkHome' : 'pkAway').replaceChildren(
+          teamCell(el('div', 'tcell'), side, teamName(side)), dots, el('div', 'tot', kicks.filter(k => k === 'g').length));
+      }
+    };
+
+    const PANELS = { score: ['pScore', renderScorePanel], stats: ['pStats', renderStatsPanel], match: ['pMatch', renderMatchPanel],
+                     spot: ['pSpot', renderSpotPanel], next: ['pNext', renderNextPanel], others: ['pOthers', renderOthersPanel] };
+    const renderPanels = () => {
+      for (const [key, [id, fill]] of Object.entries(PANELS)) {
+        const on = s.panel === key;
+        $(id).classList.toggle('hidden', !on);
+        if (on) fill(); // the old content stays while a panel wipes away
+      }
+      renderShootout();
+    };
+
+    const render = () => { renderBug(); renderDrop(); renderL3(); renderXI(); renderPanels(); };
     const accept = next => { s = merge(next); render(); };
     if (bc) bc.onmessage = e => accept(e.data);
     addEventListener('storage', e => { if (e.key === STORE && e.newValue) accept(JSON.parse(e.newValue)); });
@@ -803,6 +1295,7 @@
   const setPeriod = p => {
     if (s.running) { s.base = elapsed(s, Date.now()); s.running = false; }
     s.period = p;
+    s.added = 0;
     if (!clockOff(s)) {
       s.len = (p.startsWith('OT') ? s.otMin : s.halfMin) * 60000;
       s.base = 0;
@@ -835,6 +1328,8 @@
     $('cAway').style.background = s.awayBg; $('cAway').style.color = s.awayFg;
     $('cHomeScore').textContent = s.homeScore; $('cAwayScore').textContent = s.awayScore;
     $('cHomeReds').textContent = s.homeReds; $('cAwayReds').textContent = s.awayReds;
+    $('cHomeYellows').textContent = s.homeYellows; $('cAwayYellows').textContent = s.awayYellows;
+    $('cAdded').textContent = '+' + s.added;
     $('cPeriod').textContent = periodLabel(s.period);
     const run = $('btnRun');
     run.textContent = s.running ? 'Stop clock' : 'Start clock';
@@ -846,12 +1341,41 @@
     document.querySelectorAll('#periods button').forEach(b => b.classList.toggle('active', b.dataset.p === s.period));
 
     // Team names in pickers and buttons
-    for (const sel of [$('dTeamSel'), $('lTeam')]) { sel.options[0].text = s.home; sel.options[1].text = s.away; }
+    for (const sel of [$('dTeamSel'), $('lTeam'), $('spTeam')]) { sel.options[0].text = s.home; sel.options[1].text = s.away; }
     $('xiHomeTitle').textContent = s.home; $('xiAwayTitle').textContent = s.away;
-    $('btnXiHome').textContent = (s.lineupShow === 'home' ? 'On air: ' : 'Show ') + s.home + ' lineup';
-    $('btnXiAway').textContent = (s.lineupShow === 'away' ? 'On air: ' : 'Show ') + s.away + ' lineup';
-    $('btnXiHome').classList.toggle('active', s.lineupShow === 'home');
-    $('btnXiAway').classList.toggle('active', s.lineupShow === 'away');
+    for (const [a, b] of [['stHomeH', 'pkHomeT'], ['stAwayH', 'pkAwayT']]) { $(a).textContent = $(b).textContent = a.includes('Home') ? s.home : s.away; }
+    $('mHomeRecL').textContent = s.home + ' record'; $('mAwayRecL').textContent = s.away + ' record';
+
+    // Full-screen graphic on air
+    document.querySelectorAll('[data-panel]').forEach(b => {
+      const on = s.panel === b.dataset.panel;
+      b.classList.toggle('active', on);
+      if (!b.dataset.label) b.dataset.label = b.textContent;
+      b.textContent = on ? 'On air (click to take down)' : b.dataset.label.replace(/FBCA|AWAY/, m => m === 'FBCA' ? s.home : s.away);
+    });
+    $('panelNote').replaceChildren(...(s.panel
+      ? [el('b', null, 'ON AIR: '), PANEL_NAMES[s.panel]()]
+      : ['No full-screen graphic on air']));
+    $('btnPanelHide').disabled = !s.panel;
+    $('btnPkShow').textContent = s.shoot.on ? 'Hide shootout' : 'Show shootout';
+    $('btnPkShow').classList.toggle('active', s.shoot.on);
+    const seq = side => s.shoot[side].map(k => k === 'g' ? '●' : '✕').join(' ') || '–';
+    $('pkHomeSeq').textContent = seq('home'); $('pkAwaySeq').textContent = seq('away');
+
+    // Stats table
+    document.querySelectorAll('#statRows [data-stat]').forEach(b => {
+      const { stat, side } = b.dataset;
+      b.textContent = stat === 'yellows' ? s[side + 'Yellows'] : stat === 'reds' ? s[side + 'Reds'] : s.stats[side][stat] || 0;
+    });
+    setField('psLabelSel', s.scoreLabel);
+    renderGoalLog();
+
+    // Pregame + up next
+    document.querySelectorAll('[data-match]').forEach(inp => setField(inp.id, s.match[inp.dataset.match] || ''));
+    setField('oTitle', s.others.title); setField('oRaw', s.others.raw);
+    $('nextPreview').replaceChildren(...s.next.map(g => el('li', null,
+      fmtGame(g.start, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' · ' + g.sport + (g.homeAway === 'away' ? ' at ' : ' vs ') + g.opponent)));
+    renderSpotList();
     $('btnDropShow').textContent = s.drop.on ? 'Update drop-down' : 'Show drop-down';
     $('btnL3Show').textContent = s.l3.on ? 'Update lower third' : 'Show lower third';
 
@@ -875,6 +1399,48 @@
       ? 'This color is close to the magenta key and may go see-through on air. Try a darker or bluer shade.' : '';
 
     renderL3List();
+  };
+
+  // Goal list: rebuilt only when goals are added or removed, so typing a name keeps focus.
+  let goalSig = '';
+  const renderGoalLog = () => {
+    const sig = s.goals.map(g => g.id).join(',') + '|' + s.home + '|' + s.away;
+    if (sig === goalSig) {
+      s.goals.forEach(g => { const r = $('goal-' + g.id); if (r) { setField('gm-' + g.id, g.min); setField('gn-' + g.id, g.name); } });
+      return;
+    }
+    goalSig = sig;
+    if (!s.goals.length) { $('goalLog').replaceChildren(el('p', 'hint', 'No goals yet.')); return; }
+    $('goalLog').replaceChildren(...s.goals.map(g => {
+      const row = el('div', 'goal-row'); row.id = 'goal-' + g.id;
+      const team = el('div', 'gteam', teamName(g.side));
+      const min = el('input'); min.id = 'gm-' + g.id; min.value = g.min; min.placeholder = "min";
+      min.oninput = () => { g.min = min.value.replace(/'$/, ''); save(); };
+      const name = el('input'); name.id = 'gn-' + g.id; name.value = g.name; name.placeholder = 'Scorer';
+      name.oninput = () => { g.name = name.value; save(); };
+      const del = el('button', 'small', '✕'); del.title = 'Remove from list (score stays the same)';
+      del.onclick = () => { s.goals = s.goals.filter(x => x.id !== g.id); save(); };
+      row.append(team, min, name, del);
+      return row;
+    }));
+  };
+
+  const renderSpotList = () => {
+    $('spList').replaceChildren(...s.spotList.map((item, i) => {
+      const li = el('li');
+      const txt = el('div', 'txt');
+      txt.append(el('b', null, (item.num ? '#' + item.num + ' ' : '') + item.name), el('span', null, [item.pos, item.year, teamName(item.team)].filter(Boolean).join(' · ')));
+      const live = s.panel === 'spot' && s.spot.name === item.name && s.spot.num === item.num;
+      if (live) txt.prepend(el('div', 'on-air', 'ON AIR'));
+      const show = el('button', 'small', live ? 'Hide' : 'Show');
+      show.onclick = () => { if (live) setPanel(''); else { s.spot = JSON.parse(JSON.stringify(item)); setPanel('spot'); } };
+      const edit = el('button', 'small', 'Edit');
+      edit.onclick = () => spotToForm(item);
+      const del = el('button', 'small', '✕'); del.title = 'Remove';
+      del.onclick = () => { s.spotList.splice(i, 1); save(); };
+      li.append(txt, show, edit, del);
+      return li;
+    }));
   };
 
   const renderL3List = () => {
@@ -923,20 +1489,120 @@
   // Pre-fill the drop-down form so a goal or card is one name away from air.
   const prefillDrop = (side, type) => {
     $('dTeamSel').value = side; $('dType').value = type;
-    $('dCustomWrap').hidden = true;
-    $('dTextIn').value = ''; $('dMinIn').value = gameMinute();
+    syncDropForm();
+    $('dTextIn').value = ''; $('dOutIn').value = ''; $('dMinIn').value = gameMinute();
     showTab('drop');
   };
+  // The goal list follows the score: + adds an unnamed goal at the current minute, − removes that team's latest.
   const bump = (side, d) => {
-    const k = side + 'Score'; s[k] = Math.max(0, s[k] + d); save();
+    const k = side + 'Score';
+    if (d < 0 && s[k] === 0) return;
+    s[k] += d;
+    if (d > 0) s.goals.push({ id: Date.now().toString(36), side, min: gameMinute(), name: '' });
+    else {
+      const i = s.goals.map(g => g.side).lastIndexOf(side);
+      if (i >= 0) s.goals.splice(i, 1);
+    }
+    save();
     if (d > 0) prefillDrop(side, 'GOAL');
   };
-  const bumpReds = (side, d) => {
-    const k = side + 'Reds'; s[k] = Math.min(4, Math.max(0, s[k] + d)); save();
-    if (d > 0) prefillDrop(side, 'RED CARD');
+  const bumpCards = (side, key, max, type, d) => {
+    const k = side + key; s[k] = Math.min(max, Math.max(0, s[k] + d)); save();
+    if (d > 0) prefillDrop(side, type);
   };
   document.querySelectorAll('[data-score]').forEach(b => b.onclick = () => bump(b.dataset.score, +b.dataset.d));
-  document.querySelectorAll('[data-reds]').forEach(b => b.onclick = () => bumpReds(b.dataset.reds, +b.dataset.d));
+  document.querySelectorAll('[data-reds]').forEach(b => b.onclick = () => bumpCards(b.dataset.reds, 'Reds', 4, 'RED CARD', +b.dataset.d));
+  document.querySelectorAll('[data-yellows]').forEach(b => b.onclick = () => bumpCards(b.dataset.yellows, 'Yellows', 20, 'YELLOW CARD', +b.dataset.d));
+  document.querySelectorAll('[data-added]').forEach(b => b.onclick = () => {
+    const d = +b.dataset.added; s.added = d === 0 ? 0 : Math.min(15, Math.max(0, s.added + d)); save();
+  });
+
+  // --- Full-screen panels (one at a time) ---
+  const setPanel = p => { s.panel = p; save(); };
+  document.querySelectorAll('[data-panel]').forEach(b => b.onclick = () => setPanel(s.panel === b.dataset.panel ? '' : b.dataset.panel));
+  $('btnPanelHide').onclick = () => setPanel('');
+
+  // --- Stats ---
+  $('statRows').replaceChildren(...STATS.concat([['yellows', 'Yellow cards'], ['reds', 'Red cards']]).map(([k, label]) => {
+    const tr = el('tr');
+    tr.append(el('td', null, label));
+    for (const side of ['home', 'away']) {
+      const td = el('td'), box = el('div', 'counter');
+      const minus = el('button', 'small', '−'), plus = el('button', 'small', '+'), val = el('b');
+      val.dataset.stat = k; val.dataset.side = side;
+      const step = d => () => {
+        if (k === 'yellows') return bumpCards(side, 'Yellows', 20, 'YELLOW CARD', d);
+        if (k === 'reds') return bumpCards(side, 'Reds', 4, 'RED CARD', d);
+        s.stats[side][k] = Math.max(0, (s.stats[side][k] || 0) + d); save();
+      };
+      minus.onclick = step(-1); plus.onclick = step(1);
+      box.append(minus, val, plus); td.append(box); tr.append(td);
+    }
+    return tr;
+  }));
+  $('psLabelSel').addEventListener('change', e => { s.scoreLabel = e.target.value; save(); });
+
+  // --- Pregame ---
+  document.querySelectorAll('[data-match]').forEach(inp => inp.addEventListener('input', () => { s.match[inp.dataset.match] = inp.value; save(); }));
+
+  let spotPhoto = '';
+  const spotFromForm = () => ({
+    team: $('spTeam').value, num: $('spNum').value.trim(), name: $('spNameIn').value.trim(),
+    pos: $('spPos').value.trim(), year: $('spYear').value.trim(),
+    stats: [1, 2, 3].map(i => ({ v: $('spV' + i).value.trim(), l: $('spL' + i).value.trim() })),
+    photo: spotPhoto
+  });
+  const spotToForm = p => {
+    $('spTeam').value = p.team; $('spNum').value = p.num; $('spNameIn').value = p.name;
+    $('spPos').value = p.pos; $('spYear').value = p.year;
+    [1, 2, 3].forEach(i => { $('spV' + i).value = p.stats[i - 1].v; $('spL' + i).value = p.stats[i - 1].l; });
+    spotPhoto = p.photo || ''; $('spFile').value = '';
+  };
+  // Photos are cropped to the panel's 440x528 frame and stored small, so a season's worth of spotlights fits.
+  $('spFile').addEventListener('change', () => {
+    const file = $('spFile').files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const W = 440, H = 528, c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const k = Math.max(W / img.width, H / img.height), w = img.width * k, h = img.height * k;
+      c.getContext('2d').drawImage(img, (W - w) / 2, (H - h) / 3, w, h);
+      spotPhoto = c.toDataURL('image/jpeg', .85);
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+  $('spPhotoClear').onclick = () => { spotPhoto = ''; $('spFile').value = ''; };
+  $('btnSpShow').onclick = () => {
+    const p = spotFromForm();
+    if (!p.name) { $('spNameIn').focus(); return; }
+    s.spot = p; setPanel('spot');
+  };
+  $('btnSpSave').onclick = () => {
+    const p = spotFromForm();
+    if (!p.name) { $('spNameIn').focus(); return; }
+    s.spotList.push(p); save();
+    spotToForm(blankSpot());
+  };
+
+  // --- Shootout ---
+  document.querySelectorAll('[data-pk]').forEach(b => b.onclick = () => { s.shoot[b.dataset.pk].push(b.dataset.r); save(); });
+  document.querySelectorAll('[data-pkundo]').forEach(b => b.onclick = () => { s.shoot[b.dataset.pkundo].pop(); save(); });
+  $('btnPkShow').onclick = () => { s.shoot.on = !s.shoot.on; save(); };
+  $('btnPkReset').onclick = () => { if (confirm('Clear all shootout kicks?')) { s.shoot = { on: s.shoot.on, home: [], away: [] }; save(); } };
+
+  // --- Up next + around the district ---
+  let allGames = [];
+  const loadNext = () => {
+    const soon = Date.now() + 60 * 60000;
+    s.next = allGames.filter(g => new Date(g.start).getTime() > soon).slice(0, 5)
+      .map(({ start, sport, opponent, homeAway, location }) => ({ start, sport, opponent, homeAway, location }));
+    save();
+  };
+  $('btnNextLoad').onclick = loadNext;
+  $('oTitle').addEventListener('input', e => { s.others.title = e.target.value; save(); });
+  $('oRaw').addEventListener('input', e => { s.others.raw = e.target.value; save(); });
 
   $('btnSwap').onclick = () => { s.swap = !s.swap; save(); };
   const leftSide = () => s.swap ? 'away' : 'home';
@@ -955,12 +1621,24 @@
   document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 
   // --- Drop-down ---
-  $('dType').addEventListener('change', () => { $('dCustomWrap').hidden = $('dType').value !== 'CUSTOM'; });
+  const syncDropForm = () => {
+    const type = $('dType').value;
+    $('dCustomWrap').hidden = type !== 'CUSTOM';
+    $('dOutWrap').hidden = type !== 'SUB';
+    $('dTextLabel').textContent = type === 'SUB' ? 'Player on' : 'Text';
+  };
+  $('dType').addEventListener('change', syncDropForm);
   const showDrop = () => {
     const type = $('dType').value;
     const label = type === 'CUSTOM' ? ($('dCustom').value.trim().toUpperCase() || 'UPDATE') : type;
     const minute = $('dMinIn').value.trim().replace(/'$/, '') || gameMinute();
-    s.drop = { on: true, team: $('dTeamSel').value, label, minute, text: $('dTextIn').value.trim(), until: untilFrom('dSecs') };
+    const team = $('dTeamSel').value, text = $('dTextIn').value.trim();
+    s.drop = { on: true, team, label, minute, text, out: type === 'SUB' ? $('dOutIn').value.trim() : '', until: untilFrom('dSecs') };
+    // A goal drop-down names that team's most recent unnamed goal for the score panel.
+    if (type === 'GOAL' && text) {
+      const g = [...s.goals].reverse().find(x => x.side === team && !x.name);
+      if (g) { g.name = text; if (minute) g.min = minute; }
+    }
     save();
   };
   const hideDrop = () => { s.drop.on = false; save(); };
@@ -991,19 +1669,16 @@
   document.querySelectorAll('[data-xi]').forEach(inp => inp.addEventListener('input', () => {
     s.xi[inp.dataset.xi][inp.dataset.k] = inp.value; save();
   }));
-  document.querySelectorAll('[data-xishow]').forEach(b => b.onclick = () => {
-    s.lineupShow = s.lineupShow === b.dataset.xishow ? '' : b.dataset.xishow; save();
-  });
-  $('btnXiHide').onclick = () => { s.lineupShow = ''; save(); };
   document.querySelectorAll('[data-kitreset]').forEach(b => b.onclick = () => {
     Object.assign(s.xi[b.dataset.kitreset], { kit: '', kitNum: '' }); save();
   });
 
   // --- Setup ---
   $('btnReset').onclick = () => {
-    if (!confirm('Reset scores and red cards to 0 and the clock to the start of the 1st half?')) return;
-    s.homeScore = 0; s.awayScore = 0; s.homeReds = 0; s.awayReds = 0;
-    s.drop.on = false; s.l3.on = false; s.lineupShow = ''; s.swap = false;
+    if (!confirm('Reset scores, cards, goals, stats and the shootout, and put the clock back to the start of the 1st half? Lineups, lower thirds and spotlights are kept.')) return;
+    s.homeScore = 0; s.awayScore = 0; s.homeReds = 0; s.awayReds = 0; s.homeYellows = 0; s.awayYellows = 0;
+    s.goals = []; s.stats = { home: blankStats(), away: blankStats() }; s.shoot = { on: false, home: [], away: [] };
+    s.drop.on = false; s.l3.on = false; s.panel = ''; s.swap = false;
     s.running = false; setPeriod('1ST');
   };
   $('homeName').addEventListener('input', e => { s.home = e.target.value.toUpperCase(); save(); });
@@ -1033,7 +1708,8 @@
       ' ': startStop, q: () => bump(leftSide(), 1), a: () => bump(leftSide(), -1),
       p: () => bump(rightSide(), 1), l: () => bump(rightSide(), -1), h: toggleBug,
       d: () => s.drop.on ? hideDrop() : showDrop(),
-      t: () => s.l3.on ? hideL3() : $('btnL3Show').click()
+      t: () => s.l3.on ? hideL3() : $('btnL3Show').click(),
+      escape: () => setPanel('')
     };
     const fn = map[e.key.toLowerCase()];
     if (fn) { e.preventDefault(); fn(); }
@@ -1049,8 +1725,9 @@
     return (words[0].endsWith('.') && words[1] ? words[0] + ' ' + words[1] : words[0]).slice(0, 10);
   };
   fetch('../schedule.json', { cache: 'no-store' }).then(r => r.json()).then(data => {
-    const games = (data.games || []).filter(g => /soccer/i.test(g.sport))
-      .sort((a, b) => a.start.localeCompare(b.start));
+    allGames = (data.games || []).slice().sort((a, b) => a.start.localeCompare(b.start));
+    if (!s.next.length) loadNext();
+    const games = allGames.filter(g => /soccer/i.test(g.sport));
     if (!games.length) return;
     const sel = $('game');
     sel.innerHTML = '<option value="">Pick a game…</option>';
@@ -1067,6 +1744,10 @@
       const g = games.find(x => x.id === sel.value);
       if (!g) return;
       s.away = shortName(g.opponent);
+      Object.assign(s.match, {
+        title: g.sport, venue: g.location || '',
+        when: fmtGame(g.start, { weekday: 'long', month: 'short', day: 'numeric' }) + ' · ' + fmtGame(g.start, { hour: 'numeric', minute: '2-digit' })
+      });
       save();
     };
     sel.addEventListener('change', apply);
