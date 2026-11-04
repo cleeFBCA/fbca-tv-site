@@ -573,7 +573,7 @@
       <div class="card">
         <h2>Clock</h2>
         <div class="big-clock"><small id="cPeriod">1ST</small><span id="cClock">40:00</span></div>
-        <div class="row-btns"><button class="primary" id="btnRun">Start clock</button></div>
+        <div class="row-btns"><button class="primary" id="btnRun">Start clock</button><button id="btnClockShow">Hide clock on bug</button></div>
         <div class="row-btns">
           <button data-adj="-1000">&minus;1 sec</button>
           <button data-adj="1000">+1 sec</button>
@@ -585,7 +585,7 @@
         <div class="row-btns"><button id="btnSbClock">Connect scoreboard</button></div>
         <div class="sb-use" id="sbUse" hidden>
           <label class="check"><input type="checkbox" data-sbuse="clock"> Clock <small id="sbValClock"></small></label>
-          <label class="check"><input type="checkbox" data-sbuse="period"> Period <small id="sbValPeriod"></small></label>
+          <label class="check"><input type="checkbox" data-sbuse="period"> Period, Half at 0:00 <small id="sbValPeriod"></small></label>
           <label class="check"><input type="checkbox" data-sbuse="score"> Score <small id="sbValScore"></small></label>
         </div>
         <p class="hint" id="sbClockStatus">Run the bug's clock, period and score from the stadium scoreboard. Pick the file Scorebridge writes, C:\Users\Broadcast\Documents\scoreboard.xml.</p>
@@ -931,6 +931,7 @@
     len: 40 * 60000, base: 0, running: false, startedAt: 0, added: 0,
     // What the scoreboard file (Scorebridge) drives when connected.
     sbUse: { clock: true, period: false, score: false },
+    clockShow: true, // false hides the time on the bug (the clock keeps running)
     drop: { on: false, team: 'home', label: 'GOAL', minute: '', text: '', out: '', until: 0 },
     l3: { on: false, name: '', stat: '', team: 'home', until: 0 },
     l3List: [],
@@ -1086,12 +1087,12 @@
       $('sbAway').style.color = s.awayFg;
       cards($('sbHomeReds'), s.homeReds, s.homeYellows);
       cards($('sbAwayReds'), s.awayReds, s.awayYellows);
-      $('sbAdded').hidden = !s.added || clockOff(s);
+      $('sbAdded').hidden = !s.added || clockOff(s) || !s.clockShow;
       $('sbAdded').textContent = '+' + s.added;
       $('sbHomeScore').textContent = s.homeScore;
       $('sbAwayScore').textContent = s.awayScore;
       $('sbPeriod').textContent = periodLabel(s.period);
-      $('sbClock').classList.toggle('off', clockOff(s));
+      $('sbClock').classList.toggle('off', clockOff(s) || !s.clockShow);
       if (s.homeScore > prev.homeScore) flash($('sbHomeScore'));
       if (s.awayScore > prev.awayScore) flash($('sbAwayScore'));
       prev = { homeScore: s.homeScore, awayScore: s.awayScore };
@@ -1483,6 +1484,8 @@
     run.disabled = clockOff(s) || sbClock;
     document.querySelectorAll('[data-adj], #btnSet, #setClock').forEach(b => b.disabled = sbClock);
     $('btnShow').textContent = s.visible ? 'Hide bug' : 'Show bug';
+    $('btnClockShow').textContent = s.clockShow ? 'Hide clock on bug' : 'Show clock on bug';
+    $('btnClockShow').classList.toggle('active', !s.clockShow);
     $('cTeams').classList.toggle('swapped', s.swap);
     $('sideNote').textContent = (s.swap ? s.away + ' on the left, ' + s.home : s.home + ' on the left, ' + s.away) + ' on the right';
     document.querySelectorAll('#periods button').forEach(b => b.classList.toggle('active', b.dataset.p === s.period));
@@ -1932,6 +1935,7 @@
   // --- Output ---
   const toggleBug = () => { s.visible = !s.visible; save(); };
   $('btnShow').onclick = toggleBug;
+  $('btnClockShow').onclick = () => { s.clockShow = !s.clockShow; save(); };
   $('btnOpen').onclick = () => window.open(location.pathname + '#bug', 'eota-soccer-bug', 'width=1280,height=720');
 
   // --- Tabs ---
@@ -2075,7 +2079,7 @@
   const sbButton = () => $('btnSbClock').textContent = sbHandle ? 'Disconnect scoreboard' : 'Connect scoreboard';
   // Last values seen from the scoreboard; period and score are applied only when they change there,
   // so a manual Half/Final or score fix sticks until the scoreboard moves on.
-  let sbSeen = {}, sbLatest = {};
+  let sbSeen = {}, sbLatest = {}, sbBoardMs = null;
   const applyClock = raw => {
     const ms = parseScoreClock(raw);
     if (ms === null) return;
@@ -2117,6 +2121,10 @@
       showSbValues();
       // Period first (it resets the clock), then the clock, then goals, so a goal gets this read's minute.
       if (s.sbUse.period && f.period != null && f.period !== sbSeen.period) applyPeriod(f.period);
+      // The scoreboard has no halftime, so the 1st half ending (its clock reaching 0:00) puts up Half.
+      const boardMs = f.clock != null ? parseScoreClock(f.clock) : null;
+      if (s.sbUse.period && s.period === '1ST' && boardMs === 0 && sbBoardMs > 0) setPeriod('HALF');
+      if (boardMs !== null) sbBoardMs = boardMs;
       if (s.sbUse.clock && f.clock != null && !clockOff(s)) applyClock(f.clock);
       if (s.sbUse.score) for (const side of ['home', 'away'])
         if (f[side] != null && f[side] !== sbSeen[side]) applyScore(side, f[side]);
@@ -2149,7 +2157,7 @@
     });
   });
   const sbStart = h => {
-    sbHandle = h; sbLastText = ''; sbLastMs = null; sbReadAt = 0; sbFailSince = 0; sbSeen = {}; sbLatest = {};
+    sbHandle = h; sbLastText = ''; sbLastMs = null; sbReadAt = 0; sbFailSince = 0; sbSeen = {}; sbLatest = {}; sbBoardMs = null;
     $('sbUse').hidden = false;
     clearInterval(sbTimer); sbTimer = setInterval(sbRead, 250); sbRead();
     sbButton(); renderCtl();
