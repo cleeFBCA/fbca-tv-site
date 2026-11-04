@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EOTA Soccer Scorebug</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  Soccer graphics for Eagles on the Air.
+
+  One file, two modes:
+    soccer-scorebug.html       -> control page (operator)
+    soccer-scorebug.html#bug   -> 1920x1080 output on a magenta (#FF00FF) key background
+
+  The output carries the scorebug, a drop-down under the bug (goals, cards,
+  subs), a lower third, and a starting-lineup field graphic.
+
+  The control page is the only writer. It saves state to localStorage and
+  broadcasts it to the output window, so both must be open in the same browser
+  on the same computer. The clock is stored as timestamps, not ticks, so it
+  never drifts and survives a page reload.
+-->
+<style>
+  :root {
+    --key: #FF00FF;
+    --pine: #0D2418;
+    --field: #17402B;
+    --turf: #1E5638;
+    --line: #2C6A46;
+    --gold: #D9A521;
+    --gold-hi: #F2C14E;
+    --chalk: #F3EFE2;
+    --chalk-dim: #B9C6B4;
+    --tally: #E5352B;
+    --card-y: #F5D020;
+    --font-display: 'Big Shoulders Display', Impact, 'Arial Narrow', sans-serif;
+    --font-body: 'Barlow', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+
+  /* ---------- Output mode ---------- */
+  body.bug { background: var(--key); overflow: hidden; cursor: none; }
+  body.bug #control { display: none; }
+  #stage {
+    position: absolute; left: 0; top: 0;
+    width: 1920px; height: 1080px;
+    transform-origin: 0 0;
+    background: var(--key);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+  }
+  /* Outer edges stay hard: no radius, shadow, or opacity against the key color. */
+  .wipe { transition: clip-path .35s ease; clip-path: inset(0 0 0 0); }
+
+  /* Scorebug */
+  .sb { position: absolute; display: flex; flex-direction: column; align-items: flex-start; }
+  /* Negative top leaves room for red cards that rise above the bug. */
+  .sb.wipe { clip-path: inset(-60px 0 0 0); }
+  .sb.hidden { clip-path: inset(-60px 100% 0 0); }
+  .sb.pos-tl { left: 96px; top: 84px; }
+  .sb.pos-tr { right: 96px; top: 84px; align-items: flex-end; }
+  .sb.pos-bl { left: 96px; bottom: 54px; flex-direction: column-reverse; }
+  .sb.pos-br { right: 96px; bottom: 54px; flex-direction: column-reverse; align-items: flex-end; }
+  .sb .row { display: flex; height: 76px; border-bottom: 6px solid var(--gold); }
+  .sb .team { display: flex; position: relative; }
+  /* Sides swap at halftime so the bug matches the field. */
+  .sb .status { order: 3; }
+  .sb.swapped .home { order: 2; }
+  .sb.swapped .away { order: 1; }
+  /* Red cards slide up from behind the team name, like a referee raising one. */
+  .sb .cards {
+    position: absolute; left: 0; right: 76px; bottom: 100%; height: 42px;
+    display: flex; justify-content: center; align-items: flex-end; gap: 8px;
+    overflow: hidden;
+  }
+  .sb .cards i {
+    display: block; width: 24px; height: 34px; background: var(--tally);
+    transform: translateY(110%);
+    transition: transform .45s cubic-bezier(.2, 1.4, .4, 1);
+  }
+  .sb .cards i.up { transform: translateY(0); }
+  /* With the bug at the bottom, the drop-down pops up in the same spot, so cards duck while it's on. */
+  .sb.pos-bl.drop-on .cards i, .sb.pos-br.drop-on .cards i { transform: translateY(110%); }
+  .sb .name {
+    display: flex; align-items: center; justify-content: center;
+    min-width: 132px; padding: 0 22px;
+    font-size: 42px; font-weight: 800; letter-spacing: .03em; white-space: nowrap;
+  }
+  .sb .home .name { background: var(--field); color: var(--gold-hi); }
+  .sb .score {
+    width: 76px; display: grid; place-items: center;
+    background: var(--chalk); color: var(--pine);
+    font-size: 52px; font-weight: 800; font-variant-numeric: tabular-nums;
+  }
+  .sb .score.flash { animation: flash .5s step-end 4; }
+  @keyframes flash { 0% { background: var(--gold-hi); } 50% { background: var(--chalk); } }
+  .sb .status { display: flex; background: var(--pine); color: var(--chalk); }
+  .sb .period {
+    display: flex; align-items: center; padding: 0 18px;
+    background: var(--turf); color: var(--gold-hi);
+    font-size: 32px; font-weight: 800; letter-spacing: .06em;
+  }
+  .sb .clock {
+    width: 150px; display: grid; place-items: center;
+    font-size: 48px; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  .sb .clock.off { display: none; }
+
+  /* Drop-down under the bug (pops up instead when the bug sits at the bottom) */
+  .drop {
+    display: flex; align-self: stretch; height: 54px;
+    background: var(--pine); color: var(--chalk);
+    font-size: 30px; font-weight: 700; white-space: nowrap;
+  }
+  .drop.hidden { clip-path: inset(0 0 100% 0); }
+  .sb.pos-bl .drop.hidden, .sb.pos-br .drop.hidden { clip-path: inset(100% 0 0 0); }
+  .drop > div { display: flex; align-items: center; }
+  .drop > div[hidden] { display: none; }
+  .drop .dteam { padding: 0 18px; font-weight: 800; }
+  .drop .dlabel { gap: 10px; padding: 0 18px; background: var(--gold); color: var(--pine); font-weight: 800; letter-spacing: .08em; }
+  .drop .dmin { padding-left: 18px; color: var(--gold-hi); font-weight: 800; }
+  .drop .dtext { padding: 0 24px 0 14px; }
+  .cardicon { display: block; width: 16px; height: 23px; }
+  .cardicon.y { background: var(--card-y); }
+  .cardicon.r { background: var(--tally); }
+
+  /* Lower third */
+  .l3 { position: absolute; left: 96px; bottom: 96px; display: flex; }
+  .l3.hidden { clip-path: inset(0 100% 0 0); }
+  .l3 .accent { width: 14px; background: var(--gold); }
+  .l3 .lbody { display: flex; flex-direction: column; }
+  .l3 .lname { padding: 8px 30px 4px; font-size: 54px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
+  .l3 .lstat { padding: 8px 30px; background: var(--pine); color: var(--chalk); font-size: 30px; font-weight: 600; letter-spacing: .05em; white-space: nowrap; }
+  .l3 .lstat:empty { display: none; }
+
+  /* Starting lineup: full-frame, fully opaque, so the key doesn't matter here. */
+  .xi { position: absolute; inset: 0; overflow: hidden; }
+  .xi.hidden { clip-path: inset(0 0 100% 0); }
+  .xi > svg { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+  .xi .xshield { position: absolute; left: 366px; top: 58px; width: 132px; height: 158px; z-index: 2; }
+  .xi .xbanner {
+    position: absolute; left: 440px; top: 96px; width: 1120px; height: 80px;
+    display: flex; align-items: center; padding: 0 32px 0 104px;
+    background: linear-gradient(#FBF8EF, #D6D0BE); color: var(--pine);
+    border-bottom: 5px solid var(--gold);
+  }
+  .xi .xteam { font-size: 52px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
+  .xi .xsub { margin-left: 18px; font-size: 36px; font-weight: 700; letter-spacing: .12em; color: var(--turf); white-space: nowrap; }
+  .xi .xright { margin-left: auto; text-align: right; line-height: 1; }
+  .xi .xform { font-size: 38px; font-weight: 800; letter-spacing: .06em; }
+  .xi .xcoach { font-size: 19px; font-weight: 700; letter-spacing: .1em; color: #4A5D51; margin-top: 3px; }
+  .xi .xcoach:empty { display: none; }
+  .xi .player {
+    position: absolute; display: flex; flex-direction: column; align-items: center;
+    transform-origin: 50% 50%;
+  }
+  .xi .pshadow {
+    position: absolute; top: 72px; width: 76px; height: 18px;
+    background: radial-gradient(closest-side, rgba(0,0,0,.5), rgba(0,0,0,0));
+  }
+  .xi .kit { position: relative; width: 86px; height: 86px; }
+  .xi .pname {
+    margin-top: 4px; max-width: 250px;
+    color: var(--chalk); font-size: 23px; font-weight: 700; letter-spacing: .1em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    text-shadow: 0 2px 4px rgba(0,0,0,.7);
+  }
+  .xi .xsubs {
+    position: absolute; left: 210px; right: 210px; top: 978px;
+    display: flex; align-items: center; gap: 18px; color: var(--chalk);
+  }
+  .xi .xsubs[hidden] { display: none; }
+  .xi .xsubs .lbl { flex: 0 0 auto; border: 2px solid var(--chalk); padding: 3px 14px 1px; font-size: 22px; font-weight: 800; letter-spacing: .16em; }
+  .xi .xsubs .list { font-size: 25px; font-weight: 600; letter-spacing: .05em; color: var(--chalk-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ---------- Control mode ---------- */
+  body.ctl { background: var(--pine); color: var(--chalk); font-family: var(--font-body); }
+  body.ctl #stage { display: none; }
+  #control { max-width: 1180px; margin: 0 auto; padding: 20px 16px 48px; }
+  #control h1 {
+    font-family: var(--font-display); font-weight: 800; letter-spacing: .04em;
+    font-size: 30px; margin: 0 0 4px; color: var(--gold-hi); text-transform: uppercase;
+  }
+  #control .sub { color: var(--chalk-dim); margin: 0 0 18px; font-size: 15px; }
+  .grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 16px; align-items: start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .card h2 {
+    font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em;
+    font-size: 18px; margin: 0 0 12px; color: var(--gold);
+  }
+  .stack > .card + .card { margin-top: 16px; }
+  .preview { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; background: var(--key); }
+  .preview iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
+  .big-clock {
+    font-family: var(--font-display); font-weight: 800; font-size: 72px; line-height: 1;
+    font-variant-numeric: tabular-nums; text-align: center; margin: 4px 0 12px;
+  }
+  .big-clock small { display: block; font-size: 20px; color: var(--gold-hi); letter-spacing: .1em; margin-bottom: 6px; }
+  .row-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .row-btns > * { flex: 1 1 0; }
+  button {
+    font: 600 16px var(--font-body); color: var(--chalk);
+    background: var(--turf); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 10px; cursor: pointer; min-height: 48px;
+  }
+  button:hover { background: var(--line); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: var(--gold); color: var(--pine); border-color: var(--gold); font-weight: 700; font-size: 18px; }
+  button.primary.running { background: var(--tally); border-color: var(--tally); color: var(--chalk); }
+  button.active { outline: 2px solid var(--gold-hi); outline-offset: -2px; color: var(--gold-hi); }
+  button.primary.active { color: var(--pine); outline-color: var(--chalk); }
+  button.danger { background: transparent; border-color: var(--tally); color: var(--tally); }
+  button.small { min-height: 0; padding: 6px 12px; font-size: 14px; flex: 0 0 auto; }
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .team-ctl { text-align: center; }
+  .teams.swapped .home-ctl { order: 2; }
+  .teams.swapped .away-ctl { order: 1; }
+  .side-note { text-align: center; font-size: 14px; color: var(--chalk-dim); margin: 0 0 10px; }
+  .team-ctl .tname {
+    display: inline-block; padding: 2px 12px; border-radius: 4px;
+    font-family: var(--font-display); font-weight: 800; font-size: 26px; text-transform: uppercase;
+  }
+  .team-ctl .tscore { font-family: var(--font-display); font-weight: 800; font-size: 64px; line-height: 1.1; }
+  .team-ctl .row-btns button { font-size: 24px; }
+  .reds-ctl { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; color: var(--chalk-dim); }
+  .reds-ctl .cardicon { width: 12px; height: 17px; }
+  label { display: block; font-size: 13px; color: var(--chalk-dim); margin: 10px 0 4px; }
+  input, select, textarea {
+    width: 100%; font: 500 16px var(--font-body); color: var(--chalk);
+    background: var(--pine); border: 1px solid var(--line); border-radius: 6px; padding: 10px;
+  }
+  textarea { resize: vertical; min-height: 230px; line-height: 1.45; }
+  textarea.subs { min-height: 90px; }
+  input[type=color] { padding: 2px; height: 44px; cursor: pointer; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .set-row { display: flex; gap: 8px; }
+  .set-row input { flex: 1; }
+  .set-row button { flex: 0 0 auto; min-height: 0; padding: 10px 14px; }
+  .keys { color: var(--chalk-dim); font-size: 13px; line-height: 1.7; margin: 10px 0 0; }
+  .hint { color: var(--chalk-dim); font-size: 13px; line-height: 1.5; margin: 8px 0 0; }
+  .warn { color: var(--gold-hi); font-size: 13px; margin: 8px 0 0; }
+  .warn:empty { display: none; }
+  kbd { font: 600 12px var(--font-body); background: var(--pine); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tabs button { flex: 1 1 0; min-height: 40px; padding: 8px; font-size: 15px; }
+  [data-pane][hidden] { display: none; }
+  .l3-list { list-style: none; margin: 12px 0 0; padding: 0; }
+  .l3-list li {
+    display: flex; align-items: center; gap: 8px; padding: 8px 0;
+    border-top: 1px solid var(--line);
+  }
+  .l3-list .txt { flex: 1; min-width: 0; }
+  .l3-list .txt b { display: block; }
+  .l3-list .txt span { color: var(--chalk-dim); font-size: 14px; }
+  .on-air { color: var(--tally); font-weight: 700; font-size: 13px; letter-spacing: .06em; }
+  .lineup-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .lineup-cols { grid-template-columns: 1fr; } }
+  .lineup-cols h3 { font-family: var(--font-display); text-transform: uppercase; font-size: 20px; margin: 0; }
+  .count { font-size: 13px; color: var(--chalk-dim); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="sb wipe pos-tl" id="sb">
+    <div class="row">
+      <div class="team home"><div class="cards" id="sbHomeReds"></div><div class="name" id="sbHome">FBCA</div><div class="score" id="sbHomeScore">0</div></div>
+      <div class="team away"><div class="cards" id="sbAwayReds"></div><div class="name" id="sbAway">AWAY</div><div class="score" id="sbAwayScore">0</div></div>
+      <div class="status"><div class="period" id="sbPeriod">1ST</div><div class="clock" id="sbClock">40:00</div></div>
+    </div>
+    <div class="drop wipe hidden" id="drop">
+      <div class="dteam" id="dTeam"></div>
+      <div class="dlabel" id="dLabel"></div>
+      <div class="dmin" id="dMin"></div>
+      <div class="dtext" id="dText"></div>
+    </div>
+  </div>
+
+  <div class="l3 wipe hidden" id="l3">
+    <div class="accent"></div>
+    <div class="lbody"><div class="lname" id="l3Name"></div><div class="lstat" id="l3Stat"></div></div>
+  </div>
+
+  <div class="xi wipe hidden" id="xi">
+    <svg viewBox="0 0 1920 1080" aria-hidden="true">
+      <defs>
+        <radialGradient id="xVig" cx="50%" cy="45%" r="75%">
+          <stop offset="55%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".5"/>
+        </radialGradient>
+        <linearGradient id="kitShade" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/>
+          <stop offset="1" stop-color="#000" stop-opacity=".22"/>
+        </linearGradient>
+      </defs>
+      <!-- Faceted backdrop -->
+      <rect width="1920" height="1080" fill="#0B2014"/>
+      <polygon points="0,0 780,0 400,430" fill="#123522"/>
+      <polygon points="780,0 1920,0 1520,360" fill="#0F2C1C"/>
+      <polygon points="1920,0 1920,640 1520,360" fill="#17432B"/>
+      <polygon points="0,0 400,430 0,780" fill="#0E281A"/>
+      <polygon points="0,780 400,430 720,1080 0,1080" fill="#133624"/>
+      <polygon points="1920,640 1520,360 1200,1080 1920,1080" fill="#103020"/>
+      <polygon points="400,430 780,0 1520,360 1200,1080 720,1080" fill="#153B27"/>
+      <rect width="1920" height="1080" fill="url(#xVig)"/>
+      <g id="xField"></g>
+    </svg>
+    <svg class="xshield" viewBox="0 0 100 120" aria-hidden="true">
+      <path id="xShieldBody" d="M6 6 H94 V56 Q94 96 50 114 Q6 96 6 56 Z" stroke="#D9A521" stroke-width="5"/>
+      <path d="M14 14 H86 V56 Q86 89 50 105 Q14 89 14 56 Z" fill="none" stroke="#F2C14E" stroke-opacity=".5" stroke-width="2"/>
+      <text id="xShieldText" x="50" y="68" text-anchor="middle" font-family="Big Shoulders Display, Impact, sans-serif" font-weight="800" font-size="30"></text>
+    </svg>
+    <div class="xbanner">
+      <div class="xteam" id="xTeam"></div>
+      <div class="xsub">Starting XI</div>
+      <div class="xright"><div class="xform" id="xForm"></div><div class="xcoach" id="xCoach"></div></div>
+    </div>
+    <div id="xPlayers"></div>
+    <div class="xsubs" id="xSubs"><div class="lbl">Substitutes</div><div class="list" id="xSubsList"></div></div>
+  </div>
+</div>
+
+<div id="control">
+  <h1>Soccer Graphics</h1>
+  <p class="sub">Open the output window, drag it to the display that feeds the ATEM, and make it full screen. Key out magenta (#FF00FF).</p>
+
+  <div class="grid">
+    <div class="stack">
+      <div class="card">
+        <h2>Clock</h2>
+        <div class="big-clock"><small id="cPeriod">1ST</small><span id="cClock">40:00</span></div>
+        <div class="row-btns"><button class="primary" id="btnRun">Start clock</button></div>
+        <div class="row-btns">
+          <button data-adj="-1000">&minus;1 sec</button>
+          <button data-adj="1000">+1 sec</button>
+        </div>
+        <div class="set-row">
+          <input id="setClock" placeholder="Set clock, e.g. 23:41" inputmode="numeric">
+          <button id="btnSet">Set</button>
+        </div>
+        <label>Period (picking a half or OT resets the clock and stops it)</label>
+        <div class="row-btns" id="periods">
+          <button data-p="1ST">1st</button><button data-p="2ND">2nd</button>
+          <button data-p="OT1">OT1</button><button data-p="OT2">OT2</button>
+          <button data-p="HALF">Half</button><button data-p="FINAL">Final</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Score</h2>
+        <div class="teams" id="cTeams">
+          <div class="team-ctl home-ctl">
+            <div class="tname" id="cHome">FBCA</div>
+            <div class="tscore" id="cHomeScore">0</div>
+            <div class="row-btns"><button data-score="home" data-d="-1">&minus;</button><button data-score="home" data-d="1">+</button></div>
+            <div class="reds-ctl"><i class="cardicon r"></i> Red cards <b id="cHomeReds">0</b>
+              <button class="small" data-reds="home" data-d="-1">&minus;</button><button class="small" data-reds="home" data-d="1">+</button></div>
+          </div>
+          <div class="team-ctl away-ctl">
+            <div class="tname" id="cAway">AWAY</div>
+            <div class="tscore" id="cAwayScore">0</div>
+            <div class="row-btns"><button data-score="away" data-d="-1">&minus;</button><button data-score="away" data-d="1">+</button></div>
+            <div class="reds-ctl"><i class="cardicon r"></i> Red cards <b id="cAwayReds">0</b>
+              <button class="small" data-reds="away" data-d="-1">&minus;</button><button class="small" data-reds="away" data-d="1">+</button></div>
+          </div>
+        </div>
+        <div class="row-btns" style="margin-top:12px"><button id="btnSwap">Swap sides ⇄</button></div>
+        <p class="side-note" id="sideNote"></p>
+        <p class="hint">Adding a goal or red card fills in the Drop-down tab for you. Add the player and press Show.</p>
+        <p class="keys">
+          <kbd>Space</kbd> start/stop &nbsp; <kbd>Q</kbd>/<kbd>A</kbd> left team +/&minus; &nbsp;
+          <kbd>P</kbd>/<kbd>L</kbd> right team +/&minus;<br>
+          <kbd>H</kbd> show/hide bug &nbsp; <kbd>D</kbd> show/hide drop-down &nbsp; <kbd>T</kbd> show/hide lower third
+        </p>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="card">
+        <h2>Output</h2>
+        <div class="preview"><iframe id="preview" title="Graphics preview" tabindex="-1"></iframe></div>
+        <div class="row-btns" style="margin-top:10px">
+          <button id="btnShow">Hide bug</button>
+          <button id="btnOpen">Open output window</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="tabs" id="tabs">
+          <button data-tab="drop" class="active">Drop-down</button>
+          <button data-tab="l3">Lower third</button>
+          <button data-tab="xi">Lineups</button>
+          <button data-tab="setup">Setup</button>
+        </div>
+
+        <!-- Drop-down -->
+        <div data-pane="drop">
+          <div class="two">
+            <div><label for="dTeamSel">Team</label><select id="dTeamSel"><option value="home">FBCA</option><option value="away">AWAY</option><option value="none">No team</option></select></div>
+            <div><label for="dType">Type</label>
+              <select id="dType">
+                <option value="GOAL">Goal</option><option value="YELLOW CARD">Yellow card</option>
+                <option value="RED CARD">Red card</option><option value="SUBSTITUTION">Substitution</option>
+                <option value="CUSTOM">Custom…</option>
+              </select></div>
+          </div>
+          <div id="dCustomWrap" hidden><label for="dCustom">Custom label</label><input id="dCustom" maxlength="20" placeholder="e.g. SAVE, CORNER"></div>
+          <label for="dTextIn">Text</label>
+          <input id="dTextIn" maxlength="40" placeholder="#10 Sarah Smith">
+          <div class="two">
+            <div><label for="dMinIn">Minute (blank uses the clock)</label><input id="dMinIn" maxlength="6" placeholder="auto"></div>
+            <div><label for="dSecs">Auto-hide after (sec, 0 = stay)</label><input id="dSecs" type="number" min="0" max="120" value="8"></div>
+          </div>
+          <div class="row-btns" style="margin-top:14px">
+            <button class="primary" id="btnDropShow">Show drop-down</button>
+            <button id="btnDropHide">Hide</button>
+          </div>
+        </div>
+
+        <!-- Lower third -->
+        <div data-pane="l3" hidden>
+          <label for="lName">Name</label>
+          <input id="lName" maxlength="36" placeholder="#10 Sarah Smith">
+          <label for="lStat">Stat line</label>
+          <input id="lStat" maxlength="60" placeholder="Senior · Forward · 14 goals this season">
+          <div class="two">
+            <div><label for="lTeam">Colors</label><select id="lTeam"><option value="home">FBCA</option><option value="away">AWAY</option><option value="none">Neutral</option></select></div>
+            <div><label for="lSecs">Auto-hide after (sec, 0 = stay)</label><input id="lSecs" type="number" min="0" max="120" value="8"></div>
+          </div>
+          <div class="row-btns" style="margin-top:14px">
+            <button class="primary" id="btnL3Show">Show lower third</button>
+            <button id="btnL3Hide">Hide</button>
+            <button id="btnL3Save">Save to list</button>
+          </div>
+          <p class="hint">Save lower thirds before the game (announcers, key players), then show them from the list with one click.</p>
+          <ul class="l3-list" id="l3List"></ul>
+        </div>
+
+        <!-- Lineups -->
+        <div data-pane="xi" hidden>
+          <div class="lineup-cols">
+            <div>
+              <h3 id="xiHomeTitle">FBCA</h3>
+              <label for="xiHomeForm">Formation</label><select id="xiHomeForm" data-xi="home" data-k="formation"></select>
+              <label for="xiHomeCoach">Head coach</label><input id="xiHomeCoach" data-xi="home" data-k="coach" maxlength="30">
+              <label for="xiHomeRaw">Starters, one per line: number then name</label>
+              <textarea id="xiHomeRaw" data-xi="home" data-k="raw" placeholder="1 Keeper&#10;2 Left back&#10;4 Center back&#10;5 Center back&#10;3 Right back&#10;…"></textarea>
+              <div class="count" id="xiHomeCount"></div>
+              <label for="xiHomeSubs">Substitutes</label>
+              <textarea class="subs" id="xiHomeSubs" data-xi="home" data-k="subs" placeholder="12 Name&#10;14 Name"></textarea>
+              <div class="two">
+                <div><label for="xiHomeKit">Jersey</label><input type="color" id="xiHomeKit" data-xi="home" data-k="kit"></div>
+                <div><label for="xiHomeKitNum">Number</label><input type="color" id="xiHomeKitNum" data-xi="home" data-k="kitNum"></div>
+              </div>
+              <div class="row-btns" style="margin-top:8px"><button class="small" data-kitreset="home">Default jersey colors</button></div>
+            </div>
+            <div>
+              <h3 id="xiAwayTitle">AWAY</h3>
+              <label for="xiAwayForm">Formation</label><select id="xiAwayForm" data-xi="away" data-k="formation"></select>
+              <label for="xiAwayCoach">Head coach</label><input id="xiAwayCoach" data-xi="away" data-k="coach" maxlength="30">
+              <label for="xiAwayRaw">Starters, one per line: number then name</label>
+              <textarea id="xiAwayRaw" data-xi="away" data-k="raw" placeholder="1 Keeper&#10;2 Left back&#10;…"></textarea>
+              <div class="count" id="xiAwayCount"></div>
+              <label for="xiAwaySubs">Substitutes</label>
+              <textarea class="subs" id="xiAwaySubs" data-xi="away" data-k="subs" placeholder="12 Name&#10;14 Name"></textarea>
+              <div class="two">
+                <div><label for="xiAwayKit">Jersey</label><input type="color" id="xiAwayKit" data-xi="away" data-k="kit"></div>
+                <div><label for="xiAwayKitNum">Number</label><input type="color" id="xiAwayKitNum" data-xi="away" data-k="kitNum"></div>
+              </div>
+              <div class="row-btns" style="margin-top:8px"><button class="small" data-kitreset="away">Use team colors</button></div>
+            </div>
+          </div>
+          <p class="hint">List the goalkeeper first, then defenders, midfielders, and forwards. Within each line, go from the team's left side to its right. The graphic shows the field from behind the team's own goal, so left is left on screen. Last names fit best.</p>
+          <div class="row-btns" style="margin-top:12px">
+            <button class="primary" data-xishow="home" id="btnXiHome">Show FBCA lineup</button>
+            <button class="primary" data-xishow="away" id="btnXiAway">Show AWAY lineup</button>
+          </div>
+          <div class="row-btns"><button id="btnXiHide">Hide lineup</button></div>
+          <p class="hint">The scorebug and lower third step aside while a lineup is on screen and come back when it's hidden.</p>
+        </div>
+
+        <!-- Setup -->
+        <div data-pane="setup" hidden>
+          <label for="game">Load from schedule</label>
+          <select id="game"><option value="">Schedule not loaded. Type teams below.</option></select>
+          <div class="two">
+            <div><label for="homeName">Home (short)</label><input id="homeName" maxlength="10"></div>
+            <div><label for="awayName">Away (short)</label><input id="awayName" maxlength="10"></div>
+          </div>
+          <div class="two">
+            <div><label for="awayBg">Away color</label><input id="awayBg" type="color"></div>
+            <div><label for="awayFg">Away text color</label><input id="awayFg" type="color"></div>
+          </div>
+          <p class="warn" id="awayWarn"></p>
+          <div class="two">
+            <div><label for="halfLen">Half length (min)</label><input id="halfLen" type="number" min="1" max="60"></div>
+            <div><label for="otLen">OT length (min)</label><input id="otLen" type="number" min="1" max="30"></div>
+          </div>
+          <div class="two">
+            <div><label for="dir">Clock counts</label>
+              <select id="dir"><option value="down">Down (40:00 to 0:00)</option><option value="up">Up (0:00 to 40:00)</option></select></div>
+            <div><label for="pos">Bug position</label>
+              <select id="pos"><option value="tl">Top left</option><option value="tr">Top right</option><option value="bl">Bottom left</option><option value="br">Bottom right</option></select></div>
+          </div>
+          <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, cards and clock)</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const STORE = 'eota-soccer-bug-v1';
+  const isBug = location.hash === '#bug';
+  document.body.className = isBug ? 'bug' : 'ctl';
+
+  const FORMATIONS = ['4-4-2', '4-3-3', '4-2-3-1', '4-1-4-1', '4-5-1', '3-5-2', '3-4-3', '5-3-2', '5-4-1'];
+  const HOME_COLORS = { bg: '#17402B', fg: '#F2C14E' };
+  const NEUTRAL_COLORS = { bg: '#0D2418', fg: '#F2C14E' };
+
+  const defaults = () => ({
+    home: 'FBCA', away: 'AWAY', homeScore: 0, awayScore: 0, homeReds: 0, awayReds: 0,
+    awayBg: '#1F3A93', awayFg: '#FFFFFF',
+    period: '1ST', halfMin: 40, otMin: 10, dir: 'down', pos: 'tl', visible: true, swap: false,
+    len: 40 * 60000, base: 0, running: false, startedAt: 0,
+    drop: { on: false, team: 'home', label: 'GOAL', minute: '', text: '', until: 0 },
+    l3: { on: false, name: '', stat: '', team: 'home', until: 0 },
+    l3List: [],
+    lineupShow: '',
+    xi: {
+      home: { formation: '4-4-2', coach: '', raw: '', subs: '', kit: '', kitNum: '' },
+      away: { formation: '4-4-2', coach: '', raw: '', subs: '', kit: '', kitNum: '' }
+    }
+  });
+  const merge = raw => Object.assign(defaults(), raw);
+
+  const load = () => {
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (raw) return merge(JSON.parse(raw));
+    } catch (e) {}
+    return defaults();
+  };
+
+  let s = load();
+  let bc = null;
+  try { bc = new BroadcastChannel(STORE); } catch (e) {}
+
+  // ---------- Shared helpers ----------
+  const elapsed = (st, now) => Math.min(Math.max(st.base + (st.running ? now - st.startedAt : 0), 0), st.len);
+  const fmt = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+  const clockText = (st, now) => {
+    const e = elapsed(st, now);
+    return st.dir === 'down' ? fmt(Math.ceil((st.len - e) / 1000)) : fmt(Math.floor(e / 1000));
+  };
+  const clockOff = st => st.period === 'HALF' || st.period === 'FINAL';
+  const periodLabel = p => p === 'HALF' ? 'HALFTIME' : p;
+  const colorsFor = side => side === 'home' ? HOME_COLORS
+    : side === 'away' ? { bg: s.awayBg, fg: s.awayFg } : NEUTRAL_COLORS;
+  const teamName = side => side === 'home' ? s.home : side === 'away' ? s.away : '';
+  // Jersey colors for the lineup. Home defaults to white so it stands out on the green field.
+  const hex = (v, fallback) => /^#[0-9a-f]{6}$/i.test(v || '') ? v : fallback;
+  const kitFor = side => {
+    const cfg = s.xi[side] || {};
+    return side === 'home'
+      ? { bg: hex(cfg.kit, '#F3EFE2'), fg: hex(cfg.kitNum, '#17402B') }
+      : { bg: hex(cfg.kit, s.awayBg), fg: hex(cfg.kitNum, s.awayFg) };
+  };
+
+  // "10 Sarah Smith" / "#10 - Smith" / "Smith" -> { num, name }
+  const parseXI = raw => raw.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const m = l.match(/^#?(\d{1,2})[\s.,):\-]+(.+)$/);
+    return m ? { num: m[1], name: m[2].trim() } : { num: '', name: l };
+  });
+
+  // Player spots on the team's own half: u runs across the field (0 = team's left),
+  // v runs from the goal line (0) up to the halfway line (1). Keeper first.
+  // Rows are spaced evenly on screen (not on the field) so names never collide near the far end.
+  const layout = formation => {
+    const lines = formation.split('-').map(Number);
+    const spots = [{ u: .5, v: .07 }];
+    const yBack = project(.5, .33).y, yFront = project(.5, .93).y;
+    lines.forEach((n, k) => {
+      const y = lines.length === 1 ? (yBack + yFront) / 2 : yBack + (yFront - yBack) * k / (lines.length - 1);
+      const v = unprojectV(y);
+      const m = n >= 5 ? .09 : n === 4 ? .12 : n === 3 ? .24 : n === 2 ? .34 : .5;
+      for (let i = 0; i < n; i++) spots.push({ u: n === 1 ? .5 : m + (1 - 2 * m) * i / (n - 1), v });
+    });
+    return spots;
+  };
+
+  // Perspective for the half field, seen from behind the team's own goal.
+  // The field is a trapezoid on the 1920x1080 stage; points shrink toward the halfway line.
+  const FIELD = { cx: 960, by: 930, ty: 262, bw: 1500, tw: 1040 };
+  const depthK = FIELD.bw / FIELD.tw - 1;
+  const horizonY = (FIELD.ty * (1 + depthK) - FIELD.by) / depthK;
+  const project = (u, v) => {
+    const w = 1 + depthK * v;
+    return { x: FIELD.cx + (u - .5) * FIELD.bw / w, y: horizonY + (FIELD.by - horizonY) / w, k: 1 / w };
+  };
+  const unprojectV = y => ((FIELD.by - horizonY) / (y - horizonY) - 1) / depthK;
+
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const cardIcon = label => label === 'YELLOW CARD' ? el('i', 'cardicon y') : label === 'RED CARD' ? el('i', 'cardicon r') : null;
+
+  // ---------- Output mode ----------
+  if (isBug) {
+    const stage = $('stage');
+    const fit = () => {
+      const k = Math.min(innerWidth / 1920, innerHeight / 1080);
+      stage.style.transform = `scale(${k})`;
+    };
+    addEventListener('resize', fit); fit();
+
+    let prev = { homeScore: s.homeScore, awayScore: s.awayScore };
+    const flash = e => { e.classList.remove('flash'); void e.offsetWidth; e.classList.add('flash'); };
+    // Add or remove cards one at a time so each new card animates up and each removed one slides down.
+    const reds = (box, n) => {
+      const live = [...box.children].filter(c => !c.dataset.leaving);
+      while (live.length < Math.min(n, 4)) {
+        const card = el('i'); box.append(card); void card.offsetWidth; card.classList.add('up'); live.push(card);
+      }
+      while (live.length > n) {
+        const card = live.pop(); card.dataset.leaving = '1'; card.classList.remove('up');
+        setTimeout(() => card.remove(), 500);
+      }
+    };
+
+    const renderBug = () => {
+      const lineupUp = !!s.lineupShow;
+      $('sb').className = 'sb wipe pos-' + s.pos + (s.visible && !lineupUp ? '' : ' hidden') + (s.drop.on ? ' drop-on' : '') + (s.swap ? ' swapped' : '');
+      $('sbHome').textContent = s.home;
+      $('sbAway').textContent = s.away;
+      $('sbAway').style.background = s.awayBg;
+      $('sbAway').style.color = s.awayFg;
+      reds($('sbHomeReds'), s.homeReds);
+      reds($('sbAwayReds'), s.awayReds);
+      $('sbHomeScore').textContent = s.homeScore;
+      $('sbAwayScore').textContent = s.awayScore;
+      $('sbPeriod').textContent = periodLabel(s.period);
+      $('sbClock').classList.toggle('off', clockOff(s));
+      if (s.homeScore > prev.homeScore) flash($('sbHomeScore'));
+      if (s.awayScore > prev.awayScore) flash($('sbAwayScore'));
+      prev = { homeScore: s.homeScore, awayScore: s.awayScore };
+    };
+
+    const renderDrop = () => {
+      const d = s.drop;
+      $('drop').classList.toggle('hidden', !d.on);
+      if (!d.on) return; // keep the old text while it wipes away
+      const c = colorsFor(d.team), dt = $('dTeam');
+      dt.hidden = d.team === 'none';
+      dt.textContent = teamName(d.team);
+      dt.style.background = c.bg; dt.style.color = c.fg;
+      const icon = cardIcon(d.label);
+      $('dLabel').replaceChildren(...(icon ? [icon] : []), d.label);
+      $('dMin').textContent = d.minute ? d.minute.replace(/'?$/, "'") : '';
+      $('dMin').hidden = !d.minute;
+      $('dText').textContent = d.text;
+      $('dText').hidden = !d.text;
+    };
+
+    const renderL3 = () => {
+      const l = s.l3;
+      $('l3').classList.toggle('hidden', !l.on || !!s.lineupShow);
+      if (!l.on) return;
+      const c = colorsFor(l.team);
+      $('l3Name').textContent = l.name;
+      $('l3Name').style.background = c.bg; $('l3Name').style.color = c.fg;
+      $('l3Stat').textContent = l.stat;
+    };
+
+    // Draw the half field once: striped turf, a front edge for depth, and the markings
+    // (real proportions: 68m wide, 52.5m deep half).
+    const NS = 'http://www.w3.org/2000/svg';
+    const svgEl = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+    const pts = list => list.map(([u, v]) => { const p = project(u, v); return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+    const arc = (cu, cv, rm, a0, a1) => {
+      const out = [];
+      for (let i = 0; i <= 48; i++) { const a = a0 + (a1 - a0) * i / 48; out.push([cu + rm / 68 * Math.cos(a), cv + rm / 52.5 * Math.sin(a)]); }
+      return out;
+    };
+    const drawField = () => {
+      const g = $('xField');
+      const bl = project(0, 0), br = project(1, 0);
+      g.append(svgEl('polygon', { points: `${bl.x},${bl.y} ${br.x},${br.y} ${br.x},${br.y + 24} ${bl.x},${bl.y + 24}`, fill: '#0C2A1A' }));
+      for (let i = 0; i < 10; i++) {
+        g.append(svgEl('polygon', { points: pts([[0, i / 10], [1, i / 10], [1, (i + 1) / 10], [0, (i + 1) / 10]]), fill: i % 2 ? '#1D5636' : '#21603D' }));
+      }
+      const line = { fill: 'none', stroke: '#F3EFE2', 'stroke-opacity': '.62', 'stroke-width': '3', 'stroke-linejoin': 'round' };
+      const pb = (68 - 40.3) / 2 / 68, gb = (68 - 18.32) / 2 / 68, pv = 16.5 / 52.5, gv = 5.5 / 52.5, spot = 11 / 52.5;
+      g.append(svgEl('polygon', { ...line, points: pts([[0, 0], [1, 0], [1, 1], [0, 1]]) }));
+      g.append(svgEl('polyline', { ...line, points: pts([[pb, 0], [pb, pv], [1 - pb, pv], [1 - pb, 0]]) }));
+      g.append(svgEl('polyline', { ...line, points: pts([[gb, 0], [gb, gv], [1 - gb, gv], [1 - gb, 0]]) }));
+      g.append(svgEl('polyline', { ...line, points: pts(arc(.5, 1, 9.15, Math.PI, 2 * Math.PI)) }));
+      const t = Math.asin((16.5 - 11) / 9.15);
+      g.append(svgEl('polyline', { ...line, points: pts(arc(.5, spot, 9.15, t, Math.PI - t)) }));
+      for (const [u, v] of [[.5, 1], [.5, spot]]) { const p = project(u, v); g.append(svgEl('ellipse', { cx: p.x, cy: p.y, rx: 5, ry: 3.5, fill: '#F3EFE2', 'fill-opacity': '.7' })); }
+    };
+    drawField();
+
+    const JERSEY = 'M33 7 L42 3 Q50 13 58 3 L67 7 L95 22 L85 44 L75 38 L75 96 L25 96 L25 38 L15 44 L5 22 Z';
+    const jersey = (num, kit) => {
+      const svg = svgEl('svg', { viewBox: '0 0 100 100', class: 'kit' });
+      svg.append(
+        svgEl('path', { d: JERSEY, fill: kit.bg, stroke: 'rgba(0,0,0,.35)', 'stroke-width': '2', 'stroke-linejoin': 'round' }),
+        svgEl('path', { d: JERSEY, fill: 'url(#kitShade)' }),
+        svgEl('path', { d: 'M42 3 Q50 13 58 3 M95 22 L85 44 M5 22 L15 44', fill: 'none', stroke: kit.fg, 'stroke-width': '4' })
+      );
+      const t = svgEl('text', { x: 50, y: 74, 'text-anchor': 'middle', fill: kit.fg, 'font-size': '38', 'font-weight': '800',
+                                'font-family': 'Big Shoulders Display, Impact, sans-serif' });
+      t.textContent = num;
+      svg.append(t);
+      return svg;
+    };
+
+    const renderXI = () => {
+      const side = s.lineupShow;
+      $('xi').classList.toggle('hidden', !side);
+      if (!side) return;
+      const c = colorsFor(side), kit = kitFor(side), cfg = s.xi[side];
+      const name = teamName(side);
+      $('xShieldBody').setAttribute('fill', c.bg);
+      const st = $('xShieldText');
+      st.setAttribute('fill', c.fg);
+      st.setAttribute('font-size', name.length <= 4 ? 32 : name.length <= 6 ? 24 : 19);
+      st.textContent = name;
+      $('xTeam').textContent = name;
+      $('xForm').textContent = cfg.formation;
+      $('xCoach').textContent = cfg.coach ? 'Head coach ' + cfg.coach : '';
+      const spots = layout(cfg.formation);
+      $('xPlayers').replaceChildren(...parseXI(cfg.raw).slice(0, spots.length).map((p, i) => {
+        const pos = project(spots[i].u, spots[i].v);
+        const wrap = el('div', 'player');
+        wrap.style.left = pos.x + 'px';
+        wrap.style.top = pos.y + 'px';
+        // Scale with distance so the back line reads closer than the forwards.
+        wrap.style.transform = `translate(-50%, -62%) scale(${(.72 + .3 * pos.k).toFixed(3)})`;
+        wrap.append(el('div', 'pshadow'), jersey(p.num, kit), el('div', 'pname', p.name));
+        return wrap;
+      }));
+      const subs = parseXI(cfg.subs || '');
+      $('xSubs').hidden = !subs.length;
+      $('xSubsList').textContent = subs.map(p => (p.num ? p.num + ' ' : '') + p.name).join('  ·  ');
+    };
+
+    const render = () => { renderBug(); renderDrop(); renderL3(); renderXI(); };
+    const accept = next => { s = merge(next); render(); };
+    if (bc) bc.onmessage = e => accept(e.data);
+    addEventListener('storage', e => { if (e.key === STORE && e.newValue) accept(JSON.parse(e.newValue)); });
+
+    let last = '';
+    const tick = () => {
+      const t = clockText(s, Date.now());
+      if (t !== last) { $('sbClock').textContent = t; last = t; }
+      requestAnimationFrame(tick);
+    };
+    render(); tick();
+    return;
+  }
+
+  // ---------- Control mode ----------
+  const save = () => {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
+    if (bc) bc.postMessage(s);
+    renderCtl();
+  };
+
+  const startStop = () => {
+    const now = Date.now();
+    if (s.running) { s.base = elapsed(s, now); s.running = false; }
+    else if (!clockOff(s) && elapsed(s, now) < s.len) { s.running = true; s.startedAt = now; }
+    save();
+  };
+
+  // Set the clock to what the stadium clock shows (in the current count direction).
+  const setDisplayed = ms => {
+    ms = Math.min(Math.max(ms, 0), s.len);
+    s.base = s.dir === 'down' ? s.len - ms : ms;
+    if (s.running) s.startedAt = Date.now();
+    save();
+  };
+  const displayedMs = () => {
+    const e = elapsed(s, Date.now());
+    return s.dir === 'down' ? s.len - e : e;
+  };
+
+  // Match minute as commentators say it: 0:00-0:59 of the 1st half is the 1st minute.
+  const gameMinute = () => {
+    if (clockOff(s)) return '';
+    const offset = { '1ST': 0, '2ND': s.halfMin, 'OT1': 2 * s.halfMin, 'OT2': 2 * s.halfMin + s.otMin }[s.period] || 0;
+    const inPeriod = Math.min(Math.floor(elapsed(s, Date.now()) / 60000) + 1, s.len / 60000);
+    return String(offset + inPeriod);
+  };
+
+  const setPeriod = p => {
+    if (s.running) { s.base = elapsed(s, Date.now()); s.running = false; }
+    s.period = p;
+    if (!clockOff(s)) {
+      s.len = (p.startsWith('OT') ? s.otMin : s.halfMin) * 60000;
+      s.base = 0;
+    }
+    save();
+  };
+
+  const parseClock = txt => {
+    const m = txt.trim().match(/^(\d{1,2})(?::(\d{1,2}))?$/);
+    if (!m) return null;
+    return (parseInt(m[1], 10) * 60 + parseInt(m[2] || '0', 10)) * 1000;
+  };
+
+  // Hue check: pinks and purples near the magenta key can turn see-through on air.
+  const nearKey = hex => {
+    const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+    if (d < .12) return false;
+    const sat = d / (1 - Math.abs(2 * l - 1));
+    let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h = (h * 60 + 360) % 360;
+    return h >= 270 && h <= 340 && sat > .3 && l > .15 && l < .9;
+  };
+
+  const setField = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v; };
+
+  const renderCtl = () => {
+    $('cHome').textContent = s.home; $('cAway').textContent = s.away;
+    $('cHome').style.background = HOME_COLORS.bg; $('cHome').style.color = HOME_COLORS.fg;
+    $('cAway').style.background = s.awayBg; $('cAway').style.color = s.awayFg;
+    $('cHomeScore').textContent = s.homeScore; $('cAwayScore').textContent = s.awayScore;
+    $('cHomeReds').textContent = s.homeReds; $('cAwayReds').textContent = s.awayReds;
+    $('cPeriod').textContent = periodLabel(s.period);
+    const run = $('btnRun');
+    run.textContent = s.running ? 'Stop clock' : 'Start clock';
+    run.classList.toggle('running', s.running);
+    run.disabled = clockOff(s);
+    $('btnShow').textContent = s.visible ? 'Hide bug' : 'Show bug';
+    $('cTeams').classList.toggle('swapped', s.swap);
+    $('sideNote').textContent = (s.swap ? s.away + ' on the left, ' + s.home : s.home + ' on the left, ' + s.away) + ' on the right';
+    document.querySelectorAll('#periods button').forEach(b => b.classList.toggle('active', b.dataset.p === s.period));
+
+    // Team names in pickers and buttons
+    for (const sel of [$('dTeamSel'), $('lTeam')]) { sel.options[0].text = s.home; sel.options[1].text = s.away; }
+    $('xiHomeTitle').textContent = s.home; $('xiAwayTitle').textContent = s.away;
+    $('btnXiHome').textContent = (s.lineupShow === 'home' ? 'On air: ' : 'Show ') + s.home + ' lineup';
+    $('btnXiAway').textContent = (s.lineupShow === 'away' ? 'On air: ' : 'Show ') + s.away + ' lineup';
+    $('btnXiHome').classList.toggle('active', s.lineupShow === 'home');
+    $('btnXiAway').classList.toggle('active', s.lineupShow === 'away');
+    $('btnDropShow').textContent = s.drop.on ? 'Update drop-down' : 'Show drop-down';
+    $('btnL3Show').textContent = s.l3.on ? 'Update lower third' : 'Show lower third';
+
+    for (const side of ['home', 'away']) {
+      const cap = side === 'home' ? 'Home' : 'Away', cfg = s.xi[side];
+      setField('xi' + cap + 'Form', cfg.formation);
+      setField('xi' + cap + 'Coach', cfg.coach);
+      setField('xi' + cap + 'Raw', cfg.raw);
+      setField('xi' + cap + 'Subs', cfg.subs || '');
+      const kit = kitFor(side);
+      setField('xi' + cap + 'Kit', kit.bg);
+      setField('xi' + cap + 'KitNum', kit.fg);
+      const n = parseXI(cfg.raw).length;
+      $('xi' + cap + 'Count').textContent = n + ' of 11 players' + (n > 11 ? '. Only the first 11 show.' : '');
+    }
+
+    const fields = { homeName: s.home, awayName: s.away, awayBg: s.awayBg, awayFg: s.awayFg,
+                     halfLen: s.halfMin, otLen: s.otMin, dir: s.dir, pos: s.pos };
+    for (const [id, v] of Object.entries(fields)) setField(id, v);
+    $('awayWarn').textContent = nearKey(s.awayBg) || nearKey(s.awayFg)
+      ? 'This color is close to the magenta key and may go see-through on air. Try a darker or bluer shade.' : '';
+
+    renderL3List();
+  };
+
+  const renderL3List = () => {
+    $('l3List').replaceChildren(...s.l3List.map((item, i) => {
+      const li = el('li');
+      const txt = el('div', 'txt');
+      txt.append(el('b', null, item.name), el('span', null, item.stat || ' '));
+      const live = s.l3.on && s.l3.name === item.name && s.l3.stat === item.stat;
+      if (live) txt.prepend(el('div', 'on-air', 'ON AIR'));
+      const show = el('button', 'small', live ? 'Hide' : 'Show');
+      show.onclick = () => live ? hideL3() : showL3(item);
+      const edit = el('button', 'small', 'Edit');
+      edit.onclick = () => { $('lName').value = item.name; $('lStat').value = item.stat; $('lTeam').value = item.team; };
+      const del = el('button', 'small', '✕');
+      del.title = 'Remove';
+      del.onclick = () => { s.l3List.splice(i, 1); save(); };
+      li.append(txt, show, edit, del);
+      return li;
+    }));
+  };
+
+  // Clock display + auto-stop at the end of a period + auto-hide timers.
+  setInterval(() => {
+    const now = Date.now();
+    $('cClock').textContent = clockOff(s) ? '--:--' : clockText(s, now);
+    let dirty = false;
+    if (s.running && elapsed(s, now) >= s.len) { s.base = s.len; s.running = false; dirty = true; }
+    if (s.drop.on && s.drop.until && now >= s.drop.until) { s.drop.on = false; dirty = true; }
+    if (s.l3.on && s.l3.until && now >= s.l3.until) { s.l3.on = false; dirty = true; }
+    if (dirty) save();
+  }, 100);
+
+  const untilFrom = id => { const sec = Math.max(0, parseInt($(id).value, 10) || 0); return sec ? Date.now() + sec * 1000 : 0; };
+
+  // --- Clock + score ---
+  $('btnRun').onclick = startStop;
+  document.querySelectorAll('[data-adj]').forEach(b => b.onclick = () => setDisplayed(displayedMs() + +b.dataset.adj));
+  $('btnSet').onclick = () => {
+    const ms = parseClock($('setClock').value);
+    if (ms == null) { $('setClock').focus(); return; }
+    setDisplayed(ms); $('setClock').value = '';
+  };
+  $('setClock').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnSet').click(); });
+  document.querySelectorAll('#periods button').forEach(b => b.onclick = () => setPeriod(b.dataset.p));
+
+  // Pre-fill the drop-down form so a goal or card is one name away from air.
+  const prefillDrop = (side, type) => {
+    $('dTeamSel').value = side; $('dType').value = type;
+    $('dCustomWrap').hidden = true;
+    $('dTextIn').value = ''; $('dMinIn').value = gameMinute();
+    showTab('drop');
+  };
+  const bump = (side, d) => {
+    const k = side + 'Score'; s[k] = Math.max(0, s[k] + d); save();
+    if (d > 0) prefillDrop(side, 'GOAL');
+  };
+  const bumpReds = (side, d) => {
+    const k = side + 'Reds'; s[k] = Math.min(4, Math.max(0, s[k] + d)); save();
+    if (d > 0) prefillDrop(side, 'RED CARD');
+  };
+  document.querySelectorAll('[data-score]').forEach(b => b.onclick = () => bump(b.dataset.score, +b.dataset.d));
+  document.querySelectorAll('[data-reds]').forEach(b => b.onclick = () => bumpReds(b.dataset.reds, +b.dataset.d));
+
+  $('btnSwap').onclick = () => { s.swap = !s.swap; save(); };
+  const leftSide = () => s.swap ? 'away' : 'home';
+  const rightSide = () => s.swap ? 'home' : 'away';
+
+  // --- Output ---
+  const toggleBug = () => { s.visible = !s.visible; save(); };
+  $('btnShow').onclick = toggleBug;
+  $('btnOpen').onclick = () => window.open(location.pathname + '#bug', 'eota-soccer-bug', 'width=1280,height=720');
+
+  // --- Tabs ---
+  const showTab = name => {
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    document.querySelectorAll('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== name);
+  };
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+  // --- Drop-down ---
+  $('dType').addEventListener('change', () => { $('dCustomWrap').hidden = $('dType').value !== 'CUSTOM'; });
+  const showDrop = () => {
+    const type = $('dType').value;
+    const label = type === 'CUSTOM' ? ($('dCustom').value.trim().toUpperCase() || 'UPDATE') : type;
+    const minute = $('dMinIn').value.trim().replace(/'$/, '') || gameMinute();
+    s.drop = { on: true, team: $('dTeamSel').value, label, minute, text: $('dTextIn').value.trim(), until: untilFrom('dSecs') };
+    save();
+  };
+  const hideDrop = () => { s.drop.on = false; save(); };
+  $('btnDropShow').onclick = showDrop;
+  $('btnDropHide').onclick = hideDrop;
+  $('dTextIn').addEventListener('keydown', e => { if (e.key === 'Enter') showDrop(); });
+
+  // --- Lower third ---
+  const showL3 = item => {
+    s.l3 = { on: true, name: item.name, stat: item.stat, team: item.team, until: untilFrom('lSecs') };
+    save();
+  };
+  const hideL3 = () => { s.l3.on = false; save(); };
+  const l3FromForm = () => ({ name: $('lName').value.trim(), stat: $('lStat').value.trim(), team: $('lTeam').value });
+  $('btnL3Show').onclick = () => { const it = l3FromForm(); if (it.name) showL3(it); else $('lName').focus(); };
+  $('btnL3Hide').onclick = hideL3;
+  $('btnL3Save').onclick = () => {
+    const it = l3FromForm();
+    if (!it.name) { $('lName').focus(); return; }
+    s.l3List.push(it); save();
+    $('lName').value = ''; $('lStat').value = '';
+  };
+
+  // --- Lineups ---
+  document.querySelectorAll('select[data-xi]').forEach(sel => {
+    sel.replaceChildren(...FORMATIONS.map(f => el('option', null, f)));
+  });
+  document.querySelectorAll('[data-xi]').forEach(inp => inp.addEventListener('input', () => {
+    s.xi[inp.dataset.xi][inp.dataset.k] = inp.value; save();
+  }));
+  document.querySelectorAll('[data-xishow]').forEach(b => b.onclick = () => {
+    s.lineupShow = s.lineupShow === b.dataset.xishow ? '' : b.dataset.xishow; save();
+  });
+  $('btnXiHide').onclick = () => { s.lineupShow = ''; save(); };
+  document.querySelectorAll('[data-kitreset]').forEach(b => b.onclick = () => {
+    Object.assign(s.xi[b.dataset.kitreset], { kit: '', kitNum: '' }); save();
+  });
+
+  // --- Setup ---
+  $('btnReset').onclick = () => {
+    if (!confirm('Reset scores and red cards to 0 and the clock to the start of the 1st half?')) return;
+    s.homeScore = 0; s.awayScore = 0; s.homeReds = 0; s.awayReds = 0;
+    s.drop.on = false; s.l3.on = false; s.lineupShow = ''; s.swap = false;
+    s.running = false; setPeriod('1ST');
+  };
+  $('homeName').addEventListener('input', e => { s.home = e.target.value.toUpperCase(); save(); });
+  $('awayName').addEventListener('input', e => { s.away = e.target.value.toUpperCase(); save(); });
+  $('awayBg').addEventListener('input', e => { s.awayBg = e.target.value; save(); });
+  $('awayFg').addEventListener('input', e => { s.awayFg = e.target.value; save(); });
+
+  const bindLen = (id, key, isOT) => $(id).addEventListener('change', e => {
+    const v = Math.max(1, parseInt(e.target.value, 10) || 0);
+    s[key] = v;
+    // Apply to the current period only if the clock hasn't started yet.
+    const inKind = !clockOff(s) && s.period.startsWith('OT') === isOT;
+    if (inKind && !s.running && s.base === 0) s.len = v * 60000;
+    save();
+  });
+  bindLen('halfLen', 'halfMin', false); bindLen('otLen', 'otMin', true);
+
+  // Elapsed game time is stored the same either way; direction only changes how it's shown.
+  $('dir').addEventListener('change', e => { s.dir = e.target.value; save(); });
+  $('pos').addEventListener('change', e => { s.pos = e.target.value; save(); });
+
+  // Keyboard shortcuts (ignored while typing in a field).
+  document.addEventListener('keydown', e => {
+    if (e.target.closest('input, select, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+    const map = {
+      // Q/A and P/L follow the screen, so they stay under the operator's hands after a swap.
+      ' ': startStop, q: () => bump(leftSide(), 1), a: () => bump(leftSide(), -1),
+      p: () => bump(rightSide(), 1), l: () => bump(rightSide(), -1), h: toggleBug,
+      d: () => s.drop.on ? hideDrop() : showDrop(),
+      t: () => s.l3.on ? hideL3() : $('btnL3Show').click()
+    };
+    const fn = map[e.key.toLowerCase()];
+    if (fn) { e.preventDefault(); fn(); }
+  });
+  // Keep Space from also "clicking" whichever button was last pressed.
+  document.addEventListener('click', e => { const b = e.target.closest('button'); if (b) b.blur(); });
+
+  // Schedule: list soccer games so the opponent fills in with one pick.
+  const shortName = name => {
+    const drop = new Set(['THE', 'SCHOOL', 'HIGH', 'ACADEMY', 'CATHOLIC', 'CHRISTIAN', 'OF', 'PREP']);
+    const words = name.toUpperCase().split(/\s+/).filter(w => !drop.has(w));
+    if (!words.length) return name.toUpperCase().slice(0, 10);
+    return (words[0].endsWith('.') && words[1] ? words[0] + ' ' + words[1] : words[0]).slice(0, 10);
+  };
+  fetch('../schedule.json', { cache: 'no-store' }).then(r => r.json()).then(data => {
+    const games = (data.games || []).filter(g => /soccer/i.test(g.sport))
+      .sort((a, b) => a.start.localeCompare(b.start));
+    if (!games.length) return;
+    const sel = $('game');
+    sel.innerHTML = '<option value="">Pick a game…</option>';
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    let next = '';
+    games.forEach(g => {
+      const d = new Date(g.start);
+      const o = el('option', null, d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' · ' + g.sport + ' vs ' + g.opponent);
+      o.value = g.id;
+      sel.appendChild(o);
+      if (!next && d >= today) next = g.id;
+    });
+    const apply = () => {
+      const g = games.find(x => x.id === sel.value);
+      if (!g) return;
+      s.away = shortName(g.opponent);
+      save();
+    };
+    sel.addEventListener('change', apply);
+    // Pre-fill the next game, but never overwrite teams already set for a game in progress.
+    if (next) { sel.value = next; if (s.away === 'AWAY') apply(); }
+  }).catch(() => {});
+
+  $('preview').src = location.pathname + '#bug';
+  addEventListener('storage', e => { if (e.key === STORE && e.newValue) { s = merge(JSON.parse(e.newValue)); renderCtl(); } });
+  renderCtl();
+})();
+</script>
+</body>
+</html>
