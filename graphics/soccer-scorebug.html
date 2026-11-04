@@ -418,6 +418,10 @@
   .count { font-size: 13px; color: var(--chalk-dim); margin-top: 4px; }
   label.check { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--chalk); margin: 10px 0 0; cursor: pointer; }
   label.check input { width: 18px; height: 18px; accent-color: var(--gold); }
+  .sb-use { display: flex; flex-wrap: wrap; gap: 4px 22px; }
+  .sb-use[hidden] { display: none; }
+  .sb-use label.check { margin-top: 8px; }
+  .sb-use small { color: var(--chalk-dim); font-size: 13px; }
   .pane-h { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; font-size: 16px; color: var(--gold-hi); margin: 18px 0 6px; }
   .pane-h:first-child { margin-top: 0; }
   .counter { display: flex; align-items: center; justify-content: center; gap: 6px; }
@@ -578,8 +582,13 @@
           <input id="setClock" placeholder="Set clock, e.g. 23:41" inputmode="numeric">
           <button id="btnSet">Set</button>
         </div>
-        <div class="row-btns"><button id="btnSbClock">Connect scoreboard clock</button></div>
-        <p class="hint" id="sbClockStatus">Run the bug's clock from the stadium scoreboard. Pick the file Scorebridge writes, C:\Users\Broadcast\Documents\scoreboard.xml.</p>
+        <div class="row-btns"><button id="btnSbClock">Connect scoreboard</button></div>
+        <div class="sb-use" id="sbUse" hidden>
+          <label class="check"><input type="checkbox" data-sbuse="clock"> Clock <small id="sbValClock"></small></label>
+          <label class="check"><input type="checkbox" data-sbuse="period"> Period <small id="sbValPeriod"></small></label>
+          <label class="check"><input type="checkbox" data-sbuse="score"> Score <small id="sbValScore"></small></label>
+        </div>
+        <p class="hint" id="sbClockStatus">Run the bug's clock, period and score from the stadium scoreboard. Pick the file Scorebridge writes, C:\Users\Broadcast\Documents\scoreboard.xml.</p>
         <label>Period (picking a half or OT resets the clock and stops it)</label>
         <div class="row-btns" id="periods">
           <button data-p="1ST">1st</button><button data-p="2ND">2nd</button>
@@ -920,6 +929,8 @@
     awayBg: '#1F3A93', awayFg: '#FFFFFF', keyColor: '#FF00FF',
     period: '1ST', halfMin: 40, otMin: 10, dir: 'down', pos: 'tl', visible: true, swap: false,
     len: 40 * 60000, base: 0, running: false, startedAt: 0, added: 0,
+    // What the scoreboard file (Scorebridge) drives when connected.
+    sbUse: { clock: true, period: false, score: false },
     drop: { on: false, team: 'home', label: 'GOAL', minute: '', text: '', out: '', until: 0 },
     l3: { on: false, name: '', stat: '', team: 'home', until: 0 },
     l3List: [],
@@ -1384,7 +1395,7 @@
   }
 
   // ---------- Control mode ----------
-  let sbHandle = null; // scoreboard clock file from Scorebridge, when connected (see below)
+  let sbHandle = null; // scoreboard file from Scorebridge, when connected (see below)
   const save = () => {
     try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
     if (bc) bc.postMessage(s);
@@ -1468,8 +1479,9 @@
     const run = $('btnRun');
     run.textContent = s.running ? 'Stop clock' : 'Start clock';
     run.classList.toggle('running', s.running);
-    run.disabled = clockOff(s) || !!sbHandle;
-    document.querySelectorAll('[data-adj], #btnSet, #setClock').forEach(b => b.disabled = !!sbHandle);
+    const sbClock = !!sbHandle && s.sbUse.clock;
+    run.disabled = clockOff(s) || sbClock;
+    document.querySelectorAll('[data-adj], #btnSet, #setClock').forEach(b => b.disabled = sbClock);
     $('btnShow').textContent = s.visible ? 'Hide bug' : 'Show bug';
     $('cTeams').classList.toggle('swapped', s.swap);
     $('sideNote').textContent = (s.swap ? s.away + ' on the left, ' + s.home : s.home + ' on the left, ' + s.away) + ' on the right';
@@ -2008,7 +2020,7 @@
   bindLen('halfLen', 'halfMin', false); bindLen('otLen', 'otMin', true);
 
   // --- Scoreboard clock (Scorebridge) ---
-  // Scorebridge's Local File output rewrites a small JSON file with the scoreboard clock, e.g.
+  // Scorebridge's Local File output rewrites a small JSON file with scoreboard values, e.g.
   // [{ "clock": "13:56", "Sport": "Football", ... }]. Chrome lets the page keep re-reading a file
   // the operator picked, and the handle is kept in IndexedDB so after a reload it only takes one
   // click to allow it again. While connected the scoreboard owns the clock; the manual controls rest.
@@ -2033,14 +2045,65 @@
     const parts = t.split(':'), sec = parseFloat(parts.pop()) || 0, min = parseInt(parts.pop() || '0', 10) || 0;
     return Math.round((min * 60 + sec) * 1000);
   };
-  const findClock = data => {
-    const o = Array.isArray(data) ? data[0] : data;
-    if (!o || typeof o !== 'object') return null;
-    const key = Object.keys(o).find(k => /^(game ?)?clock$/i.test(k.trim()));
-    return key ? o[key] : null;
+  // Field names as people tend to name them in Scorebridge ("Home Score", "homescore", "Guest Score"...).
+  const SB_FIELDS = {
+    clock: ['clock', 'gameclock', 'time', 'gametime'],
+    period: ['period', 'per', 'qtr', 'quarter', 'half', 'gameperiod'],
+    home: ['homescore', 'home', 'scorehome', 'hscore', 'homepoints'],
+    away: ['awayscore', 'guestscore', 'visitorscore', 'visitorsscore', 'away', 'guest', 'visitor', 'scoreaway', 'scoreguest', 'vscore', 'gscore']
+  };
+  const sbFields = data => {
+    const o = Array.isArray(data) ? data[0] : data, out = {};
+    if (!o || typeof o !== 'object') return out;
+    const keys = Object.keys(o).map(k => [k.toLowerCase().replace(/[^a-z0-9]/g, ''), k]);
+    for (const [field, names] of Object.entries(SB_FIELDS)) {
+      const hit = names.map(n => keys.find(([norm]) => norm === n)).find(Boolean);
+      if (hit && o[hit[1]] != null && String(o[hit[1]]).trim() !== '') out[field] = String(o[hit[1]]).trim();
+    }
+    return out;
+  };
+  // Scoreboard period -> the bug's: 1, 2 are the halves; 3, 4 the overtimes; text like "HALF" or "OT2" also works.
+  const mapPeriod = v => {
+    const t = String(v).toUpperCase();
+    if (/HALF|^HT$/.test(t)) return 'HALF';
+    if (/FIN/.test(t)) return 'FINAL';
+    if (/OT\s*2|2\s*OT/.test(t)) return 'OT2';
+    if (/OT/.test(t)) return 'OT1';
+    return { 1: '1ST', 2: '2ND', 3: 'OT1', 4: 'OT2' }[parseInt(t, 10)] || null;
   };
   const sbStatus = (text, bad) => { const p = $('sbClockStatus'); p.textContent = text; p.classList.toggle('warn', !!bad); };
-  const sbButton = () => $('btnSbClock').textContent = sbHandle ? 'Disconnect scoreboard clock' : 'Connect scoreboard clock';
+  const sbButton = () => $('btnSbClock').textContent = sbHandle ? 'Disconnect scoreboard' : 'Connect scoreboard';
+  // Last values seen from the scoreboard; period and score are applied only when they change there,
+  // so a manual Half/Final or score fix sticks until the scoreboard moves on.
+  let sbSeen = {}, sbLatest = {};
+  const applyClock = raw => {
+    const ms = parseScoreClock(raw);
+    if (ms === null) return;
+    // Learn the count direction from the scoreboard itself.
+    if (sbLastMs !== null && ms !== sbLastMs && Math.abs(ms - sbLastMs) <= 3000) s.dir = ms < sbLastMs ? 'down' : 'up';
+    sbLastMs = ms;
+    if (s.dir === 'down' && ms > s.len) s.len = Math.ceil(ms / 60000) * 60000;
+    s.running = false;
+    s.sbText = raw.replace(/^:/, '0:');
+    if (displayedMs() !== ms) setDisplayed(ms);
+  };
+  const applyPeriod = raw => {
+    const p = mapPeriod(raw), first = !('period' in sbSeen);
+    sbSeen.period = raw;
+    if (!p || p === s.period) return;
+    // On connecting, just match the scoreboard; a real change starts the new period like the buttons do.
+    if (first) s.period = p; else setPeriod(p);
+  };
+  const applyScore = (side, raw) => {
+    const v = parseInt(raw, 10), key = side + 'Score';
+    if (isNaN(v) || v < 0) return;
+    const first = !(side in sbSeen), was = +sbSeen[side];
+    sbSeen[side] = raw;
+    if (first) { s[key] = v; return; } // match the board without adding goals to the list
+    // Each goal the board adds works like pressing +: it joins the goal list and fills in the drop-down.
+    for (let d = v - was; d > 0; d--) bump(side, 1);
+    for (let d = v - was; d < 0; d++) bump(side, -1);
+  };
   const sbRead = async () => {
     if (!sbHandle || sbBusy) return;
     sbBusy = true;
@@ -2048,34 +2111,50 @@
       const text = await (await sbHandle.getFile()).text();
       sbReadAt = Date.now(); sbFailSince = 0;
       if (text === sbLastText) return;
-      let ms;
-      try { ms = parseScoreClock(findClock(JSON.parse(text))); } catch (e) { return; } // caught mid-write; next read gets it
-      if (ms === null) { sbStatus('Connected, but the file has no "clock" value. Check the Scorebridge output.', true); return; }
-      sbLastText = text;
-      // Learn the count direction from the scoreboard itself.
-      if (sbLastMs !== null && ms !== sbLastMs && Math.abs(ms - sbLastMs) <= 3000) {
-        const dir = ms < sbLastMs ? 'down' : 'up';
-        if (dir !== s.dir) s.dir = dir;
-      }
-      sbLastMs = ms;
-      if (s.dir === 'down' && ms > s.len) s.len = Math.ceil(ms / 60000) * 60000;
-      s.running = false;
-      s.sbText = String(findClock(JSON.parse(text))).trim().replace(/^:/, '0:');
-      if (clockOff(s) || displayedMs() !== ms) setDisplayed(ms); else save();
+      let f;
+      try { f = sbFields(JSON.parse(text)); } catch (e) { return; } // caught mid-write; next read gets it
+      sbLastText = text; sbLatest = f;
+      showSbValues();
+      // Period first (it resets the clock), then the clock, then goals, so a goal gets this read's minute.
+      if (s.sbUse.period && f.period != null && f.period !== sbSeen.period) applyPeriod(f.period);
+      if (s.sbUse.clock && f.clock != null && !clockOff(s)) applyClock(f.clock);
+      if (s.sbUse.score) for (const side of ['home', 'away'])
+        if (f[side] != null && f[side] !== sbSeen[side]) applyScore(side, f[side]);
+      save();
     } catch (e) {
       // Scorebridge rewrites the file several times a second and Windows locks it while writing,
       // so a read can land mid-write (NotReadableError). Keep trying; only lost permission ends it.
       if (e.name === 'NotAllowedError') {
-        sbStop(); sbStatus('Chrome no longer allows reading the scoreboard file. Click Connect scoreboard clock.', true);
+        sbStop(); sbStatus('Chrome no longer allows reading the scoreboard file. Click Connect scoreboard.', true);
       } else { sbErr = e.name || 'error'; if (!sbFailSince) sbFailSince = Date.now(); }
     } finally { sbBusy = false; }
   };
+  // What the file currently says, next to each tick box.
+  const showSbValues = () => {
+    const f = sbLatest, none = 'not in file';
+    $('sbValClock').textContent = f.clock ?? none;
+    $('sbValPeriod').textContent = f.period != null ? f.period + (mapPeriod(f.period) ? ' → ' + periodLabel(mapPeriod(f.period)) : '') : none;
+    $('sbValScore').textContent = f.home != null || f.away != null ? (f.home ?? '?') + '–' + (f.away ?? '?') : none;
+  };
+  document.querySelectorAll('[data-sbuse]').forEach(box => {
+    box.checked = !!s.sbUse[box.dataset.sbuse];
+    box.addEventListener('change', () => {
+      const k = box.dataset.sbuse;
+      s.sbUse = { ...s.sbUse, [k]: box.checked };
+      if (k === 'clock' && !box.checked) s.sbText = ''; // hand the clock back where the scoreboard left it
+      if (k === 'period') delete sbSeen.period;
+      if (k === 'score') { delete sbSeen.home; delete sbSeen.away; }
+      sbLastText = ''; // re-apply from the next read
+      save();
+    });
+  });
   const sbStart = h => {
-    sbHandle = h; sbLastText = ''; sbLastMs = null; sbReadAt = 0; sbFailSince = 0;
+    sbHandle = h; sbLastText = ''; sbLastMs = null; sbReadAt = 0; sbFailSince = 0; sbSeen = {}; sbLatest = {};
+    $('sbUse').hidden = false;
     clearInterval(sbTimer); sbTimer = setInterval(sbRead, 250); sbRead();
     sbButton(); renderCtl();
   };
-  const sbStop = () => { clearInterval(sbTimer); sbHandle = null; s.sbText = ''; sbButton(); save(); };
+  const sbStop = () => { clearInterval(sbTimer); sbHandle = null; s.sbText = ''; $('sbUse').hidden = true; sbButton(); save(); };
   // Status line: what the scoreboard says, or a warning once reads have failed for a few seconds.
   setInterval(() => {
     if (!sbHandle) return;
@@ -2083,11 +2162,14 @@
     if (sbFailSince && now - sbFailSince > 3000) {
       sbStatus("Can't read " + sbHandle.name + ' (' + sbErr + ') for ' + Math.round((now - sbFailSince) / 1000) + ' s. Still trying. Is Scorebridge running?', true);
     } else if (sbReadAt) {
-      sbStatus('Clock from the scoreboard (' + sbHandle.name + '): ' + clockText(s, now) + (s.dir === 'down' ? ', counting down' : ', counting up') + '.');
+      const using = Object.keys(s.sbUse).filter(k => s.sbUse[k]);
+      sbStatus('Connected to ' + sbHandle.name + '. ' + (using.length
+        ? 'The scoreboard runs the ' + using.join(', ').replace(/, (?=[^,]*$)/, ' and ') + (s.sbUse.clock ? (s.dir === 'down' ? ' (counting down)' : ' (counting up)') : '') + '.'
+        : 'Tick what the scoreboard should run.'));
     }
   }, 500);
   $('btnSbClock').onclick = async () => {
-    if (sbHandle) { sbStop(); sbRemember(null); sbStatus('Disconnected. The clock buttons run the bug again.'); return; }
+    if (sbHandle) { sbStop(); sbRemember(null); sbStatus('Disconnected. The buttons on this page run the bug again.'); return; }
     // After a reload, a remembered file just needs permission again.
     const saved = await sbIdb('readonly', st => st.get('file')).catch(() => null);
     if (saved && saved.requestPermission && await saved.requestPermission({ mode: 'read' }).catch(() => '') === 'granted') { sbStart(saved); return; }
@@ -2107,7 +2189,7 @@
   sbIdb('readonly', st => st.get('file')).then(async h => {
     if (!h || !h.queryPermission) return;
     if (await h.queryPermission({ mode: 'read' }) === 'granted') sbStart(h);
-    else sbStatus('Scoreboard clock: click Connect scoreboard clock to allow ' + h.name + ' again.');
+    else sbStatus('Scoreboard: click Connect scoreboard to allow ' + h.name + ' again.');
   }).catch(() => {});
 
   // Elapsed game time is stored the same either way; direction only changes how it's shown.
