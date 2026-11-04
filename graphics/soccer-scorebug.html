@@ -271,13 +271,14 @@
 
   /* Around the district */
   #pOthers { left: 410px; top: 220px; width: 1100px; }
-  #pOthers .game { display: grid; grid-template-columns: 1fr 96px 96px 1fr 170px; align-items: center; height: 86px; border-top: 1px solid rgba(243,239,226,.1); }
+  /* Equal outer columns (status on the right, an empty spacer on the left) keep the scores centered. */
+  #pOthers .game { display: grid; grid-template-columns: 150px 1fr 96px 96px 1fr 150px; align-items: center; height: 86px; border-top: 1px solid rgba(243,239,226,.1); }
   #pOthers .t { padding: 0 24px; font-size: 40px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #pOthers .t.a { text-align: right; }
   #pOthers .n { height: 100%; display: grid; place-items: center; background: var(--chalk); color: var(--pine); font-size: 52px; font-weight: 800; }
   #pOthers .n + .n { border-left: 3px solid var(--pine); }
   #pOthers .st { padding-right: 24px; text-align: right; font-size: 26px; font-weight: 700; letter-spacing: .1em; color: var(--chalk-dim); }
-  #pOthers .raw { grid-column: 1 / -1; padding: 0 24px; font-size: 36px; font-weight: 700; }
+  #pOthers .raw { grid-column: 1 / -1; padding: 0 24px; font-size: 36px; font-weight: 700; text-align: center; }
 
   /* Penalty shootout tracker (sits low, can run with the bug) */
   #pShoot { left: 560px; bottom: 70px; width: 800px; }
@@ -1205,7 +1206,7 @@
       $('poRows').replaceChildren(...lines.map(line => {
         const g = parseScoreLine(line), row = el('div', 'game');
         if (g.raw) row.append(el('div', 'raw', g.raw));
-        else row.append(el('div', 't a', g.a), el('div', 'n', g.an), el('div', 'n', g.bn), el('div', 't', g.b), el('div', 'st', g.st));
+        else row.append(el('div'), el('div', 't a', g.a), el('div', 'n', g.an), el('div', 'n', g.bn), el('div', 't', g.b), el('div', 'st', g.st));
         return row;
       }));
     };
