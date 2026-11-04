@@ -162,6 +162,15 @@
       "notes": null
     },
     {
+      "id": "2026-12-10-bbb-emery-weiner",
+      "start": "2026-12-10T18:00:00-06:00",
+      "sport": "Boys Basketball",
+      "opponent": "The Emery Weiner School",
+      "homeAway": "home",
+      "location": "The Nest",
+      "notes": null
+    },
+    {
       "id": "2027-01-07-gsoc-tbd",
       "start": "2027-01-07T17:00:00-06:00",
       "sport": "Girls Soccer",
