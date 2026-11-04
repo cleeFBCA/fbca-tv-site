@@ -578,6 +578,8 @@
           <input id="setClock" placeholder="Set clock, e.g. 23:41" inputmode="numeric">
           <button id="btnSet">Set</button>
         </div>
+        <div class="row-btns"><button id="btnSbClock">Connect scoreboard clock</button></div>
+        <p class="hint" id="sbClockStatus">Run the bug's clock from the stadium scoreboard. Pick the file Scorebridge writes, C:\Users\Broadcast\Documents\scoreboard.xml.</p>
         <label>Period (picking a half or OT resets the clock and stops it)</label>
         <div class="row-btns" id="periods">
           <button data-p="1ST">1st</button><button data-p="2ND">2nd</button>
@@ -965,6 +967,7 @@
   };
   const fmt = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
   const clockText = (st, now) => {
+    if (st.sbText) return st.sbText; // the stadium scoreboard's own reading, via Scorebridge
     const e = elapsed(st, now);
     return st.dir === 'down' ? fmt(Math.ceil((st.len - e) / 1000)) : fmt(Math.floor(e / 1000));
   };
@@ -1381,6 +1384,7 @@
   }
 
   // ---------- Control mode ----------
+  let sbHandle = null; // scoreboard clock file from Scorebridge, when connected (see below)
   const save = () => {
     try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
     if (bc) bc.postMessage(s);
@@ -1464,7 +1468,8 @@
     const run = $('btnRun');
     run.textContent = s.running ? 'Stop clock' : 'Start clock';
     run.classList.toggle('running', s.running);
-    run.disabled = clockOff(s);
+    run.disabled = clockOff(s) || !!sbHandle;
+    document.querySelectorAll('[data-adj], #btnSet, #setClock').forEach(b => b.disabled = !!sbHandle);
     $('btnShow').textContent = s.visible ? 'Hide bug' : 'Show bug';
     $('cTeams').classList.toggle('swapped', s.swap);
     $('sideNote').textContent = (s.swap ? s.away + ' on the left, ' + s.home : s.home + ' on the left, ' + s.away) + ' on the right';
@@ -2001,6 +2006,100 @@
     save();
   });
   bindLen('halfLen', 'halfMin', false); bindLen('otLen', 'otMin', true);
+
+  // --- Scoreboard clock (Scorebridge) ---
+  // Scorebridge's Local File output rewrites a small JSON file with the scoreboard clock, e.g.
+  // [{ "clock": "13:56", "Sport": "Football", ... }]. Chrome lets the page keep re-reading a file
+  // the operator picked, and the handle is kept in IndexedDB so after a reload it only takes one
+  // click to allow it again. While connected the scoreboard owns the clock; the manual controls rest.
+  let sbTimer = 0, sbLastText = '', sbLastMs = null, sbReadAt = 0;
+  const SB_DB = 'eota-soccer-scorebridge';
+  const sbIdb = (mode, fn) => new Promise((ok, fail) => {
+    const open = indexedDB.open(SB_DB, 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('h');
+    open.onerror = () => fail(open.error);
+    open.onsuccess = () => {
+      try {
+        const tx = open.result.transaction('h', mode), req = fn(tx.objectStore('h'));
+        tx.oncomplete = () => ok(req && req.result); tx.onerror = () => fail(tx.error);
+      } catch (e) { fail(e); }
+    };
+  });
+  const sbRemember = h => sbIdb('readwrite', st => h ? st.put(h, 'file') : st.delete('file')).catch(() => {});
+  // "13:56" -> 836000 ms; "0:45.3", ":45.3" and "45.3" (under a minute) also work.
+  const parseScoreClock = v => {
+    const t = String(v ?? '').replace(/[^0-9:.]/g, '');
+    if (!/\d/.test(t)) return null;
+    const parts = t.split(':'), sec = parseFloat(parts.pop()) || 0, min = parseInt(parts.pop() || '0', 10) || 0;
+    return Math.round((min * 60 + sec) * 1000);
+  };
+  const findClock = data => {
+    const o = Array.isArray(data) ? data[0] : data;
+    if (!o || typeof o !== 'object') return null;
+    const key = Object.keys(o).find(k => /^(game ?)?clock$/i.test(k.trim()));
+    return key ? o[key] : null;
+  };
+  const sbStatus = (text, bad) => { const p = $('sbClockStatus'); p.textContent = text; p.classList.toggle('warn', !!bad); };
+  const sbButton = () => $('btnSbClock').textContent = sbHandle ? 'Disconnect scoreboard clock' : 'Connect scoreboard clock';
+  const sbRead = async () => {
+    if (!sbHandle) return;
+    try {
+      const text = await (await sbHandle.getFile()).text();
+      sbReadAt = Date.now();
+      if (text === sbLastText) return;
+      let ms;
+      try { ms = parseScoreClock(findClock(JSON.parse(text))); } catch (e) { return; } // caught mid-write; next read gets it
+      if (ms === null) { sbStatus('Connected, but the file has no "clock" value. Check the Scorebridge output.', true); return; }
+      sbLastText = text;
+      // Learn the count direction from the scoreboard itself.
+      if (sbLastMs !== null && ms !== sbLastMs && Math.abs(ms - sbLastMs) <= 3000) {
+        const dir = ms < sbLastMs ? 'down' : 'up';
+        if (dir !== s.dir) s.dir = dir;
+      }
+      sbLastMs = ms;
+      if (s.dir === 'down' && ms > s.len) s.len = Math.ceil(ms / 60000) * 60000;
+      s.running = false;
+      s.sbText = String(findClock(JSON.parse(text))).trim().replace(/^:/, '0:');
+      if (clockOff(s) || displayedMs() !== ms) setDisplayed(ms); else save();
+    } catch (e) {
+      sbStatus('Lost the scoreboard file (' + (e.name || 'error') + '). Click Connect to pick it again.', true);
+      sbStop();
+    }
+  };
+  const sbStart = h => {
+    sbHandle = h; sbLastText = ''; sbLastMs = null; sbReadAt = 0;
+    clearInterval(sbTimer); sbTimer = setInterval(sbRead, 250); sbRead();
+    sbButton(); renderCtl();
+  };
+  const sbStop = () => { clearInterval(sbTimer); sbHandle = null; s.sbText = ''; sbButton(); save(); };
+  // Status line: what the scoreboard says and how fresh the read is.
+  setInterval(() => {
+    if (!sbHandle || !sbReadAt) return;
+    sbStatus('Clock from the scoreboard (' + sbHandle.name + '): ' + clockText(s, Date.now()) + (s.dir === 'down' ? ', counting down' : ', counting up') + '.');
+  }, 500);
+  $('btnSbClock').onclick = async () => {
+    if (sbHandle) { sbStop(); sbRemember(null); sbStatus('Disconnected. The clock buttons run the bug again.'); return; }
+    // After a reload, a remembered file just needs permission again.
+    const saved = await sbIdb('readonly', st => st.get('file')).catch(() => null);
+    if (saved && saved.requestPermission && await saved.requestPermission({ mode: 'read' }).catch(() => '') === 'granted') { sbStart(saved); return; }
+    if (!window.showOpenFilePicker) { sbStatus('This browser can\'t follow a file. Use Chrome or Edge.', true); return; }
+    try {
+      const [h] = await showOpenFilePicker({ multiple: false });
+      sbRemember(h); sbStart(h);
+    } catch (e) { /* picker closed */ }
+  };
+  // A reading left over from before this page loaded is stale until the file is connected again.
+  if (s.sbText) {
+    s.sbText = '';
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
+    if (bc) bc.postMessage(s);
+  }
+  // Pick the remembered file back up without a click when Chrome still allows it.
+  sbIdb('readonly', st => st.get('file')).then(async h => {
+    if (!h || !h.queryPermission) return;
+    if (await h.queryPermission({ mode: 'read' }) === 'granted') sbStart(h);
+    else sbStatus('Scoreboard clock: click Connect scoreboard clock to allow ' + h.name + ' again.');
+  }).catch(() => {});
 
   // Elapsed game time is stored the same either way; direction only changes how it's shown.
   $('dir').addEventListener('change', e => { s.dir = e.target.value; save(); });
