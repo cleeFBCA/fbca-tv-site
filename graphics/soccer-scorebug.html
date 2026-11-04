@@ -2012,7 +2012,7 @@
   // [{ "clock": "13:56", "Sport": "Football", ... }]. Chrome lets the page keep re-reading a file
   // the operator picked, and the handle is kept in IndexedDB so after a reload it only takes one
   // click to allow it again. While connected the scoreboard owns the clock; the manual controls rest.
-  let sbTimer = 0, sbLastText = '', sbLastMs = null, sbReadAt = 0;
+  let sbTimer = 0, sbLastText = '', sbLastMs = null, sbReadAt = 0, sbBusy = false, sbFailSince = 0, sbErr = '';
   const SB_DB = 'eota-soccer-scorebridge';
   const sbIdb = (mode, fn) => new Promise((ok, fail) => {
     const open = indexedDB.open(SB_DB, 1);
@@ -2042,10 +2042,11 @@
   const sbStatus = (text, bad) => { const p = $('sbClockStatus'); p.textContent = text; p.classList.toggle('warn', !!bad); };
   const sbButton = () => $('btnSbClock').textContent = sbHandle ? 'Disconnect scoreboard clock' : 'Connect scoreboard clock';
   const sbRead = async () => {
-    if (!sbHandle) return;
+    if (!sbHandle || sbBusy) return;
+    sbBusy = true;
     try {
       const text = await (await sbHandle.getFile()).text();
-      sbReadAt = Date.now();
+      sbReadAt = Date.now(); sbFailSince = 0;
       if (text === sbLastText) return;
       let ms;
       try { ms = parseScoreClock(findClock(JSON.parse(text))); } catch (e) { return; } // caught mid-write; next read gets it
@@ -2062,20 +2063,28 @@
       s.sbText = String(findClock(JSON.parse(text))).trim().replace(/^:/, '0:');
       if (clockOff(s) || displayedMs() !== ms) setDisplayed(ms); else save();
     } catch (e) {
-      sbStatus('Lost the scoreboard file (' + (e.name || 'error') + '). Click Connect to pick it again.', true);
-      sbStop();
-    }
+      // Scorebridge rewrites the file several times a second and Windows locks it while writing,
+      // so a read can land mid-write (NotReadableError). Keep trying; only lost permission ends it.
+      if (e.name === 'NotAllowedError') {
+        sbStop(); sbStatus('Chrome no longer allows reading the scoreboard file. Click Connect scoreboard clock.', true);
+      } else { sbErr = e.name || 'error'; if (!sbFailSince) sbFailSince = Date.now(); }
+    } finally { sbBusy = false; }
   };
   const sbStart = h => {
-    sbHandle = h; sbLastText = ''; sbLastMs = null; sbReadAt = 0;
+    sbHandle = h; sbLastText = ''; sbLastMs = null; sbReadAt = 0; sbFailSince = 0;
     clearInterval(sbTimer); sbTimer = setInterval(sbRead, 250); sbRead();
     sbButton(); renderCtl();
   };
   const sbStop = () => { clearInterval(sbTimer); sbHandle = null; s.sbText = ''; sbButton(); save(); };
-  // Status line: what the scoreboard says and how fresh the read is.
+  // Status line: what the scoreboard says, or a warning once reads have failed for a few seconds.
   setInterval(() => {
-    if (!sbHandle || !sbReadAt) return;
-    sbStatus('Clock from the scoreboard (' + sbHandle.name + '): ' + clockText(s, Date.now()) + (s.dir === 'down' ? ', counting down' : ', counting up') + '.');
+    if (!sbHandle) return;
+    const now = Date.now();
+    if (sbFailSince && now - sbFailSince > 3000) {
+      sbStatus("Can't read " + sbHandle.name + ' (' + sbErr + ') for ' + Math.round((now - sbFailSince) / 1000) + ' s. Still trying. Is Scorebridge running?', true);
+    } else if (sbReadAt) {
+      sbStatus('Clock from the scoreboard (' + sbHandle.name + '): ' + clockText(s, now) + (s.dir === 'down' ? ', counting down' : ', counting up') + '.');
+    }
   }, 500);
   $('btnSbClock').onclick = async () => {
     if (sbHandle) { sbStop(); sbRemember(null); sbStatus('Disconnected. The clock buttons run the bug again.'); return; }
