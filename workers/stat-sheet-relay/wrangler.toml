@@ -1,0 +1,10 @@
+name = "eota-stat-sheet-relay"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+# Served at eota-stat-sheet-relay.<account>.workers.dev; fbca.tv's DNS isn't on Cloudflare.
+workers_dev = true
+preview_urls = false
+
+# Keep a log of each request (free), so a failed fetch shows why: Worker → Logs.
+[observability]
+enabled = true

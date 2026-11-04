@@ -358,7 +358,10 @@
   .set-row { display: flex; gap: 8px; }
   .set-row input { flex: 1; }
   .set-row button { flex: 0 0 auto; min-height: 0; padding: 10px 14px; }
-  .keys { color: var(--chalk-dim); font-size: 13px; line-height: 1.7; margin: 10px 0 0; }
+  .keys { color: var(--chalk-dim); font-size: 14px; line-height: 1.5; margin: 12px 0 0; padding: 0; list-style: none; }
+  .keys li { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
+  /* Fixed-width key column so the descriptions line up. */
+  .keys li > span { flex: 0 0 64px; display: flex; gap: 4px; }
   .hint { color: var(--chalk-dim); font-size: 13px; line-height: 1.5; margin: 8px 0 0; }
   .warn { color: var(--gold-hi); font-size: 13px; margin: 8px 0 0; }
   .warn:empty { display: none; }
@@ -518,7 +521,7 @@
 
 <div id="control">
   <h1>Soccer Graphics</h1>
-  <p class="sub">Open the output window, drag it to the display that feeds the ATEM, and make it full screen. Key out magenta (#FF00FF).</p>
+  <p class="sub">Open the output window, drag it to the display that feeds the ATEM, and make it full screen. Key out <span id="keyNote">magenta (#FF00FF)</span>.</p>
 
   <div class="grid">
     <div class="stack">
@@ -572,11 +575,15 @@
         <div class="row-btns" style="margin-top:12px"><button id="btnSwap">Swap sides ⇄</button></div>
         <p class="side-note" id="sideNote"></p>
         <p class="hint">Adding a goal or card fills in the Drop-down tab for you. Add the player and press Show. The goal scorer's name also goes into the goal list for the halftime and full-time panel.</p>
-        <p class="keys">
-          <kbd>Space</kbd> start/stop &nbsp; <kbd>Q</kbd>/<kbd>A</kbd> left team +/&minus; &nbsp;
-          <kbd>P</kbd>/<kbd>L</kbd> right team +/&minus;<br>
-          <kbd>H</kbd> show/hide bug &nbsp; <kbd>D</kbd> show/hide drop-down &nbsp; <kbd>T</kbd> show/hide lower third &nbsp; <kbd>Esc</kbd> take down full-screen graphic
-        </p>
+        <ul class="keys">
+          <li><span><kbd>Space</kbd></span> Start / stop the clock</li>
+          <li><span><kbd>Q</kbd> <kbd>A</kbd></span> Left team score + / &minus;</li>
+          <li><span><kbd>P</kbd> <kbd>L</kbd></span> Right team score + / &minus;</li>
+          <li><span><kbd>H</kbd></span> Show / hide the bug</li>
+          <li><span><kbd>D</kbd></span> Show / hide the drop-down</li>
+          <li><span><kbd>T</kbd></span> Show / hide the lower third</li>
+          <li><span><kbd>Esc</kbd></span> Take down the full-screen graphic</li>
+        </ul>
       </div>
     </div>
 
@@ -652,6 +659,14 @@
 
         <!-- Stats & score -->
         <div data-pane="stats" hidden>
+          <div class="pane-h">Stat sheet</div>
+          <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
+          <div class="set-row">
+            <input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…">
+            <button id="btnSheet">Connect</button>
+          </div>
+          <p class="hint" id="sheetStatus">Not connected. The counters below run the stats panel.</p>
+
           <div class="pane-h">Match stats</div>
           <table class="stat-table">
             <thead><tr><th></th><th id="stHomeH">FBCA</th><th id="stAwayH">AWAY</th></tr></thead>
@@ -806,13 +821,21 @@
             <div><label for="awayFg">Away text color</label><input id="awayFg" type="color"></div>
           </div>
           <p class="warn" id="awayWarn"></p>
+          <label for="keyColor">Key color (the background the ATEM keys out)</label>
+          <div class="set-row">
+            <input id="keyColor" type="color" style="flex:0 0 90px">
+            <button data-keypreset="#FF00FF">Magenta</button>
+            <button data-keypreset="#00FF00">Green</button>
+            <button data-keypreset="#0000FF">Blue</button>
+          </div>
+          <p class="warn" id="keyWarn"></p>
           <div class="two">
             <div><label for="halfLen">Half length (min)</label><input id="halfLen" type="number" min="1" max="60"></div>
             <div><label for="otLen">OT length (min)</label><input id="otLen" type="number" min="1" max="30"></div>
           </div>
           <div class="two">
             <div><label for="dir">Clock counts</label>
-              <select id="dir"><option value="down">Down (40:00 to 0:00)</option><option value="up">Up (0:00 to 40:00)</option></select></div>
+              <select id="dir"><option value="down">Down (40:00 to 0:00)</option><option value="up">Up (0:00, runs until stopped)</option></select></div>
             <div><label for="pos">Bug position</label>
               <select id="pos"><option value="tl">Top left</option><option value="tr">Top right</option><option value="bl">Bottom left</option><option value="br">Bottom right</option></select></div>
           </div>
@@ -841,7 +864,7 @@
 
   const defaults = () => ({
     home: 'FBCA', away: 'AWAY', homeScore: 0, awayScore: 0, homeReds: 0, awayReds: 0, homeYellows: 0, awayYellows: 0,
-    awayBg: '#1F3A93', awayFg: '#FFFFFF',
+    awayBg: '#1F3A93', awayFg: '#FFFFFF', keyColor: '#FF00FF',
     period: '1ST', halfMin: 40, otMin: 10, dir: 'down', pos: 'tl', visible: true, swap: false,
     len: 40 * 60000, base: 0, running: false, startedAt: 0, added: 0,
     drop: { on: false, team: 'home', label: 'GOAL', minute: '', text: '', out: '', until: 0 },
@@ -857,6 +880,9 @@
     next: [],
     others: { title: 'Around the district', raw: '' },
     shoot: { on: false, home: [], away: [] },
+    // Stat sheet sync: when on, the stats and score panels read from the sheet instead of the counters.
+    sheetUrl: '', sheetOn: false,
+    sheet: { at: 0, err: '', home: {}, away: {}, goals: [] },
     xi: {
       home: { formation: '4-4-2', coach: '', raw: '', subs: '', kit: '', kitNum: '' },
       away: { formation: '4-4-2', coach: '', raw: '', subs: '', kit: '', kitNum: '' }
@@ -881,7 +907,11 @@
   try { bc = new BroadcastChannel(STORE); } catch (e) {}
 
   // ---------- Shared helpers ----------
-  const elapsed = (st, now) => Math.min(Math.max(st.base + (st.running ? now - st.startedAt : 0), 0), st.len);
+  // Counting down stops at 0:00. Counting up runs past the period length (stoppage time) until stopped.
+  const elapsed = (st, now) => {
+    const e = Math.max(st.base + (st.running ? now - st.startedAt : 0), 0);
+    return st.dir === 'up' ? e : Math.min(e, st.len);
+  };
   const fmt = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
   const clockText = (st, now) => {
     const e = elapsed(st, now);
@@ -937,13 +967,17 @@
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const cardIcon = label => label === 'YELLOW CARD' ? el('i', 'cardicon y') : label === 'RED CARD' ? el('i', 'cardicon r') : null;
+  // The key color fills everything around the graphics; the control preview uses it too.
+  const applyKey = () => document.documentElement.style.setProperty('--key', hex(s.keyColor, '#FF00FF'));
   const xiSide = () => s.panel.startsWith('xi-') ? s.panel.slice(3) : '';
   const PANEL_NAMES = { 'xi-home': () => s.home + ' lineup', 'xi-away': () => s.away + ' lineup', score: () => 'Score panel',
                         stats: () => 'Match stats', match: () => 'Matchup', spot: () => 'Player spotlight',
                         next: () => 'Up next', others: () => 'Around the district' };
   const scoreTitle = () => s.scoreLabel !== 'auto' ? s.scoreLabel
     : s.period === 'HALF' ? 'HALFTIME' : s.period === 'FINAL' ? 'FINAL' : s.period.startsWith('OT') ? 'OVERTIME' : s.period + ' HALF';
-  const goalsText = side => s.goals.filter(g => g.side === side).map(g => (g.name ? g.name + ' ' : 'Goal ') + (g.min ? g.min + "'" : '')).join('\n');
+  const sheetLive = () => s.sheetOn && s.sheet.at > 0;
+  const goalList = () => sheetLive() ? s.sheet.goals : s.goals;
+  const goalsText = side => goalList().filter(g => g.side === side).map(g => (g.name ? g.name + ' ' : 'Goal ') + (g.min ? g.min + "'" : '')).join('\n');
   const fmtGame = (iso, opts) => new Date(iso).toLocaleString('en-US', { timeZone: 'America/Chicago', ...opts });
   // "Village 2 - 1 Kinkaid (Final)" -> parts; anything else shows as plain text.
   const parseScoreLine = line => {
@@ -1135,7 +1169,7 @@
       teamCell($('psHome'), 'home', s.home); teamCell($('psAway'), 'away', s.away);
       $('psHomeN').textContent = s.homeScore; $('psAwayN').textContent = s.awayScore;
       $('psHomeG').textContent = goalsText('home'); $('psAwayG').textContent = goalsText('away');
-      $('psGoals').hidden = !s.goals.length;
+      $('psGoals').hidden = !goalList().length;
     };
 
     const renderStatsPanel = () => {
@@ -1143,8 +1177,12 @@
       const nameScore = (side, score) => [el('span', null, teamName(side)), el('span', null, score)];
       teamCell($('pstHome'), 'home').replaceChildren(...nameScore('home', s.homeScore));
       teamCell($('pstAway'), 'away').replaceChildren(...nameScore('away', s.awayScore));
-      const rows = STATS.map(([k, label]) => [label, s.stats.home[k] || 0, s.stats.away[k] || 0])
-        .concat([['Yellow cards', s.homeYellows, s.awayYellows], ['Red cards', s.homeReds, s.awayReds]]);
+      const sh = s.sheet;
+      const rows = sheetLive()
+        ? STATS.map(([k, label]) => [label, sh.home[k] || 0, sh.away[k] || 0])
+            .concat([['Yellow cards', sh.home.yellows || 0, sh.away.yellows || 0], ['Red cards', sh.home.reds || 0, sh.away.reds || 0]])
+        : STATS.map(([k, label]) => [label, s.stats.home[k] || 0, s.stats.away[k] || 0])
+            .concat([['Yellow cards', s.homeYellows, s.awayYellows], ['Red cards', s.homeReds, s.awayReds]]);
       $('pstRows').replaceChildren(...rows.map(([label, h, a]) => {
         const row = el('div', 'stat');
         const mid = el('div');
@@ -1244,7 +1282,7 @@
       renderShootout();
     };
 
-    const render = () => { renderBug(); renderDrop(); renderL3(); renderXI(); renderPanels(); };
+    const render = () => { applyKey(); renderBug(); renderDrop(); renderL3(); renderXI(); renderPanels(); };
     const accept = next => { s = merge(next); render(); };
     if (bc) bc.onmessage = e => accept(e.data);
     addEventListener('storage', e => { if (e.key === STORE && e.newValue) accept(JSON.parse(e.newValue)); });
@@ -1269,14 +1307,14 @@
   const startStop = () => {
     const now = Date.now();
     if (s.running) { s.base = elapsed(s, now); s.running = false; }
-    else if (!clockOff(s) && elapsed(s, now) < s.len) { s.running = true; s.startedAt = now; }
+    else if (!clockOff(s) && (s.dir === 'up' || elapsed(s, now) < s.len)) { s.running = true; s.startedAt = now; }
     save();
   };
 
   // Set the clock to what the stadium clock shows (in the current count direction).
   const setDisplayed = ms => {
-    ms = Math.min(Math.max(ms, 0), s.len);
-    s.base = s.dir === 'down' ? s.len - ms : ms;
+    ms = Math.max(ms, 0);
+    s.base = s.dir === 'down' ? s.len - Math.min(ms, s.len) : ms;
     if (s.running) s.startedAt = Date.now();
     save();
   };
@@ -1289,8 +1327,10 @@
   const gameMinute = () => {
     if (clockOff(s)) return '';
     const offset = { '1ST': 0, '2ND': s.halfMin, 'OT1': 2 * s.halfMin, 'OT2': 2 * s.halfMin + s.otMin }[s.period] || 0;
-    const inPeriod = Math.min(Math.floor(elapsed(s, Date.now()) / 60000) + 1, s.len / 60000);
-    return String(offset + inPeriod);
+    const lenMin = s.len / 60000, played = Math.floor(elapsed(s, Date.now()) / 60000) + 1;
+    // Past the end of the half (count-up only), use soccer's stoppage style: 40+2.
+    if (played > lenMin) return (offset + lenMin) + '+' + (played - lenMin);
+    return String(offset + played);
   };
 
   const setPeriod = p => {
@@ -1310,15 +1350,21 @@
     return (parseInt(m[1], 10) * 60 + parseInt(m[2] || '0', 10)) * 1000;
   };
 
-  // Hue check: pinks and purples near the magenta key can turn see-through on air.
-  const nearKey = hex => {
-    const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+  const hsl = color => {
+    const n = parseInt(color.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
     const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
-    if (d < .12) return false;
+    if (d < .12) return { h: 0, sat: 0, l };
     const sat = d / (1 - Math.abs(2 * l - 1));
-    let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-    h = (h * 60 + 360) % 360;
-    return h >= 270 && h <= 340 && sat > .3 && l > .15 && l < .9;
+    const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return { h: (h * 60 + 360) % 360, sat, l };
+  };
+  // Would a chroma key on the key color eat into this color? Similar hues are the risk;
+  // with a black (luma) key, dark colors are.
+  const nearKey = color => {
+    const c = hsl(color), k = hsl(hex(s.keyColor, '#FF00FF'));
+    if (k.sat < .3) return k.l < .2 && c.l < .2;
+    const diff = Math.min(Math.abs(c.h - k.h), 360 - Math.abs(c.h - k.h));
+    return diff <= 40 && c.sat > .3 && c.l > .12 && c.l < .9;
   };
 
   const setField = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v; };
@@ -1370,6 +1416,7 @@
     });
     setField('psLabelSel', s.scoreLabel);
     renderGoalLog();
+    renderSheetStatus();
 
     // Pregame + up next
     document.querySelectorAll('[data-match]').forEach(inp => setField(inp.id, s.match[inp.dataset.match] || ''));
@@ -1396,8 +1443,18 @@
     const fields = { homeName: s.home, awayName: s.away, awayBg: s.awayBg, awayFg: s.awayFg,
                      halfLen: s.halfMin, otLen: s.otMin, dir: s.dir, pos: s.pos };
     for (const [id, v] of Object.entries(fields)) setField(id, v);
+    applyKey();
+    setField('keyColor', hex(s.keyColor, '#FF00FF'));
+    const keyName = { '#FF00FF': 'magenta', '#00FF00': 'green', '#0000FF': 'blue' }[s.keyColor.toUpperCase()];
+    $('keyNote').textContent = (keyName ? keyName + ' ' : '') + '(' + s.keyColor.toUpperCase() + ')';
     $('awayWarn').textContent = nearKey(s.awayBg) || nearKey(s.awayFg)
-      ? 'This color is close to the magenta key and may go see-through on air. Try a darker or bluer shade.' : '';
+      ? 'This color is close to the key color and may go see-through on air. Pick a color further from it.' : '';
+    // FBCA's own greens and golds are built into every graphic, so check them too.
+    const clash = [['#17402B', 'green'], ['#1E5638', 'green'], ['#D9A521', 'gold'], ['#F2C14E', 'gold'], ['#0D2418', 'dark green']]
+      .filter(([c]) => nearKey(c)).map(([, n]) => n);
+    $('keyWarn').textContent = clash.length
+      ? `FBCA ${[...new Set(clash)].join(' and ')} is close to this key color, so parts of the scorebug, panels and lineup would go see-through. Magenta is the safe choice for FBCA's colors.`
+      : '';
 
     renderL3List();
   };
@@ -1468,7 +1525,7 @@
     const now = Date.now();
     $('cClock').textContent = clockOff(s) ? '--:--' : clockText(s, now);
     let dirty = false;
-    if (s.running && elapsed(s, now) >= s.len) { s.base = s.len; s.running = false; dirty = true; }
+    if (s.running && s.dir === 'down' && elapsed(s, now) >= s.len) { s.base = s.len; s.running = false; dirty = true; }
     if (s.drop.on && s.drop.until && now >= s.drop.until) { s.drop.on = false; dirty = true; }
     if (s.l3.on && s.l3.until && now >= s.l3.until) { s.l3.on = false; dirty = true; }
     if (dirty) save();
@@ -1602,6 +1659,86 @@
     save();
   };
   $('btnNextLoad').onclick = loadNext;
+  // --- Stat sheet sync ---
+  // The relay (workers/stat-sheet-relay) fetches the OneDrive file, which SharePoint won't serve to a page directly.
+  const RELAY = 'https://eota-stat-sheet-relay.clee-625.workers.dev/';
+  const SHEETJS = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  // Labels in column G of the sheet's Scorebug tab; FBCA's number is in column B, the opponent's in L.
+  const SHEET_ROWS = { 'SHOTS': 'shots', 'SHOTS ON TARGET': 'sog', 'CORNERS': 'corners', 'KEEPER SAVES': 'saves',
+                       'FOULS': 'fouls', 'OFFSIDES': 'offsides', 'YELLOW CARDS': 'yellows', 'RED CARDS': 'reds', 'GOALS': 'goals' };
+  let xlsxReady = null, sheetTimer = 0, sheetBusy = false;
+  const loadSheetJS = () => xlsxReady || (xlsxReady = new Promise((ok, bad) => {
+    const tag = document.createElement('script');
+    tag.src = SHEETJS; tag.onload = ok; tag.onerror = () => { xlsxReady = null; bad(new Error('Could not load the Excel reader')); };
+    document.head.append(tag);
+  }));
+
+  const readSheet = wb => {
+    const sb = wb.Sheets['Scorebug'];
+    if (!sb) throw new Error('No Scorebug tab. Is this the EOTA soccer stat sheet?');
+    const cell = (ws, a) => (ws && ws[a]) ? ws[a].v : '';
+    const num = v => Number(v) || 0;
+    const home = {}, away = {};
+    for (let r = 1; r <= 80; r++) {
+      const key = SHEET_ROWS[String(cell(sb, 'G' + r)).trim().toUpperCase()];
+      if (key) { home[key] = num(cell(sb, 'B' + r)); away[key] = num(cell(sb, 'L' + r)); }
+    }
+    // Goals list on each team tab: rows 36-47, minute in B, scorer in C, assist in D.
+    const goals = [];
+    for (const [tab, side] of [['FBCA', 'home'], ['Opponent', 'away']]) {
+      for (let r = 36; r <= 47; r++) {
+        const name = String(cell(wb.Sheets[tab], 'C' + r)).trim();
+        if (name) goals.push({ side, min: String(cell(wb.Sheets[tab], 'B' + r)).trim(), name, assist: String(cell(wb.Sheets[tab], 'D' + r)).trim() });
+      }
+    }
+    goals.sort((a, b) => (parseInt(a.min, 10) || 0) - (parseInt(b.min, 10) || 0));
+    return { home, away, goals };
+  };
+
+  const pullSheet = async () => {
+    if (!s.sheetOn || sheetBusy) return;
+    sheetBusy = true;
+    try {
+      await loadSheetJS();
+      const r = await fetch(RELAY + '?url=' + encodeURIComponent(s.sheetUrl), { cache: 'no-store' });
+      if (!r.ok) throw new Error(await r.text());
+      const data = readSheet(XLSX.read(await r.arrayBuffer(), { type: 'array' }));
+      s.sheet = { at: Date.now(), err: '', ...data };
+    } catch (e) {
+      s.sheet.err = e.message || 'Could not read the stat sheet';
+    }
+    sheetBusy = false;
+    save();
+  };
+  const startSheet = () => { clearInterval(sheetTimer); if (s.sheetOn) { pullSheet(); sheetTimer = setInterval(pullSheet, 20000); } };
+
+  $('btnSheet').onclick = () => {
+    if (s.sheetOn) { s.sheetOn = false; clearInterval(sheetTimer); save(); return; }
+    const link = $('sheetUrl').value.trim();
+    if (!/^https:\/\/fortbendchristian-my\.sharepoint\.com\/:x:\//.test(link)) {
+      $('sheetStatus').textContent = 'Paste the share link from Excel (Share → Copy link). It starts with https://fortbendchristian-my.sharepoint.com/:x:/';
+      return;
+    }
+    s.sheetUrl = link; s.sheetOn = true; s.sheet = { at: 0, err: '', home: {}, away: {}, goals: [] };
+    save(); startSheet();
+  };
+
+  const renderSheetStatus = () => {
+    setField('sheetUrl', s.sheetUrl);
+    $('btnSheet').textContent = s.sheetOn ? 'Disconnect' : 'Connect';
+    $('sheetUrl').disabled = s.sheetOn;
+    const st = $('sheetStatus');
+    if (!s.sheetOn) { st.textContent = 'Not connected. The counters below run the stats panel.'; return; }
+    if (s.sheet.err) { st.textContent = '⚠ ' + s.sheet.err + ' Still trying every 20 seconds.'; return; }
+    if (!s.sheet.at) { st.textContent = 'Connecting…'; return; }
+    const ago = Math.round((Date.now() - s.sheet.at) / 1000);
+    const hg = s.sheet.home.goals || 0, ag = s.sheet.away.goals || 0;
+    let msg = `Connected. Read ${ago < 5 ? 'just now' : ago + ' sec ago'}. The stats and score panels use the sheet (${s.home} ${hg} – ${ag} ${s.away}); the counters below are ignored.`;
+    if (hg !== s.homeScore || ag !== s.awayScore) msg += ` Heads up: the bug shows ${s.homeScore} – ${s.awayScore}.`;
+    st.textContent = msg;
+  };
+  setInterval(() => { if (s.sheetOn) renderSheetStatus(); }, 5000);
+
   $('oTitle').addEventListener('input', e => { s.others.title = e.target.value; save(); });
   $('oRaw').addEventListener('input', e => { s.others.raw = e.target.value; save(); });
 
@@ -1686,6 +1823,8 @@
   $('awayName').addEventListener('input', e => { s.away = e.target.value.toUpperCase(); save(); });
   $('awayBg').addEventListener('input', e => { s.awayBg = e.target.value; save(); });
   $('awayFg').addEventListener('input', e => { s.awayFg = e.target.value; save(); });
+  $('keyColor').addEventListener('input', e => { s.keyColor = e.target.value; save(); });
+  document.querySelectorAll('[data-keypreset]').forEach(b => b.onclick = () => { s.keyColor = b.dataset.keypreset; save(); });
 
   const bindLen = (id, key, isOT) => $(id).addEventListener('change', e => {
     const v = Math.max(1, parseInt(e.target.value, 10) || 0);
@@ -1757,6 +1896,7 @@
   }).catch(() => {});
 
   $('preview').src = location.pathname + '#bug';
+  startSheet(); // picks the sync back up after a reload
   addEventListener('storage', e => { if (e.key === STORE && e.newValue) { s = merge(JSON.parse(e.newValue)); renderCtl(); } });
   renderCtl();
 })();
