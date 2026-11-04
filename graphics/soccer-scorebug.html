@@ -382,6 +382,8 @@
   @media (max-width: 560px) { .lineup-cols { grid-template-columns: 1fr; } }
   .lineup-cols h3 { font-family: var(--font-display); text-transform: uppercase; font-size: 20px; margin: 0; }
   .count { font-size: 13px; color: var(--chalk-dim); margin-top: 4px; }
+  label.check { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--chalk); margin: 10px 0 0; cursor: pointer; }
+  label.check input { width: 18px; height: 18px; accent-color: var(--gold); }
   .pane-h { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; font-size: 16px; color: var(--gold-hi); margin: 18px 0 6px; }
   .pane-h:first-child { margin-top: 0; }
   .counter { display: flex; align-items: center; justify-content: center; gap: 6px; }
@@ -665,6 +667,7 @@
             <input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…">
             <button id="btnSheet">Connect</button>
           </div>
+          <label class="check"><input type="checkbox" id="sheetBug"> Update the bug's score and cards from the sheet</label>
           <p class="hint" id="sheetStatus">Not connected. The counters below run the stats panel.</p>
 
           <div class="pane-h">Match stats</div>
@@ -672,7 +675,7 @@
             <thead><tr><th></th><th id="stHomeH">FBCA</th><th id="stAwayH">AWAY</th></tr></thead>
             <tbody id="statRows"></tbody>
           </table>
-          <p class="hint">Cards here are the same counts as the Score card and the bug.</p>
+          <p class="hint" id="statHint">Cards here are the same counts as the Score card and the bug.</p>
           <div class="row-btns" style="margin-top:10px"><button class="primary" data-panel="stats">Show match stats</button></div>
 
           <div class="pane-h">Score panel</div>
@@ -881,7 +884,7 @@
     others: { title: 'Around the district', raw: '' },
     shoot: { on: false, home: [], away: [] },
     // Stat sheet sync: when on, the stats and score panels read from the sheet instead of the counters.
-    sheetUrl: '', sheetOn: false,
+    sheetUrl: '', sheetOn: false, sheetBug: true, sheetPrev: {},
     sheet: { at: 0, err: '', home: {}, away: {}, goals: [] },
     xi: {
       home: { formation: '4-4-2', coach: '', raw: '', subs: '', kit: '', kitNum: '' },
@@ -1410,10 +1413,17 @@
     $('pkHomeSeq').textContent = seq('home'); $('pkAwaySeq').textContent = seq('away');
 
     // Stats table
+    // While the sheet is connected, the counters show the sheet's numbers and its buttons are locked.
+    const fromSheet = sheetLive();
     document.querySelectorAll('#statRows [data-stat]').forEach(b => {
       const { stat, side } = b.dataset;
-      b.textContent = stat === 'yellows' ? s[side + 'Yellows'] : stat === 'reds' ? s[side + 'Reds'] : s.stats[side][stat] || 0;
+      b.textContent = fromSheet ? (s.sheet[side][stat] || 0)
+        : stat === 'yellows' ? s[side + 'Yellows'] : stat === 'reds' ? s[side + 'Reds'] : s.stats[side][stat] || 0;
     });
+    document.querySelectorAll('#statRows button').forEach(b => { b.disabled = fromSheet; });
+    $('statHint').textContent = fromSheet
+      ? 'These numbers come from the stat sheet. Disconnect it to count by hand.'
+      : 'Cards here are the same counts as the Score card and the bug.';
     setField('psLabelSel', s.scoreLabel);
     renderGoalLog();
     renderSheetStatus();
@@ -1704,12 +1714,28 @@
       if (!r.ok) throw new Error(await r.text());
       const data = readSheet(XLSX.read(await r.arrayBuffer(), { type: 'array' }));
       s.sheet = { at: Date.now(), err: '', ...data };
+      applySheetToBug(data);
     } catch (e) {
       s.sheet.err = e.message || 'Could not read the stat sheet';
     }
     sheetBusy = false;
     save();
   };
+  // Copy the sheet's score and cards to the bug, but only numbers that changed on the sheet since the
+  // last read. The operator's live + stays put while the sheet catches up (about a minute behind).
+  const BUG_FIELDS = [['goals', 'Score', 99], ['yellows', 'Yellows', 20], ['reds', 'Reds', 4]];
+  const applySheetToBug = data => {
+    const prev = s.sheetPrev || {}, next = {};
+    for (const side of ['home', 'away']) {
+      for (const [key, field, max] of BUG_FIELDS) {
+        const id = side + field, v = Math.min(max, data[side][key] || 0);
+        next[id] = v;
+        if (s.sheetBug && prev[id] !== v) s[id] = v;
+      }
+    }
+    s.sheetPrev = next;
+  };
+
   const startSheet = () => { clearInterval(sheetTimer); if (s.sheetOn) { pullSheet(); sheetTimer = setInterval(pullSheet, 20000); } };
 
   $('btnSheet').onclick = () => {
@@ -1720,12 +1746,20 @@
       return;
     }
     s.sheetUrl = link; s.sheetOn = true; s.sheet = { at: 0, err: '', home: {}, away: {}, goals: [] };
+    s.sheetPrev = {}; // so the first read sets the bug
     save(); startSheet();
   };
+  $('sheetBug').addEventListener('change', e => {
+    s.sheetBug = e.target.checked;
+    if (s.sheetBug) s.sheetPrev = {}; // turning it on brings the bug up to the sheet right away
+    if (s.sheetBug && sheetLive()) applySheetToBug(s.sheet);
+    save();
+  });
 
   const renderSheetStatus = () => {
     setField('sheetUrl', s.sheetUrl);
     $('btnSheet').textContent = s.sheetOn ? 'Disconnect' : 'Connect';
+    $('sheetBug').checked = s.sheetBug;
     $('sheetUrl').disabled = s.sheetOn;
     const st = $('sheetStatus');
     if (!s.sheetOn) { st.textContent = 'Not connected. The counters below run the stats panel.'; return; }
@@ -1733,7 +1767,8 @@
     if (!s.sheet.at) { st.textContent = 'Connecting…'; return; }
     const ago = Math.round((Date.now() - s.sheet.at) / 1000);
     const hg = s.sheet.home.goals || 0, ag = s.sheet.away.goals || 0;
-    let msg = `Connected. Read ${ago < 5 ? 'just now' : ago + ' sec ago'}. The stats and score panels use the sheet (${s.home} ${hg} – ${ag} ${s.away}); the counters below are ignored.`;
+    let msg = `Connected. Read ${ago < 5 ? 'just now' : ago + ' sec ago'}. Sheet score: ${s.home} ${hg} – ${ag} ${s.away}. `
+      + (s.sheetBug ? 'The stats, panels and bug follow the sheet.' : 'The stats and panels follow the sheet; the bug is manual.');
     if (hg !== s.homeScore || ag !== s.awayScore) msg += ` Heads up: the bug shows ${s.homeScore} – ${s.awayScore}.`;
     st.textContent = msg;
   };
