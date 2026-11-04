@@ -2110,34 +2110,72 @@
     for (let d = v - was; d > 0; d--) bump(side, 1);
     for (let d = v - was; d < 0; d++) bump(side, -1);
   };
+  // One reading of the file: apply whatever the tick boxes ask for.
+  let sbRaw = '';
+  const sbProcess = text => {
+    sbReadAt = Date.now(); sbFailSince = 0; sbRaw = text;
+    if (text === sbLastText) return;
+    let f;
+    try { f = sbFields(JSON.parse(text)); } catch (e) { return; } // caught mid-write; next read gets it
+    sbLastText = text; sbLatest = f;
+    showSbValues();
+    // Period first (it resets the clock), then the clock, then goals, so a goal gets this read's minute.
+    if (s.sbUse.period && f.period != null && f.period !== sbSeen.period) applyPeriod(f.period);
+    // The scoreboard has no halftime, so the 1st half ending (its clock reaching 0:00) puts up Half.
+    const boardMs = f.clock != null ? parseScoreClock(f.clock) : null;
+    if (s.sbUse.period && s.period === '1ST' && boardMs === 0 && sbBoardMs > 0) setPeriod('HALF');
+    if (boardMs !== null) sbBoardMs = boardMs;
+    if (s.sbUse.clock && f.clock != null && !clockOff(s)) applyClock(f.clock);
+    if (s.sbUse.score) for (const side of ['home', 'away'])
+      if (f[side] != null && f[side] !== sbSeen[side]) applyScore(side, f[side]);
+    save();
+  };
+  // Scorebridge rewrites the file several times a second and Windows locks it while writing,
+  // so a read can land mid-write (NotReadableError). Keep trying; only lost permission ends it.
+  const sbFail = name => {
+    if (name === 'NotAllowedError') {
+      sbStop(); sbStatus('Chrome no longer allows reading the scoreboard file. Click Connect scoreboard.', true);
+    } else { sbErr = name || 'error'; if (!sbFailSince) sbFailSince = Date.now(); }
+  };
+  // The file is read every 100 ms (30 ms after a locked read) by a worker thread, which Chrome
+  // doesn't slow down when this window is covered or minimized. If a worker can't start, the
+  // page reads it itself.
+  const SB_POLL = 100, SB_RETRY = 30;
+  const SB_WORKER = `let h = null, t = 0, last = null;
+    onmessage = e => { h = e.data; last = null; clearTimeout(t); if (h) loop(); };
+    async function loop() {
+      let wait = ${SB_POLL};
+      try {
+        const text = await (await h.getFile()).text();
+        if (text !== last) { last = text; postMessage({ text }); } else postMessage({ same: 1 });
+      } catch (err) { postMessage({ err: err.name || 'error' }); wait = ${SB_RETRY}; }
+      if (h) t = setTimeout(loop, wait);
+    }`;
+  let sbWorker = null;
   const sbRead = async () => {
     if (!sbHandle || sbBusy) return;
     sbBusy = true;
+    let text = null;
+    try { text = await (await sbHandle.getFile()).text(); }
+    catch (e) { sbFail(e.name); setTimeout(sbRead, SB_RETRY); } // try again soon rather than at the next poll
+    finally { sbBusy = false; }
+    if (text !== null) sbProcess(text);
+  };
+  const sbReadOnPage = () => { clearInterval(sbTimer); sbTimer = setInterval(sbRead, SB_POLL); sbRead(); };
+  const sbReadInWorker = h => {
     try {
-      const text = await (await sbHandle.getFile()).text();
-      sbReadAt = Date.now(); sbFailSince = 0;
-      if (text === sbLastText) return;
-      let f;
-      try { f = sbFields(JSON.parse(text)); } catch (e) { return; } // caught mid-write; next read gets it
-      sbLastText = text; sbLatest = f;
-      showSbValues();
-      // Period first (it resets the clock), then the clock, then goals, so a goal gets this read's minute.
-      if (s.sbUse.period && f.period != null && f.period !== sbSeen.period) applyPeriod(f.period);
-      // The scoreboard has no halftime, so the 1st half ending (its clock reaching 0:00) puts up Half.
-      const boardMs = f.clock != null ? parseScoreClock(f.clock) : null;
-      if (s.sbUse.period && s.period === '1ST' && boardMs === 0 && sbBoardMs > 0) setPeriod('HALF');
-      if (boardMs !== null) sbBoardMs = boardMs;
-      if (s.sbUse.clock && f.clock != null && !clockOff(s)) applyClock(f.clock);
-      if (s.sbUse.score) for (const side of ['home', 'away'])
-        if (f[side] != null && f[side] !== sbSeen[side]) applyScore(side, f[side]);
-      save();
-    } catch (e) {
-      // Scorebridge rewrites the file several times a second and Windows locks it while writing,
-      // so a read can land mid-write (NotReadableError). Keep trying; only lost permission ends it.
-      if (e.name === 'NotAllowedError') {
-        sbStop(); sbStatus('Chrome no longer allows reading the scoreboard file. Click Connect scoreboard.', true);
-      } else { sbErr = e.name || 'error'; if (!sbFailSince) sbFailSince = Date.now(); }
-    } finally { sbBusy = false; }
+      const w = new Worker(URL.createObjectURL(new Blob([SB_WORKER], { type: 'text/javascript' })));
+      w.onmessage = e => {
+        if (w !== sbWorker) return;
+        const m = e.data;
+        if (m.text != null) sbProcess(m.text);
+        else if (m.same) { sbReadAt = Date.now(); sbFailSince = 0; }
+        else sbFail(m.err);
+      };
+      w.onerror = () => { if (w === sbWorker) { sbWorker = null; w.terminate(); sbReadOnPage(); } };
+      w.postMessage(h);
+      return w;
+    } catch (e) { return null; } // e.g. the file can't be handed to a worker; read on the page instead
   };
   // What the file currently says, next to each tick box.
   const showSbValues = () => {
@@ -2154,17 +2192,20 @@
       if (k === 'clock' && !box.checked) s.sbText = ''; // hand the clock back where the scoreboard left it
       if (k === 'period') delete sbSeen.period;
       if (k === 'score') { delete sbSeen.home; delete sbSeen.away; }
-      sbLastText = ''; // re-apply from the next read
+      sbLastText = ''; // re-apply what the scoreboard says now
       save();
+      if (sbRaw) sbProcess(sbRaw);
     });
   });
   const sbStart = h => {
-    sbHandle = h; sbLastText = ''; sbLastMs = null; sbReadAt = 0; sbFailSince = 0; sbSeen = {}; sbLatest = {}; sbBoardMs = null;
+    sbHandle = h; sbLastText = ''; sbLastMs = null; sbReadAt = 0; sbFailSince = 0; sbSeen = {}; sbLatest = {}; sbBoardMs = null; sbRaw = '';
     $('sbUse').hidden = false;
-    clearInterval(sbTimer); sbTimer = setInterval(sbRead, 250); sbRead();
+    clearInterval(sbTimer); if (sbWorker) sbWorker.terminate();
+    sbWorker = sbReadInWorker(h);
+    if (!sbWorker) sbReadOnPage();
     sbButton(); renderCtl();
   };
-  const sbStop = () => { clearInterval(sbTimer); sbHandle = null; s.sbText = ''; $('sbUse').hidden = true; sbButton(); save(); };
+  const sbStop = () => { clearInterval(sbTimer); if (sbWorker) { sbWorker.terminate(); sbWorker = null; } sbHandle = null; s.sbText = ''; $('sbUse').hidden = true; sbButton(); save(); };
   // Status line: what the scoreboard says, or a warning once reads have failed for a few seconds.
   setInterval(() => {
     if (!sbHandle) return;
