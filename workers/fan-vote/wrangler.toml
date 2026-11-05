@@ -1,0 +1,16 @@
+name = "eota-fan-vote"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+# Served at eota-fan-vote.<account>.workers.dev; fbca.tv's DNS isn't on Cloudflare.
+workers_dev = true
+preview_urls = false
+
+# Votes. Created with: npx wrangler d1 create eota-fan-vote (the id below comes from that).
+[[d1_databases]]
+binding = "DB"
+database_name = "eota-fan-vote"
+database_id = "fc253c37-ff36-44e6-8baf-253e323f3980"
+
+# Keep a log of each request (free), so a failed vote shows why: Worker → Logs.
+[observability]
+enabled = true

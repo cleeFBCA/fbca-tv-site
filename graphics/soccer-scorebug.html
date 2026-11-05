@@ -181,6 +181,18 @@
   .l3 .lstat { padding: 8px 30px; background: var(--pine); color: var(--chalk); font-size: 30px; font-weight: 600; letter-spacing: .05em; white-space: nowrap; }
   .l3 .lstat:empty { display: none; }
 
+  /* Fan vote: a lower third with the QR code for fbca.tv/vote at its end */
+  .fvl { position: absolute; left: 96px; bottom: 96px; display: flex; height: 176px; }
+  .fvl.hidden { clip-path: inset(0 100% 0 0); }
+  .fvl .accent { width: 14px; background: var(--gold); }
+  .fvl .fbody { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0 44px 0 34px; background: var(--pine); border-bottom: 6px solid var(--gold); }
+  .fvl .kick { font-size: 30px; font-weight: 800; letter-spacing: .2em; color: var(--gold-hi); }
+  .fvl .head { font-size: 74px; font-weight: 800; line-height: 1; color: var(--chalk); white-space: nowrap; }
+  .fvl .sub { font-family: var(--font-body); text-transform: none; font-size: 30px; font-weight: 600; color: var(--chalk-dim); }
+  .fvl .sub b { color: var(--chalk); font-weight: 700; }
+  .fvl .qr { width: 176px; height: 176px; background: #fff; display: grid; place-items: center; }
+  .fvl .qr svg { width: 168px; height: 168px; display: block; }
+
   /* Starting lineup: full-frame, fully opaque, so the key doesn't matter here. */
   .xi { position: absolute; inset: 0; overflow: hidden; }
   .xi.hidden { clip-path: inset(0 0 100% 0); }
@@ -264,6 +276,26 @@
   #pScore .goals { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 20px 40px 24px; }
   #pScore .goals[hidden] { display: none; }
   #pScore .goals div { white-space: pre-line; text-align: center; font-size: 30px; font-weight: 700; letter-spacing: .06em; line-height: 1.35; color: var(--chalk-dim); }
+
+  /* Fan vote results: winner (spotlight photo when there is one) beside every nominee's share */
+  #pVote { left: 300px; top: 180px; width: 1320px; }
+  #pVote .pb { display: grid; grid-template-columns: 440px 1fr; }
+  #pVote .win { position: relative; height: 528px; display: grid; place-items: center; overflow: hidden; }
+  #pVote .win img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #pVote .win .bignum { font-size: 260px; font-weight: 800; line-height: 1; }
+  #pVote .info { position: relative; padding: 40px 56px 36px; display: flex; flex-direction: column; min-width: 0; }
+  #pVote .votes { position: absolute; right: 56px; top: 44px; font-family: var(--font-body); text-transform: none; font-size: 26px; font-weight: 600; color: var(--chalk-dim); font-variant-numeric: tabular-nums; }
+  #pVote .wk { font-size: 28px; font-weight: 800; letter-spacing: .22em; color: var(--gold); }
+  #pVote .wn { font-size: 108px; font-weight: 800; line-height: .95; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pVote .wm { font-size: 34px; font-weight: 700; letter-spacing: .08em; color: var(--gold-hi); margin-top: 6px; min-height: 1.2em; }
+  #pVote .rows { margin-top: auto; display: grid; gap: 14px; }
+  #pVote .r { display: grid; grid-template-columns: 290px 1fr 100px; align-items: center; gap: 22px; font-size: 34px; font-weight: 700; letter-spacing: .03em; color: var(--chalk-dim); }
+  #pVote .r span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pVote .r .t { height: 24px; background: var(--field); }
+  #pVote .r .f { height: 100%; background: var(--chalk-dim); }
+  #pVote .r .p { text-align: right; font-variant-numeric: tabular-nums; }
+  #pVote .r.lead { color: var(--chalk); }
+  #pVote .r.lead .f { background: var(--gold); }
 
   /* Match stats */
   #pStats { left: 460px; top: 160px; width: 1000px; }
@@ -444,6 +476,14 @@
   .shoot-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: center; }
   .shoot-cols h3 { font-family: var(--font-display); text-transform: uppercase; font-size: 22px; margin: 0 0 6px; }
   .shoot-seq { font-size: 22px; letter-spacing: 3px; min-height: 30px; }
+  .fv-noms { display: grid; gap: 6px; }
+  .fv-nom { display: grid; grid-template-columns: 96px 56px 1fr 110px; gap: 6px; }
+  .fv-nom select, .fv-nom input { min-width: 0; }
+  .fv-tally { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+  .fv-tally li { display: grid; grid-template-columns: 1fr 64px; gap: 4px 10px; align-items: center; font-size: 15px; }
+  .fv-tally .t { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .fv-tally .f { height: 100%; background: var(--gold); }
+  .fv-tally b { text-align: right; font-variant-numeric: tabular-nums; }
   .preview-list { font-size: 14px; color: var(--chalk-dim); line-height: 1.6; margin: 8px 0 0; padding-left: 18px; }
 </style>
 </head>
@@ -469,6 +509,12 @@
   <div class="l3 wipe hidden" id="l3">
     <div class="accent"></div>
     <div class="lbody"><div class="lname" id="l3Name"></div><div class="lstat" id="l3Stat"></div></div>
+  </div>
+
+  <div class="fvl wipe hidden" id="fvl">
+    <div class="accent"></div>
+    <div class="fbody"><div class="kick">Fan vote</div><div class="head">Vote for Player of the Game</div><div class="sub">Scan the code or go to <b>fbca.tv/vote</b></div></div>
+    <div class="qr"><svg viewBox="-2 -2 29 29" shape-rendering="crispEdges" aria-label="QR code for fbca.tv/vote"><path fill="#0D2418" d="M0 0h7v1h-7zM8 0h5v1h-5zM14 0h1v1h-1zM18 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM11 1h1v1h-1zM18 1h1v1h-1zM24 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h1v1h-1zM13 2h2v1h-2zM18 2h1v1h-1zM20 2h3v1h-3zM24 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM12 3h2v1h-2zM18 3h1v1h-1zM20 3h3v1h-3zM24 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h4v1h-4zM16 4h1v1h-1zM18 4h1v1h-1zM20 4h3v1h-3zM24 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM11 5h2v1h-2zM14 5h1v1h-1zM18 5h1v1h-1zM24 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h7v1h-7zM10 7h1v1h-1zM13 7h4v1h-4zM0 8h1v1h-1zM3 8h8v1h-8zM12 8h1v1h-1zM14 8h1v1h-1zM16 8h2v1h-2zM20 8h1v1h-1zM22 8h3v1h-3zM1 9h4v1h-4zM7 9h4v1h-4zM12 9h1v1h-1zM14 9h3v1h-3zM19 9h5v1h-5zM0 10h7v1h-7zM11 10h2v1h-2zM15 10h1v1h-1zM17 10h2v1h-2zM21 10h1v1h-1zM24 10h1v1h-1zM0 11h4v1h-4zM5 11h1v1h-1zM8 11h5v1h-5zM14 11h2v1h-2zM17 11h1v1h-1zM19 11h1v1h-1zM21 11h4v1h-4zM0 12h2v1h-2zM3 12h1v1h-1zM5 12h5v1h-5zM11 12h1v1h-1zM13 12h3v1h-3zM18 12h2v1h-2zM24 12h1v1h-1zM0 13h1v1h-1zM5 13h1v1h-1zM8 13h3v1h-3zM12 13h1v1h-1zM14 13h3v1h-3zM20 13h1v1h-1zM23 13h1v1h-1zM0 14h4v1h-4zM6 14h3v1h-3zM10 14h1v1h-1zM14 14h3v1h-3zM18 14h1v1h-1zM20 14h5v1h-5zM0 15h1v1h-1zM3 15h1v1h-1zM7 15h2v1h-2zM10 15h1v1h-1zM12 15h3v1h-3zM17 15h1v1h-1zM19 15h1v1h-1zM21 15h2v1h-2zM24 15h1v1h-1zM0 16h1v1h-1zM3 16h1v1h-1zM5 16h2v1h-2zM9 16h4v1h-4zM15 16h6v1h-6zM22 16h2v1h-2zM8 17h4v1h-4zM15 17h2v1h-2zM20 17h1v1h-1zM22 17h2v1h-2zM0 18h7v1h-7zM8 18h1v1h-1zM12 18h3v1h-3zM16 18h1v1h-1zM18 18h1v1h-1zM20 18h1v1h-1zM24 18h1v1h-1zM0 19h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM11 19h1v1h-1zM13 19h1v1h-1zM15 19h2v1h-2zM20 19h1v1h-1zM24 19h1v1h-1zM0 20h1v1h-1zM2 20h3v1h-3zM6 20h1v1h-1zM8 20h2v1h-2zM11 20h1v1h-1zM13 20h1v1h-1zM15 20h6v1h-6zM23 20h2v1h-2zM0 21h1v1h-1zM2 21h3v1h-3zM6 21h1v1h-1zM8 21h1v1h-1zM12 21h2v1h-2zM17 21h2v1h-2zM23 21h2v1h-2zM0 22h1v1h-1zM2 22h3v1h-3zM6 22h1v1h-1zM11 22h1v1h-1zM13 22h1v1h-1zM16 22h2v1h-2zM20 22h5v1h-5zM0 23h1v1h-1zM6 23h1v1h-1zM9 23h1v1h-1zM11 23h3v1h-3zM17 23h4v1h-4zM22 23h3v1h-3zM0 24h7v1h-7zM8 24h6v1h-6zM15 24h2v1h-2zM18 24h1v1h-1zM21 24h1v1h-1zM24 24h1v1h-1z"/></svg></div>
   </div>
 
   <div class="xi wipe hidden" id="xi">
@@ -553,6 +599,15 @@
     <div class="ph">Next on Eagles on the Air<i class="logo"></i></div>
     <div class="pb" id="pnRows"></div>
     <div class="pb watch">Watch live at FBCA.TV</div>
+    <div class="pf"></div>
+  </div>
+
+  <div class="pn wipe hidden" id="pVote">
+    <div class="ph">Player of the Game<i class="logo"></i></div>
+    <div class="pb">
+      <div class="win" id="pvWin"></div>
+      <div class="info"><div class="votes" id="pvTotal"></div><div class="wk" id="pvKick"></div><div class="wn" id="pvName"></div><div class="wm" id="pvMeta"></div><div class="rows" id="pvRows"></div></div>
+    </div>
     <div class="pf"></div>
   </div>
 
@@ -662,6 +717,7 @@
           <button data-tab="xi">Lineups</button>
           <button data-tab="pk">Shootout</button>
           <button data-tab="next">Up next</button>
+          <button data-tab="fv">Fan vote</button>
           <button data-tab="setup">Setup</button>
         </div>
 
@@ -870,6 +926,27 @@
           <div class="row-btns" style="margin-top:10px"><button class="primary" data-panel="others">Show scores</button></div>
         </div>
 
+        <!-- Fan vote -->
+        <div data-pane="fv" hidden>
+          <div class="pane-h">Player of the Game fan vote</div>
+          <p class="hint">Fans vote at fbca.tv/vote, one vote per phone or computer. Pick the nominees, open voting, put up the QR lower third a few times, then close voting and show the results.</p>
+          <label>Nominees (2–4): team, number, name, position</label>
+          <div class="fv-noms" id="fvNoms"></div>
+          <datalist id="fvPlayers"></datalist>
+          <div class="row-btns" style="margin-top:12px">
+            <button class="primary" id="fvOpen">Open voting</button>
+            <button id="fvClose">Close voting</button>
+          </div>
+          <p class="hint" id="fvStatus"></p>
+          <ul class="fv-tally" id="fvTally"></ul>
+          <div class="row-btns" style="margin-top:10px">
+            <button id="fvShowQr">Show QR lower third</button>
+            <button class="primary" data-panel="vote">Show results</button>
+          </div>
+          <label for="fvKey">Admin key (saved on this computer only)</label>
+          <div class="set-row"><input id="fvKey" type="password" autocomplete="off" spellcheck="false"><button id="fvKeySave">Save key</button></div>
+        </div>
+
         <!-- Setup -->
         <div data-pane="setup" hidden>
           <label for="game">Load from schedule</label>
@@ -942,6 +1019,10 @@
     scoreLabel: 'auto',
     match: { title: '', sub: '', homeRec: '', awayRec: '', when: '', venue: '' },
     spot: blankSpot(), spotList: [],
+    // Fan vote: the current vote on the server (control page keeps it in sync), the nominee form,
+    // and whether the QR lower third is up.
+    fv: { poll: '', match: '', nominees: [], open: false, totals: [], total: 0, l3: false,
+          form: [0, 1, 2, 3].map(() => ({ side: 'home', num: '', name: '', pos: '' })) },
     next: [],
     others: { title: 'Around the district', raw: '' },
     shoot: { on: false, home: [], away: [] },
@@ -1038,7 +1119,7 @@
   const xiSide = () => s.panel.startsWith('xi-') ? s.panel.slice(3) : '';
   const PANEL_NAMES = { 'xi-home': () => s.home + ' lineup', 'xi-away': () => s.away + ' lineup', score: () => 'Score panel',
                         stats: () => 'Match stats', match: () => 'Matchup', spot: () => 'Player spotlight',
-                        next: () => 'Up next', others: () => 'Around the district' };
+                        next: () => 'Up next', others: () => 'Around the district', vote: () => 'Fan vote results' };
   const scoreTitle = () => s.scoreLabel !== 'auto' ? s.scoreLabel
     : s.period === 'HALF' ? 'HALFTIME' : s.period === 'FINAL' ? 'FINAL' : s.period.startsWith('OT') ? 'OVERTIME' : s.period + ' HALF';
   const sheetLive = () => s.sheetOn && s.sheet.at > 0;
@@ -1127,6 +1208,10 @@
       $('l3Name').textContent = l.name;
       $('l3Name').style.background = c.bg; $('l3Name').style.color = c.fg;
       $('l3Stat').textContent = l.stat;
+    };
+
+    const renderFanVote = () => {
+      $('fvl').classList.toggle('hidden', !s.fv.l3 || !!s.panel);
     };
 
     // Draw the half field once: striped turf, a front edge for depth, and the markings
@@ -1367,8 +1452,34 @@
       }
     };
 
+    // A spotlight photo saved for this player, if any (matched by name, and number when both have one).
+    const photoFor = n => [s.spot, ...s.spotList].find(p => p && p.photo && p.name.toLowerCase() === n.name.toLowerCase()
+      && (!p.num || !n.num || p.num === n.num))?.photo;
+    const renderVotePanel = () => {
+      const v = s.fv, noms = v.nominees || [], total = v.total || 0;
+      const top = total ? Math.max(...v.totals) : 0, lead = total ? v.totals.indexOf(top) : -1;
+      const tied = total && v.totals.filter(t => t === top).length > 1;
+      const w = noms[lead], c = colorsFor(w ? w.side : 'home'), win = $('pvWin');
+      win.style.background = c.bg;
+      const photo = w && photoFor(w);
+      if (photo) { const img = el('img'); img.src = photo; img.alt = ''; win.replaceChildren(img); }
+      else { const n = el('div', 'bignum', w && w.num ? '#' + w.num : ''); n.style.color = c.fg; win.replaceChildren(n); }
+      $('pvKick').textContent = !w ? 'Fan vote' : tied ? 'Tied in the fan vote' : v.open ? 'Leading the fan vote' : 'Fan vote winner';
+      $('pvName').textContent = w ? w.name : 'No votes yet';
+      $('pvMeta').textContent = w ? [w.num && '#' + w.num, w.pos, teamName(w.side)].filter(Boolean).join(' · ') : '';
+      $('pvTotal').textContent = total.toLocaleString('en-US') + (total === 1 ? ' vote' : ' votes');
+      $('pvRows').replaceChildren(...noms.map((n, i) => {
+        const pct = total ? Math.round(v.totals[i] / total * 100) : 0;
+        const r = el('div', 'r' + (total && v.totals[i] === top ? ' lead' : ''));
+        const t = el('div', 't'), f = el('div', 'f'); f.style.width = pct + '%'; t.append(f);
+        r.append(el('span', null, n.name), t, el('span', 'p', pct + '%'));
+        return r;
+      }));
+    };
+
     const PANELS = { score: ['pScore', renderScorePanel], stats: ['pStats', renderStatsPanel], match: ['pMatch', renderMatchPanel],
-                     spot: ['pSpot', renderSpotPanel], next: ['pNext', renderNextPanel], others: ['pOthers', renderOthersPanel] };
+                     spot: ['pSpot', renderSpotPanel], next: ['pNext', renderNextPanel], others: ['pOthers', renderOthersPanel],
+                     vote: ['pVote', renderVotePanel] };
     const renderPanels = () => {
       for (const [key, [id, fill]] of Object.entries(PANELS)) {
         const on = s.panel === key;
@@ -1378,7 +1489,7 @@
       renderShootout();
     };
 
-    const render = () => { applyKey(); renderBug(); renderDrop(); renderL3(); renderXI(); renderPanels(); };
+    const render = () => { applyKey(); renderBug(); renderDrop(); renderL3(); renderFanVote(); renderXI(); renderPanels(); };
     const accept = next => { s = merge(next); render(); };
     if (bc) bc.onmessage = e => accept(e.data);
     addEventListener('storage', e => { if (e.key === STORE && e.newValue) accept(JSON.parse(e.newValue)); });
@@ -1397,6 +1508,7 @@
 
   // ---------- Control mode ----------
   let sbHandle = null; // scoreboard file from Scorebridge, when connected (see below)
+  let fvRenderHook = null; // draws the Fan vote tab (set up below)
   const save = () => {
     try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
     if (bc) bc.postMessage(s);
@@ -1469,6 +1581,7 @@
   const setField = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v; };
 
   const renderCtl = () => {
+    if (fvRenderHook) fvRenderHook();
     $('cHome').textContent = s.home; $('cAway').textContent = s.away;
     $('cHome').style.background = HOME_COLORS.bg; $('cHome').style.color = HOME_COLORS.fg;
     $('cAway').style.background = s.awayBg; $('cAway').style.color = s.awayFg;
@@ -1974,6 +2087,7 @@
   // --- Lower third ---
   const showL3 = item => {
     s.l3 = { on: true, name: item.name, stat: item.stat, team: item.team, until: untilFrom('lSecs') };
+    s.fv.l3 = false; // same spot as the fan vote lower third
     save();
   };
   const hideL3 = () => { s.l3.on = false; save(); };
@@ -1997,6 +2111,128 @@
   document.querySelectorAll('[data-kitreset]').forEach(b => b.onclick = () => {
     Object.assign(s.xi[b.dataset.kitreset], { kit: '', kitNum: '' }); save();
   });
+
+  // --- Fan vote ---
+  // The vote server (workers/fan-vote). ?fvapi=http://localhost:PORT points at a local copy for testing.
+  const FV_API = (() => {
+    const o = new URLSearchParams(location.search).get('fvapi');
+    return o && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o) ? o : 'https://eota-fan-vote.clee-625.workers.dev';
+  })();
+  const FV_KEY = 'eota-fan-vote-key'; // kept out of the shared state on purpose
+  const fvKey = () => { try { return localStorage.getItem(FV_KEY) || ''; } catch (e) { return ''; } };
+  let fvMsg = '', fvBusy = false;
+  const fvSay = text => { fvMsg = text; renderFv(); };
+
+  // The server's current vote becomes s.fv, so the output's results panel follows it.
+  const fvApply = d => {
+    const p = d && d.poll;
+    const next = p ? { poll: p.id, match: p.match, nominees: p.nominees, open: p.open, totals: d.totals, total: d.total }
+                   : { poll: '', match: '', nominees: [], open: false, totals: [], total: 0 };
+    const now = { poll: s.fv.poll, match: s.fv.match, nominees: s.fv.nominees, open: s.fv.open, totals: s.fv.totals, total: s.fv.total };
+    if (JSON.stringify(next) === JSON.stringify(now)) return;
+    Object.assign(s.fv, next);
+    // A vote started elsewhere (or before a reload) fills an empty nominee form, so Open
+    // reopens that vote instead of starting a new one.
+    if (next.nominees.length && s.fv.form.every(n => !n.name.trim()))
+      s.fv.form = [0, 1, 2, 3].map(i => ({ side: 'home', num: '', name: '', pos: '', ...(next.nominees[i] || {}) }));
+    save();
+  };
+  const fvAdmin = async body => {
+    const key = fvKey();
+    if (!key) { fvSay('Enter the admin key at the bottom of this tab first.'); return null; }
+    fvBusy = true; renderFv();
+    try {
+      const r = await fetch(FV_API + '/admin', { method: 'POST', body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key } });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { fvMsg = d.error || 'The vote server answered ' + r.status + '.'; return null; }
+      fvMsg = ''; fvApply(d); return d;
+    } catch (e) {
+      fvMsg = "Can't reach the vote server. Check the internet connection."; return null;
+    } finally { fvBusy = false; renderFv(); }
+  };
+  const fvRefresh = async () => {
+    try {
+      const r = await fetch(FV_API + '/poll', { cache: 'no-store' });
+      if (r.ok) fvApply(await r.json());
+    } catch (e) { /* try again on the next round */ }
+  };
+  // Keep the tally fresh while there's a vote.
+  setInterval(() => { if (s.fv.poll) fvRefresh(); }, 4000);
+  fvRefresh();
+
+  const formNominees = () => s.fv.form.filter(n => n.name.trim())
+    .map(n => ({ num: n.num.trim(), name: n.name.trim(), pos: n.pos.trim(), side: n.side }));
+  const sameNominees = (a, b) => JSON.stringify(a.map(n => [n.num, n.name, n.pos, n.side])) === JSON.stringify(b.map(n => [n.num, n.name, n.pos, n.side]));
+
+  // Nominee rows: team, number, name (suggests players from the lineups and spotlights), position.
+  $('fvNoms').replaceChildren(...s.fv.form.map((n, i) => {
+    const row = el('div', 'fv-nom');
+    const side = el('select'); side.id = 'fvSide' + i; side.setAttribute('aria-label', 'Nominee ' + (i + 1) + ' team');
+    side.append(new Option('', 'home'), new Option('', 'away'));
+    const num = el('input'); num.id = 'fvNum' + i; num.maxLength = 3; num.inputMode = 'numeric'; num.placeholder = '#'; num.setAttribute('aria-label', 'Nominee ' + (i + 1) + ' number');
+    const name = el('input'); name.id = 'fvName' + i; name.maxLength = 30; name.placeholder = 'Name'; name.setAttribute('list', 'fvPlayers'); name.setAttribute('aria-label', 'Nominee ' + (i + 1) + ' name');
+    const pos = el('input'); pos.id = 'fvPos' + i; pos.maxLength = 20; pos.placeholder = 'Position'; pos.setAttribute('aria-label', 'Nominee ' + (i + 1) + ' position');
+    const sync = () => {
+      // Picking "#10 Sarah Smith" from the suggestions fills the number too.
+      const m = name.value.match(/^#(\d{1,3})\s+(.+)$/);
+      if (m) { num.value = m[1]; name.value = m[2]; }
+      s.fv.form[i] = { side: side.value, num: num.value, name: name.value, pos: pos.value };
+      save();
+    };
+    [side, num, name, pos].forEach(x => x.addEventListener(x === side ? 'change' : 'input', sync));
+    row.append(side, num, name, pos);
+    return row;
+  }));
+
+  const renderFv = () => {
+    const v = s.fv, total = v.total || 0;
+    v.form.forEach((n, i) => {
+      const side = $('fvSide' + i);
+      side.options[0].text = s.home; side.options[1].text = s.away;
+      for (const [id, val] of [['fvSide', n.side], ['fvNum', n.num], ['fvName', n.name], ['fvPos', n.pos]]) {
+        const e = $(id + i); if (document.activeElement !== e && e.value !== val) e.value = val;
+      }
+    });
+    const players = [...parseXI(s.xi.home.raw).map(p => [p, 'home']), ...parseXI(s.xi.away.raw).map(p => [p, 'away'])];
+    $('fvPlayers').replaceChildren(...players.filter(([p]) => p.name).map(([p]) => new Option((p.num ? '#' + p.num + ' ' : '') + p.name)));
+    const same = !!v.poll && sameNominees(formNominees(), v.nominees);
+    const open = $('fvOpen');
+    open.textContent = v.open ? (same ? 'Voting is open' : 'Start a new vote') : same ? 'Reopen voting' : 'Open voting';
+    open.disabled = fvBusy || (v.open && same);
+    $('fvClose').disabled = fvBusy || !v.poll || !v.open;
+    $('fvShowQr').textContent = v.l3 ? 'Hide QR lower third' : 'Show QR lower third';
+    $('fvShowQr').classList.toggle('active', !!v.l3);
+    const base = !v.poll ? 'No vote yet.' : (v.open ? 'Voting is open. ' : 'Voting is closed. ') + total.toLocaleString('en-US') + (total === 1 ? ' vote.' : ' votes.');
+    $('fvStatus').textContent = fvMsg || base + (fvKey() ? '' : ' Enter the admin key at the bottom of this tab to run a vote.');
+    $('fvStatus').classList.toggle('warn', !!fvMsg);
+    $('fvTally').replaceChildren(...(v.nominees || []).map((n, i) => {
+      const pct = total ? Math.round(v.totals[i] / total * 100) : 0;
+      const li = el('li'); const t = el('div', 't'), f = el('div', 'f'); f.style.width = pct + '%'; t.append(f);
+      li.append(el('span', null, (n.num ? '#' + n.num + ' ' : '') + n.name + ' (' + teamName(n.side) + ')'), el('b', null, v.totals[i] + ' · ' + pct + '%'), t);
+      return li;
+    }));
+  };
+  fvRenderHook = renderFv;
+
+  $('fvOpen').onclick = async () => {
+    const noms = formNominees();
+    if (noms.length < 2) { fvSay('Add at least two nominees.'); return; }
+    // Same nominees: reopen that vote. Different ones: start a new vote with a fresh tally.
+    if (!s.fv.poll || !sameNominees(noms, s.fv.nominees)) {
+      if (s.fv.poll && s.fv.total && !confirm('Start a new vote with these nominees? The current tally will be replaced.')) return;
+      if (!await fvAdmin({ action: 'create', match: s.home + ' vs ' + s.away, nominees: noms })) return;
+    }
+    await fvAdmin({ action: 'open', poll: s.fv.poll });
+  };
+  $('fvClose').onclick = () => fvAdmin({ action: 'close', poll: s.fv.poll });
+  $('fvShowQr').onclick = () => { s.fv.l3 = !s.fv.l3; if (s.fv.l3) s.l3.on = false; save(); };
+  $('fvKeySave').onclick = () => {
+    try { localStorage.setItem(FV_KEY, $('fvKey').value.trim()); } catch (e) {}
+    $('fvKey').value = '';
+    fvSay(fvKey() ? 'Admin key saved on this computer.' : 'Admin key cleared.');
+  };
+  renderFv();
 
   // --- Setup ---
   $('btnReset').onclick = () => {

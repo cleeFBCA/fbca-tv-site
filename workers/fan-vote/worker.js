@@ -1,0 +1,152 @@
+// Fan vote: stores Player of the Game votes for the EOTA broadcasts.
+//
+// fbca.tv/vote shows the current vote and sends one vote per device. The soccer graphics
+// control page (with the admin key) creates a vote, opens and closes it, and reads the
+// tally for the on-air results. Votes live in a D1 database (binding DB).
+//
+//   GET  /poll?voter=ID        current vote, totals, and this device's pick
+//   POST /vote                 { poll, choice, voter }
+//   POST /admin                { action: 'create', match, nominees } | { action: 'open' | 'close', poll }
+//                              with Authorization: Bearer <ADMIN_KEY>
+
+const SITE_ORIGINS = ['https://fbca.tv', 'https://www.fbca.tv'];
+// Votes allowed from one internet connection per vote. Loose on purpose: a whole
+// stand on the school Wi-Fi shares one address.
+const IP_LIMIT = 150;
+const MAX_NOMINEES = 6;
+
+const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS polls (
+     id TEXT PRIMARY KEY, match TEXT NOT NULL, nominees TEXT NOT NULL,
+     open INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, closed_at INTEGER)`,
+  `CREATE TABLE IF NOT EXISTS votes (
+     poll_id TEXT NOT NULL, voter TEXT NOT NULL, choice INTEGER NOT NULL,
+     ip TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (poll_id, voter))`,
+  `CREATE INDEX IF NOT EXISTS votes_by_ip ON votes (poll_id, ip)`
+];
+let schemaReady = false;
+const ensureSchema = async db => {
+  if (schemaReady) return;
+  await db.batch(SCHEMA.map(sql => db.prepare(sql)));
+  schemaReady = true;
+};
+
+// The site (and local testing) may read and vote; the control page may also be opened
+// as a local file (Origin "null"), which is fine for admin calls since they need the key.
+const allowedOrigin = (origin, admin) =>
+  SITE_ORIGINS.includes(origin) || /^http:\/\/localhost(:\d+)?$/.test(origin) || (admin && origin === 'null');
+
+const cors = origin => ({
+  'Access-Control-Allow-Origin': origin || SITE_ORIGINS[0],
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400',
+  'Vary': 'Origin'
+});
+const json = (body, status, origin) => new Response(JSON.stringify(body), {
+  status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...cors(origin) }
+});
+
+const clean = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+const voterOk = v => typeof v === 'string' && /^[A-Za-z0-9_-]{16,64}$/.test(v);
+
+const sha256 = async text => {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+// Constant-time comparison for the admin key.
+const sameKey = (a, b) => {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+};
+
+const currentPoll = db => db.prepare('SELECT * FROM polls ORDER BY created_at DESC LIMIT 1').first();
+
+// What every caller gets back: the vote, its totals, and (for a voter) their own pick.
+const state = async (db, voter) => {
+  const p = await currentPoll(db);
+  if (!p) return { poll: null };
+  const nominees = JSON.parse(p.nominees);
+  const totals = nominees.map(() => 0);
+  const { results } = await db.prepare('SELECT choice, COUNT(*) AS n FROM votes WHERE poll_id = ? GROUP BY choice').bind(p.id).all();
+  for (const r of results) if (r.choice >= 0 && r.choice < totals.length) totals[r.choice] = r.n;
+  let mine = null;
+  if (voterOk(voter)) {
+    const row = await db.prepare('SELECT choice FROM votes WHERE poll_id = ? AND voter = ?').bind(p.id, voter).first();
+    if (row) mine = row.choice;
+  }
+  return {
+    poll: { id: p.id, match: p.match, nominees, open: !!p.open },
+    totals, total: totals.reduce((a, b) => a + b, 0), mine
+  };
+};
+
+const vote = async (request, env, origin) => {
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Send JSON.' }, 400, origin); }
+  const { poll, choice, voter } = body || {};
+  if (!voterOk(voter)) return json({ error: 'Missing device id.' }, 400, origin);
+  const p = await currentPoll(env.DB);
+  if (!p || p.id !== poll) return json({ error: 'This vote has ended.', ...(await state(env.DB, voter)) }, 409, origin);
+  if (!p.open) return json({ error: 'Voting is closed.', ...(await state(env.DB, voter)) }, 409, origin);
+  const n = JSON.parse(p.nominees).length;
+  if (!Number.isInteger(choice) || choice < 0 || choice >= n) return json({ error: 'Pick one of the players.' }, 400, origin);
+
+  const ip = await sha256(p.id + '|' + (request.headers.get('CF-Connecting-IP') || 'unknown'));
+  const used = await env.DB.prepare('SELECT COUNT(*) AS n FROM votes WHERE poll_id = ? AND ip = ?').bind(p.id, ip).first();
+  if (used.n >= IP_LIMIT) return json({ error: 'Too many votes from this connection.', ...(await state(env.DB, voter)) }, 429, origin);
+
+  // First vote counts; voting again from the same device changes nothing.
+  await env.DB.prepare('INSERT OR IGNORE INTO votes (poll_id, voter, choice, ip, at) VALUES (?, ?, ?, ?, ?)')
+    .bind(p.id, voter, choice, ip, Date.now()).run();
+  return json(await state(env.DB, voter), 200, origin);
+};
+
+const admin = async (request, env, origin) => {
+  const key = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!env.ADMIN_KEY || !sameKey(key, env.ADMIN_KEY)) return json({ error: 'Wrong admin key.' }, 401, origin);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Send JSON.' }, 400, origin); }
+  const { action } = body || {};
+
+  if (action === 'create') {
+    const nominees = (Array.isArray(body.nominees) ? body.nominees : [])
+      .map(n => ({ num: clean(n?.num, 3), name: clean(n?.name, 30), pos: clean(n?.pos, 20), side: n?.side === 'away' ? 'away' : 'home' }))
+      .filter(n => n.name)
+      .slice(0, MAX_NOMINEES);
+    if (nominees.length < 2) return json({ error: 'Add at least two players.' }, 400, origin);
+    const id = crypto.randomUUID();
+    await env.DB.prepare('INSERT INTO polls (id, match, nominees, open, created_at) VALUES (?, ?, ?, 0, ?)')
+      .bind(id, clean(body.match, 60), JSON.stringify(nominees), Date.now()).run();
+    return json(await state(env.DB), 200, origin);
+  }
+
+  if (action === 'open' || action === 'close') {
+    const p = await currentPoll(env.DB);
+    if (!p || p.id !== body.poll) return json({ error: 'That vote is no longer the current one.' }, 409, origin);
+    await env.DB.prepare('UPDATE polls SET open = ?, closed_at = ? WHERE id = ?')
+      .bind(action === 'open' ? 1 : 0, action === 'close' ? Date.now() : null, p.id).run();
+    return json(await state(env.DB), 200, origin);
+  }
+
+  return json({ error: 'Unknown action.' }, 400, origin);
+};
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const origin = request.headers.get('Origin') || '';
+    const isAdmin = url.pathname === '/admin';
+    if (request.method === 'OPTIONS') return new Response(null, { headers: cors(allowedOrigin(origin, true) ? origin : '') });
+    if (origin && !allowedOrigin(origin, isAdmin)) return json({ error: 'Not allowed from this site.' }, 403, '');
+
+    await ensureSchema(env.DB);
+    if (request.method === 'GET' && url.pathname === '/poll') return json(await state(env.DB, url.searchParams.get('voter')), 200, origin);
+    if (request.method === 'POST' && url.pathname === '/vote') return vote(request, env, origin);
+    if (request.method === 'POST' && isAdmin) return admin(request, env, origin);
+    return json({ error: 'Not found.' }, 404, origin);
+  }
+};
