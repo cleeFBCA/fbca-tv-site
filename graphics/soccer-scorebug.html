@@ -943,6 +943,7 @@
           <div class="row-btns" style="margin-top:12px">
             <button class="primary" id="fvOpen">Open voting</button>
             <button id="fvClose">Close voting</button>
+            <button class="danger" id="fvClear">Clear vote</button>
           </div>
           <p class="hint" id="fvStatus"></p>
           <ul class="fv-tally" id="fvTally"></ul>
@@ -2239,6 +2240,7 @@
     open.textContent = v.open ? (same ? 'Voting is open' : 'Start a new vote') : same ? 'Reopen voting' : 'Open voting';
     open.disabled = fvBusy || (v.open && same);
     $('fvClose').disabled = fvBusy || !v.poll || !v.open;
+    $('fvClear').disabled = fvBusy || !v.poll;
     $('fvShowQr').textContent = v.l3 ? 'Hide QR lower third' : 'Show QR lower third';
     $('fvShowQr').classList.toggle('active', !!v.l3);
     const base = !v.poll ? 'No vote yet.' : (v.open ? 'Voting is open. ' : 'Voting is closed. ')
@@ -2265,6 +2267,15 @@
     await fvAdmin({ action: 'open', poll: s.fv.poll });
   };
   $('fvClose').onclick = () => fvAdmin({ action: 'close', poll: s.fv.poll });
+  // Between games: fbca.tv/vote goes back to "no vote right now". The nominee names stay in the form.
+  $('fvClear').onclick = async () => {
+    if (!confirm('Clear the vote? fbca.tv/vote will show that no vote is running, and this vote\'s results are deleted.')) return;
+    if (!await fvAdmin({ action: 'clear' })) return;
+    s.fv.l3 = false;
+    if (s.panel === 'vote') s.panel = '';
+    save();
+    fvSay('Vote cleared. fbca.tv/vote shows that no vote is running.');
+  };
   $('fvShowQr').onclick = () => { s.fv.l3 = !s.fv.l3; if (s.fv.l3) s.l3.on = false; save(); };
   $('fvKeySave').onclick = () => {
     try { localStorage.setItem(FV_KEY, $('fvKey').value.trim()); } catch (e) {}

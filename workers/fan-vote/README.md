@@ -26,6 +26,8 @@ Address: `https://eota-fan-vote.clee-625.workers.dev`
    winner shows on the results panel.
 
 Changing the nominees and pressing Open starts a new vote with a fresh tally.
+**Clear vote** (between games) deletes the vote and its votes, and fbca.tv/vote
+says there's no vote right now.
 
 ## Set up (once) and deploy
 

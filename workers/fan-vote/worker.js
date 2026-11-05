@@ -8,6 +8,7 @@
 //                              (vote counts too, with the admin key)
 //   POST /vote                 { poll, choice, voter }
 //   POST /admin                { action: 'create', match, nominees } | { action: 'open' | 'close', poll }
+//                              | { action: 'clear' } (no vote until the next one is created)
 //                              with Authorization: Bearer <ADMIN_KEY>
 
 const SITE_ORIGINS = ['https://fbca.tv', 'https://www.fbca.tv'];
@@ -137,6 +138,12 @@ const admin = async (request, env, origin) => {
     if (!p || p.id !== body.poll) return json({ error: 'That vote is no longer the current one.' }, 409, origin);
     await env.DB.prepare('UPDATE polls SET open = ?, closed_at = ? WHERE id = ?')
       .bind(action === 'open' ? 1 : 0, action === 'close' ? Date.now() : null, p.id).run();
+    return json(await state(env.DB, null, true), 200, origin);
+  }
+
+  // Between games: remove the vote and its votes, so fbca.tv/vote shows that nothing is running.
+  if (action === 'clear') {
+    await env.DB.batch([env.DB.prepare('DELETE FROM votes'), env.DB.prepare('DELETE FROM polls')]);
     return json(await state(env.DB, null, true), 200, origin);
   }
 
