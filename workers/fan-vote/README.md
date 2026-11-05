@@ -8,6 +8,8 @@ Cloudflare's Workers free plan, with the votes in a D1 database.
 
 Address: `https://eota-fan-vote.clee-625.workers.dev`
 
+- Fans see only percentages; the vote counts go only to the control page (with
+  the admin key).
 - One vote per device (a random id kept in the browser), and at most 150 votes
   per internet connection per vote, so a crowd on the school Wi-Fi still works.
 - Only fbca.tv may read and vote. Creating, opening and closing a vote needs the

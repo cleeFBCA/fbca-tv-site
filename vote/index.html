@@ -123,8 +123,9 @@
 
   let data = null, sending = false, note = '';
 
-  const pct = i => data.total ? Math.round(data.totals[i] / data.total * 100) : 0;
-  const leader = () => data.totals.indexOf(Math.max(...data.totals));
+  // The server sends each player's share and who leads, never the vote counts.
+  const pct = i => (data.pct && data.pct[i]) || 0;
+  const leads = i => (data.leaders || []).includes(i);
 
   const render = () => {
     const body = $('body'), live = $('live');
@@ -154,17 +155,18 @@
       parts.push(list);
     } else {
       const res = el('div', 'res');
-      const w = data.total ? p.nominees[leader()] : null;
-      res.append(el('p', 'thanks', p.open ? 'Thanks for voting!' : w ? 'Winner: ' + w.name : 'Voting is closed'));
+      const won = (data.leaders || []).map(i => p.nominees[i].name);
+      res.append(el('p', 'thanks', p.open ? 'Thanks for voting!'
+        : won.length === 1 ? 'Winner: ' + won[0] : won.length ? 'Tie: ' + won.join(' and ') : 'Voting is closed'));
       p.nominees.forEach((n, i) => {
-        const r = el('div', 'row' + (data.total && i === leader() ? ' lead' : ''));
+        const r = el('div', 'row' + (leads(i) ? ' lead' : ''));
         const name = el('span', null, (n.num ? '#' + n.num + ' ' : '') + n.name);
         if (i === data.mine) name.append(el('span', 'you', ' · your vote'));
         const top = el('div', 'top'); top.append(name, el('span', null, pct(i) + '%'));
         const tr = el('div', 'track'), f = el('div', 'fill'); f.style.width = pct(i) + '%'; tr.append(f);
         r.append(top, tr); res.append(r);
       });
-      res.append(el('p', 'count', data.total.toLocaleString('en-US') + (data.total === 1 ? ' vote' : ' votes') + (p.open ? ' so far · updates on its own' : '')));
+      if (p.open) res.append(el('p', 'count', 'Voting is LIVE!'));
       parts.push(res);
     }
     body.replaceChildren(...parts);

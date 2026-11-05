@@ -4,7 +4,8 @@
 // control page (with the admin key) creates a vote, opens and closes it, and reads the
 // tally for the on-air results. Votes live in a D1 database (binding DB).
 //
-//   GET  /poll?voter=ID        current vote, totals, and this device's pick
+//   GET  /poll?voter=ID        current vote, percentages, and this device's pick
+//                              (vote counts too, with the admin key)
 //   POST /vote                 { poll, choice, voter }
 //   POST /admin                { action: 'create', match, nominees } | { action: 'open' | 'close', poll }
 //                              with Authorization: Bearer <ADMIN_KEY>
@@ -65,8 +66,9 @@ const sameKey = (a, b) => {
 
 const currentPoll = db => db.prepare('SELECT * FROM polls ORDER BY created_at DESC LIMIT 1').first();
 
-// What every caller gets back: the vote, its totals, and (for a voter) their own pick.
-const state = async (db, voter) => {
+// What every caller gets back: the vote, each player's share, who leads, and (for a voter)
+// their own pick. Vote counts stay private: only the control page, with the key, gets them.
+const state = async (db, voter, counts = false) => {
   const p = await currentPoll(db);
   if (!p) return { poll: null };
   const nominees = JSON.parse(p.nominees);
@@ -78,9 +80,13 @@ const state = async (db, voter) => {
     const row = await db.prepare('SELECT choice FROM votes WHERE poll_id = ? AND voter = ?').bind(p.id, voter).first();
     if (row) mine = row.choice;
   }
+  const total = totals.reduce((a, b) => a + b, 0), top = Math.max(...totals);
   return {
     poll: { id: p.id, match: p.match, nominees, open: !!p.open },
-    totals, total: totals.reduce((a, b) => a + b, 0), mine
+    pct: totals.map(t => total ? Math.round(t / total * 100) : 0),
+    leaders: total ? totals.flatMap((t, i) => t === top ? [i] : []) : [],
+    mine,
+    ...(counts ? { totals, total } : {})
   };
 };
 
@@ -105,9 +111,11 @@ const vote = async (request, env, origin) => {
   return json(await state(env.DB, voter), 200, origin);
 };
 
+const hasKey = (request, env) =>
+  !!env.ADMIN_KEY && sameKey((request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, ''), env.ADMIN_KEY);
+
 const admin = async (request, env, origin) => {
-  const key = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
-  if (!env.ADMIN_KEY || !sameKey(key, env.ADMIN_KEY)) return json({ error: 'Wrong admin key.' }, 401, origin);
+  if (!hasKey(request, env)) return json({ error: 'Wrong admin key.' }, 401, origin);
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Send JSON.' }, 400, origin); }
   const { action } = body || {};
@@ -121,7 +129,7 @@ const admin = async (request, env, origin) => {
     const id = crypto.randomUUID();
     await env.DB.prepare('INSERT INTO polls (id, match, nominees, open, created_at) VALUES (?, ?, ?, 0, ?)')
       .bind(id, clean(body.match, 60), JSON.stringify(nominees), Date.now()).run();
-    return json(await state(env.DB), 200, origin);
+    return json(await state(env.DB, null, true), 200, origin);
   }
 
   if (action === 'open' || action === 'close') {
@@ -129,7 +137,7 @@ const admin = async (request, env, origin) => {
     if (!p || p.id !== body.poll) return json({ error: 'That vote is no longer the current one.' }, 409, origin);
     await env.DB.prepare('UPDATE polls SET open = ?, closed_at = ? WHERE id = ?')
       .bind(action === 'open' ? 1 : 0, action === 'close' ? Date.now() : null, p.id).run();
-    return json(await state(env.DB), 200, origin);
+    return json(await state(env.DB, null, true), 200, origin);
   }
 
   return json({ error: 'Unknown action.' }, 400, origin);
@@ -144,7 +152,8 @@ export default {
     if (origin && !allowedOrigin(origin, isAdmin)) return json({ error: 'Not allowed from this site.' }, 403, '');
 
     await ensureSchema(env.DB);
-    if (request.method === 'GET' && url.pathname === '/poll') return json(await state(env.DB, url.searchParams.get('voter')), 200, origin);
+    if (request.method === 'GET' && url.pathname === '/poll')
+      return json(await state(env.DB, url.searchParams.get('voter'), hasKey(request, env)), 200, origin);
     if (request.method === 'POST' && url.pathname === '/vote') return vote(request, env, origin);
     if (request.method === 'POST' && isAdmin) return admin(request, env, origin);
     return json({ error: 'Not found.' }, 404, origin);

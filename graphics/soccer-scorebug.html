@@ -290,7 +290,6 @@
   #pVote.nophoto .rows { padding-top: 40px; }
   #pVote.nophoto .wn { font-size: 132px; }
   #pVote.nophoto .r { grid-template-columns: 380px 1fr 110px; }
-  #pVote .votes { position: absolute; right: 56px; top: 44px; font-family: var(--font-body); text-transform: none; font-size: 26px; font-weight: 600; color: var(--chalk-dim); font-variant-numeric: tabular-nums; }
   #pVote .wk { font-size: 28px; font-weight: 800; letter-spacing: .22em; color: var(--gold); }
   #pVote .wn { font-size: 108px; font-weight: 800; line-height: .95; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #pVote .wm { font-size: 34px; font-weight: 700; letter-spacing: .08em; color: var(--gold-hi); margin-top: 6px; min-height: 1.2em; }
@@ -614,7 +613,7 @@
     <div class="ph">Player of the Game<i class="logo"></i></div>
     <div class="pb">
       <div class="win" id="pvWin"></div>
-      <div class="info"><div class="votes" id="pvTotal"></div><div class="wk" id="pvKick"></div><div class="wn" id="pvName"></div><div class="wm" id="pvMeta"></div><div class="rows" id="pvRows"></div></div>
+      <div class="info"><div class="wk" id="pvKick"></div><div class="wn" id="pvName"></div><div class="wm" id="pvMeta"></div><div class="rows" id="pvRows"></div></div>
     </div>
     <div class="pf"></div>
   </div>
@@ -1029,7 +1028,7 @@
     spot: blankSpot(), spotList: [],
     // Fan vote: the current vote on the server (control page keeps it in sync), the nominee form,
     // and whether the QR lower third is up.
-    fv: { poll: '', match: '', nominees: [], open: false, totals: [], total: 0, l3: false,
+    fv: { poll: '', match: '', nominees: [], open: false, totals: [], total: 0, pct: [], leaders: [], l3: false,
           form: [0, 1, 2, 3].map(() => ({ side: 'home', num: '', name: '', pos: '' })) },
     next: [],
     others: { title: 'Around the district', raw: '' },
@@ -1465,10 +1464,8 @@
     const photoFor = n => [...s.fv.form, s.spot, ...s.spotList].find(p => p && p.photo && p.name.trim().toLowerCase() === n.name.toLowerCase()
       && (!p.num || !n.num || p.num.trim() === n.num))?.photo;
     const renderVotePanel = () => {
-      const v = s.fv, noms = v.nominees || [], total = v.total || 0;
-      const top = total ? Math.max(...v.totals) : 0, lead = total ? v.totals.indexOf(top) : -1;
-      const tied = total && v.totals.filter(t => t === top).length > 1;
-      const w = noms[lead], win = $('pvWin');
+      const v = s.fv, noms = v.nominees || [], leaders = v.leaders || [];
+      const tied = leaders.length > 1, w = noms[leaders[0]], win = $('pvWin');
       const photo = w && photoFor(w);
       $('pVote').classList.toggle('nophoto', !photo);
       win.style.background = colorsFor(w ? w.side : 'home').bg;
@@ -1476,10 +1473,9 @@
       $('pvKick').textContent = !w ? 'Fan vote' : tied ? 'Tied in the fan vote' : v.open ? 'Leading the fan vote' : 'Fan vote winner';
       $('pvName').textContent = w ? w.name : 'No votes yet';
       $('pvMeta').textContent = w ? [w.num && '#' + w.num, w.pos, teamName(w.side)].filter(Boolean).join(' · ') : '';
-      $('pvTotal').textContent = total.toLocaleString('en-US') + (total === 1 ? ' vote' : ' votes');
       $('pvRows').replaceChildren(...noms.map((n, i) => {
-        const pct = total ? Math.round(v.totals[i] / total * 100) : 0;
-        const r = el('div', 'r' + (total && v.totals[i] === top ? ' lead' : ''));
+        const pct = (v.pct || [])[i] || 0;
+        const r = el('div', 'r' + (leaders.includes(i) ? ' lead' : ''));
         const t = el('div', 't'), f = el('div', 'f'); f.style.width = pct + '%'; t.append(f);
         r.append(el('span', null, n.name), t, el('span', 'p', pct + '%'));
         return r;
@@ -2149,9 +2145,12 @@
   // The server's current vote becomes s.fv, so the output's results panel follows it.
   const fvApply = d => {
     const p = d && d.poll;
-    const next = p ? { poll: p.id, match: p.match, nominees: p.nominees, open: p.open, totals: d.totals, total: d.total }
-                   : { poll: '', match: '', nominees: [], open: false, totals: [], total: 0 };
-    const now = { poll: s.fv.poll, match: s.fv.match, nominees: s.fv.nominees, open: s.fv.open, totals: s.fv.totals, total: s.fv.total };
+    // Counts come only with the admin key; the on-air panel uses the shares, like fbca.tv/vote.
+    const next = p ? { poll: p.id, match: p.match, nominees: p.nominees, open: p.open, totals: d.totals || [], total: d.total || 0,
+                       pct: d.pct || [], leaders: d.leaders || [] }
+                   : { poll: '', match: '', nominees: [], open: false, totals: [], total: 0, pct: [], leaders: [] };
+    const now = { poll: s.fv.poll, match: s.fv.match, nominees: s.fv.nominees, open: s.fv.open, totals: s.fv.totals, total: s.fv.total,
+                  pct: s.fv.pct, leaders: s.fv.leaders };
     if (JSON.stringify(next) === JSON.stringify(now)) return;
     Object.assign(s.fv, next);
     // A vote started elsewhere (or before a reload) fills an empty nominee form, so Open
@@ -2176,7 +2175,8 @@
   };
   const fvRefresh = async () => {
     try {
-      const r = await fetch(FV_API + '/poll', { cache: 'no-store' });
+      const key = fvKey();
+      const r = await fetch(FV_API + '/poll', { cache: 'no-store', headers: key ? { Authorization: 'Bearer ' + key } : {} });
       if (r.ok) fvApply(await r.json());
     } catch (e) { /* try again on the next round */ }
   };
@@ -2241,13 +2241,14 @@
     $('fvClose').disabled = fvBusy || !v.poll || !v.open;
     $('fvShowQr').textContent = v.l3 ? 'Hide QR lower third' : 'Show QR lower third';
     $('fvShowQr').classList.toggle('active', !!v.l3);
-    const base = !v.poll ? 'No vote yet.' : (v.open ? 'Voting is open. ' : 'Voting is closed. ') + total.toLocaleString('en-US') + (total === 1 ? ' vote.' : ' votes.');
+    const base = !v.poll ? 'No vote yet.' : (v.open ? 'Voting is open. ' : 'Voting is closed. ')
+      + (v.totals.length ? total.toLocaleString('en-US') + (total === 1 ? ' vote' : ' votes') + ' (only you see the count).' : '');
     $('fvStatus').textContent = fvMsg || base + (fvKey() ? '' : ' Enter the admin key at the bottom of this tab to run a vote.');
     $('fvStatus').classList.toggle('warn', !!fvMsg);
     $('fvTally').replaceChildren(...(v.nominees || []).map((n, i) => {
-      const pct = total ? Math.round(v.totals[i] / total * 100) : 0;
+      const pct = (v.pct || [])[i] || 0, count = v.totals.length ? v.totals[i] + ' · ' : '';
       const li = el('li'); const t = el('div', 't'), f = el('div', 'f'); f.style.width = pct + '%'; t.append(f);
-      li.append(el('span', null, (n.num ? '#' + n.num + ' ' : '') + n.name + ' (' + teamName(n.side) + ')'), el('b', null, v.totals[i] + ' · ' + pct + '%'), t);
+      li.append(el('span', null, (n.num ? '#' + n.num + ' ' : '') + n.name + ' (' + teamName(n.side) + ')'), el('b', null, count + pct + '%'), t);
       return li;
     }));
   };
