@@ -280,10 +280,16 @@
   /* Fan vote results: winner (spotlight photo when there is one) beside every nominee's share */
   #pVote { left: 300px; top: 180px; width: 1320px; }
   #pVote .pb { display: grid; grid-template-columns: 440px 1fr; }
-  #pVote .win { position: relative; height: 528px; display: grid; place-items: center; overflow: hidden; }
+  #pVote .win { position: relative; height: 528px; overflow: hidden; }
   #pVote .win img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  #pVote .win .bignum { font-size: 260px; font-weight: 800; line-height: 1; }
   #pVote .info { position: relative; padding: 40px 56px 36px; display: flex; flex-direction: column; min-width: 0; }
+  /* No headshot: the text runs the full width. */
+  #pVote.nophoto .pb { grid-template-columns: 1fr; }
+  #pVote.nophoto .win { display: none; }
+  #pVote.nophoto .info { min-height: 528px; padding: 40px 64px 40px; }
+  #pVote.nophoto .rows { padding-top: 40px; }
+  #pVote.nophoto .wn { font-size: 132px; }
+  #pVote.nophoto .r { grid-template-columns: 380px 1fr 110px; }
   #pVote .votes { position: absolute; right: 56px; top: 44px; font-family: var(--font-body); text-transform: none; font-size: 26px; font-weight: 600; color: var(--chalk-dim); font-variant-numeric: tabular-nums; }
   #pVote .wk { font-size: 28px; font-weight: 800; letter-spacing: .22em; color: var(--gold); }
   #pVote .wn { font-size: 108px; font-weight: 800; line-height: .95; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -477,8 +483,10 @@
   .shoot-cols h3 { font-family: var(--font-display); text-transform: uppercase; font-size: 22px; margin: 0 0 6px; }
   .shoot-seq { font-size: 22px; letter-spacing: 3px; min-height: 30px; }
   .fv-noms { display: grid; gap: 6px; }
-  .fv-nom { display: grid; grid-template-columns: 96px 56px 1fr 110px; gap: 6px; }
+  .fv-nom { display: grid; grid-template-columns: 96px 56px 1fr 104px auto; gap: 6px; }
   .fv-nom select, .fv-nom input { min-width: 0; }
+  .fv-nom button { min-height: 0; padding: 8px 10px; font-size: 13px; white-space: nowrap; }
+  .fv-nom input[type=file] { display: none; }
   .fv-tally { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
   .fv-tally li { display: grid; grid-template-columns: 1fr 64px; gap: 4px 10px; align-items: center; font-size: 15px; }
   .fv-tally .t { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
@@ -930,7 +938,7 @@
         <div data-pane="fv" hidden>
           <div class="pane-h">Player of the Game fan vote</div>
           <p class="hint">Fans vote at fbca.tv/vote, one vote per phone or computer. Pick the nominees, open voting, put up the QR lower third a few times, then close voting and show the results.</p>
-          <label>Nominees (2–4): team, number, name, position</label>
+          <label>Nominees (2–4): team, number, name, position, and a headshot for the results (optional)</label>
           <div class="fv-noms" id="fvNoms"></div>
           <datalist id="fvPlayers"></datalist>
           <div class="row-btns" style="margin-top:12px">
@@ -1452,18 +1460,19 @@
       }
     };
 
-    // A spotlight photo saved for this player, if any (matched by name, and number when both have one).
-    const photoFor = n => [s.spot, ...s.spotList].find(p => p && p.photo && p.name.toLowerCase() === n.name.toLowerCase()
-      && (!p.num || !n.num || p.num === n.num))?.photo;
+    // The headshot added in the Fan vote tab, or else a spotlight photo saved for this player
+    // (matched by name, and number when both have one).
+    const photoFor = n => [...s.fv.form, s.spot, ...s.spotList].find(p => p && p.photo && p.name.trim().toLowerCase() === n.name.toLowerCase()
+      && (!p.num || !n.num || p.num.trim() === n.num))?.photo;
     const renderVotePanel = () => {
       const v = s.fv, noms = v.nominees || [], total = v.total || 0;
       const top = total ? Math.max(...v.totals) : 0, lead = total ? v.totals.indexOf(top) : -1;
       const tied = total && v.totals.filter(t => t === top).length > 1;
-      const w = noms[lead], c = colorsFor(w ? w.side : 'home'), win = $('pvWin');
-      win.style.background = c.bg;
+      const w = noms[lead], win = $('pvWin');
       const photo = w && photoFor(w);
-      if (photo) { const img = el('img'); img.src = photo; img.alt = ''; win.replaceChildren(img); }
-      else { const n = el('div', 'bignum', w && w.num ? '#' + w.num : ''); n.style.color = c.fg; win.replaceChildren(n); }
+      $('pVote').classList.toggle('nophoto', !photo);
+      win.style.background = colorsFor(w ? w.side : 'home').bg;
+      if (photo) { const img = el('img'); img.src = photo; img.alt = ''; win.replaceChildren(img); } else win.replaceChildren();
       $('pvKick').textContent = !w ? 'Fan vote' : tied ? 'Tied in the fan vote' : v.open ? 'Leading the fan vote' : 'Fan vote winner';
       $('pvName').textContent = w ? w.name : 'No votes yet';
       $('pvMeta').textContent = w ? [w.num && '#' + w.num, w.pos, teamName(w.side)].filter(Boolean).join(' · ') : '';
@@ -1860,8 +1869,9 @@
     return { x: x0 / k, y: y0 / k, w: (x1 - x0 + 1) / k, h: (y1 - y0 + 1) / k };
   };
   // Scale and position for the current image, with the Size and Up/down adjustments applied.
-  const photoPlacement = () => {
-    const img = photoImg, b = photoBox, z = $('spZoom').value / 100, dy = +$('spShift').value;
+  const photoPlacement = () => fitPlacement(photoImg, photoBox, $('spZoom').value / 100, +$('spShift').value);
+  // Where an image lands in the 440x528 frame; z and dy are the Size and Up/down adjustments.
+  const fitPlacement = (img, b, z = 1, dy = 0) => {
     let k, ax, ay, fy;
     if (b) {
       k = Math.max(PHOTO_W * .78 / b.w, (PHOTO_H - HEADROOM) / b.h);
@@ -1873,6 +1883,19 @@
     k *= z;
     return { x: PHOTO_W / 2 - ax * k, y: fy + dy - ay * k, w: img.width * k, h: img.height * k };
   };
+  // A photo file fitted to the frame the same way, as a small image for the shared state.
+  const fittedPhoto = file => new Promise((ok, fail) => {
+    const img = new Image();
+    img.onload = () => {
+      const p = fitPlacement(img, subjectBox(img)), c = document.createElement('canvas');
+      c.width = PHOTO_W; c.height = PHOTO_H;
+      c.getContext('2d').drawImage(img, p.x, p.y, p.w, p.h);
+      URL.revokeObjectURL(img.src);
+      ok(c.toDataURL('image/webp', .85));
+    };
+    img.onerror = () => fail(new Error('Not an image'));
+    img.src = URL.createObjectURL(file);
+  });
   const drawPhoto = (ctx, p) => ctx.drawImage(photoImg, p.x, p.y, p.w, p.h);
   const refitPhoto = () => {
     if (!photoImg) return;
@@ -2177,11 +2200,24 @@
       // Picking "#10 Sarah Smith" from the suggestions fills the number too.
       const m = name.value.match(/^#(\d{1,3})\s+(.+)$/);
       if (m) { num.value = m[1]; name.value = m[2]; }
-      s.fv.form[i] = { side: side.value, num: num.value, name: name.value, pos: pos.value };
+      s.fv.form[i] = { ...s.fv.form[i], side: side.value, num: num.value, name: name.value, pos: pos.value };
       save();
     };
     [side, num, name, pos].forEach(x => x.addEventListener(x === side ? 'change' : 'input', sync));
-    row.append(side, num, name, pos);
+    // Headshot: fitted like a spotlight photo; a cutout with a transparent background works best.
+    const file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.id = 'fvFile' + i;
+    const shot = el('button'); shot.type = 'button'; shot.id = 'fvShot' + i;
+    shot.onclick = () => {
+      if (s.fv.form[i].photo) { s.fv.form[i] = { ...s.fv.form[i], photo: '' }; save(); }
+      else file.click();
+    };
+    file.addEventListener('change', async () => {
+      if (!file.files[0]) return;
+      try { s.fv.form[i] = { ...s.fv.form[i], photo: await fittedPhoto(file.files[0]) }; save(); }
+      catch (e) { fvSay("That file isn't a picture Chrome can read. Try a PNG or JPG."); }
+      file.value = '';
+    });
+    row.append(side, num, name, pos, shot, file);
     return row;
   }));
 
@@ -2193,6 +2229,8 @@
       for (const [id, val] of [['fvSide', n.side], ['fvNum', n.num], ['fvName', n.name], ['fvPos', n.pos]]) {
         const e = $(id + i); if (document.activeElement !== e && e.value !== val) e.value = val;
       }
+      $('fvShot' + i).textContent = n.photo ? 'Remove headshot' : 'Headshot';
+      $('fvShot' + i).classList.toggle('active', !!n.photo);
     });
     const players = [...parseXI(s.xi.home.raw).map(p => [p, 'home']), ...parseXI(s.xi.away.raw).map(p => [p, 'away'])];
     $('fvPlayers').replaceChildren(...players.filter(([p]) => p.name).map(([p]) => new Option((p.num ? '#' + p.num + ' ' : '') + p.name)));

@@ -146,7 +146,7 @@
       p.nominees.forEach((n, i) => {
         const b = el('button', 'nom'); b.type = 'button'; b.disabled = sending;
         const who = el('div'); who.append(el('div', 'nm', n.name), el('div', 'pos', n.pos || ''));
-        b.append(el('div', 'num', n.num || '–'), who, el('span', 'go', 'Vote'));
+        b.append(el('div', 'num', n.num ? '#' + n.num : '–'), who, el('span', 'go', 'Vote'));
         b.setAttribute('aria-label', 'Vote for ' + (n.num ? '#' + n.num + ' ' : '') + n.name);
         b.onclick = () => castVote(i);
         list.append(b);
