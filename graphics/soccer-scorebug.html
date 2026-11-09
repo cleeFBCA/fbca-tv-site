@@ -13,7 +13,13 @@
 
   One file, two modes:
     soccer-scorebug.html       -> control page (operator)
-    soccer-scorebug.html#bug   -> 1920x1080 output on a magenta (#FF00FF) key background
+    soccer-scorebug.html#bug   -> 1920x1080 output on a magenta (#FF00FF) key background,
+                                  or the fill (graphics on black) when "Fill + key" is on
+    soccer-scorebug.html#key   -> 1920x1080 key signal: the graphics as a white silhouette on black
+
+  Fill + key gives the ATEM a real alpha channel: send #bug and #key to two inputs and set a
+  downstream keyer's fill and key sources to them, with Pre Multiplied Key on (the fill is drawn
+  over black, so it is already premultiplied). Soft edges and anti-aliased text then key cleanly.
 
   The output carries the scorebug (with added time and card counts), a
   drop-down under the bug (goals, cards, subs), a lower third, a penalty
@@ -50,6 +56,9 @@
   /* ---------- Output mode ---------- */
   body.bug { background: var(--key); overflow: hidden; cursor: none; }
   body.bug #control { display: none; }
+  /* Key signal: every drawn pixel turns white at its own opacity, over black. */
+  body.bug.matte { background: #000; }
+  body.bug.matte #stage { background: transparent; filter: brightness(0) invert(1); }
   #stage {
     position: absolute; left: 0; top: 0;
     width: 1920px; height: 1080px;
@@ -453,6 +462,14 @@
   @media (max-width: 560px) { .lineup-cols { grid-template-columns: 1fr; } }
   .lineup-cols h3 { font-family: var(--font-display); text-transform: uppercase; font-size: 20px; margin: 0; }
   .count { font-size: 13px; color: var(--chalk-dim); margin-top: 4px; }
+  label.switch { position: relative; display: flex; align-items: center; gap: 12px; margin: 12px 0 0; cursor: pointer; font-size: 15px; color: var(--chalk); }
+  label.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  label.switch .track { flex: 0 0 auto; position: relative; width: 46px; height: 26px; border-radius: 13px; background: var(--line); transition: background .2s; }
+  label.switch .track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--chalk); transition: transform .2s; }
+  label.switch input:checked + .track { background: var(--gold); }
+  label.switch input:checked + .track::after { transform: translateX(20px); background: var(--pine); }
+  label.switch input:focus-visible + .track { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+  label.switch small { display: block; color: var(--chalk-dim); font-size: 13px; }
   label.check { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--chalk); margin: 10px 0 0; cursor: pointer; }
   label.check input { width: 18px; height: 18px; accent-color: var(--gold); }
   .sb-use { display: flex; flex-wrap: wrap; gap: 4px 22px; }
@@ -628,7 +645,7 @@
 
 <div id="control">
   <h1>Soccer Graphics</h1>
-  <p class="sub">Open the output window, drag it to the display that feeds the ATEM, and make it full screen. Key out <span id="keyNote">magenta (#FF00FF)</span>.</p>
+  <p class="sub" id="outNote">Open the output window, drag it to the display that feeds the ATEM, and make it full screen. Key out <span id="keyNote">magenta (#FF00FF)</span>.</p>
 
   <div class="grid">
     <div class="stack">
@@ -708,7 +725,10 @@
         <div class="row-btns" style="margin-top:10px">
           <button id="btnShow">Hide bug</button>
           <button id="btnOpen">Open output window</button>
+          <button id="btnOpenKey" hidden>Open key window</button>
         </div>
+        <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
+          <span>Fill + key (alpha channel)<small id="alphaHint">Off: one output on a chroma key color.</small></span></label>
         <div class="row-btns" style="margin:0">
           <p class="panel-note" id="panelNote"></p>
           <button id="btnPanelHide" style="flex:0 0 auto">Take down</button>
@@ -968,6 +988,7 @@
             <div><label for="awayFg">Away text color</label><input id="awayFg" type="color"></div>
           </div>
           <p class="warn" id="awayWarn"></p>
+          <div id="chromaOpts">
           <label for="keyColor">Key color (the background the ATEM keys out)</label>
           <div class="set-row">
             <input id="keyColor" type="color" style="flex:0 0 90px">
@@ -976,6 +997,8 @@
             <button data-keypreset="#0000FF">Blue</button>
           </div>
           <p class="warn" id="keyWarn"></p>
+          </div>
+          <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (Output card), so there is no key color. The graphics go out on black, with a separate key signal.</p>
           <div class="two">
             <div><label for="halfLen">Half length (min)</label><input id="halfLen" type="number" min="1" max="60"></div>
             <div><label for="otLen">OT length (min)</label><input id="otLen" type="number" min="1" max="30"></div>
@@ -996,8 +1019,9 @@
 <script>
 (() => {
   const STORE = 'eota-soccer-bug-v1';
-  const isBug = location.hash === '#bug';
-  document.body.className = isBug ? 'bug' : 'ctl';
+  const isMatte = location.hash === '#key';
+  const isBug = location.hash === '#bug' || isMatte;
+  document.body.className = isBug ? 'bug' + (isMatte ? ' matte' : '') : 'ctl';
 
   const FORMATIONS = ['4-4-2', '4-3-3', '4-2-3-1', '4-1-4-1', '4-5-1', '3-5-2', '3-4-3', '5-3-2', '5-4-1'];
   const HOME_COLORS = { bg: '#17402B', fg: '#F2C14E' };
@@ -1011,7 +1035,7 @@
 
   const defaults = () => ({
     home: 'FBCA', away: 'AWAY', homeScore: 0, awayScore: 0, homeReds: 0, awayReds: 0, homeYellows: 0, awayYellows: 0,
-    awayBg: '#1F3A93', awayFg: '#FFFFFF', keyColor: '#FF00FF',
+    awayBg: '#1F3A93', awayFg: '#FFFFFF', keyColor: '#FF00FF', keyMode: 'chroma', // 'alpha' = fill + key outputs
     period: '1ST', halfMin: 40, otMin: 10, dir: 'down', pos: 'tl', visible: true, swap: false,
     len: 40 * 60000, base: 0, running: false, startedAt: 0, added: 0,
     // What the scoreboard file (Scorebridge) drives when connected.
@@ -1123,7 +1147,8 @@
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const cardIcon = label => label === 'YELLOW CARD' ? el('i', 'cardicon y') : label === 'RED CARD' ? el('i', 'cardicon r') : null;
   // The key color fills everything around the graphics; the control preview uses it too.
-  const applyKey = () => document.documentElement.style.setProperty('--key', hex(s.keyColor, '#FF00FF'));
+  // With fill + key, the fill goes out on black (premultiplied) and the key window carries the alpha.
+  const applyKey = () => document.documentElement.style.setProperty('--key', s.keyMode === 'alpha' ? '#000000' : hex(s.keyColor, '#FF00FF'));
   const xiSide = () => s.panel.startsWith('xi-') ? s.panel.slice(3) : '';
   const PANEL_NAMES = { 'xi-home': () => s.home + ' lineup', 'xi-away': () => s.away + ' lineup', score: () => 'Score panel',
                         stats: () => 'Match stats', match: () => 'Matchup', spot: () => 'Player spotlight',
@@ -1675,13 +1700,29 @@
     applyKey();
     setField('keyColor', hex(s.keyColor, '#FF00FF'));
     const keyName = { '#FF00FF': 'magenta', '#00FF00': 'green', '#0000FF': 'blue' }[s.keyColor.toUpperCase()];
-    $('keyNote').textContent = (keyName ? keyName + ' ' : '') + '(' + s.keyColor.toUpperCase() + ')';
-    $('awayWarn').textContent = nearKey(s.awayBg) || nearKey(s.awayFg)
+    const alpha = s.keyMode === 'alpha';
+    $('alphaKey').checked = alpha;
+    $('btnOpen').textContent = alpha ? 'Open fill window' : 'Open output window';
+    $('btnOpenKey').hidden = !alpha;
+    $('chromaOpts').hidden = alpha;
+    $('alphaSetupNote').hidden = !alpha;
+    $('alphaHint').textContent = alpha
+      ? 'On: fill window and key window go to two ATEM inputs.'
+      : 'Off: one output on a chroma key color.';
+    if (alpha) {
+      $('outNote').textContent = 'Open the fill and key windows, drag each to the display that feeds its ATEM input, and make both full screen. '
+        + 'On the ATEM, set a downstream key\'s Fill Source to the fill input and Key Source to the key input, with Pre Multiplied Key on.';
+    } else {
+      $('outNote').replaceChildren('Open the output window, drag it to the display that feeds the ATEM, and make it full screen. Key out ', el('span', '', ''), '.');
+      $('outNote').lastElementChild.id = 'keyNote';
+      $('keyNote').textContent = (keyName ? keyName + ' ' : '') + '(' + s.keyColor.toUpperCase() + ')';
+    }
+    $('awayWarn').textContent = !alpha && (nearKey(s.awayBg) || nearKey(s.awayFg))
       ? 'This color is close to the key color and may go see-through on air. Pick a color further from it.' : '';
     // FBCA's own greens and golds are built into every graphic, so check them too.
     const clash = [['#17402B', 'green'], ['#1E5638', 'green'], ['#D9A521', 'gold'], ['#F2C14E', 'gold'], ['#0D2418', 'dark green']]
       .filter(([c]) => nearKey(c)).map(([, n]) => n);
-    $('keyWarn').textContent = clash.length
+    $('keyWarn').textContent = !alpha && clash.length
       ? `FBCA ${[...new Set(clash)].join(' and ')} is close to this key color, so parts of the scorebug, panels and lineup would go see-through. Magenta is the safe choice for FBCA's colors.`
       : '';
 
@@ -2070,6 +2111,8 @@
   $('btnShow').onclick = toggleBug;
   $('btnClockShow').onclick = () => { s.clockShow = !s.clockShow; save(); };
   $('btnOpen').onclick = () => window.open(location.pathname + '#bug', 'eota-soccer-bug', 'width=1280,height=720');
+  $('btnOpenKey').onclick = () => window.open(location.pathname + '#key', 'eota-soccer-key', 'width=1280,height=720');
+  $('alphaKey').addEventListener('change', e => { s.keyMode = e.target.checked ? 'alpha' : 'chroma'; save(); });
 
   // --- Tabs ---
   const showTab = name => {
