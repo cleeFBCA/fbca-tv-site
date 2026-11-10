@@ -1,9 +1,10 @@
 # Fan vote (Cloudflare Worker)
 
 Stores the Player of the Game fan vote for EOTA broadcasts. Fans vote at
-**fbca.tv/vote** (`vote/index.html`); the soccer graphics control page
-(`graphics/soccer-scorebug.html`, **Fan vote** tab) creates the vote, opens and
-closes it, and reads the tally for the on-air results panel. Free on
+**fbca.tv/vote** (`vote/index.html`); the soccer and basketball graphics control
+pages (`graphics/soccer-scorebug.html` and `graphics/basketball-scorebug.html`, **Fan vote**
+tab) create the vote, open and
+close it, and read the tally for the on-air results panel. Free on
 Cloudflare's Workers free plan, with the votes in a D1 database.
 
 Address: `https://eota-fan-vote.clee-625.workers.dev`
