@@ -129,8 +129,8 @@
 
   /* ---------- Timeout: wipes over the logo, bonus and fouls up to the score ----------
      In: a gold light bar rides the wipe from the outer edge to the score, the letters of TIMEOUT
-     rise in one after another, then the timeouts-left marks (the one just used flares and dims)
-     and the countdown. A soft shine passes over it every few seconds. Out: it wipes back. */
+     rise in one after another, then the timeouts-left marks (the one just used flares and dims).
+     It holds for a second (TO_HOLD), then wipes back. */
   .bb .tov { grid-row: 2; position: relative; z-index: 3; overflow: hidden; pointer-events: none; }
   .bb .tov.L { grid-column: 1 / 3; }
   .bb .tov.R { grid-column: 6 / 8; }
@@ -169,40 +169,23 @@
   @keyframes tvSweepL { 0% { opacity: 1; transform: translateX(-48px) skewX(-18deg); } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(352px) skewX(-18deg); } }
   @keyframes tvSweepR { 0% { opacity: 1; transform: translateX(352px) skewX(18deg); } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(-48px) skewX(18deg); } }
   .tov .tv-txt {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 0 22px 5px 24px; color: var(--f); opacity: 0; transition: opacity .14s;
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    padding: 0 20px 4px; color: var(--f); opacity: 0; transition: opacity .14s;
   }
-  .tov.R .tv-txt { flex-direction: row-reverse; padding: 0 24px 5px 22px; }
   .tov.on .tv-txt { opacity: 1; transition: none; }
-  .tov .tv-main { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-  .tov.R .tv-main { align-items: flex-end; }
-  .tov .tv-word { font-size: 44px; font-weight: 800; letter-spacing: .12em; line-height: .86; white-space: nowrap; text-shadow: 0 2px 10px rgba(0,0,0,.35); }
+  .tov .tv-main { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+  .tov .tv-word { font-size: 46px; font-weight: 800; letter-spacing: .12em; line-height: 1; white-space: nowrap; text-shadow: 0 2px 10px rgba(0,0,0,.35); }
   .tov .tv-word span { display: inline-block; opacity: 0; }
   .tov.on .tv-word span { animation: tvLetter .5s cubic-bezier(.2,.9,.25,1.25) both; animation-delay: calc(.2s + var(--i) * .035s); }
   @keyframes tvLetter { from { opacity: 0; transform: translateY(16px) scale(.8); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
-  .tov .tv-sub { display: flex; align-items: center; gap: 10px; font-family: var(--font-body); font-weight: 700; font-size: 14px; letter-spacing: .16em; white-space: nowrap; opacity: 0; }
-  .tov.R .tv-sub { flex-direction: row-reverse; }
-  .tov.on .tv-sub { animation: tvUp .4s .55s ease-out both; }
+  .tov .tv-sub { display: flex; align-items: center; opacity: 0; }
+  .tov.on .tv-sub { animation: tvUp .35s .45s ease-out both; }
   @keyframes tvUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .tov .tv-pips { display: flex; gap: 5px; }
   .tov .tv-pips i { width: 16px; height: 4px; border-radius: 1px; background: currentColor; opacity: .25; }
   .tov .tv-pips i.on { opacity: 1; }
-  .tov.on .tv-pips i.just { animation: tvJust 1.8s .75s ease-out both; }
+  .tov.on .tv-pips i.just { animation: tvJust 1.2s .6s ease-out both; }
   @keyframes tvJust { 0%, 45% { opacity: 1; background: var(--gold-hi); box-shadow: 0 0 10px var(--gold-hi); } 100% { opacity: .25; } }
-  .tov .tv-time { font-size: 42px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; opacity: 0; text-shadow: 0 2px 10px rgba(0,0,0,.35); }
-  .tov.on .tv-time { animation: tvUp .4s .5s ease-out both; }
-  .tov .tv-time.low { color: var(--gold-hi); }
-  .tov .tv-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(0,0,0,.3); opacity: 0; }
-  .tov.on .tv-bar.run { opacity: 1; transition: opacity .3s .5s; }
-  .tov .tv-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-hi)); }
-  .tov.L .tv-bar i { transform-origin: left; }
-  .tov.R .tv-bar i { transform-origin: right; }
-  .tov::after {
-    content: ''; position: absolute; inset: 0; opacity: 0;
-    background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.2) 50%, transparent 65%);
-  }
-  .tov.on::after { opacity: 1; animation: tvShine 4.5s 1.6s ease-in-out infinite both; }
-  @keyframes tvShine { 0% { transform: translateX(-110%); } 30%, 100% { transform: translateX(110%); } }
 
   .bb .mid { grid-column: 4; grid-row: 1 / 3; position: relative; display: flex; flex-direction: column; align-items: center; padding-top: 12px; }
   .bb .pill {
@@ -412,11 +395,9 @@
     </div>
     <div class="sc R" id="scR"><span class="n"></span><div class="tos"></div></div>
     <div class="tov L" id="tovL" aria-hidden="true"><div class="tv-bg"></div><div class="tv-mark"></div><div class="tv-sweep"></div>
-      <div class="tv-txt"><div class="tv-main"><div class="tv-word"><span style="--i:0">T</span><span style="--i:1">I</span><span style="--i:2">M</span><span style="--i:3">E</span><span style="--i:4">O</span><span style="--i:5">U</span><span style="--i:6">T</span></div><div class="tv-sub"><span class="tv-kind"></span><span class="tv-pips"></span></div></div><div class="tv-time"></div></div>
-      <div class="tv-bar"><i></i></div></div>
+      <div class="tv-txt"><div class="tv-main"><div class="tv-word"><span style="--i:0">T</span><span style="--i:1">I</span><span style="--i:2">M</span><span style="--i:3">E</span><span style="--i:4">O</span><span style="--i:5">U</span><span style="--i:6">T</span></div><div class="tv-sub"><span class="tv-pips"></span></div></div></div></div>
     <div class="tov R" id="tovR" aria-hidden="true"><div class="tv-bg"></div><div class="tv-mark"></div><div class="tv-sweep"></div>
-      <div class="tv-txt"><div class="tv-main"><div class="tv-word"><span style="--i:0">T</span><span style="--i:1">I</span><span style="--i:2">M</span><span style="--i:3">E</span><span style="--i:4">O</span><span style="--i:5">U</span><span style="--i:6">T</span></div><div class="tv-sub"><span class="tv-kind"></span><span class="tv-pips"></span></div></div><div class="tv-time"></div></div>
-      <div class="tv-bar"><i></i></div></div>
+      <div class="tv-txt"><div class="tv-main"><div class="tv-word"><span style="--i:0">T</span><span style="--i:1">I</span><span style="--i:2">M</span><span style="--i:3">E</span><span style="--i:4">O</span><span style="--i:5">U</span><span style="--i:6">T</span></div><div class="tv-sub"><span class="tv-pips"></span></div></div></div></div>
     <div class="info R" id="infoR"><span class="bonus">BONUS</span><span class="fouls"></span></div>
     <div class="cap R" id="capR"></div>
     <div class="nm R" id="nmR"><span class="rec"></span><span class="t"></span></div>
@@ -637,7 +618,7 @@
             <div><label for="shotFull">Shot clock full reset (sec)</label><input id="shotFull" type="number" min="5" max="60"></div>
             <div><label for="shotShort">Short reset (sec)</label><input id="shotShort" type="number" min="5" max="60"></div>
           </div>
-          <label class="check"><input type="checkbox" id="toAuto"> Put up the timeout graphic when the scoreboard's timeouts-left drops</label>
+          <label class="check"><input type="checkbox" id="toAuto"> Flash the timeout graphic when the scoreboard's timeouts-left drops</label>
           <p class="hint">Defaults follow NFHS: four 8-minute quarters and 4-minute overtimes; 5 timeouts (three 60-second, two 30-second), plus one more for each team at the start of each overtime; two free throws starting with the 5th team foul of each quarter (no one-and-one), with fouls carrying from the 4th quarter into overtime; shot clock off, since TAPPS doesn't use one. If a game does, NFHS uses 35 seconds; the 20-second short reset is a common state option.</p>
           <p class="hint">BONUS shows on the team that shoots the free throws: the one whose opponent has reached the bonus foul number.</p>
         </div>
@@ -651,7 +632,7 @@
             <li><kbd>R</kbd> shot clock full reset, <kbd>T</kbd> short reset (when the shot clock is on)</li>
             <li><kbd>X</kbd> flip the possession arrow, <kbd>H</kbd> hide / show the bug</li>
             <li><kbd>N</kbd> show / hide the lower third in the form</li>
-            <li><kbd>V</kbd> fan vote QR lower third, <kbd>Esc</kbd> take down the results or the timeout graphic</li>
+            <li><kbd>V</kbd> fan vote QR lower third, <kbd>Esc</kbd> take down the results</li>
           </ul>
           <p class="hint">Left and right follow the screen, so they stay under your hands after a swap.</p>
         </div>
@@ -690,7 +671,7 @@
     fv: { poll: '', match: '', nominees: [], open: false, totals: [], total: 0, pct: [], leaders: [], l3: false,
           form: [0, 1, 2, 3].map(() => ({ side: 'home', num: '', name: '', pos: '', photo: '' })) },
     panel: '',
-    // The timeout graphic: { side, len (ms; 0 when the length isn't known), at } or null.
+    // The timeout graphic: { side, at } for the last timeout called; the bug shows it briefly from \`at\`.
     // toAuto: show it when the scoreboard's timeouts-left drops.
     toCall: null, toAuto: true,
     l3: { on: false, name: '', stat: '', team: 'home', until: 0 },
@@ -786,21 +767,20 @@
       $('poss' + pos).classList.toggle('on', s.poss === side);
     };
     // Timeout graphic. The animation restarts for each new timeout (keyed by when it was called).
-    const toSeen = { L: '', R: '' }, pipSig = { L: '', R: '' };
+    const TO_HOLD = 2000; // ms from the call to the wipe back: about 1 s to come in, then 1 s fully up
+    const toSeen = { L: '', R: '' }, pipSig = { L: '', R: '' }, toTimer = { L: 0, R: 0 };
     const paintTimeout = (pos, side) => {
       const node = $('tov' + pos), t = s[side], call = s.toCall && s.toCall.side === side ? s.toCall : null;
       node.style.setProperty('--c', hex(t.bg, '#333333')); node.style.setProperty('--f', hex(t.fg, '#FFFFFF'));
       const mark = node.querySelector('.tv-mark'), img = t.logo ? 'url("' + t.logo + '")' : 'none';
       if (mark.dataset.v !== img) { mark.dataset.v = img; mark.style.backgroundImage = img; }
-      const key = call ? side + ':' + call.at : '';
+      const key = call ? side + ':' + call.at : '', left = call ? call.at + TO_HOLD - Date.now() : 0;
       if (key !== toSeen[pos]) {
         toSeen[pos] = key; pipSig[pos] = '';
-        node.classList.remove('on');
-        if (call) {
-          node.querySelector('.tv-kind').textContent = call.len ? call.len / 1000 + '-SECOND' : '';
-          node.querySelector('.tv-bar').classList.toggle('run', !!call.len);
-          node.querySelector('.tv-time').textContent = '';
+        node.classList.remove('on'); clearTimeout(toTimer[pos]);
+        if (call && left > 0) {
           void node.offsetWidth; node.classList.add('on');
+          toTimer[pos] = setTimeout(() => node.classList.remove('on'), left);
         }
       }
       if (!call) return;
@@ -809,16 +789,6 @@
       if (sig !== pipSig[pos]) {
         pipSig[pos] = sig;
         node.querySelector('.tv-pips').replaceChildren(...Array.from({ length: dots }, (_, i) => el('i', i < t.to ? 'on' : i === t.to ? 'just' : '')));
-      }
-    };
-    const tickTimeout = now => {
-      for (const pos of ['L', 'R']) {
-        const node = $('tov' + pos), call = s.toCall;
-        if (!call || !call.len || !node.classList.contains('on')) continue;
-        const left = Math.max(0, call.at + call.len - now), sec = Math.ceil(left / 1000);
-        const time = node.querySelector('.tv-time'), text = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
-        if (time.textContent !== text) { time.textContent = text; time.classList.toggle('low', sec <= 10); }
-        node.querySelector('.tv-bar i').style.transform = `scaleX(${left / call.len})`;
       }
     };
     // Fan vote: the QR lower third (not while the results are up) and the results panel.
@@ -909,7 +879,6 @@
         sig = parts.map(p => p.join('=')).join('|');
       }
       if (sig !== pillSig) { pillSig = sig; $('pill').replaceChildren(...parts.map(([c, t]) => el('span', c, t))); }
-      tickTimeout(now);
       requestAnimationFrame(tick);
     };
     const accept = next => { s = merge(next); render(); };
@@ -971,15 +940,14 @@
     save();
   };
   const timeout = (side, n) => { s[side].to = Math.min(s.toMax + 3, Math.max(0, s[side].to + n)); save(); };
-  // Call a timeout: takes one off (unless the scoreboard keeps the count), stops our clock, and puts
-  // up the graphic with a countdown. It comes down when the clock starts again, or by hand.
-  const callTimeout = (side, sec) => {
+  // Call a timeout: takes one off (unless the scoreboard keeps the count), stops our clock, and
+  // flashes the timeout graphic on the bug.
+  const callTimeout = side => {
     if (s.src.tos !== 'board') s[side].to = Math.max(0, s[side].to - 1);
     if (s.running && !(s.src.clock === 'board' && sbHandle)) startStop(); // a connected scoreboard stops its own clock
-    s.toCall = { side, len: sec * 1000, at: Date.now() };
+    s.toCall = { side, at: Date.now() };
     save();
   };
-  const endTimeout = () => { if (s.toCall) { s.toCall = null; save(); } };
   const flipPoss = () => { s.poss = s.poss === 'home' ? 'away' : s.poss === 'away' ? 'home' : leftSide(); save(); };
   const toggleBug = () => { s.visible = !s.visible; save(); };
 
@@ -992,14 +960,12 @@
       <div class="stat-ctl">Team fouls <button data-f="-1">&minus;</button><b class="fv"></b><button data-f="1">+</button></div>
       <div class="stat-ctl bon" style="color:var(--gold-hi)"></div>
       <div class="stat-ctl">Timeouts left <button data-t="-1">&minus;</button><b class="tv"></b><button data-t="1">+</button></div>
-      <div class="row-btns tocall"><button data-to="60">60s timeout</button><button data-to="30">30s timeout</button></div>
-      <div class="row-btns toend" hidden><button class="danger" data-toend>End timeout</button></div>
+      <div class="row-btns"><button data-to>Timeout</button></div>
       <div class="stat-ctl"><button class="possb">Possession arrow</button></div>`;
     c.querySelectorAll('[data-n]').forEach(b => b.onclick = () => bump(side, +b.dataset.n));
     c.querySelectorAll('[data-f]').forEach(b => b.onclick = () => foul(side, +b.dataset.f));
     c.querySelectorAll('[data-t]').forEach(b => b.onclick = () => timeout(side, +b.dataset.t));
-    c.querySelectorAll('[data-to]').forEach(b => b.onclick = () => callTimeout(side, +b.dataset.to));
-    c.querySelector('[data-toend]').onclick = endTimeout;
+    c.querySelector('[data-to]').onclick = () => callTimeout(side);
     c.querySelector('.possb').onclick = () => { s.poss = s.poss === side ? '' : side; save(); };
     teamCards[side] = c;
   }
@@ -1180,8 +1146,6 @@
       c.querySelector('.fv').textContent = t.fouls;
       c.querySelector('.bon').textContent = inBonus(side) ? 'In the bonus' : '';
       c.querySelector('.tv').textContent = t.to;
-      const mine = !!(s.toCall && s.toCall.side === side);
-      c.querySelector('.tocall').hidden = mine; c.querySelector('.toend').hidden = !mine;
       c.querySelector('.possb').classList.toggle('active', s.poss === side);
       const d = setupFor[side];
       d.querySelectorAll('[data-k]').forEach(inp => setField(inp, t[inp.dataset.k]));
@@ -1213,17 +1177,6 @@
     $('cClock').textContent = clockOff() ? '—' : fmtClock(remaining(now));
     $('cShot').textContent = s.shotOn ? (shotShown(now) ? 'Shot ' + fmtShot(shotLeft(now)) : 'Shot clock hidden') : '';
     if (s.running && remaining(now) === 0) startStop(); // the horn: stop at 0.0
-    const tc = s.toCall;
-    if (tc) {
-      // Down when play resumes (the clock starts), or a while after the countdown runs out.
-      if ((s.running && s.startedAt > tc.at) || now > tc.at + (tc.len ? tc.len + 10000 : 90000)) endTimeout();
-      else {
-        const sec = tc.len ? Math.ceil(Math.max(0, tc.at + tc.len - now) / 1000) : 0;
-        const label = 'End timeout' + (tc.len ? ' · ' + Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0') : '');
-        const b = teamCards[tc.side].querySelector('[data-toend]');
-        if (b.textContent !== label) b.textContent = label;
-      }
-    }
     requestAnimationFrame(ctlTick);
   };
 
@@ -1278,7 +1231,7 @@
       q: () => bump(leftSide(), 1), w: () => bump(leftSide(), 2), e: () => bump(leftSide(), 3), a: () => bump(leftSide(), -1),
       i: () => bump(rightSide(), 1), o: () => bump(rightSide(), 2), p: () => bump(rightSide(), 3), l: () => bump(rightSide(), -1),
       s: () => foul(leftSide(), 1), k: () => foul(rightSide(), 1),
-      v: () => $('fvShowQr').click(), n: () => s.l3.on ? hideL3() : $('btnL3Show').click(), escape: () => { if (s.panel || s.toCall) { s.panel = ''; s.toCall = null; save(); } },
+      v: () => $('fvShowQr').click(), n: () => s.l3.on ? hideL3() : $('btnL3Show').click(), escape: () => { if (s.panel) { s.panel = ''; save(); } },
       r: () => s.shotOn && resetShot(s.shotFull), t: () => s.shotOn && resetShot(s.shotShort), x: flipPoss, h: toggleBug
     };
     const fn = map[e.key.toLowerCase()];
@@ -1874,8 +1827,8 @@
     if (s.src.tos === 'board') for (const side of SIDES) if ((c = changed(side + 'T', f[side + 'TO']))) {
       const v = parseInt(f[side + 'TO'], 10);
       if (isNaN(v)) continue;
-      // A timeout taken on the console: put up the graphic (length unknown), unless one is already up for them.
-      if (!c.first && s.toAuto && v < s[side].to && !(s.toCall && s.toCall.side === side)) s.toCall = { side, len: 0, at: Date.now() };
+      // A timeout taken on the console: flash the graphic.
+      if (!c.first && s.toAuto && v < s[side].to) s.toCall = { side, at: Date.now() };
       s[side].to = Math.min(v, s.toMax);
     }
     save();
