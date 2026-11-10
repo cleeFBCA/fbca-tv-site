@@ -89,7 +89,8 @@
   .bb .cap { grid-row: 2; display: grid; place-items: center; background: linear-gradient(160deg, color-mix(in srgb, var(--c) 88%, #fff), color-mix(in srgb, var(--c) 78%, #000)); }
   .bb .cap.L { grid-column: 1; }
   .bb .cap.R { grid-column: 7; }
-  .bb .cap img { max-width: 78px; max-height: 64px; object-fit: contain; display: block; }
+  /* Logos are fitted to the cap's 112x82 shape in the editor, so they fill it as framed there. */
+  .bb .cap img { width: 100%; height: 100%; object-fit: contain; display: block; }
   .bb .cap .ini { font-size: 34px; font-weight: 800; color: var(--f); letter-spacing: .02em; }
 
   .bb .info {
@@ -146,6 +147,14 @@
   .pn .ph .logo { position: absolute; right: 26px; top: 50%; height: 40px; transform: translateY(-50%); background: var(--field); opacity: .9; }
   .pn .pb { background: var(--pine); color: var(--chalk); }
   .pn .pf { height: 8px; background: var(--gold); }
+  /* Lower third: name in team colors over a stat line, just above the bar (same spot as the fan vote one) */
+  .l3 { position: absolute; left: 300px; bottom: 188px; display: flex; }
+  .l3.hidden { clip-path: inset(0 100% 0 0); }
+  .l3 .accent { width: 14px; background: var(--gold); }
+  .l3 .lbody { display: flex; flex-direction: column; }
+  .l3 .lname { padding: 8px 30px 4px; font-size: 54px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
+  .l3 .lstat { padding: 8px 30px; background: var(--pine); color: var(--chalk); font-size: 30px; font-weight: 600; letter-spacing: .05em; white-space: nowrap; }
+  .l3 .lstat:empty { display: none; }
   /* Fan vote: a lower third with the QR code for fbca.tv/vote at its end, just above the bar */
   .fvl { position: absolute; left: 300px; bottom: 188px; display: flex; height: 176px; }
   .fvl.hidden { clip-path: inset(0 100% 0 0); }
@@ -181,6 +190,18 @@
   #pVote .r .p { text-align: right; font-variant-numeric: tabular-nums; }
   #pVote .r.lead { color: var(--chalk); }
   #pVote .r.lead .f { background: var(--gold); }
+
+  /* Team stats panel (from the stat sheet): team names and scores, then one row per stat */
+  #pStats { left: 460px; top: 110px; width: 1000px; }
+  #pStats .ph small { font-size: 30px; letter-spacing: .1em; color: var(--turf); }
+  #pStats .ph small:empty { display: none; }
+  #pStats .tm { display: grid; grid-template-columns: 1fr 1fr; height: 82px; }
+  #pStats .tcell { display: flex; align-items: center; justify-content: space-between; padding: 0 30px; font-size: 48px; font-weight: 800; white-space: nowrap; overflow: hidden; }
+  #pStats .stat { display: grid; grid-template-columns: 200px 1fr 200px; align-items: center; height: 64px; border-top: 1px solid rgba(243,239,226,.1); }
+  #pStats .v { text-align: center; font-size: 44px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; }
+  #pStats .v small { font-size: 26px; color: var(--chalk-dim); margin-left: 8px; }
+  #pStats .lbl { text-align: center; font-size: 25px; font-weight: 700; letter-spacing: .14em; color: var(--chalk-dim); }
+  #pStats .bar { display: flex; height: 8px; margin-top: 8px; background: rgba(243,239,226,.12); }
 
   /* ---------- Control mode ---------- */
   body.ctl { background: var(--pine); color: var(--chalk); font-family: var(--font-body); }
@@ -236,6 +257,13 @@
   .logo-row { display: flex; gap: 8px; align-items: center; }
   .logo-row img { width: 44px; height: 44px; object-fit: contain; background: var(--pine); border-radius: 6px; }
   .logo-row button { min-height: 0; padding: 8px 12px; flex: 0 0 auto; }
+  .logo-fit { display: grid; grid-template-columns: 224px 1fr; gap: 14px; align-items: start; margin-top: 10px; }
+  @media (max-width: 560px) { .logo-fit { grid-template-columns: 1fr; } }
+  .logo-fit[hidden] { display: none; }
+  .logo-fit canvas { width: 224px; height: 164px; border-radius: 4px; display: block; }
+  .logo-fit label { margin-top: 0; }
+  .logo-fit input[type=range] { padding: 0; accent-color: var(--gold); }
+  .logo-fit button { min-height: 0; padding: 8px 12px; margin-top: 8px; }
   label.switch { position: relative; display: flex; align-items: center; gap: 12px; margin: 12px 0 0; cursor: pointer; font-size: 15px; color: var(--chalk); }
   label.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
   label.switch .track { flex: 0 0 auto; position: relative; width: 46px; height: 26px; border-radius: 13px; background: var(--line); transition: background .2s; }
@@ -260,6 +288,23 @@
   .fv-tally .t { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
   .fv-tally .f { height: 100%; background: var(--gold); }
   .fv-tally b { text-align: right; font-variant-numeric: tabular-nums; }
+  table.src { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 15px; }
+  table.src th { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--chalk-dim); text-align: left; padding: 0 6px 6px; }
+  table.src td { padding: 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+  table.src td:first-child { color: var(--chalk); }
+  table.src label.check { margin: 0; }
+  table.src small { color: var(--chalk-dim); font-size: 13px; }
+  table.src .na { color: var(--line); }
+  table.mini { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+  table.mini th, table.mini td { padding: 4px 6px; border-top: 1px solid var(--line); text-align: center; }
+  table.mini td:first-child, table.mini th:first-child { text-align: left; color: var(--chalk-dim); }
+  button.small { min-height: 0; padding: 6px 12px; font-size: 14px; flex: 0 0 auto; }
+  .l3-list { list-style: none; margin: 12px 0 0; padding: 0; }
+  .l3-list li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .l3-list .txt { flex: 1; min-width: 0; }
+  .l3-list .txt b { display: block; }
+  .l3-list .txt span { color: var(--chalk-dim); font-size: 14px; }
+  .on-air { color: var(--tally); font-weight: 700; font-size: 13px; letter-spacing: .06em; }
   .keys { color: var(--chalk-dim); font-size: 14px; line-height: 1.7; margin: 0; padding: 0; list-style: none; }
 </style>
 </head>
@@ -282,10 +327,22 @@
     <div class="nm R" id="nmR"><span class="rec"></span><span class="t"></span></div>
   </div></div>
 
+  <div class="l3 wipe hidden" id="l3">
+    <div class="accent"></div>
+    <div class="lbody"><div class="lname" id="l3Name"></div><div class="lstat" id="l3Stat"></div></div>
+  </div>
+
   <div class="fvl wipe hidden" id="fvl">
     <div class="accent"></div>
     <div class="fbody"><div class="kick">Fan vote</div><div class="head">Vote for Player of the Game</div><div class="sub">Scan the code or go to <b>fbca.tv/vote</b></div></div>
     <div class="qr"><svg viewBox="-2 -2 29 29" shape-rendering="crispEdges" aria-label="QR code for fbca.tv/vote"><path fill="#0D2418" d="M0 0h7v1h-7zM8 0h5v1h-5zM14 0h1v1h-1zM18 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM11 1h1v1h-1zM18 1h1v1h-1zM24 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h1v1h-1zM13 2h2v1h-2zM18 2h1v1h-1zM20 2h3v1h-3zM24 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM12 3h2v1h-2zM18 3h1v1h-1zM20 3h3v1h-3zM24 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h4v1h-4zM16 4h1v1h-1zM18 4h1v1h-1zM20 4h3v1h-3zM24 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM11 5h2v1h-2zM14 5h1v1h-1zM18 5h1v1h-1zM24 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h7v1h-7zM10 7h1v1h-1zM13 7h4v1h-4zM0 8h1v1h-1zM3 8h8v1h-8zM12 8h1v1h-1zM14 8h1v1h-1zM16 8h2v1h-2zM20 8h1v1h-1zM22 8h3v1h-3zM1 9h4v1h-4zM7 9h4v1h-4zM12 9h1v1h-1zM14 9h3v1h-3zM19 9h5v1h-5zM0 10h7v1h-7zM11 10h2v1h-2zM15 10h1v1h-1zM17 10h2v1h-2zM21 10h1v1h-1zM24 10h1v1h-1zM0 11h4v1h-4zM5 11h1v1h-1zM8 11h5v1h-5zM14 11h2v1h-2zM17 11h1v1h-1zM19 11h1v1h-1zM21 11h4v1h-4zM0 12h2v1h-2zM3 12h1v1h-1zM5 12h5v1h-5zM11 12h1v1h-1zM13 12h3v1h-3zM18 12h2v1h-2zM24 12h1v1h-1zM0 13h1v1h-1zM5 13h1v1h-1zM8 13h3v1h-3zM12 13h1v1h-1zM14 13h3v1h-3zM20 13h1v1h-1zM23 13h1v1h-1zM0 14h4v1h-4zM6 14h3v1h-3zM10 14h1v1h-1zM14 14h3v1h-3zM18 14h1v1h-1zM20 14h5v1h-5zM0 15h1v1h-1zM3 15h1v1h-1zM7 15h2v1h-2zM10 15h1v1h-1zM12 15h3v1h-3zM17 15h1v1h-1zM19 15h1v1h-1zM21 15h2v1h-2zM24 15h1v1h-1zM0 16h1v1h-1zM3 16h1v1h-1zM5 16h2v1h-2zM9 16h4v1h-4zM15 16h6v1h-6zM22 16h2v1h-2zM8 17h4v1h-4zM15 17h2v1h-2zM20 17h1v1h-1zM22 17h2v1h-2zM0 18h7v1h-7zM8 18h1v1h-1zM12 18h3v1h-3zM16 18h1v1h-1zM18 18h1v1h-1zM20 18h1v1h-1zM24 18h1v1h-1zM0 19h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM11 19h1v1h-1zM13 19h1v1h-1zM15 19h2v1h-2zM20 19h1v1h-1zM24 19h1v1h-1zM0 20h1v1h-1zM2 20h3v1h-3zM6 20h1v1h-1zM8 20h2v1h-2zM11 20h1v1h-1zM13 20h1v1h-1zM15 20h6v1h-6zM23 20h2v1h-2zM0 21h1v1h-1zM2 21h3v1h-3zM6 21h1v1h-1zM8 21h1v1h-1zM12 21h2v1h-2zM17 21h2v1h-2zM23 21h2v1h-2zM0 22h1v1h-1zM2 22h3v1h-3zM6 22h1v1h-1zM11 22h1v1h-1zM13 22h1v1h-1zM16 22h2v1h-2zM20 22h5v1h-5zM0 23h1v1h-1zM6 23h1v1h-1zM9 23h1v1h-1zM11 23h3v1h-3zM17 23h4v1h-4zM22 23h3v1h-3zM0 24h7v1h-7zM8 24h6v1h-6zM15 24h2v1h-2zM18 24h1v1h-1zM21 24h1v1h-1zM24 24h1v1h-1z"/></svg></div>
+  </div>
+
+  <div class="pn wipe hidden" id="pStats">
+    <div class="ph">Team stats <small id="pstTitle"></small><i class="logo"></i></div>
+    <div class="tm"><div class="tcell" id="pstL"></div><div class="tcell" id="pstR"></div></div>
+    <div class="pb" id="pstRows"></div>
+    <div class="pf"></div>
   </div>
 
   <div class="pn wipe hidden" id="pVote">
@@ -332,18 +389,18 @@
       </div>
 
       <div class="card">
-        <h2>Scoreboard connection</h2>
+        <h2>Data sources</h2>
         <div class="row-btns"><button id="btnSb">Connect scoreboard</button></div>
-        <div class="sb-use" id="sbUse" hidden>
-          <label class="check"><input type="checkbox" data-sbuse="clock"> Clock <small data-sbval="clock"></small></label>
-          <label class="check"><input type="checkbox" data-sbuse="shot"> Shot clock <small data-sbval="shot"></small></label>
-          <label class="check"><input type="checkbox" data-sbuse="period"> Period <small data-sbval="period"></small></label>
-          <label class="check"><input type="checkbox" data-sbuse="score"> Score <small data-sbval="score"></small></label>
-          <label class="check"><input type="checkbox" data-sbuse="fouls"> Fouls <small data-sbval="fouls"></small></label>
-          <label class="check"><input type="checkbox" data-sbuse="tos"> Timeouts <small data-sbval="tos"></small></label>
-        </div>
         <p class="hint" id="sbStatus">Run the clock, score and fouls from the gym scoreboard. Pick the file Scorebridge writes.</p>
         <p class="hint" id="sbRate" hidden></p>
+        <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
+        <div class="set-row"><input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…"><button id="btnSheet">Connect</button></div>
+        <p class="hint" id="sheetStatus">Not connected.</p>
+        <table class="src">
+          <thead><tr><th>Item</th><th>Scoreboard</th><th>Stat sheet</th></tr></thead>
+          <tbody id="srcRows"></tbody>
+        </table>
+        <p class="hint">Tick where each item comes from. Unticked items run from the buttons on this page. Pairs show left–right as on screen. The stat sheet is read every 20 seconds and runs behind the game while it's being typed, so the score and fouls are best from the scoreboard.</p>
         <p class="hint" id="sbKeys" hidden></p>
       </div>
     </div>
@@ -370,13 +427,45 @@
 
       <div class="card">
         <div class="tabs" id="tabs">
-          <button data-tab="setup" class="active">Setup</button>
+          <button data-tab="l3" class="active">Lower third</button>
+          <button data-tab="stats">Team stats</button>
           <button data-tab="fv">Fan vote</button>
+          <button data-tab="setup">Setup</button>
           <button data-tab="rules">Rules</button>
           <button data-tab="keys">Keys</button>
         </div>
 
-        <div data-pane="setup">
+        <div data-pane="l3">
+          <div id="l3Sheet" hidden>
+            <label for="lsPlayer">From the stat sheet: pick a player to fill in tonight's stats</label>
+            <div class="two">
+              <select id="lsPlayer"></select>
+              <select id="lsFmt" aria-label="Stat line">
+                <option value="basic">PTS · REB · AST</option>
+                <option value="full">PTS · FG · REB · AST (+ STL, BLK)</option>
+                <option value="shoot">Shooting: FG · 3PT · FT</option>
+              </select>
+            </div>
+            <p class="hint" id="lsAge"></p>
+          </div>
+          <label for="lName">Name</label>
+          <input id="lName" maxlength="36" placeholder="#23 Jordan Ellis">
+          <label for="lStat">Stat line</label>
+          <input id="lStat" maxlength="60" placeholder="18 PTS · 6 REB · 4 AST">
+          <div class="two">
+            <div><label for="lTeam">Colors</label><select id="lTeam"><option value="home"></option><option value="away"></option><option value="none">Neutral</option></select></div>
+            <div><label for="lSecs">Auto-hide after (sec, 0 = stay)</label><input id="lSecs" type="number" min="0" max="120" value="8"></div>
+          </div>
+          <div class="row-btns" style="margin-top:14px">
+            <button class="primary" id="btnL3Show">Show lower third</button>
+            <button id="btnL3Hide">Hide</button>
+            <button id="btnL3Save">Save to list</button>
+          </div>
+          <p class="hint">Save lower thirds before the game (announcers, starters, key players), then show them from the list with one click. Showing one takes down the fan vote QR, since they share a spot.</p>
+          <ul class="l3-list" id="l3List"></ul>
+        </div>
+
+        <div data-pane="setup" hidden>
           <label for="game">Load from schedule</label>
           <select id="game"><option value="">Schedule not loaded. Type teams below.</option></select>
           <div id="teamSetup"></div>
@@ -392,6 +481,17 @@
           </div>
           <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (Output card), so there is no key color.</p>
           <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, fouls, timeouts, clock)</button></div>
+        </div>
+
+        <div data-pane="stats" hidden>
+          <label for="statsLabel">Title</label>
+          <select id="statsLabel">
+            <option value="auto">Automatic (Halftime, Final, or the quarter)</option>
+            <option value="HALFTIME">Halftime</option><option value="FINAL">Final</option><option value="">No title</option>
+          </select>
+          <div class="row-btns" style="margin-top:12px"><button class="primary" id="btnStats">Show team stats</button></div>
+          <p class="hint" id="statsNote"></p>
+          <table class="mini" id="statsPreview"></table>
         </div>
 
         <div data-pane="fv" hidden>
@@ -445,6 +545,7 @@
             <li><kbd>S</kbd> / <kbd>K</kbd> foul on the left / right team</li>
             <li><kbd>R</kbd> shot clock full reset, <kbd>T</kbd> short reset (when the shot clock is on)</li>
             <li><kbd>X</kbd> flip the possession arrow, <kbd>H</kbd> hide / show the bug</li>
+            <li><kbd>N</kbd> show / hide the lower third in the form</li>
             <li><kbd>V</kbd> fan vote QR lower third, <kbd>Esc</kbd> take down the results</li>
           </ul>
           <p class="hint">Left and right follow the screen, so they stay under your hands after a swap.</p>
@@ -472,19 +573,27 @@
     // TAPPS plays without a shot clock; turn it on in Rules if a game uses one.
     shotOn: false, shotFull: 35, shotShort: 20, shot: { len: 35000, base: 0, startedAt: 0, show: true },
     poss: '', visible: true, keyColor: '#FF00FF', keyMode: 'chroma',
-    sbUse: { clock: true, shot: true, period: false, score: false, fouls: false, tos: false },
+    // Where each item comes from: 'board' (scoreboard file), 'sheet' (stat sheet) or '' (buttons on the page).
+    src: { clock: 'board', shot: 'board', period: '', score: '', fouls: '', tos: '', players: 'sheet', team: 'sheet' },
+    // Stat sheet: the share link, whether it's connected, and the last read (players and totals per side).
+    sheetUrl: '', sheetOn: false, sheet: { at: 0, err: '', home: null, away: null },
+    // The sheet counts fouls for the whole game; the bug shows them since the quarter started.
+    foulBase: { home: 0, away: 0 }, statsLabel: 'auto',
     flash: { home: 0, away: 0 },
     // Fan vote: the current vote on the server (the control page keeps it in sync), the nominee form,
     // whether the QR lower third is up, and panel: '' or 'vote' (the results graphic).
     fv: { poll: '', match: '', nominees: [], open: false, totals: [], total: 0, pct: [], leaders: [], l3: false,
           form: [0, 1, 2, 3].map(() => ({ side: 'home', num: '', name: '', pos: '', photo: '' })) },
-    panel: ''
+    panel: '',
+    l3: { on: false, name: '', stat: '', team: 'home', until: 0 },
+    l3List: []
   });
   const merge = raw => {
     const d = defaults(), out = Object.assign(d, raw);
     out.home = Object.assign(d.home, raw.home); out.away = Object.assign(defaults().away, raw.away);
-    out.shot = Object.assign(defaults().shot, raw.shot); out.sbUse = Object.assign(defaults().sbUse, raw.sbUse);
-    out.fv = Object.assign(defaults().fv, raw.fv);
+    out.shot = Object.assign(defaults().shot, raw.shot); out.src = Object.assign(defaults().src, raw.src);
+    out.sheet = Object.assign(defaults().sheet, raw.sheet); out.foulBase = Object.assign(defaults().foulBase, raw.foulBase);
+    out.fv = Object.assign(defaults().fv, raw.fv); out.l3 = Object.assign(defaults().l3, raw.l3);
     return out;
   };
   const load = () => { try { const r = localStorage.getItem(STORE); if (r) return merge(JSON.parse(r)); } catch (e) {} return defaults(); };
@@ -522,6 +631,22 @@
     document.documentElement.style.setProperty('--key', s.keyMode === 'alpha' ? '#000000' : hex(s.keyColor, '#FF00FF'));
     document.documentElement.dataset.key = s.keyMode;
   };
+
+  // Stat sheet math: each player row holds made/missed 2s, 3s and free throws, rebounds, assists...
+  const STAT_KEYS = ['m2', 'x2', 'm3', 'x3', 'mft', 'xft', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf'];
+  const derive = p => ({ ...p, pts: 2 * p.m2 + 3 * p.m3 + p.mft, reb: p.oreb + p.dreb, fgm: p.m2 + p.m3,
+                         fga: p.m2 + p.x2 + p.m3 + p.x3, tpa: p.m3 + p.x3, fta: p.mft + p.xft });
+  const pct = (m, a) => a ? Math.round(100 * m / a) + '%' : '–';
+  const sheetLive = () => s.sheetOn && s.sheet.at > 0 && !!s.sheet.home;
+  const teamTot = side => derive(s.sheet[side].tot);
+  // Rows for the team stats panel: [label, left value, right value, number for the bar, small text].
+  const TEAM_ROWS = [
+    ['FG', t => [t.fgm + '-' + t.fga, t.fga ? t.fgm / t.fga : 0, pct(t.fgm, t.fga)]],
+    ['3PT', t => [t.m3 + '-' + t.tpa, t.tpa ? t.m3 / t.tpa : 0, pct(t.m3, t.tpa)]],
+    ['FT', t => [t.mft + '-' + t.fta, t.fta ? t.mft / t.fta : 0, pct(t.mft, t.fta)]],
+    ['Rebounds', t => [t.reb, t.reb]], ['Off. rebounds', t => [t.oreb, t.oreb]], ['Assists', t => [t.ast, t.ast]],
+    ['Steals', t => [t.stl, t.stl]], ['Blocks', t => [t.blk, t.blk]], ['Turnovers', t => [t.to, t.to]]
+  ];
 
   // ---------- Output mode ----------
   if (isBug) {
@@ -571,14 +696,57 @@
         return row;
       }));
     };
+    const renderL3 = () => {
+      const l = s.l3;
+      $('l3').classList.toggle('hidden', !l.on || !!s.panel);
+      if (!l.on) return; // the old text stays while it wipes away
+      const c = l.team === 'none' ? { bg: '#F3EFE2', fg: '#0D2418' } : { bg: hex(s[l.team].bg, '#17402B'), fg: hex(s[l.team].fg, '#FFFFFF') };
+      $('l3Name').textContent = l.name;
+      $('l3Name').style.background = c.bg; $('l3Name').style.color = c.fg;
+      $('l3Stat').textContent = l.stat;
+    };
+    const statsTitle = () => s.statsLabel !== 'auto' ? s.statsLabel
+      : s.period === 'HALF' ? 'HALFTIME' : s.period === 'FINAL' ? 'FINAL' : periodLabel(s.period) + (/OT/.test(s.period) ? '' : ' QUARTER');
+    // Bars: FBCA in gold, the opponent in its color unless that's too dark to see on the panel.
+    const barColor = side => {
+      if (side === 'home') return '#F2C14E';
+      const c = hex(s[side].bg, '#B9C6B4'), n = parseInt(c.slice(1), 16);
+      return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255 < .3 ? '#B9C6B4' : c;
+    };
+    const renderStatsPanel = () => {
+      if (!sheetLive()) return;
+      $('pstTitle').textContent = statsTitle() ? '· ' + statsTitle() : '';
+      const L = leftSide(), R = rightSide();
+      for (const [id, side] of [['pstL', L], ['pstR', R]]) {
+        const c = $(id); c.style.background = hex(s[side].bg, '#17402B'); c.style.color = hex(s[side].fg, '#FFFFFF');
+        c.replaceChildren(el('span', null, s[side].name), el('span', null, s[side].score));
+      }
+      const tl = teamTot(L), tr = teamTot(R);
+      $('pstRows').replaceChildren(...TEAM_ROWS.map(([label, fn]) => {
+        const [lv, ln, lp] = fn(tl), [rv, rn, rp] = fn(tr);
+        const val = (v, p) => { const d = el('div', 'v', v); if (p) d.append(el('small', null, p)); return d; };
+        const mid = el('div'), bar = el('div', 'bar');
+        if (ln + rn > 0) {
+          const a = el('div'), b = el('div');
+          a.style.cssText = `width:${100 * ln / (ln + rn)}%;background:${barColor(L)}`;
+          b.style.cssText = `width:${100 * rn / (ln + rn)}%;background:${barColor(R)}`;
+          bar.append(a, b);
+        }
+        mid.append(el('div', 'lbl', label), bar);
+        const row = el('div', 'stat'); row.append(val(lv, lp), mid, val(rv, rp));
+        return row;
+      }));
+    };
     const renderFanVote = () => {
       $('fvl').classList.toggle('hidden', !s.fv.l3 || !!s.panel);
-      const on = s.panel === 'vote';
-      $('pVote').classList.toggle('hidden', !on);
-      if (on) renderVotePanel(); // the old content stays while the panel wipes away
+      // One full-screen panel at a time; the old content stays while a panel wipes away.
+      $('pVote').classList.toggle('hidden', s.panel !== 'vote');
+      if (s.panel === 'vote') renderVotePanel();
+      $('pStats').classList.toggle('hidden', s.panel !== 'stats' || !sheetLive());
+      if (s.panel === 'stats') renderStatsPanel();
     };
     const render = () => {
-      applyKey(); renderFanVote();
+      applyKey(); renderL3(); renderFanVote();
       $('bb').classList.toggle('hidden', !s.visible);
       paintSide('L', leftSide()); paintSide('R', rightSide());
       pillSig = '';
@@ -635,7 +803,11 @@
     s.shot = { ...s.shot, len: s.shotFull * 1000, base: 0, show: true };
     // Team fouls: new quarter (or new half) resets; overtime carries the 4th quarter's count.
     const resetAt = s.foulReset === 'half' ? ['3Q'] : ['1Q', '2Q', '3Q', '4Q'];
-    if (resetAt.includes(p) && p !== was) SIDES.forEach(side => s[side].fouls = 0);
+    if (resetAt.includes(p) && p !== was) SIDES.forEach(side => {
+      s[side].fouls = 0;
+      // From here on, sheet fouls count from what the sheet has now.
+      if (sheetLive()) s.foulBase[side] = s.sheet[side].tot.pf;
+    });
     // NFHS gives each team one more timeout per overtime, added to whatever is left.
     if (/OT/.test(p) && p !== was) SIDES.forEach(side => s[side].to += 1);
     save();
@@ -645,7 +817,12 @@
     if (n > 0) s.flash = { ...s.flash, [side]: s.flash[side] + 1 };
     save();
   };
-  const foul = (side, n) => { s[side].fouls = Math.max(0, s[side].fouls + n); save(); };
+  // With fouls from the sheet, + and − nudge the starting point, so the fix survives the next read.
+  const foul = (side, n) => {
+    if (s.src.fouls === 'sheet' && sheetLive()) { s.foulBase[side] -= n; sheetToBug(); }
+    else s[side].fouls = Math.max(0, s[side].fouls + n);
+    save();
+  };
   const timeout = (side, n) => { s[side].to = Math.min(s.toMax + 3, Math.max(0, s[side].to + n)); save(); };
   const flipPoss = () => { s.poss = s.poss === 'home' ? 'away' : s.poss === 'away' ? 'home' : leftSide(); save(); };
   const toggleBug = () => { s.visible = !s.visible; save(); };
@@ -667,8 +844,66 @@
     teamCards[side] = c;
   }
 
+  // Logo library: every uploaded logo is remembered by team name on this computer, so a school's logo
+  // comes back the next time they're picked from the schedule or typed in.
+  const LOGOS = 'eota-team-logos';
+  const logoLib = () => { try { return JSON.parse(localStorage.getItem(LOGOS) || '{}'); } catch (e) { return {}; } };
+  const rememberLogo = (name, url) => {
+    const lib = logoLib(); if (url) lib[name] = url; else delete lib[name];
+    try { localStorage.setItem(LOGOS, JSON.stringify(lib)); } catch (e) {}
+  };
+  const knownLogo = name => logoLib()[name] || '';
+
   // --- Team setup fields ---
-  const setupFor = {};
+  // --- Logo fitting ---
+  const CAP_W = 224, CAP_H = 164; // the 112x82 end cap at 2x
+  // Work on a copy no bigger than 800 px. With bg on, pixels close to the corner color fade out
+  // (soft edge), so a logo on a white or solid box keys cleanly. Returns the copy and the logo's bounds.
+  const logoSource = (img, bg) => {
+    const k = Math.min(1, 800 / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * k)), h = Math.max(1, Math.round(img.height * k));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    const data = ctx.getImageData(0, 0, w, h), a = data.data;
+    if (bg) {
+      const corners = [0, w - 1, (h - 1) * w, h * w - 1].map(i => [a[i * 4], a[i * 4 + 1], a[i * 4 + 2]]);
+      const ref = [0, 1, 2].map(j => corners.reduce((sum, c) => sum + c[j], 0) / 4);
+      for (let i = 0; i < a.length; i += 4) {
+        const dist = Math.hypot(a[i] - ref[0], a[i + 1] - ref[1], a[i + 2] - ref[2]);
+        a[i + 3] = Math.round(a[i + 3] * Math.min(1, Math.max(0, (dist - 24) / 40)));
+      }
+      ctx.putImageData(data, 0, 0);
+    }
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
+      if (a[(y * w + x) * 4 + 3] > 40) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    const box = x1 < 0 ? { x: 0, y: 0, w, h } : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+    return { src: c, box };
+  };
+  // Turn background removal on by default for pictures with no transparency and a plain, even border.
+  const needsBgRemoval = img => {
+    const k = Math.min(1, 200 / Math.max(img.width, img.height));
+    const w = Math.max(2, Math.round(img.width * k)), h = Math.max(2, Math.round(img.height * k));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    const a = ctx.getImageData(0, 0, w, h).data;
+    let clear = 0; for (let i = 3; i < a.length; i += 4) if (a[i] < 250) clear++;
+    if (clear > w * h * .01) return false; // already has a transparent background
+    const px = i => [a[i * 4], a[i * 4 + 1], a[i * 4 + 2]];
+    const cs = [px(0), px(w - 1), px((h - 1) * w), px(h * w - 1)];
+    return cs.every(c => Math.hypot(c[0] - cs[0][0], c[1] - cs[0][1], c[2] - cs[0][2]) < 30);
+  };
+  // The logo centered in the cap with a 10% margin, then the Size and Left/right, Up/down adjustments.
+  const renderLogo = (src, b, z, dx, dy) => {
+    const out = document.createElement('canvas'); out.width = CAP_W; out.height = CAP_H;
+    const k = Math.min(CAP_W * .8 / b.w, CAP_H * .8 / b.h) * z;
+    const x = CAP_W / 2 + dx * CAP_W / 100 - (b.x + b.w / 2) * k, y = CAP_H / 2 + dy * CAP_H / 100 - (b.y + b.h / 2) * k;
+    const ctx = out.getContext('2d'); ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, x, y, src.width * k, src.height * k);
+    return out;
+  };
+
+  const setupFor = {}, setupRedraw = {};
   for (const side of SIDES) {
     const d = el('div');
     d.innerHTML = `<div class="pane-h">${side === 'home' ? 'Home' : 'Away'}</div>
@@ -676,26 +911,64 @@
         <div><label>Record (optional, e.g. 8-2)</label><input data-k="rec" maxlength="8"></div></div>
       <div class="two"><div><label>Team color</label><input data-k="bg" type="color"></div>
         <div><label>Text color on the logo end</label><input data-k="fg" type="color"></div></div>
-      <label>Logo (PNG with a transparent background keys best)</label>
+      <label>Logo (any PNG or JPG; adjust it below. Remembered for this team on this computer)</label>
       <div class="logo-row"><img alt="" hidden><input type="file" accept="image/*"><button hidden>Remove</button></div>
+      <div class="logo-fit" hidden>
+        <canvas width="224" height="164" aria-label="Logo preview on the end cap"></canvas>
+        <div>
+          <label>Size</label><input type="range" data-fit="z" min="50" max="200" value="100">
+          <label>Left / right</label><input type="range" data-fit="x" min="-50" max="50" value="0">
+          <label>Up / down</label><input type="range" data-fit="y" min="-50" max="50" value="0">
+          <label class="check"><input type="checkbox" data-fit="bg"> Make the background see-through</label>
+          <button type="button" data-fit="reset">Reset fit</button> <button type="button" data-fit="done">Done</button>
+        </div>
+      </div>
       <p class="warn"></p>`;
     d.querySelectorAll('[data-k]').forEach(inp => inp.addEventListener('input', () => {
-      s[side][inp.dataset.k] = inp.dataset.k === 'name' ? inp.value.toUpperCase() : inp.value; save();
+      s[side][inp.dataset.k] = inp.dataset.k === 'name' ? inp.value.toUpperCase() : inp.value;
+      if (inp.dataset.k === 'name') {
+        // Another team's saved logo never sticks to a new name; a logo saved under no other name (just uploaded) stays.
+        const known = knownLogo(s[side].name), owner = Object.keys(logoLib()).find(n => logoLib()[n] === s[side].logo);
+        if (known) s[side].logo = known; else if (owner && owner !== s[side].name) s[side].logo = '';
+      }
+      save();
     }));
-    const file = d.querySelector('input[type=file]');
+    // Logo editor: the upload is trimmed to the logo itself, centered in the end cap, and can be resized
+    // and nudged. The result is stored at the cap's shape (2x for sharpness), so it fills the cap as previewed.
+    const file = d.querySelector('input[type=file]'), fit = d.querySelector('.logo-fit');
+    const fv = k => fit.querySelector(`[data-fit="${k}"]`);
+    let ed = null; // { img, src (canvas, background removed when ticked), box }
+    const prep = () => {
+      const r = logoSource(ed.img, fv('bg').checked);
+      ed.src = r.src; ed.box = r.box;
+    };
+    const drawFit = commit => {
+      if (!ed) return;
+      const cv = fit.querySelector('canvas'), ctx = cv.getContext('2d'), bg = hex(s[side].bg, '#17402B');
+      const out = renderLogo(ed.src, ed.box, fv('z').value / 100, +fv('x').value, +fv('y').value);
+      // Preview on the cap's own gradient.
+      const g = ctx.createLinearGradient(0, 0, CAP_W, CAP_H); g.addColorStop(0, bg); g.addColorStop(1, '#000');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, CAP_W, CAP_H); ctx.globalAlpha = .28; ctx.fillStyle = g; ctx.fillRect(0, 0, CAP_W, CAP_H); ctx.globalAlpha = 1;
+      ctx.drawImage(out, 0, 0);
+      if (commit) { s[side].logo = out.toDataURL('image/webp', .92); rememberLogo(s[side].name, s[side].logo); save(); }
+    };
+    const resetFitSliders = () => { fv('z').value = 100; fv('x').value = 0; fv('y').value = 0; };
     file.onchange = () => {
       const f = file.files[0]; if (!f) return;
       const img = new Image();
       img.onload = () => {
-        // Shrink to 160 px so the state stays small enough to broadcast every save.
-        const k = Math.min(1, 160 / Math.max(img.width, img.height)), cv = document.createElement('canvas');
-        cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
-        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-        s[side].logo = cv.toDataURL('image/png'); URL.revokeObjectURL(img.src); file.value = ''; save();
+        ed = { img }; URL.revokeObjectURL(img.src); file.value = '';
+        fv('bg').checked = needsBgRemoval(img); prep(); resetFitSliders();
+        fit.hidden = false; drawFit(true);
       };
       img.src = URL.createObjectURL(f);
     };
-    d.querySelector('.logo-row button').onclick = () => { s[side].logo = ''; save(); };
+    for (const k of ['z', 'x', 'y']) { fv(k).addEventListener('input', () => drawFit(false)); fv(k).addEventListener('change', () => drawFit(true)); }
+    fv('bg').addEventListener('change', () => { prep(); drawFit(true); });
+    fv('reset').onclick = () => { resetFitSliders(); drawFit(true); };
+    fv('done').onclick = () => { fit.hidden = true; };
+    d.querySelector('.logo-row button').onclick = () => { rememberLogo(s[side].name, ''); s[side].logo = ''; ed = null; fit.hidden = true; save(); };
+    setupRedraw[side] = () => drawFit(false); // the preview follows the team color
     setupFor[side] = d;
   }
   $('teamSetup').append(setupFor.away, setupFor.home);
@@ -718,8 +991,12 @@
   const setField = (node, v) => { if (document.activeElement !== node) node.value = v; };
 
   let fvRenderHook = null; // draws the Fan vote tab (set up below)
+  let l3Hook = null; // lower third list and form labels (set up below)
+  let sheetHook = null; // data sources table, stat sheet status, sheet players, team stats tab (set up below)
   const renderCtl = () => {
     if (fvRenderHook) fvRenderHook();
+    if (l3Hook) l3Hook();
+    if (sheetHook) sheetHook();
     const now = Date.now(), alpha = s.keyMode === 'alpha';
     applyKey();
     $('cPeriod').textContent = periodLabel(s.period);
@@ -744,6 +1021,7 @@
       c.querySelector('.possb').classList.toggle('active', s.poss === side);
       const d = setupFor[side];
       d.querySelectorAll('[data-k]').forEach(inp => setField(inp, t[inp.dataset.k]));
+      setupRedraw[side]();
       const img = d.querySelector('img'), rm = d.querySelector('.logo-row button');
       img.hidden = rm.hidden = !t.logo; if (t.logo) img.src = t.logo;
       d.querySelector('.warn').textContent = !alpha && (nearKey(hex(t.bg, '#333333')) || nearKey(hex(t.fg, '#FFFFFF')))
@@ -809,7 +1087,7 @@
   $('btnReset').onclick = () => {
     if (!confirm('Reset scores, fouls, timeouts, possession and the clock?')) return;
     for (const side of SIDES) Object.assign(s[side], { score: 0, fouls: 0, to: s.toMax });
-    s.poss = ''; setPeriod('1Q');
+    s.poss = ''; s.l3.on = false; s.fv.l3 = false; s.panel = ''; s.foulBase = { home: 0, away: 0 }; setPeriod('1Q');
   };
   const showTab = name => {
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -824,7 +1102,7 @@
       q: () => bump(leftSide(), 1), w: () => bump(leftSide(), 2), e: () => bump(leftSide(), 3), a: () => bump(leftSide(), -1),
       i: () => bump(rightSide(), 1), o: () => bump(rightSide(), 2), p: () => bump(rightSide(), 3), l: () => bump(rightSide(), -1),
       s: () => foul(leftSide(), 1), k: () => foul(rightSide(), 1),
-      v: () => $('fvShowQr').click(), escape: () => { if (s.panel) { s.panel = ''; save(); } },
+      v: () => $('fvShowQr').click(), n: () => s.l3.on ? hideL3() : $('btnL3Show').click(), escape: () => { if (s.panel) { s.panel = ''; save(); } },
       r: () => s.shotOn && resetShot(s.shotFull), t: () => s.shotOn && resetShot(s.shotShort), x: flipPoss, h: toggleBug
     };
     const fn = map[e.key.toLowerCase()];
@@ -832,6 +1110,48 @@
   });
   // Keep Space from also "clicking" whichever button was last pressed.
   document.addEventListener('click', e => { const b = e.target.closest('button'); if (b) b.blur(); });
+
+  // --- Lower third ---
+  const untilFrom = id => { const sec = Math.max(0, parseInt($(id).value, 10) || 0); return sec ? Date.now() + sec * 1000 : 0; };
+  const showL3 = item => {
+    s.l3 = { on: true, name: item.name, stat: item.stat, team: item.team, until: untilFrom('lSecs') };
+    s.fv.l3 = false; // same spot as the fan vote lower third
+    save();
+  };
+  const hideL3 = () => { s.l3.on = false; save(); };
+  const l3FromForm = () => ({ name: $('lName').value.trim(), stat: $('lStat').value.trim(), team: $('lTeam').value });
+  $('btnL3Show').onclick = () => { const it = l3FromForm(); if (it.name) showL3(it); else $('lName').focus(); };
+  $('btnL3Hide').onclick = hideL3;
+  $('btnL3Save').onclick = () => {
+    const it = l3FromForm();
+    if (!it.name) { $('lName').focus(); return; }
+    s.l3List.push(it); save();
+    $('lName').value = ''; $('lStat').value = '';
+  };
+  ['lName', 'lStat'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $('btnL3Show').click(); }));
+  const renderL3List = () => {
+    $('l3List').replaceChildren(...s.l3List.map((item, i) => {
+      const li = el('li'), txt = el('div', 'txt');
+      txt.append(el('b', null, item.name), el('span', null, item.stat || ' '));
+      const live = s.l3.on && s.l3.name === item.name && s.l3.stat === item.stat;
+      if (live) txt.prepend(el('div', 'on-air', 'ON AIR'));
+      const show = el('button', 'small', live ? 'Hide' : 'Show');
+      show.onclick = () => live ? hideL3() : showL3(item);
+      const edit = el('button', 'small', 'Edit');
+      edit.onclick = () => { $('lName').value = item.name; $('lStat').value = item.stat; $('lTeam').value = item.team; };
+      const del = el('button', 'small', '✕'); del.title = 'Remove';
+      del.onclick = () => { s.l3List.splice(i, 1); save(); };
+      li.append(txt, show, edit, del);
+      return li;
+    }));
+  };
+  l3Hook = () => {
+    $('lTeam').options[0].text = s.home.name; $('lTeam').options[1].text = s.away.name;
+    $('btnL3Show').textContent = s.l3.on ? 'Update lower third' : 'Show lower third';
+    renderL3List();
+  };
+  // Auto-hide (a timer, not animation frames, so it still fires when this window is in the background).
+  setInterval(() => { if (s.l3.on && s.l3.until && Date.now() >= s.l3.until) hideL3(); }, 100);
 
   // --- Fan vote ---
   // The vote server (workers/fan-vote). ?fvapi=http://localhost:PORT points at a local copy for testing.
@@ -990,7 +1310,7 @@
     save();
     fvSay('Vote cleared. fbca.tv/vote shows that no vote is running.');
   };
-  $('fvShowQr').onclick = () => { s.fv.l3 = !s.fv.l3; save(); };
+  $('fvShowQr').onclick = () => { s.fv.l3 = !s.fv.l3; if (s.fv.l3) s.l3.on = false; save(); };
   $('fvShowRes').onclick = () => { s.panel = s.panel === 'vote' ? '' : 'vote'; save(); };
   $('fvKeySave').onclick = () => {
     try { localStorage.setItem(FV_KEY, $('fvKey').value.trim()); } catch (e) {}
@@ -998,6 +1318,157 @@
     fvSay(fvKey() ? 'Admin key saved on this computer.' : 'Admin key cleared.');
   };
   renderFv();
+
+  // --- Stat sheet sync ---
+  // The relay (workers/stat-sheet-relay) fetches the OneDrive file, which SharePoint won't serve to a page directly.
+  const RELAY = 'https://eota-stat-sheet-relay.clee-625.workers.dev/';
+  const SHEETJS = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  let xlsxReady = null, sheetTimer = 0, sheetBusy = false;
+  const loadSheetJS = () => xlsxReady || (xlsxReady = new Promise((ok, bad) => {
+    const tag = document.createElement('script');
+    tag.src = SHEETJS; tag.onload = ok; tag.onerror = () => { xlsxReady = null; bad(new Error('Could not load the Excel reader')); };
+    document.head.append(tag);
+  }));
+  // The EOTA basketball stat sheet: FBCA and Opponent tabs, players in rows 8-22. # in B, name in C,
+  // then made/missed 2s (D, E), 3s (F, G), free throws (H, I), off/def rebounds (J, K), Ast, Stl, Blk, TO (L-O)
+  // and fouls (P). Points and the rest are worked out here, so it doesn't matter whether Excel recalculated.
+  const SHEET_COLS = { m2: 'D', x2: 'E', m3: 'F', x3: 'G', mft: 'H', xft: 'I', oreb: 'J', dreb: 'K', ast: 'L', stl: 'M', blk: 'N', to: 'O', pf: 'P' };
+  const readSheet = wb => {
+    const out = {};
+    for (const [tab, side] of [['FBCA', 'home'], ['Opponent', 'away']]) {
+      const ws = wb.Sheets[tab];
+      if (!ws) throw new Error('No ' + tab + ' tab. Is this the EOTA basketball stat sheet?');
+      const cell = a => ws[a] ? ws[a].v : '';
+      const players = [];
+      for (let r = 8; r <= 22; r++) {
+        const num = String(cell('B' + r)).trim(), name = String(cell('C' + r)).trim();
+        if (!num && !name) continue;
+        const p = { num, name };
+        for (const [k, col] of Object.entries(SHEET_COLS)) p[k] = Number(cell(col + r)) || 0;
+        players.push(p);
+      }
+      const tot = Object.fromEntries(STAT_KEYS.map(k => [k, players.reduce((a, p) => a + p[k], 0)]));
+      out[side] = { players, tot };
+    }
+    return out;
+  };
+  // Score and fouls from the sheet, when those are ticked.
+  const sheetToBug = () => {
+    if (!sheetLive()) return;
+    for (const side of SIDES) {
+      if (s.src.score === 'sheet') {
+        const v = teamTot(side).pts;
+        if (v > s[side].score) s.flash = { ...s.flash, [side]: s.flash[side] + 1 };
+        s[side].score = v;
+      }
+      if (s.src.fouls === 'sheet') s[side].fouls = Math.max(0, s.sheet[side].tot.pf - s.foulBase[side]);
+    }
+  };
+  const pullSheet = async () => {
+    if (!s.sheetOn || sheetBusy) return;
+    sheetBusy = true;
+    try {
+      await loadSheetJS();
+      const r = await fetch(RELAY + '?url=' + encodeURIComponent(s.sheetUrl), { cache: 'no-store' });
+      if (!r.ok) throw new Error(await r.text());
+      const first = !sheetLive();
+      s.sheet = { at: Date.now(), err: '', ...readSheet(XLSX.read(await r.arrayBuffer(), { type: 'array' })) };
+      // Connecting mid-quarter with fouls from the sheet: count from here, keeping what the bug shows.
+      if (first && s.src.fouls === 'sheet') SIDES.forEach(side => s.foulBase[side] = s.sheet[side].tot.pf - s[side].fouls);
+      sheetToBug();
+    } catch (e) {
+      s.sheet.err = e.message || 'Could not read the stat sheet';
+    }
+    sheetBusy = false;
+    save();
+  };
+  const startSheet = () => { clearInterval(sheetTimer); if (s.sheetOn) { pullSheet(); sheetTimer = setInterval(pullSheet, 20000); } };
+  $('btnSheet').onclick = () => {
+    if (s.sheetOn) { s.sheetOn = false; clearInterval(sheetTimer); save(); return; }
+    const link = $('sheetUrl').value.trim();
+    if (!/^https:\/\/fortbendchristian-my\.sharepoint\.com\//.test(link)) {
+      $('sheetStatus').textContent = 'Paste the share link from Excel (Share → Copy link). It starts with https://fortbendchristian-my.sharepoint.com/:x:/';
+      $('sheetStatus').classList.add('warn'); return;
+    }
+    s.sheetUrl = link; s.sheetOn = true; s.sheet = { at: 0, err: '', home: null, away: null };
+    save(); startSheet();
+  };
+  const ago = at => { const sec = Math.round((Date.now() - at) / 1000); return sec < 60 ? sec + ' sec ago' : Math.round(sec / 60) + ' min ago'; };
+  const renderSheetStatus = () => {
+    setField($('sheetUrl'), s.sheetUrl);
+    $('btnSheet').textContent = s.sheetOn ? 'Disconnect' : 'Connect';
+    $('sheetUrl').disabled = s.sheetOn;
+    const st = $('sheetStatus');
+    st.classList.toggle('warn', !!(s.sheetOn && s.sheet.err));
+    st.textContent = !s.sheetOn ? 'Not connected.'
+      : s.sheet.err ? "Can't read the stat sheet: " + s.sheet.err + (s.sheet.at ? ' Showing the read from ' + ago(s.sheet.at) + '.' : '')
+      : s.sheet.at ? 'Connected. Read ' + ago(s.sheet.at) + '. Reads every 20 seconds.' : 'Connecting…';
+    $('lsAge').textContent = sheetLive() ? 'Stats as of the read ' + ago(s.sheet.at) + '.' : '';
+  };
+  setInterval(() => { if (s.sheetOn) renderSheetStatus(); }, 1000);
+
+  // Lower thirds from the sheet: the player list, and tonight's line in the chosen format.
+  const statLine = (p, fmt) => {
+    const d = derive(p), extra = [d.stl && d.stl + ' STL', d.blk && d.blk + ' BLK'].filter(Boolean);
+    if (fmt === 'shoot') return [d.fgm + '-' + d.fga + ' FG', d.tpa && d.m3 + '-' + d.tpa + ' 3PT', d.fta && d.mft + '-' + d.fta + ' FT'].filter(Boolean).join(' · ');
+    if (fmt === 'full') return [d.pts + ' PTS', d.fga && d.fgm + '-' + d.fga + ' FG', d.reb + ' REB', d.ast + ' AST', ...extra].filter(Boolean).join(' · ');
+    return d.pts + ' PTS · ' + d.reb + ' REB · ' + d.ast + ' AST';
+  };
+  const playerName = p => (p.num ? '#' + p.num + ' ' : '') + p.name;
+  let lsSig = '';
+  const renderSheetPlayers = () => {
+    const on = s.src.players === 'sheet' && sheetLive();
+    $('l3Sheet').hidden = !on;
+    if (!on) return;
+    const sig = JSON.stringify(SIDES.map(side => [s[side].name, s.sheet[side].players.map(playerName)]));
+    if (sig === lsSig) return; // keep the pick while the sheet re-reads
+    lsSig = sig;
+    const sel = $('lsPlayer'), keep = sel.value;
+    sel.replaceChildren(new Option('Pick a player…', ''));
+    for (const side of SIDES) {
+      const g = document.createElement('optgroup'); g.label = s[side].name;
+      s.sheet[side].players.forEach((p, i) => g.append(new Option(playerName(p), side + ':' + i)));
+      sel.append(g);
+    }
+    sel.value = keep;
+  };
+  const pickedPlayer = () => {
+    const [side, i] = $('lsPlayer').value.split(':');
+    return side && sheetLive() && s.sheet[side].players[+i] ? { side, p: s.sheet[side].players[+i] } : null;
+  };
+  const fillFromSheet = () => {
+    const pick = pickedPlayer(); if (!pick) return;
+    $('lName').value = playerName(pick.p); $('lStat').value = statLine(pick.p, $('lsFmt').value); $('lTeam').value = pick.side;
+  };
+  $('lsPlayer').addEventListener('change', fillFromSheet);
+  $('lsFmt').addEventListener('change', fillFromSheet);
+  // Showing a sheet player picks up the newest read, as long as the name in the form is still theirs.
+  const l3ShowBase = $('btnL3Show').onclick;
+  $('btnL3Show').onclick = () => {
+    const pick = pickedPlayer();
+    if (pick && $('lName').value.trim() === playerName(pick.p)) $('lStat').value = statLine(pick.p, $('lsFmt').value);
+    l3ShowBase();
+  };
+
+  // --- Team stats tab ---
+  $('statsLabel').addEventListener('change', e => { s.statsLabel = e.target.value; save(); });
+  $('btnStats').onclick = () => { s.panel = s.panel === 'stats' ? '' : 'stats'; save(); };
+  const renderStatsTab = () => {
+    const ok = s.src.team === 'sheet' && sheetLive();
+    setField($('statsLabel'), s.statsLabel);
+    $('btnStats').disabled = !ok && s.panel !== 'stats';
+    $('btnStats').textContent = s.panel === 'stats' ? 'Take down team stats' : 'Show team stats';
+    $('statsNote').textContent = ok ? 'From the stat sheet, read ' + ago(s.sheet.at) + '.'
+      : 'Connect the stat sheet and tick Team stats under Data sources to use this panel.';
+    if (!ok) { $('statsPreview').replaceChildren(); return; }
+    const L = leftSide(), R = rightSide(), tl = teamTot(L), tr = teamTot(R);
+    const head = el('tr'); head.append(el('th'), el('th', null, s[L].name), el('th', null, s[R].name));
+    $('statsPreview').replaceChildren(head, ...TEAM_ROWS.map(([label, fn]) => {
+      const [lv, , lp] = fn(tl), [rv, , rp] = fn(tr), row = el('tr');
+      row.append(el('td', null, label), el('td', null, lv + (lp ? ' (' + lp + ')' : '')), el('td', null, rv + (rp ? ' (' + rp + ')' : '')));
+      return row;
+    }));
+  };
 
   // --- Schedule: list basketball games so the opponent fills in with one pick ---
   const shortName = name => {
@@ -1019,7 +1490,7 @@
       o.value = g.id; sel.append(o);
       if (!next && d >= today) next = g.id;
     }
-    const apply = () => { const g = games.find(x => x.id === sel.value); if (!g) return; s.away.name = shortName(g.opponent); s.away.logo = '';
+    const apply = () => { const g = games.find(x => x.id === sel.value); if (!g) return; s.away.name = shortName(g.opponent); s.away.logo = knownLogo(s.away.name);
       s.swap = g.homeAway === 'away'; // the home team sits on the right
       save(); };
     sel.addEventListener('change', apply);
@@ -1093,24 +1564,21 @@
     try { f = sbFields(JSON.parse(text)); } catch (e) { return; } // caught mid-write; the next read gets it
     sbLastText = text; sbLatest = f; showSbValues();
     let c;
-    if (s.sbUse.period && (c = changed('period', f.period))) { const p = mapPeriod(f.period); if (p && p !== s.period) { if (c.first) s.period = p; else setPeriod(p); } }
-    if (s.sbUse.clock && f.clock != null && !clockOff()) applyBoardClock(f.clock);
-    if (s.sbUse.shot && f.shot != null) applyBoardShot(f.shot);
-    if (s.sbUse.score) for (const side of SIDES) if ((c = changed(side, f[side]))) {
+    if (s.src.period === 'board' && (c = changed('period', f.period))) { const p = mapPeriod(f.period); if (p && p !== s.period) { if (c.first) s.period = p; else setPeriod(p); } }
+    if (s.src.clock === 'board' && f.clock != null && !clockOff()) applyBoardClock(f.clock);
+    if (s.src.shot === 'board' && f.shot != null) applyBoardShot(f.shot);
+    if (s.src.score === 'board') for (const side of SIDES) if ((c = changed(side, f[side]))) {
       const v = parseInt(f[side], 10);
       if (!isNaN(v)) { if (!c.first && v > s[side].score) s.flash = { ...s.flash, [side]: s.flash[side] + 1 }; s[side].score = v; }
     }
-    if (s.sbUse.fouls) for (const side of SIDES) if (changed(side + 'F', f[side + 'Fouls'])) { const v = parseInt(f[side + 'Fouls'], 10); if (!isNaN(v)) s[side].fouls = v; }
-    if (s.sbUse.tos) for (const side of SIDES) if (changed(side + 'T', f[side + 'TO'])) { const v = parseInt(f[side + 'TO'], 10); if (!isNaN(v)) s[side].to = Math.min(v, s.toMax); }
+    if (s.src.fouls === 'board') for (const side of SIDES) if (changed(side + 'F', f[side + 'Fouls'])) { const v = parseInt(f[side + 'Fouls'], 10); if (!isNaN(v)) s[side].fouls = v; }
+    if (s.src.tos === 'board') for (const side of SIDES) if (changed(side + 'T', f[side + 'TO'])) { const v = parseInt(f[side + 'TO'], 10); if (!isNaN(v)) s[side].to = Math.min(v, s.toMax); }
     save();
   };
   const showSbValues = () => {
-    const f = sbLatest, none = 'not in file', pair = (a, b) => a != null || b != null ? (a ?? '?') + '–' + (b ?? '?') : none;
-    const vals = { clock: f.clock ?? none, shot: f.shot ?? none, period: f.period ?? none,
-                   score: pair(f.away, f.home), fouls: pair(f.awayFouls, f.homeFouls), tos: pair(f.awayTO, f.homeTO) };
-    document.querySelectorAll('[data-sbval]').forEach(n => n.textContent = vals[n.dataset.sbval]);
     $('sbKeys').hidden = !sbKeysSeen.length;
-    $('sbKeys').textContent = 'Fields in the file: ' + sbKeysSeen.join(', ') + '. (Pairs show away–home.)';
+    $('sbKeys').textContent = 'Fields in the scoreboard file: ' + sbKeysSeen.join(', ') + '.';
+    renderSrc();
   };
   const sbFail = name => {
     if (name === 'NotAllowedError') { sbStop(); sbStatus('Chrome no longer allows reading the scoreboard file. Click Connect scoreboard.', true); }
@@ -1154,7 +1622,7 @@
   const sbStart = h => {
     sbMod = 0; sbChangeAt = 0; sbPrevText = null; sbWrites = []; sbChanges = [];
     sbHandle = h; sbLastText = ''; sbReadAt = 0; sbFailSince = 0; sbSeen = {}; sbLatest = {}; sbRaw = '';
-    $('sbUse').hidden = false; $('btnSb').textContent = 'Disconnect scoreboard';
+    $('btnSb').textContent = 'Disconnect scoreboard';
     clearInterval(sbTimer); if (sbWorker) sbWorker.terminate(); sbWorker = null;
     try {
       const w = new Worker(URL.createObjectURL(new Blob([SB_WORKER], { type: 'text/javascript' })));
@@ -1170,24 +1638,63 @@
   };
   const sbStop = () => {
     clearInterval(sbTimer); if (sbWorker) { sbWorker.terminate(); sbWorker = null; }
-    sbHandle = null; $('sbUse').hidden = true; $('sbRate').hidden = true; $('sbKeys').hidden = true; $('btnSb').textContent = 'Connect scoreboard';
+    sbHandle = null; sbLatest = {}; $('sbRate').hidden = true; $('sbKeys').hidden = true; $('btnSb').textContent = 'Connect scoreboard'; renderSrc();
   };
-  document.querySelectorAll('[data-sbuse]').forEach(box => {
-    box.checked = !!s.sbUse[box.dataset.sbuse];
-    box.addEventListener('change', () => {
-      const k = box.dataset.sbuse;
-      s.sbUse = { ...s.sbUse, [k]: box.checked };
-      for (const key of Object.keys(sbSeen)) delete sbSeen[key]; // re-apply what the board says now
-      sbLastText = ''; save();
-      if (sbRaw) sbProcess(sbRaw);
-    });
-  });
+  // --- Data sources table: one row per item, a tick box per source that can supply it ---
+  const SRC_ITEMS = [['clock', 'Game clock', ['board']], ['shot', 'Shot clock', ['board']], ['period', 'Period', ['board']],
+                     ['score', 'Score', ['board', 'sheet']], ['fouls', 'Team fouls', ['board', 'sheet']], ['tos', 'Timeouts left', ['board']],
+                     ['players', 'Player stats (lower thirds)', ['sheet']], ['team', 'Team stats (stats panel)', ['sheet']]];
+  const srcBoxes = {};
+  $('srcRows').replaceChildren(...SRC_ITEMS.map(([key, label, from]) => {
+    const tr = el('tr'); tr.append(el('td', null, label));
+    for (const where of ['board', 'sheet']) {
+      const td = el('td');
+      if (!from.includes(where)) { td.append(el('span', 'na', '—')); tr.append(td); continue; }
+      const lab = el('label', 'check'), box = el('input'); box.type = 'checkbox';
+      box.setAttribute('aria-label', label + ' from the ' + (where === 'board' ? 'scoreboard' : 'stat sheet'));
+      box.addEventListener('change', () => {
+        // One source per item: ticking one unticks the other.
+        s.src = { ...s.src, [key]: box.checked ? where : '' };
+        for (const k of Object.keys(sbSeen)) delete sbSeen[k]; // re-apply what the board says now
+        sbLastText = '';
+        if (key === 'fouls' && box.checked && where === 'sheet' && sheetLive()) // count from now, keeping what the bug shows
+          SIDES.forEach(side => s.foulBase[side] = s.sheet[side].tot.pf - s[side].fouls);
+        save();
+        if (sbRaw) sbProcess(sbRaw);
+        if (sheetLive()) { sheetToBug(); save(); }
+      });
+      const val = el('small');
+      lab.append(box, val); td.append(lab); tr.append(td);
+      srcBoxes[key + '.' + where] = [box, val];
+    }
+    return tr;
+  }));
+  // Each source's current reading, next to its tick box.
+  const renderSrc = () => {
+    const f = sbLatest, L = leftSide(), R = rightSide(), hasBoard = !!sbHandle, hasSheet = sheetLive();
+    const pairBoard = k => f[L + k] != null || f[R + k] != null ? (f[L + k] ?? '?') + '–' + (f[R + k] ?? '?') : 'not in file';
+    const board = { clock: f.clock ?? 'not in file', shot: f.shot ?? 'not in file', period: f.period ?? 'not in file',
+                    score: f[L] != null || f[R] != null ? (f[L] ?? '?') + '–' + (f[R] ?? '?') : 'not in file',
+                    fouls: pairBoard('Fouls'), tos: pairBoard('TO') };
+    const sheet = hasSheet ? {
+      score: teamTot(L).pts + '–' + teamTot(R).pts,
+      fouls: s.src.fouls === 'sheet'
+        ? Math.max(0, s.sheet[L].tot.pf - s.foulBase[L]) + '–' + Math.max(0, s.sheet[R].tot.pf - s.foulBase[R]) + ' this quarter'
+        : s.sheet[L].tot.pf + '–' + s.sheet[R].tot.pf + ' in the game',
+      players: s.sheet.home.players.length + s.sheet.away.players.length + ' players',
+      team: 'ready' } : {};
+    for (const [id, [box, val]] of Object.entries(srcBoxes)) {
+      const [key, where] = id.split('.');
+      box.checked = s.src[key] === where;
+      val.textContent = where === 'board' ? (hasBoard ? ' ' + board[key] : '') : (hasSheet ? ' ' + sheet[key] : '');
+    }
+  };
   setInterval(() => {
     if (!sbHandle) return;
     $('sbRate').hidden = false; $('sbRate').textContent = sbRateText();
     if (sbFailSince && Date.now() - sbFailSince > 3000) sbStatus(`Can't read ${sbHandle.name} (${sbErr}). Still trying. Is Scorebridge running?`, true);
     else if (sbReadAt) {
-      const using = Object.keys(s.sbUse).filter(k => s.sbUse[k]).map(k => ({ tos: 'timeouts', shot: 'shot clock' })[k] || k);
+      const using = SRC_ITEMS.filter(([k]) => s.src[k] === 'board').map(([, label]) => label.toLowerCase());
       sbStatus('Connected to ' + sbHandle.name + '. ' + (using.length ? 'The scoreboard runs the ' + using.join(', ').replace(/, (?=[^,]*$)/, ' and ') + '.' : 'Tick what the scoreboard should run.'));
     }
   }, 500);
@@ -1205,6 +1712,9 @@
   }).catch(() => {});
 
   $('preview').src = location.pathname + '#bug';
+  // Set up last: it draws the data sources table, which is built in the scoreboard section above.
+  sheetHook = () => { renderSrc(); renderSheetStatus(); renderSheetPlayers(); renderStatsTab(); };
+  startSheet(); // picks the sync back up after a reload
   addEventListener('storage', e => { if (e.key === STORE && e.newValue) { s = merge(JSON.parse(e.newValue)); renderCtl(); } });
   renderCtl(); ctlTick();
 })();
