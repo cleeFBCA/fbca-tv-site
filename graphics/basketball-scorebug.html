@@ -86,7 +86,18 @@
   .bb .nm.L { grid-column: 1 / 3; }
   .bb .nm.R { grid-column: 6 / 8; justify-content: flex-end; }
 
-  .bb .cap { grid-row: 2; display: grid; place-items: center; background: linear-gradient(160deg, color-mix(in srgb, var(--c) 88%, #fff), color-mix(in srgb, var(--c) 78%, #000)); }
+  /* One continuous wash of the team color runs from under the logo through the fouls box,
+     so the logo has no square behind it. It hangs off the cap and spans cap + info (112 + 238). */
+  .bb .cap { grid-row: 2; position: relative; display: grid; place-items: center; }
+  .bb .cap::before {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 350px; z-index: -1; pointer-events: none;
+    background:
+      linear-gradient(rgba(255,255,255,.10), rgba(0,0,0,.18)),
+      linear-gradient(var(--dir), var(--c) 0, var(--c) 24%, color-mix(in srgb, var(--c) 70%, transparent) 42%, transparent 94%);
+    -webkit-mask: linear-gradient(var(--dir), #000 60%, transparent 94%); mask: linear-gradient(var(--dir), #000 60%, transparent 94%);
+  }
+  .bb .cap.L::before { left: 0; --dir: 90deg; }
+  .bb .cap.R::before { right: 0; --dir: 270deg; }
   .bb .cap.L { grid-column: 1; }
   .bb .cap.R { grid-column: 7; }
   /* Logos are fitted to the cap's 112x82 shape in the editor, so they fill it as framed there. */
@@ -97,8 +108,8 @@
     grid-row: 2; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 0 18px;
     font-family: var(--font-body); font-weight: 700; font-size: 19px; letter-spacing: .06em; line-height: 1.15;
   }
-  .bb .info.L { grid-column: 2; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 70%, transparent), transparent 85%); }
-  .bb .info.R { grid-column: 6; align-items: flex-end; text-align: right; background: linear-gradient(270deg, color-mix(in srgb, var(--c) 70%, transparent), transparent 85%); }
+  .bb .info.L { grid-column: 2; }
+  .bb .info.R { grid-column: 6; align-items: flex-end; text-align: right; }
   .bb .info .bonus { color: var(--gold-hi); font-weight: 800; visibility: hidden; }
   .bb .info .bonus.on { visibility: visible; }
   .bb .info .fouls { color: rgba(255,255,255,.88); }
@@ -947,8 +958,9 @@
       const cv = fit.querySelector('canvas'), ctx = cv.getContext('2d'), bg = hex(s[side].bg, '#17402B');
       const out = renderLogo(ed.src, ed.box, fv('z').value / 100, +fv('x').value, +fv('y').value);
       // Preview on the cap's own gradient.
-      const g = ctx.createLinearGradient(0, 0, CAP_W, CAP_H); g.addColorStop(0, bg); g.addColorStop(1, '#000');
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, CAP_W, CAP_H); ctx.globalAlpha = .28; ctx.fillStyle = g; ctx.fillRect(0, 0, CAP_W, CAP_H); ctx.globalAlpha = 1;
+      // Same look as the bug: solid team color with a light top-to-bottom sheen.
+      const g = ctx.createLinearGradient(0, 0, 0, CAP_H); g.addColorStop(0, 'rgba(255,255,255,.10)'); g.addColorStop(1, 'rgba(0,0,0,.18)');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, CAP_W, CAP_H); ctx.fillStyle = g; ctx.fillRect(0, 0, CAP_W, CAP_H);
       ctx.drawImage(out, 0, 0);
       if (commit) { s[side].logo = out.toDataURL('image/webp', .92); rememberLogo(s[side].name, s[side].logo); save(); }
     };
