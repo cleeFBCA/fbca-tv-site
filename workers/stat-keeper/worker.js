@@ -11,10 +11,10 @@
 //   GET  /ws?game=basketball            WebSocket: the game on connect, then each change
 //   POST /events  { gameId, events: [{ id, side, player, type, period, at }] }
 //   POST /undo    { gameId, ids: [...] }
-//   POST /meta    { gameId, meta: { keepers, period, names, rosters } }   (any subset)
+//   POST /meta    { gameId, meta: { keepers, period, names, colors, rosters } }   (any subset)
 //   POST /reset   { keepRosters }      starts a new game
 //   GET  /library                      saved teams: { teams: [{ name, roster, savedAt }] }
-//   POST /library { action: 'save', teams: [{ name, roster }] } | { action: 'delete', name }
+//   POST /library { action: 'save', teams: [{ name, color, roster }] } | { action: 'delete', name }
 //   POSTs and /library need Authorization: Bearer <STAT_KEY>.
 //
 // Saved teams outlive new games, so FBCA (varsity, JV) and opponents seen before are a pick
@@ -51,6 +51,8 @@ const withCors = (r, origin) => {
 };
 
 const clean = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+const colorOk = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
+const DEFAULT_COLORS = { home: '#17402B', away: '#1F3A93' };
 const idOk = v => typeof v === 'string' && /^[A-Za-z0-9_-]{6,40}$/.test(v);
 const newId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 16);
 
@@ -68,7 +70,7 @@ const cleanRoster = list => (Array.isArray(list) ? list : []).slice(0, MAX_ROSTE
 
 const defaultMeta = () => ({
   gameId: newId(), startedAt: Date.now(), keepers: 1, period: '1Q',
-  names: { home: 'FBCA', away: 'Opponent' }, rosters: { home: [], away: [] }
+  names: { home: 'FBCA', away: 'Opponent' }, colors: { ...DEFAULT_COLORS }, rosters: { home: [], away: [] }
 });
 
 export class Game extends DurableObject {
@@ -85,7 +87,12 @@ export class Game extends DurableObject {
 
   get(k, fallback) { const r = this.sql.exec('SELECT v FROM kv WHERE k = ?', k).toArray()[0]; return r ? JSON.parse(r.v) : fallback; }
   put(k, v) { this.sql.exec('INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v', k, JSON.stringify(v)); }
-  meta() { let m = this.get('meta'); if (!m) { m = defaultMeta(); this.put('meta', m); } return m; }
+  meta() {
+    let m = this.get('meta');
+    if (!m) { m = defaultMeta(); this.put('meta', m); }
+    if (!m.colors) m.colors = { ...DEFAULT_COLORS }; // games started before team colors
+    return m;
+  }
   rev() { return this.get('rev', 0); }
   bump() { const r = this.rev() + 1; this.put('rev', r); return r; }
   events() {
@@ -153,7 +160,7 @@ export class Game extends DurableObject {
         for (const t of (Array.isArray(body.teams) ? body.teams : []).slice(0, 4)) {
           const name = clean(t && t.name, 30), roster = cleanRoster(t && t.roster);
           if (!name || !roster.length) continue;
-          lib[keyOf(name)] = { name, roster, savedAt: Date.now() };
+          lib[keyOf(name)] = { name, roster, savedAt: Date.now(), ...(colorOk(t.color) ? { color: t.color.toUpperCase() } : {}) };
         }
         // Over the limit: forget the teams saved longest ago.
         const keys = Object.keys(lib).sort((a, b) => lib[b].savedAt - lib[a].savedAt);
@@ -170,6 +177,7 @@ export class Game extends DurableObject {
       if (m.keepers === 1 || m.keepers === 2) next.keepers = m.keepers;
       if (m.period != null) next.period = clean(m.period, 4) || meta.period;
       if (m.names) next.names = Object.fromEntries(SIDES.map(s => [s, clean(m.names[s], 30) || meta.names[s]]));
+      if (m.colors) next.colors = Object.fromEntries(SIDES.map(s => [s, colorOk(m.colors[s]) ? m.colors[s].toUpperCase() : meta.colors[s]]));
       if (m.rosters) next.rosters = Object.fromEntries(SIDES.map(s => [s, m.rosters[s] ? cleanRoster(m.rosters[s]) : meta.rosters[s]]));
       this.put('meta', next);
       this.send({ t: 'meta', rev: this.bump(), meta: next });
@@ -178,7 +186,7 @@ export class Game extends DurableObject {
 
     if (url.pathname === '/reset') {
       const next = defaultMeta();
-      if (body.keepRosters) { next.rosters = meta.rosters; next.names = meta.names; next.keepers = meta.keepers; }
+      if (body.keepRosters) { next.rosters = meta.rosters; next.names = meta.names; next.colors = meta.colors; next.keepers = meta.keepers; }
       this.sql.exec('DELETE FROM events');
       this.put('seq', 0); this.put('meta', next);
       this.bump();
