@@ -135,7 +135,8 @@
     font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap;
   }
   .bb .pill .per { font-size: 26px; }
-  .bb .pill .clk { font-size: 38px; min-width: 92px; text-align: center; }
+  /* No fixed width: the period and clock center as a pair. Tabular digits keep the clock steady while it runs. */
+  .bb .pill .clk { font-size: 38px; }
   .bb .pill .shot { font-size: 30px; padding-left: 16px; border-left: 2px solid rgba(0,0,0,.2); min-width: 50px; text-align: center; }
   .bb .pill .shot.low { color: #C8102E; }
   .bb .pill .word { font-size: 32px; letter-spacing: .06em; }
