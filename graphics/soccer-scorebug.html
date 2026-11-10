@@ -668,6 +668,7 @@
           <label class="check"><input type="checkbox" data-sbuse="score"> Score <small id="sbValScore"></small></label>
         </div>
         <p class="hint" id="sbClockStatus">Run the bug's clock, period and score from the stadium scoreboard. Pick the file Scorebridge writes, C:\Users\Broadcast\Documents\scoreboard.xml.</p>
+        <p class="hint" id="sbRate" hidden></p>
         <label>Period (picking a half or OT resets the clock and stops it)</label>
         <div class="row-btns" id="periods">
           <button data-p="1ST">1st</button><button data-p="2ND">2nd</button>
@@ -2466,26 +2467,55 @@
       sbStop(); sbStatus('Chrome no longer allows reading the scoreboard file. Click Connect scoreboard.', true);
     } else { sbErr = name || 'error'; if (!sbFailSince) sbFailSince = Date.now(); }
   };
-  // The file is read every 100 ms (30 ms after a locked read) by a worker thread, which Chrome
+  // The file is read every 20 ms (30 ms after a locked read) by a worker thread, which Chrome
   // doesn't slow down when this window is covered or minimized. If a worker can't start, the
-  // page reads it itself.
-  const SB_POLL = 100, SB_RETRY = 30;
+  // page reads it itself. Each read also reports the file's modified time, for the update-rate readout.
+  const SB_POLL = 20, SB_RETRY = 30;
   const SB_WORKER = `let h = null, t = 0, last = null;
     onmessage = e => { h = e.data; last = null; clearTimeout(t); if (h) loop(); };
     async function loop() {
       let wait = ${SB_POLL};
       try {
-        const text = await (await h.getFile()).text();
-        if (text !== last) { last = text; postMessage({ text }); } else postMessage({ same: 1 });
+        const f = await h.getFile(), text = await f.text(), mod = f.lastModified;
+        if (text !== last) { last = text; postMessage({ text, mod }); } else postMessage({ same: 1, mod });
       } catch (err) { postMessage({ err: err.name || 'error' }); wait = ${SB_RETRY}; }
       if (h) t = setTimeout(loop, wait);
     }`;
+  // Update-rate readout: how often Scorebridge rewrites the file (its modified time) and how often
+  // the values in it change, over the last 40 of each. This is the delay the page can't go below.
+  let sbMod = 0, sbChangeAt = 0, sbPrevText = null, sbWrites = [], sbChanges = [];
+  const sbPush = (list, v) => { if (v > 0 && v < 10000) { list.push(v); if (list.length > 40) list.shift(); } };
+  const sbNote = (mod, text) => {
+    if (mod && mod !== sbMod) { if (sbMod) sbPush(sbWrites, mod - sbMod); sbMod = mod; }
+    if (text != null && text !== sbPrevText) {
+      const now = performance.now();
+      if (sbPrevText !== null) sbPush(sbChanges, now - sbChangeAt);
+      sbChangeAt = now; sbPrevText = text;
+    }
+  };
+  const sbRateText = () => {
+    const stat = list => {
+      const v = [...list].sort((a, b) => a - b);
+      return { mid: Math.round(v[v.length >> 1]), lo: Math.round(v[0]), hi: Math.round(v[v.length - 1]) };
+    };
+    const parts = [];
+    if (sbWrites.length >= 3) {
+      const w = stat(sbWrites);
+      parts.push(`Scorebridge rewrites the file about every ${w.mid} ms (${w.lo}–${w.hi} ms)`);
+    }
+    if (sbChanges.length >= 3) {
+      const c = stat(sbChanges);
+      parts.push(`the values change about every ${c.mid} ms`);
+    }
+    if (!parts.length) return 'Measuring how often the scoreboard file updates…';
+    return parts.join('; ') + `. This page reads it every ${SB_POLL} ms.`;
+  };
   let sbWorker = null;
   const sbRead = async () => {
     if (!sbHandle || sbBusy) return;
     sbBusy = true;
     let text = null;
-    try { text = await (await sbHandle.getFile()).text(); }
+    try { const f = await sbHandle.getFile(); text = await f.text(); sbNote(f.lastModified, text); }
     catch (e) { sbFail(e.name); setTimeout(sbRead, SB_RETRY); } // try again soon rather than at the next poll
     finally { sbBusy = false; }
     if (text !== null) sbProcess(text);
@@ -2497,6 +2527,7 @@
       w.onmessage = e => {
         if (w !== sbWorker) return;
         const m = e.data;
+        if (m.mod != null) sbNote(m.mod, m.text);
         if (m.text != null) sbProcess(m.text);
         else if (m.same) { sbReadAt = Date.now(); sbFailSince = 0; }
         else sbFail(m.err);
@@ -2527,6 +2558,7 @@
     });
   });
   const sbStart = h => {
+    sbMod = 0; sbChangeAt = 0; sbPrevText = null; sbWrites = []; sbChanges = [];
     sbHandle = h; sbLastText = ''; sbLastMs = null; sbReadAt = 0; sbFailSince = 0; sbSeen = {}; sbLatest = {}; sbBoardMs = null; sbRaw = '';
     $('sbUse').hidden = false;
     clearInterval(sbTimer); if (sbWorker) sbWorker.terminate();
@@ -2534,10 +2566,11 @@
     if (!sbWorker) sbReadOnPage();
     sbButton(); renderCtl();
   };
-  const sbStop = () => { clearInterval(sbTimer); if (sbWorker) { sbWorker.terminate(); sbWorker = null; } sbHandle = null; s.sbText = ''; $('sbUse').hidden = true; sbButton(); save(); };
+  const sbStop = () => { clearInterval(sbTimer); if (sbWorker) { sbWorker.terminate(); sbWorker = null; } sbHandle = null; s.sbText = ''; $('sbUse').hidden = true; $('sbRate').hidden = true; sbButton(); save(); };
   // Status line: what the scoreboard says, or a warning once reads have failed for a few seconds.
   setInterval(() => {
     if (!sbHandle) return;
+    $('sbRate').hidden = false; $('sbRate').textContent = sbRateText();
     const now = Date.now();
     if (sbFailSince && now - sbFailSince > 3000) {
       sbStatus("Can't read " + sbHandle.name + ' (' + sbErr + ') for ' + Math.round((now - sbFailSince) / 1000) + ' s. Still trying. Is Scorebridge running?', true);
