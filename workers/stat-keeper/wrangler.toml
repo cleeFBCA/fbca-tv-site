@@ -1,0 +1,19 @@
+name = "eota-stat-keeper"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+# Served at eota-stat-keeper.<account>.workers.dev; fbca.tv's DNS isn't on Cloudflare.
+workers_dev = true
+preview_urls = false
+
+# One Durable Object per game holds the plays in order (SQLite storage, free plan).
+[[durable_objects.bindings]]
+name = "GAME"
+class_name = "Game"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Game"]
+
+# Keep a log of each request (free): Worker → Logs.
+[observability]
+enabled = true

@@ -404,15 +404,23 @@
         <div class="row-btns"><button id="btnSb">Connect scoreboard</button></div>
         <p class="hint" id="sbStatus">Run the clock, score and fouls from the gym scoreboard. Pick the file Scorebridge writes.</p>
         <p class="hint" id="sbRate" hidden></p>
+        <label for="statFrom">Stats come from</label>
+        <select id="statFrom">
+          <option value="keeper">Stat keeper page (live, fbca.tv/graphics/basketball-stats.html)</option>
+          <option value="sheet">Excel stat sheet on OneDrive</option>
+        </select>
+        <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
+        <div id="sheetBox">
         <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
         <div class="set-row"><input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…"><button id="btnSheet">Connect</button></div>
         <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
+        </div>
         <p class="hint" id="sheetStatus">Not connected.</p>
         <table class="src">
-          <thead><tr><th>Item</th><th>Scoreboard</th><th>Stat sheet</th></tr></thead>
+          <thead><tr><th>Item</th><th>Scoreboard</th><th>Stats</th></tr></thead>
           <tbody id="srcRows"></tbody>
         </table>
-        <p class="hint">Tick where each item comes from. Unticked items run from the buttons on this page. Pairs show left–right as on screen. The stat sheet runs a few seconds behind the game while it's being typed, so the clock and score are best from the scoreboard.</p>
+        <p class="hint">Tick where each item comes from. Unticked items run from the buttons on this page. Pairs show left–right as on screen. Stats arrive as the stat crew enters them, a moment after the play, so the clock and score are best from the scoreboard.</p>
         <p class="hint" id="sbKeys" hidden></p>
       </div>
     </div>
@@ -449,7 +457,7 @@
 
         <div data-pane="l3">
           <div id="l3Sheet" hidden>
-            <label for="lsPlayer">From the stat sheet: pick a player to fill in tonight's stats</label>
+            <label for="lsPlayer">From the stats: pick a player to fill in tonight's line</label>
             <div class="two">
               <select id="lsPlayer"></select>
               <select id="lsFmt" aria-label="Stat line">
@@ -588,7 +596,7 @@
     // Where each item comes from: 'board' (scoreboard file), 'sheet' (stat sheet) or '' (buttons on the page).
     src: { clock: 'board', shot: 'board', period: '', score: '', fouls: '', tos: '', players: 'sheet', team: 'sheet' },
     // Stat sheet: the share link, whether it's connected, and the last read (players and totals per side).
-    sheetUrl: '', sheetOn: false, sheetEvery: 1, sheet: { at: 0, err: '', home: null, away: null },
+    statFrom: 'keeper', sheetUrl: '', sheetOn: false, sheetEvery: 1, sheet: { at: 0, err: '', home: null, away: null },
     // The sheet counts fouls for the whole game; the bug shows them since the quarter started.
     foulBase: { home: 0, away: 0 }, statsLabel: 'auto',
     flash: { home: 0, away: 0 },
@@ -606,6 +614,7 @@
     out.shot = Object.assign(defaults().shot, raw.shot); out.src = Object.assign(defaults().src, raw.src);
     out.sheet = Object.assign(defaults().sheet, raw.sheet); out.foulBase = Object.assign(defaults().foulBase, raw.foulBase);
     out.fv = Object.assign(defaults().fv, raw.fv); out.l3 = Object.assign(defaults().l3, raw.l3);
+    if (!raw.statFrom) out.statFrom = raw.sheetUrl ? 'sheet' : 'keeper'; // pages set up before the stat keeper keep their sheet
     return out;
   };
   const load = () => { try { const r = localStorage.getItem(STORE); if (r) return merge(JSON.parse(r)); } catch (e) {} return defaults(); };
@@ -1388,8 +1397,84 @@
   sheetClock.onmessage = e => { if (e.data === sheetGen) pullSheet(); };
   const sheetWait = () => 1000 * Math.max(s.sheetEvery || 1, sheetFails ? SHEET_BACKOFF[Math.min(sheetFails, 3) - 1] : 0);
   const sheetNext = startedAt => { if (s.sheetOn) sheetClock.postMessage([sheetGen, Math.max(50, sheetWait() - (performance.now() - startedAt))]); };
-  const startSheet = () => { sheetGen++; if (s.sheetOn && !sheetBusy) pullSheet(); };
-  const stopSheet = () => { s.sheetOn = false; sheetGen++; sheetFails = 0; sheetTimes = []; };
+  const startSheet = () => {
+    sheetGen++; keeperStop();
+    if (!s.sheetOn) return;
+    if (s.statFrom === 'keeper') keeperStart(); else if (!sheetBusy) pullSheet();
+  };
+  const stopSheet = () => { s.sheetOn = false; sheetGen++; sheetFails = 0; sheetTimes = []; keeperStop(); };
+
+  // ---- Stat keeper page: plays arrive over a WebSocket from the eota-stat-keeper worker ----
+  // The worker sends the whole game on connect, then each change with a revision number.
+  // A missed revision asks for the whole game again. The plays become the same player and
+  // team totals the Excel sheet gives, so everything downstream works the same way.
+  const SK_API = (new URLSearchParams(location.search).get('skapi') || 'https://eota-stat-keeper.clee-625.workers.dev').replace(/\/$/, '');
+  let skWs = null, skGame = null, skOpen = false, skPong = 0, skRetry = 0, skLastPlay = 0;
+  const keeperStop = () => {
+    clearTimeout(skRetry); skOpen = false;
+    if (skWs) { skWs.onclose = null; try { skWs.close(); } catch (e) {} skWs = null; }
+  };
+  const keeperStart = () => {
+    keeperStop();
+    if (!s.sheetOn || s.statFrom !== 'keeper') return;
+    try { skWs = new WebSocket(SK_API.replace(/^http/, 'ws') + '/ws?game=basketball'); }
+    catch (e) { skRetry = setTimeout(keeperStart, 3000); return; }
+    skWs.onopen = () => { skOpen = true; skPong = Date.now(); renderSheetStatus(); };
+    skWs.onclose = () => {
+      skOpen = false; skWs = null;
+      if (s.sheetOn && s.statFrom === 'keeper') { s.sheet.err = 'Lost the connection to the stat keeper. Reconnecting…'; renderSheetStatus(); skRetry = setTimeout(keeperStart, 2000); }
+    };
+    skWs.onmessage = e => {
+      skPong = Date.now();
+      if (e.data === 'pong') return;
+      let m; try { m = JSON.parse(e.data); } catch (err) { return; }
+      if (m.t === 'state') skGame = { rev: m.rev, meta: m.meta, events: m.events };
+      else if (!skGame || m.rev !== skGame.rev + 1) { skWs.send('sync'); return; }
+      else {
+        skGame.rev = m.rev;
+        if (m.t === 'add') { const have = new Set(skGame.events.map(x => x.id)); skGame.events.push(...m.events.filter(x => !have.has(x.id))); }
+        if (m.t === 'del') skGame.events = skGame.events.filter(x => !m.ids.includes(x.id));
+        if (m.t === 'meta') skGame.meta = m.meta;
+      }
+      keeperApply();
+    };
+  };
+  setInterval(() => {
+    if (!skWs || skWs.readyState !== 1) return;
+    if (Date.now() - skPong > 40000) { skWs.close(); return; } // stopped answering: onclose reconnects
+    skWs.send('ping');
+  }, 15000);
+  const keeperApply = () => {
+    const data = {};
+    for (const side of SIDES) {
+      const zero = () => Object.fromEntries(STAT_KEYS.map(k => [k, 0]));
+      const players = (skGame.meta.rosters[side] || []).map(p => ({ num: p.num, name: p.name, id: p.id, ...zero() }));
+      const byId = new Map(players.map(p => [p.id, p])), tot = zero();
+      for (const ev of skGame.events) {
+        if (ev.side !== side || !STAT_KEYS.includes(ev.type)) continue;
+        tot[ev.type]++;
+        const p = byId.get(ev.player); if (p) p[ev.type]++;
+      }
+      data[side] = { players, tot };
+    }
+    skLastPlay = skGame.events.reduce((a, ev) => Math.max(a, ev.at || 0), 0);
+    const first = !sheetLive(), { at, err, ...prev } = s.sheet;
+    if (first || err || JSON.stringify(data) !== JSON.stringify(prev)) {
+      s.sheet = { at: Date.now(), err: '', ...data };
+      if (first && s.src.fouls === 'sheet') SIDES.forEach(side => s.foulBase[side] = s.sheet[side].tot.pf - s[side].fouls);
+      sheetToBug(); save();
+    } else renderSheetStatus();
+  };
+  $('btnKeeper').onclick = () => {
+    if (s.sheetOn) { stopSheet(); save(); return; }
+    s.sheetOn = true; s.sheet = { at: 0, err: '', home: null, away: null }; skGame = null;
+    save(); startSheet();
+  };
+  $('statFrom').addEventListener('change', e => {
+    if (s.sheetOn) stopSheet();
+    s.statFrom = e.target.value; s.sheet = { at: 0, err: '', home: null, away: null };
+    save();
+  });
   const sheetTimeNote = () => {
     if (!sheetTimes.length) return '';
     const avg = sheetTimes.reduce((a, b) => a + b, 0) / sheetTimes.length;
@@ -1401,7 +1486,7 @@
   const renderSheetEvery = () => { $('sheetEvery').value = String(s.sheetEvery || 1); };
   $('sheetEvery').addEventListener('change', e => { s.sheetEvery = +e.target.value; save(); startSheet(); });
   const pullSheet = async () => {
-    if (!s.sheetOn || sheetBusy) return;
+    if (!s.sheetOn || s.statFrom !== 'sheet' || sheetBusy) return;
     sheetBusy = true;
     const t0 = performance.now(), url = s.sheetUrl;
     let changed = false;
@@ -1444,7 +1529,21 @@
     $('btnSheet').textContent = s.sheetOn ? 'Disconnect' : 'Connect';
     $('sheetUrl').disabled = s.sheetOn;
     renderSheetEvery();
+    const keeper = s.statFrom === 'keeper';
+    $('statFrom').value = s.statFrom; $('statFrom').disabled = s.sheetOn;
+    $('keeperBox').hidden = !keeper; $('sheetBox').hidden = keeper;
+    $('btnKeeper').textContent = s.sheetOn ? 'Disconnect' : 'Connect to the stat keeper';
     const st = $('sheetStatus');
+    if (keeper) {
+      st.classList.toggle('warn', !!(s.sheetOn && s.sheet.err));
+      const plays = skGame ? skGame.events.length : 0;
+      st.textContent = !s.sheetOn ? 'Not connected. Open fbca.tv/graphics/basketball-stats.html on the stat crew\'s phone or laptop, then connect here.'
+        : s.sheet.err ? s.sheet.err
+        : !skOpen || !skGame ? 'Connecting…'
+        : 'Live from the stat keeper. ' + plays + (plays === 1 ? ' play' : ' plays') + ' this game' + (skLastPlay ? ', last one ' + ago(skLastPlay) : '') + '.';
+      $('lsAge').textContent = sheetLive() ? 'Live stats from the stat keeper.' : '';
+      return;
+    }
     st.classList.toggle('warn', !!(s.sheetOn && s.sheet.err));
     st.textContent = !s.sheetOn ? 'Not connected.'
       : s.sheet.err ? "Can't read the stat sheet: " + s.sheet.err.replace(/[^.!?]$/, '$&.') + (s.sheet.at ? ' Showing the read from ' + ago(s.sheet.at) + '.' : '') + sheetRateNote()
@@ -1504,8 +1603,8 @@
     setField($('statsLabel'), s.statsLabel);
     $('btnStats').disabled = !ok && s.panel !== 'stats';
     $('btnStats').textContent = s.panel === 'stats' ? 'Take down team stats' : 'Show team stats';
-    $('statsNote').textContent = ok ? 'From the stat sheet, read ' + ago(s.sheet.at) + '.'
-      : 'Connect the stat sheet and tick Team stats under Data sources to use this panel.';
+    $('statsNote').textContent = ok ? (s.statFrom === 'keeper' ? 'Live from the stat keeper.' : 'From the stat sheet, read ' + ago(s.sheet.at) + '.')
+      : 'Connect the stats (stat keeper or Excel sheet) and tick Team stats under Data sources to use this panel.';
     if (!ok) { $('statsPreview').replaceChildren(); return; }
     const L = leftSide(), R = rightSide(), tl = teamTot(L), tr = teamTot(R);
     const head = el('tr'); head.append(el('th'), el('th', null, s[L].name), el('th', null, s[R].name));
@@ -1697,7 +1796,7 @@
       const td = el('td');
       if (!from.includes(where)) { td.append(el('span', 'na', '—')); tr.append(td); continue; }
       const lab = el('label', 'check'), box = el('input'); box.type = 'checkbox';
-      box.setAttribute('aria-label', label + ' from the ' + (where === 'board' ? 'scoreboard' : 'stat sheet'));
+      box.setAttribute('aria-label', label + ' from the ' + (where === 'board' ? 'scoreboard' : 'stats'));
       box.addEventListener('change', () => {
         // One source per item: ticking one unticks the other.
         s.src = { ...s.src, [key]: box.checked ? where : '' };

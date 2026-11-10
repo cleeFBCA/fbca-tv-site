@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EOTA Stat Keeper</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0D2418">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  Basketball stat keeper for Eagles on the Air.
+
+  Works on a phone, tablet or laptop, wherever the stat crew sits (control room, scorer's
+  table, next to the announcers). Each tap records one play: a player and what they did.
+  Plays go to the eota-stat-keeper Cloudflare Worker, which sends them straight to the
+  basketball scorebug control page (Data sources → Stats come from → Stat keeper page).
+
+  One stat keeper (the default) keeps both teams. With two, each device picks a team.
+  Plays are saved on the device first, so a Wi-Fi dropout loses nothing: they send when
+  it reconnects. ?api=http://localhost:8787 points it at a local copy of the worker.
+-->
+<style>
+  :root {
+    --pine: #0D2418; --field: #17402B; --turf: #1E5638; --line: #2C6A46;
+    --gold: #D9A521; --gold-hi: #F2C14E; --chalk: #F3EFE2; --chalk-dim: #B9C6B4; --tally: #E5352B; --ok: #5FC48A;
+    --font-display: 'Big Shoulders Display', Impact, 'Arial Narrow', sans-serif;
+    --font-body: 'Barlow', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--pine); color: var(--chalk); font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
+  button { font: 600 16px var(--font-body); color: var(--chalk); background: var(--turf); border: 1px solid var(--line); border-radius: 8px; padding: 10px; cursor: pointer; min-height: 48px; touch-action: manipulation; }
+  button:hover { background: var(--line); }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 1px; }
+  button.primary { background: var(--gold); color: var(--pine); border-color: var(--gold); font-weight: 700; }
+  button.danger { background: transparent; border-color: var(--tally); color: var(--tally); }
+  label { display: block; font-size: 13px; color: var(--chalk-dim); margin: 12px 0 4px; }
+  input, select, textarea { width: 100%; font: 500 16px var(--font-body); color: var(--chalk); background: var(--pine); border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+  textarea { min-height: 220px; resize: vertical; line-height: 1.5; }
+  .hint { font-size: 14px; color: var(--chalk-dim); margin: 8px 0 0; line-height: 1.4; }
+  .hint.warn { color: var(--gold-hi); }
+
+  /* Top bar: title, connection, score, period */
+  .top { position: sticky; top: 0; z-index: 5; background: var(--pine); border-bottom: 1px solid var(--line); padding: 10px 16px 8px; padding-top: max(10px, env(safe-area-inset-top)); }
+  .top-row { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+  .top h1 { font-family: var(--font-display); font-weight: 800; font-size: 24px; letter-spacing: .04em; color: var(--gold-hi); margin: 0; text-transform: uppercase; }
+  .conn { font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .conn.ok { color: var(--ok); } .conn.wait { color: var(--gold-hi); } .conn.bad { color: var(--tally); }
+  .score { margin-left: auto; font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: .03em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .score small { font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--chalk-dim); letter-spacing: 0; display: block; text-align: right; }
+  .periods { max-width: 1100px; margin: 8px auto 0; display: flex; gap: 6px; overflow-x: auto; }
+  .periods button { min-height: 38px; padding: 6px 12px; flex: 1 0 auto; font-size: 15px; }
+  .periods button.on { background: var(--gold); color: var(--pine); border-color: var(--gold); }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 12px 16px 120px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .tabs button { flex: 1; min-height: 42px; }
+  .tabs button.on { outline: 2px solid var(--gold-hi); outline-offset: -2px; color: var(--gold-hi); }
+
+  /* Players */
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .teams.single { grid-template-columns: 1fr; }
+  .team h2 { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 8px; color: var(--gold); display: flex; justify-content: space-between; gap: 8px; }
+  .team h2 small { font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--chalk-dim); letter-spacing: 0; text-transform: none; align-self: center; }
+  .switch { display: none; gap: 6px; margin-bottom: 10px; }
+  .switch button { flex: 1; min-height: 42px; }
+  .switch button.on { background: var(--gold); color: var(--pine); border-color: var(--gold); }
+  @media (max-width: 760px) {
+    .teams { grid-template-columns: 1fr; }
+    .teams.both .team:not(.on) { display: none; }
+    .switch.both { display: flex; }
+  }
+  .players { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
+  .pl { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 64px; padding: 6px 4px; line-height: 1.1; }
+  .pl b { font-family: var(--font-display); font-size: 26px; font-weight: 800; }
+  .pl span { font-size: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pl small { font-size: 11px; color: var(--chalk-dim); }
+  .pl.team-pl b { font-size: 18px; letter-spacing: .06em; }
+  .pl.sel, .act.sel { background: var(--gold); color: var(--pine); border-color: var(--gold-hi); }
+  .pl.sel small { color: var(--pine); }
+  .pl.out { opacity: .55; }
+  .empty { font-size: 14px; color: var(--chalk-dim); padding: 10px; border: 1px dashed var(--line); border-radius: 8px; }
+
+  /* Play buttons, pinned to the bottom on phones so they're always under the thumb */
+  .pad { margin-top: 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .act { min-height: 54px; font-size: 16px; font-weight: 700; padding: 6px 4px; }
+  .act.made { color: var(--gold-hi); }
+  .act.miss { background: transparent; }
+  .act.foul { border-color: var(--tally); color: #ff8a80; }
+  .pick-hint { grid-column: 1 / -1; font-size: 14px; color: var(--chalk-dim); text-align: center; min-height: 20px; }
+  .pick-hint b { color: var(--gold-hi); }
+
+  .assist { margin-top: 12px; background: var(--field); border: 1px solid var(--gold); border-radius: 10px; padding: 10px; }
+  .assist p { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+  .assist .row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .assist button { min-height: 44px; padding: 6px 12px; }
+
+  .log { margin-top: 16px; }
+  .log h3, .card h3 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; font-size: 17px; margin: 0 0 8px; color: var(--gold); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .log h3 button { min-height: 38px; padding: 4px 14px; font-family: var(--font-body); letter-spacing: 0; text-transform: none; font-size: 15px; }
+  .log ol { list-style: none; margin: 0; padding: 0; }
+  .log li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid rgba(243,239,226,.1); font-size: 15px; }
+  .log li .per { font-size: 12px; color: var(--chalk-dim); width: 30px; flex: 0 0 auto; }
+  .log li .what { flex: 1; min-width: 0; }
+  .log li .unsent { font-size: 12px; color: var(--gold-hi); }
+  .log li button { min-height: 36px; padding: 2px 12px; font-size: 14px; background: transparent; }
+
+  .toast { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--chalk); color: var(--pine); font-weight: 700; padding: 10px 16px; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.4); display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); z-index: 10; }
+  .toast[hidden] { display: none; }
+  .toast button { min-height: 34px; padding: 2px 12px; background: var(--pine); color: var(--chalk); border: 0; }
+
+  /* Box score */
+  .card { background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+  .scroll { overflow-x: auto; }
+  table.box { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.box th, table.box td { padding: 6px 8px; text-align: right; border-top: 1px solid rgba(243,239,226,.1); }
+  table.box th { color: var(--chalk-dim); font-weight: 600; font-size: 12px; border-top: 0; }
+  table.box th:nth-child(-n+2), table.box td:nth-child(-n+2) { text-align: left; }
+  table.box tr.tot td { font-weight: 700; border-top: 2px solid var(--line); }
+  table.box tr.teamrow td { color: var(--chalk-dim); }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 560px) { .two { grid-template-columns: 1fr; } }
+  .seg { display: flex; gap: 6px; }
+  .seg button { flex: 1; }
+  .seg button.on { background: var(--gold); color: var(--pine); border-color: var(--gold); }
+  .set-row { display: flex; gap: 8px; }
+  .set-row input { flex: 1; }
+  .set-row button { flex: 0 0 auto; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-row">
+    <h1>Stat keeper</h1>
+    <span class="conn wait" id="conn" role="status">Connecting…</span>
+    <div class="score" id="score"></div>
+  </div>
+  <div class="periods" id="periods" role="group" aria-label="Period"></div>
+</header>
+
+<main>
+  <div class="tabs" role="tablist">
+    <button data-tab="plays" class="on">Plays</button>
+    <button data-tab="box">Box score</button>
+    <button data-tab="setup">Setup</button>
+  </div>
+
+  <section data-pane="plays">
+    <p class="hint warn" id="playsWarn" hidden></p>
+    <div class="switch" id="switch"></div>
+    <div class="teams" id="teams"></div>
+    <div class="pad" id="pad"></div>
+    <div class="assist" id="assist" hidden></div>
+    <div class="log">
+      <h3>Plays <button id="btnUndo">Undo last</button></h3>
+      <ol id="log"></ol>
+    </div>
+  </section>
+
+  <section data-pane="box" hidden>
+    <div id="boxes"></div>
+  </section>
+
+  <section data-pane="setup" hidden>
+    <div class="card">
+      <h3>Stat keeper key</h3>
+      <div class="set-row"><input id="key" type="password" autocomplete="off" placeholder="Paste the key from Mr. Lee"><button id="btnKey">Save</button></div>
+      <p class="hint" id="keyNote">Needed once on each device to send plays.</p>
+    </div>
+    <div class="card">
+      <h3>Stat keepers</h3>
+      <div class="seg" id="keepers">
+        <button data-k="1">One (keeps both teams)</button>
+        <button data-k="2">Two (one per team)</button>
+      </div>
+      <div id="mySideBox" hidden>
+        <label>This device keeps</label>
+        <div class="seg" id="mySide"></div>
+      </div>
+      <p class="hint">Both devices share this setting. With two keepers, each one sees only their team's players and plays.</p>
+    </div>
+    <div class="card">
+      <h3>Teams and rosters</h3>
+      <div class="two">
+        <div>
+          <label for="nameHome">Our team</label><input id="nameHome" maxlength="30">
+          <label for="rosterHome">Roster: one player per line, number then name</label>
+          <textarea id="rosterHome" placeholder="2 Luke Tran&#10;3 Jordan Lee&#10;5 Noah Kim"></textarea>
+        </div>
+        <div>
+          <label for="nameAway">Opponent</label><input id="nameAway" maxlength="30">
+          <label for="rosterAway">Roster: one player per line, number then name</label>
+          <textarea id="rosterAway" placeholder="1 Sam Ortiz&#10;4 Eli Brooks"></textarea>
+        </div>
+      </div>
+      <div class="set-row" style="margin-top:10px"><button class="primary" id="btnRoster">Save teams and rosters</button></div>
+      <p class="hint" id="rosterNote">A name can be fixed mid-game; that player's plays stay with them.</p>
+    </div>
+    <div class="card">
+      <h3>New game</h3>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--chalk);font-size:15px"><input type="checkbox" id="keepRosters" checked style="width:auto"> Keep the teams and rosters</label>
+      <div class="set-row" style="margin-top:10px"><button class="danger" id="btnReset">Start a new game</button></div>
+      <p class="hint">Clears every play for both keepers and the scorebug. Do this before tip-off, not between quarters.</p>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden><span id="toastText"></span><button id="toastUndo">Undo</button></div>
+
+<script>
+(() => {
+  const qs = new URLSearchParams(location.search);
+  const API = (qs.get('api') || 'https://eota-stat-keeper.clee-625.workers.dev').replace(/\/$/, '');
+  const GAME = 'basketball';
+  const SIDES = ['home', 'away'];
+  const PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3'];
+  const TYPES = { m2: '2 PT made', x2: '2 PT missed', m3: '3 PT made', x3: '3 PT missed', mft: 'Free throw made', xft: 'Free throw missed',
+                  oreb: 'Off. rebound', dreb: 'Def. rebound', ast: 'Assist', stl: 'Steal', blk: 'Block', to: 'Turnover', pf: 'Foul' };
+  // The play buttons, in pad order: [type, label, style]
+  const PAD = [['m2', '2 ✓', 'made'], ['m3', '3 ✓', 'made'], ['mft', 'FT ✓', 'made'], ['pf', 'Foul', 'foul'],
+               ['x2', '2 ✗', 'miss'], ['x3', '3 ✗', 'miss'], ['xft', 'FT ✗', 'miss'], ['to', 'TO', ''],
+               ['oreb', 'O Reb', ''], ['dreb', 'D Reb', ''], ['ast', 'Ast', ''], ['stl', 'Stl', ''], ['blk', 'Blk', '']];
+  const LS = { key: 'eota-stats-key', side: 'eota-stats-side', pending: 'eota-stats-pending', cache: 'eota-stats-cache' };
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const rid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
+
+  let server = store.get(LS.cache, null);   // the game as the worker last sent it: { rev, meta, events }
+  let pending = store.get(LS.pending, []);  // changes not sent yet, oldest first: { kind, body }
+  let key = store.get(LS.key, '');
+  let mySide = store.get(LS.side, 'home');
+  let shown = 'home';                       // team on screen on a phone with one keeper
+  let pick = {};                            // { side, player } or { type }, waiting for the other half
+  let assist = null;                        // { side, scorer, until } after a made basket
+  let ws = null, wsOpen = false, lastPong = 0, sending = false, sendErr = '', tab = 'plays';
+
+  // ---- The game as this device sees it: the worker's copy plus plays not sent yet ----
+  const view = () => {
+    if (!server) return null;
+    const meta = { ...server.meta };
+    let events = server.events.slice();
+    const have = new Set(events.map(e => e.id));
+    for (const p of pending) {
+      if (p.body.gameId !== server.meta.gameId) continue;
+      if (p.kind === 'events') for (const e of p.body.events) if (!have.has(e.id)) { events.push({ ...e, unsent: true }); have.add(e.id); }
+      if (p.kind === 'undo') events = events.filter(e => !p.body.ids.includes(e.id));
+      if (p.kind === 'meta') Object.assign(meta, p.body.meta);
+    }
+    return { meta, events };
+  };
+  const blank = () => Object.fromEntries(Object.keys(TYPES).map(k => [k, 0]));
+  const pts = t => 2 * t.m2 + 3 * t.m3 + t.mft;
+  // Fouls that count toward the bonus: this quarter, or all of the 4th and overtime (NFHS).
+  const foulPeriods = per => /^OT/.test(per) ? ['4Q', ...PERIODS.filter(p => /^OT/.test(p))] : [per];
+  const tally = v => {
+    const out = {};
+    for (const side of SIDES) {
+      const players = (v.meta.rosters[side] || []).map(p => ({ ...p, ...blank() }));
+      const byId = new Map(players.map(p => [p.id, p]));
+      const team = blank(), tot = blank();
+      let fouls = 0;
+      const counted = foulPeriods(v.meta.period);
+      for (const e of v.events) {
+        if (e.side !== side) continue;
+        tot[e.type]++;
+        (byId.get(e.player) || team)[e.type]++;
+        if (e.type === 'pf' && counted.includes(e.period)) fouls++;
+      }
+      out[side] = { players, team, tot, fouls };
+    }
+    return out;
+  };
+  const sidesShown = v => v.meta.keepers === 2 ? [mySide] : SIDES;
+  const lastName = n => { const w = String(n || '').trim().split(/\s+/); return w.length > 1 ? w[w.length - 1] : w[0] || ''; };
+  const who = (v, side, player) => {
+    if (player === 'team') return v.meta.names[side] + ' team';
+    const p = (v.meta.rosters[side] || []).find(x => x.id === player);
+    return p ? (p.num ? '#' + p.num + ' ' : '') + p.name : 'Removed player';
+  };
+
+  // ---- Sending ----
+  const savePending = () => store.set(LS.pending, pending);
+  const setServer = st => {
+    if (server && st.meta.gameId !== server.meta.gameId) {
+      const dropped = pending.filter(p => p.body.gameId === server.meta.gameId && p.kind === 'events').reduce((a, p) => a + p.body.events.length, 0);
+      pending = pending.filter(p => p.body.gameId === st.meta.gameId); savePending();
+      pick = {}; assist = null;
+      toast('A new game was started' + (dropped ? '. ' + dropped + ' unsent plays from the last game were dropped.' : '.'));
+    }
+    server = { rev: st.rev, meta: st.meta, events: st.events };
+    store.set(LS.cache, server);
+  };
+  const enqueue = (kind, payload) => {
+    if (!server) return;
+    const body = { gameId: server.meta.gameId, ...payload }, last = pending[pending.length - 1];
+    const lastBusy = sending && pending.length === 1; // the one being sent can't change
+    if (kind === 'events' && last && last.kind === 'events' && !lastBusy && last.body.gameId === body.gameId) last.body.events.push(...payload.events);
+    else if (kind === 'meta' && last && last.kind === 'meta' && !lastBusy && last.body.gameId === body.gameId) last.body.meta = { ...last.body.meta, ...payload.meta };
+    else pending.push({ kind, body });
+    savePending(); render(); flush();
+  };
+  let retryTimer = 0;
+  const flush = async () => {
+    if (sending || !pending.length || !server) return;
+    if (!key) { sendErr = 'key'; render(); return; }
+    sending = true;
+    const job = pending[0];
+    try {
+      const r = await fetch(API + '/' + job.kind + '?game=' + GAME, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify(job.body)
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.status === 401) { sending = false; sendErr = 'badkey'; render(); return; }
+      if (r.status === 409 && data.state) { sending = false; setServer(data.state); sendErr = ''; render(); flush(); return; }
+      if (!r.ok) throw new Error(data.error || 'Error ' + r.status);
+      // Fold the change into our copy now; the WebSocket echo of it is then a no-op.
+      if (job.kind === 'events') { const have = new Set(server.events.map(e => e.id)); server.events.push(...job.body.events.filter(e => !have.has(e.id))); }
+      if (job.kind === 'undo') server.events = server.events.filter(e => !job.body.ids.includes(e.id));
+      if (job.kind === 'meta' && data.meta) server.meta = data.meta;
+      store.set(LS.cache, server);
+      pending.shift(); savePending(); sendErr = '';
+    } catch (e) {
+      sending = false; sendErr = 'offline'; render();
+      clearTimeout(retryTimer); retryTimer = setTimeout(flush, 2000);
+      return;
+    }
+    sending = false; render();
+    if (pending.length) flush();
+  };
+
+  // ---- Live updates from the worker ----
+  const connect = () => {
+    try { ws = new WebSocket(API.replace(/^http/, 'ws') + '/ws?game=' + GAME); } catch (e) { setTimeout(connect, 3000); return; }
+    ws.onopen = () => { wsOpen = true; lastPong = Date.now(); render(); flush(); };
+    ws.onclose = () => { wsOpen = false; render(); setTimeout(connect, 2000); };
+    ws.onerror = () => {};
+    ws.onmessage = e => {
+      lastPong = Date.now();
+      if (e.data === 'pong') return;
+      let m; try { m = JSON.parse(e.data); } catch (err) { return; }
+      if (m.t === 'state') { setServer(m); render(); return; }
+      if (!server || m.rev !== server.rev + 1) { ws.send('sync'); return; } // missed one: get the whole game
+      server.rev = m.rev;
+      if (m.t === 'add') { const have = new Set(server.events.map(x => x.id)); server.events.push(...m.events.filter(x => !have.has(x.id))); }
+      if (m.t === 'del') server.events = server.events.filter(x => !m.ids.includes(x.id));
+      if (m.t === 'meta') server.meta = m.meta;
+      store.set(LS.cache, server); render();
+    };
+  };
+  // Ping every 15 s; a connection that stops answering is replaced.
+  setInterval(() => {
+    if (!ws || ws.readyState !== 1) return;
+    if (Date.now() - lastPong > 40000) { ws.close(); return; }
+    ws.send('ping');
+  }, 15000);
+  addEventListener('online', () => { flush(); if (ws && ws.readyState !== 1) ws.close(); });
+
+  // ---- Recording plays ----
+  let wake = null;
+  const keepAwake = () => { if (!wake && navigator.wakeLock) navigator.wakeLock.request('screen').then(w => { wake = w; w.onrelease = () => wake = null; }).catch(() => {}); };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && wake === null && server) keepAwake(); });
+
+  const logPlay = (side, player, type) => {
+    const v = view(); if (!v) return;
+    const ev = { id: rid(), side, player, type, period: v.meta.period, at: Date.now() };
+    enqueue('events', { events: [ev] });
+    if (navigator.vibrate) navigator.vibrate(15);
+    keepAwake();
+    assist = (type === 'm2' || type === 'm3') && player !== 'team' ? { side, scorer: player, until: Date.now() + 7000 } : null;
+    toast(who(v, side, player) + ' · ' + TYPES[type], ev.id);
+  };
+  const undo = id => {
+    // Not sent yet: just take it out. Otherwise ask the worker to remove it.
+    for (let i = pending.length - 1; i >= 0; i--) {
+      const p = pending[i];
+      if (p.kind !== 'events' || (i === 0 && sending)) continue;
+      const j = p.body.events.findIndex(e => e.id === id);
+      if (j < 0) continue;
+      p.body.events.splice(j, 1);
+      if (!p.body.events.length) pending.splice(i, 1);
+      savePending(); render(); return;
+    }
+    enqueue('undo', { ids: [id] });
+  };
+  const tapPlayer = (side, player) => {
+    if (pick.type) { logPlay(side, player, pick.type); pick = {}; }
+    else pick = pick.side === side && pick.player === player ? {} : { side, player };
+    render();
+  };
+  const tapAction = type => {
+    if (pick.player) { logPlay(pick.side, pick.player, type); pick = {}; }
+    else pick = pick.type === type ? {} : { type };
+    render();
+  };
+
+  // ---- Toast with undo ----
+  let toastTimer = 0, toastId = null;
+  const toast = (text, id) => {
+    $('toastText').textContent = text; toastId = id || null; $('toastUndo').hidden = !id; $('toast').hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, id ? 4000 : 6000);
+  };
+  $('toastUndo').onclick = () => { if (toastId) undo(toastId); $('toast').hidden = true; assist = null; render(); };
+
+  // ---- Drawing ----
+  const render = () => {
+    const v = view();
+    // Connection
+    const c = $('conn'), waiting = pending.reduce((a, p) => a + (p.kind === 'events' ? p.body.events.length : 1), 0);
+    if (sendErr === 'key' || sendErr === 'badkey') { c.className = 'conn bad'; c.textContent = sendErr === 'key' ? 'Add the key in Setup' : 'Wrong key'; }
+    else if (!wsOpen || sendErr === 'offline') { c.className = 'conn bad'; c.textContent = 'Offline' + (waiting ? ' · ' + waiting + ' waiting' : ''); }
+    else if (waiting) { c.className = 'conn wait'; c.textContent = 'Sending ' + waiting + '…'; }
+    else { c.className = 'conn ok'; c.textContent = 'Live'; }
+    const warn = $('playsWarn');
+    warn.hidden = !(sendErr || !v);
+    warn.textContent = !v ? 'Connecting to the stats server…'
+      : sendErr === 'key' ? 'Plays are saved on this device but can\'t send until you add the stat keeper key in Setup.'
+      : sendErr === 'badkey' ? 'That stat keeper key is wrong. Plays are saved on this device; fix the key in Setup to send them.'
+      : sendErr === 'offline' ? 'No connection. Keep going: plays are saved on this device and send when it reconnects.' : '';
+    if (!v) return;
+    const t = tally(v), names = v.meta.names, two = v.meta.keepers === 2, sides = sidesShown(v);
+
+    $('score').replaceChildren(document.createTextNode(names.home + ' ' + pts(t.home.tot) + ' – ' + pts(t.away.tot) + ' ' + names.away),
+      el('small', null, 'Team fouls ' + (/^OT/.test(v.meta.period) ? '(4th + OT)' : 'this quarter') + ': ' + t.home.fouls + ' – ' + t.away.fouls));
+    $('periods').replaceChildren(...PERIODS.map(p => {
+      const b = el('button', p === v.meta.period ? 'on' : '', p); b.setAttribute('aria-pressed', p === v.meta.period);
+      b.onclick = () => { if (p !== v.meta.period) enqueue('meta', { meta: { period: p } }); };
+      return b;
+    }));
+
+    if (tab === 'plays') renderPlays(v, t, sides, two);
+    if (tab === 'box') renderBox(v, t);
+    if (tab === 'setup') renderSetup(v);
+  };
+
+  const renderPlays = (v, t, sides, two) => {
+    const sw = $('switch');
+    sw.className = 'switch' + (two ? '' : ' both');
+    sw.replaceChildren(...(two ? [] : SIDES.map(side => {
+      const b = el('button', side === shown ? 'on' : '', v.meta.names[side]); b.onclick = () => { shown = side; render(); }; return b;
+    })));
+    const teams = $('teams');
+    teams.className = 'teams ' + (sides.length === 1 ? 'single' : 'both');
+    teams.replaceChildren(...sides.map(side => {
+      const box = el('div', 'team' + (side === shown || sides.length === 1 ? ' on' : ''));
+      const h = el('h2', null, v.meta.names[side]);
+      h.append(el('small', null, pts(t[side].tot) + ' pts · ' + t[side].fouls + (t[side].fouls === 1 ? ' team foul' : ' team fouls')));
+      const grid = el('div', 'players');
+      for (const p of t[side].players) {
+        const b = el('button', 'pl' + (pick.side === side && pick.player === p.id ? ' sel' : '') + (p.pf >= 5 ? ' out' : ''));
+        b.append(el('b', null, p.num ? '#' + p.num : '–'), el('span', null, lastName(p.name)), el('small', null, pts(p) + ' pts · ' + p.pf + ' F'));
+        b.setAttribute('aria-label', (p.num ? '#' + p.num + ' ' : '') + p.name + ', ' + pts(p) + ' points, ' + p.pf + ' fouls');
+        b.onclick = () => tapPlayer(side, p.id);
+        grid.append(b);
+      }
+      const tb = el('button', 'pl team-pl' + (pick.side === side && pick.player === 'team' ? ' sel' : ''));
+      tb.append(el('b', null, 'TEAM'), el('small', null, 'rebounds, TOs'));
+      tb.onclick = () => tapPlayer(side, 'team');
+      grid.append(tb);
+      box.append(h);
+      if (!t[side].players.length) box.append(el('p', 'empty', 'No roster yet. Add players in Setup, or use TEAM for now.'));
+      box.append(grid);
+      return box;
+    }));
+
+    const hint = el('div', 'pick-hint');
+    if (pick.player) hint.append('Now tap what ', el('b', null, who(v, pick.side, pick.player)), ' did.');
+    else if (pick.type) hint.append('Now tap who: ', el('b', null, TYPES[pick.type]), '.');
+    else hint.textContent = 'Tap a player, then the play. Or the play, then the player.';
+    $('pad').replaceChildren(hint, ...PAD.map(([type, label, cls]) => {
+      const b = el('button', 'act ' + cls + (pick.type === type ? ' sel' : ''), label);
+      b.setAttribute('aria-label', TYPES[type]);
+      b.onclick = () => tapAction(type);
+      return b;
+    }));
+
+    // Assist prompt after a made basket
+    const as = $('assist');
+    if (assist && Date.now() < assist.until && sides.includes(assist.side)) {
+      as.hidden = false;
+      const row = el('div', 'row');
+      for (const p of t[assist.side].players) {
+        if (p.id === assist.scorer) continue;
+        const b = el('button', null, (p.num ? '#' + p.num + ' ' : '') + lastName(p.name));
+        b.onclick = () => { const a = assist; assist = null; logPlay(a.side, p.id, 'ast'); render(); };
+        row.append(b);
+      }
+      const no = el('button', null, 'No assist'); no.onclick = () => { assist = null; render(); }; row.append(no);
+      as.replaceChildren(el('p', null, 'Assist on that basket?'), row);
+    } else { as.hidden = true; if (assist && Date.now() >= assist.until) assist = null; }
+
+    // Recent plays, newest first (this keeper's team only, with two keepers)
+    const mine = v.events.filter(e => sides.includes(e.side));
+    $('btnUndo').disabled = !mine.length;
+    $('log').replaceChildren(...mine.slice(-12).reverse().map(e => {
+      const li = el('li');
+      li.append(el('span', 'per', e.period), el('span', 'what', who(v, e.side, e.player) + ' · ' + TYPES[e.type]));
+      if (e.unsent) li.append(el('span', 'unsent', 'not sent'));
+      const b = el('button', null, 'Undo'); b.onclick = () => undo(e.id); li.append(b);
+      return li;
+    }));
+    if (!mine.length) $('log').append(el('li', null, 'No plays yet.'));
+  };
+  $('btnUndo').onclick = () => {
+    const v = view(); if (!v) return;
+    const mine = v.events.filter(e => sidesShown(v).includes(e.side));
+    if (mine.length) { const e = mine[mine.length - 1]; undo(e.id); toast('Undid ' + who(v, e.side, e.player) + ' · ' + TYPES[e.type]); }
+  };
+  setInterval(() => { if (assist && Date.now() >= assist.until) render(); }, 1000);
+
+  const COLS = [['PTS', p => pts(p)], ['FG', p => (p.m2 + p.m3) + '-' + (p.m2 + p.x2 + p.m3 + p.x3)], ['3PT', p => p.m3 + '-' + (p.m3 + p.x3)],
+                ['FT', p => p.mft + '-' + (p.mft + p.xft)], ['REB', p => p.oreb + p.dreb], ['OREB', p => p.oreb], ['AST', p => p.ast],
+                ['STL', p => p.stl], ['BLK', p => p.blk], ['TO', p => p.to], ['PF', p => p.pf]];
+  const renderBox = (v, t) => {
+    $('boxes').replaceChildren(...SIDES.map(side => {
+      const card = el('div', 'card'), tbl = el('table', 'box'), head = el('tr');
+      card.append(el('h3', null, v.meta.names[side] + ' · ' + pts(t[side].tot)));
+      ['#', 'Player', ...COLS.map(c => c[0])].forEach(h => head.append(el('th', null, h)));
+      tbl.append(head);
+      const row = (cls, num, name, p) => { const tr = el('tr', cls); tr.append(el('td', null, num), el('td', null, name), ...COLS.map(c => el('td', null, String(c[1](p))))); tbl.append(tr); };
+      t[side].players.forEach(p => row('', p.num, p.name, p));
+      if (Object.values(t[side].team).some(Boolean)) row('teamrow', '', 'Team / removed', t[side].team);
+      row('tot', '', 'Total', t[side].tot);
+      const wrap = el('div', 'scroll'); wrap.append(tbl); card.append(wrap);
+      return card;
+    }));
+  };
+
+  const setField = (id, value) => { const f = $(id); if (document.activeElement !== f && f.dataset.dirty !== '1') f.value = value; };
+  const rosterText = list => (list || []).map(p => (p.num ? p.num + ' ' : '') + p.name).join('\n');
+  const renderSetup = v => {
+    setField('key', key);
+    $('keyNote').textContent = key ? (sendErr === 'badkey' ? 'That key was turned down. Check it with Mr. Lee.' : 'Key saved on this device.') : 'Needed once on each device to send plays.';
+    $('keyNote').className = 'hint' + (sendErr === 'badkey' || !key ? ' warn' : '');
+    for (const b of $('keepers').children) b.classList.toggle('on', +b.dataset.k === v.meta.keepers);
+    $('mySideBox').hidden = v.meta.keepers !== 2;
+    $('mySide').replaceChildren(...SIDES.map(side => {
+      const b = el('button', side === mySide ? 'on' : '', v.meta.names[side]);
+      b.onclick = () => { mySide = side; store.set(LS.side, side); pick = {}; render(); };
+      return b;
+    }));
+    setField('nameHome', v.meta.names.home); setField('nameAway', v.meta.names.away);
+    setField('rosterHome', rosterText(v.meta.rosters.home)); setField('rosterAway', rosterText(v.meta.rosters.away));
+  };
+  for (const id of ['nameHome', 'nameAway', 'rosterHome', 'rosterAway']) $(id).addEventListener('input', () => { $(id).dataset.dirty = '1'; $('rosterNote').textContent = 'Not saved yet.'; $('rosterNote').className = 'hint warn'; });
+  $('btnKey').onclick = () => { key = $('key').value.trim(); store.set(LS.key, key); sendErr = ''; render(); flush(); };
+  for (const b of $('keepers').children) b.onclick = () => { const k = +b.dataset.k; pick = {}; enqueue('meta', { meta: { keepers: k } }); };
+
+  // "3 Jordan Lee", "#3 Jordan Lee", "3 - Jordan Lee", or just a name. Keeps each player's id
+  // (matched by number, then name) so their plays stay with them when the list is edited.
+  const parseRoster = (text, old) => text.split('\n').map(line => {
+    const m = line.trim().match(/^#?(\d{1,3})?\s*[-–.,:]?\s*(.*)$/);
+    return m ? { num: m[1] || '', name: m[2].trim() } : null;
+  }).filter(p => p && (p.num || p.name)).map(p => {
+    const same = old.find(o => p.num && o.num === p.num) || old.find(o => !p.num && o.name === p.name);
+    return { id: same ? same.id : rid(), ...p };
+  });
+  $('btnRoster').onclick = () => {
+    const v = view(); if (!v) return;
+    const rosters = { home: parseRoster($('rosterHome').value, v.meta.rosters.home || []), away: parseRoster($('rosterAway').value, v.meta.rosters.away || []) };
+    const names = { home: $('nameHome').value.trim() || 'FBCA', away: $('nameAway').value.trim() || 'Opponent' };
+    for (const id of ['nameHome', 'nameAway', 'rosterHome', 'rosterAway']) $(id).dataset.dirty = '';
+    enqueue('meta', { meta: { names, rosters } });
+    $('rosterNote').textContent = 'Saved. ' + rosters.home.length + ' and ' + rosters.away.length + ' players.'; $('rosterNote').className = 'hint';
+  };
+  $('btnReset').onclick = async () => {
+    if (!confirm('Start a new game? Every play is cleared for both stat keepers and the scorebug.')) return;
+    if (!key) { tab = 'setup'; showTab(); toast('Add the stat keeper key first.'); return; }
+    try {
+      const r = await fetch(API + '/reset?game=' + GAME, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ keepRosters: $('keepRosters').checked }) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || 'Error ' + r.status);
+      pending = []; savePending();
+      server = { rev: data.rev, meta: data.meta, events: data.events }; store.set(LS.cache, server);
+      for (const id of ['nameHome', 'nameAway', 'rosterHome', 'rosterAway']) $(id).dataset.dirty = '';
+      pick = {}; assist = null; toast('New game started.'); render();
+    } catch (e) { toast("Couldn't start a new game: " + e.message); }
+  };
+
+  const showTab = () => {
+    document.querySelectorAll('.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
+    document.querySelectorAll('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== tab);
+    render();
+  };
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; showTab(); });
+
+  if (!key) tab = 'setup';
+  showTab(); connect();
+})();
+</script>
+</body>
+</html>
