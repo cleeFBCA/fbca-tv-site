@@ -129,6 +129,8 @@
   .set-row { display: flex; gap: 8px; }
   .set-row input { flex: 1; }
   .set-row button { flex: 0 0 auto; }
+  .set-row select { flex: 1; min-width: 0; }
+  button.ghost { background: transparent; min-height: 0; padding: 8px 12px; font-size: 14px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -187,18 +189,22 @@
       <h3>Teams and rosters</h3>
       <div class="two">
         <div>
+          <label for="libHome">Saved teams</label>
+          <div class="set-row"><select id="libHome"></select><button id="forgetHome" class="ghost">Forget</button></div>
           <label for="nameHome">Our team</label><input id="nameHome" maxlength="30">
           <label for="rosterHome">Roster: one player per line, number then name</label>
           <textarea id="rosterHome" placeholder="2 Luke Tran&#10;3 Jordan Lee&#10;5 Noah Kim"></textarea>
         </div>
         <div>
+          <label for="libAway">Saved teams</label>
+          <div class="set-row"><select id="libAway"></select><button id="forgetAway" class="ghost">Forget</button></div>
           <label for="nameAway">Opponent</label><input id="nameAway" maxlength="30">
           <label for="rosterAway">Roster: one player per line, number then name</label>
           <textarea id="rosterAway" placeholder="1 Sam Ortiz&#10;4 Eli Brooks"></textarea>
         </div>
       </div>
       <div class="set-row" style="margin-top:10px"><button class="primary" id="btnRoster">Save teams and rosters</button></div>
-      <p class="hint" id="rosterNote">A name can be fixed mid-game; that player's plays stay with them.</p>
+      <p class="hint" id="rosterNote">Saving also keeps each team in Saved teams for next time, by team name. Use names like "FBCA Varsity" and "FBCA JV" to keep both. A player's name can be fixed mid-game; their plays stay with them.</p>
     </div>
     <div class="card">
       <h3>New game</h3>
@@ -533,6 +539,56 @@
     }));
   };
 
+  // ---- Saved teams: rosters kept by team name, shared by every stat device ----
+  let library = null, libNote = '';
+  const rosterBase = { home: null, away: null }; // a loaded saved roster: its players keep their ids
+  const Cap = side => side === 'home' ? 'Home' : 'Away';
+  const libFetch = async (method, body) => {
+    const r = await fetch(API + '/library?game=' + GAME, {
+      method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: body ? JSON.stringify(body) : undefined
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(r.status === 401 ? 'wrong key' : d.error || 'error ' + r.status);
+    library = d.teams; libNote = '';
+  };
+  const loadLibrary = async () => {
+    if (!key) { library = null; libNote = 'Saved teams show once the key is saved.'; renderLibrary(); return; }
+    try { await libFetch('GET'); } catch (e) { libNote = "Couldn't load saved teams (" + e.message + ')'; }
+    renderLibrary();
+  };
+  const renderLibrary = () => {
+    for (const side of SIDES) {
+      const sel = $('lib' + Cap(side)), keep = sel.value;
+      const opts = [new Option(library ? (library.length ? 'Load a saved team…' : 'No saved teams yet') : libNote || 'Loading saved teams…', '')];
+      for (const t of library || []) opts.push(new Option(t.name + ' (' + t.roster.length + ' players)', t.name));
+      sel.replaceChildren(...opts);
+      sel.value = (library || []).some(t => t.name === keep) ? keep : '';
+      sel.disabled = !library || !library.length;
+      $('forget' + Cap(side)).disabled = !sel.value;
+    }
+  };
+  for (const side of SIDES) {
+    $('lib' + Cap(side)).addEventListener('change', e => {
+      const t = (library || []).find(x => x.name === e.target.value);
+      $('forget' + Cap(side)).disabled = !t;
+      if (!t) return;
+      $('name' + Cap(side)).value = t.name; $('roster' + Cap(side)).value = rosterText(t.roster);
+      $('name' + Cap(side)).dataset.dirty = '1'; $('roster' + Cap(side)).dataset.dirty = '1';
+      rosterBase[side] = t.roster;
+      const v = view(), played = v && v.events.some(ev => ev.side === side);
+      $('rosterNote').textContent = 'Loaded ' + t.name + '. Tap Save teams and rosters to use it.'
+        + (played ? ' This game already has plays for this side; start a new game first if this is a different team.' : '');
+      $('rosterNote').className = 'hint warn';
+    });
+    $('forget' + Cap(side)).onclick = async () => {
+      const name = $('lib' + Cap(side)).value;
+      if (!name || !confirm('Forget the saved roster for ' + name + '? The current game keeps its roster.')) return;
+      try { await libFetch('POST', { action: 'delete', name }); toast('Forgot ' + name + '.'); }
+      catch (e) { toast("Couldn't forget " + name + ': ' + e.message); }
+      renderLibrary();
+    };
+  }
+
   const setField = (id, value) => { const f = $(id); if (document.activeElement !== f && f.dataset.dirty !== '1') f.value = value; };
   const rosterText = list => (list || []).map(p => (p.num ? p.num + ' ' : '') + p.name).join('\n');
   const renderSetup = v => {
@@ -550,7 +606,7 @@
     setField('rosterHome', rosterText(v.meta.rosters.home)); setField('rosterAway', rosterText(v.meta.rosters.away));
   };
   for (const id of ['nameHome', 'nameAway', 'rosterHome', 'rosterAway']) $(id).addEventListener('input', () => { $(id).dataset.dirty = '1'; $('rosterNote').textContent = 'Not saved yet.'; $('rosterNote').className = 'hint warn'; });
-  $('btnKey').onclick = () => { key = $('key').value.trim(); store.set(LS.key, key); sendErr = ''; render(); flush(); };
+  $('btnKey').onclick = () => { key = $('key').value.trim(); store.set(LS.key, key); sendErr = ''; render(); flush(); loadLibrary(); };
   for (const b of $('keepers').children) b.onclick = () => { const k = +b.dataset.k; pick = {}; enqueue('meta', { meta: { keepers: k } }); };
 
   // "3 Jordan Lee", "#3 Jordan Lee", "3 - Jordan Lee", or just a name. Keeps each player's id
@@ -564,11 +620,17 @@
   });
   $('btnRoster').onclick = () => {
     const v = view(); if (!v) return;
-    const rosters = { home: parseRoster($('rosterHome').value, v.meta.rosters.home || []), away: parseRoster($('rosterAway').value, v.meta.rosters.away || []) };
+    const base = side => [...(rosterBase[side] || []), ...(v.meta.rosters[side] || [])];
+    const rosters = { home: parseRoster($('rosterHome').value, base('home')), away: parseRoster($('rosterAway').value, base('away')) };
     const names = { home: $('nameHome').value.trim() || 'FBCA', away: $('nameAway').value.trim() || 'Opponent' };
     for (const id of ['nameHome', 'nameAway', 'rosterHome', 'rosterAway']) $(id).dataset.dirty = '';
     enqueue('meta', { meta: { names, rosters } });
     $('rosterNote').textContent = 'Saved. ' + rosters.home.length + ' and ' + rosters.away.length + ' players.'; $('rosterNote').className = 'hint';
+    rosterBase.home = rosterBase.away = null;
+    const teams = SIDES.filter(side => rosters[side].length).map(side => ({ name: names[side], roster: rosters[side] }));
+    if (teams.length && key) libFetch('POST', { action: 'save', teams })
+      .then(() => { $('rosterNote').textContent += ' Kept in Saved teams.'; renderLibrary(); })
+      .catch(() => { $('rosterNote').textContent += " (Couldn't add them to Saved teams right now.)"; });
   };
   $('btnReset').onclick = async () => {
     if (!confirm('Start a new game? Every play is cleared for both stat keepers and the scorebug.')) return;
@@ -589,10 +651,10 @@
     document.querySelectorAll('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== tab);
     render();
   };
-  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; showTab(); });
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; showTab(); if (tab === 'setup') loadLibrary(); });
 
   if (!key) tab = 'setup';
-  showTab(); connect();
+  showTab(); connect(); loadLibrary();
 })();
 </script>
 </body>

@@ -13,7 +13,12 @@
 //   POST /undo    { gameId, ids: [...] }
 //   POST /meta    { gameId, meta: { keepers, period, names, rosters } }   (any subset)
 //   POST /reset   { keepRosters }      starts a new game
-//   POSTs need Authorization: Bearer <STAT_KEY>.
+//   GET  /library                      saved teams: { teams: [{ name, roster, savedAt }] }
+//   POST /library { action: 'save', teams: [{ name, roster }] } | { action: 'delete', name }
+//   POSTs and /library need Authorization: Bearer <STAT_KEY>.
+//
+// Saved teams outlive new games, so FBCA (varsity, JV) and opponents seen before are a pick
+// from a menu. They're kept by name, case and spacing ignored.
 //
 // Events carry a random id made on the device, so a play sent twice (a retry after a
 // dropped connection) is stored once, and gameId, so plays queued offline during an
@@ -24,7 +29,7 @@ import { DurableObject } from 'cloudflare:workers';
 const SITE_ORIGINS = ['https://fbca.tv', 'https://www.fbca.tv'];
 const TYPES = ['m2', 'x2', 'm3', 'x3', 'mft', 'xft', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf'];
 const SIDES = ['home', 'away'];
-const MAX_EVENTS = 3000, MAX_ROSTER = 30;
+const MAX_EVENTS = 3000, MAX_ROSTER = 30, MAX_SAVED = 150;
 
 const allowedOrigin = origin => SITE_ORIGINS.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 const cors = origin => ({
@@ -101,6 +106,8 @@ export class Game extends DurableObject {
       return new Response(null, { status: 101, webSocket: client });
     }
     if (request.method === 'GET' && url.pathname === '/state') return json(this.state());
+    const library = () => Object.values(this.get('library', {})).sort((a, b) => a.name.localeCompare(b.name));
+    if (request.method === 'GET' && url.pathname === '/library') return json({ teams: library() });
 
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== 'object') return json({ error: 'Send JSON' }, 400);
@@ -138,6 +145,23 @@ export class Game extends DurableObject {
       }
       if (gone.length) this.send({ t: 'del', rev: this.bump(), ids: gone });
       return json({ ok: true, rev: this.rev() });
+    }
+
+    if (url.pathname === '/library') {
+      const lib = this.get('library', {}), keyOf = n => clean(n, 30).toLowerCase();
+      if (body.action === 'save') {
+        for (const t of (Array.isArray(body.teams) ? body.teams : []).slice(0, 4)) {
+          const name = clean(t && t.name, 30), roster = cleanRoster(t && t.roster);
+          if (!name || !roster.length) continue;
+          lib[keyOf(name)] = { name, roster, savedAt: Date.now() };
+        }
+        // Over the limit: forget the teams saved longest ago.
+        const keys = Object.keys(lib).sort((a, b) => lib[b].savedAt - lib[a].savedAt);
+        for (const k of keys.slice(MAX_SAVED)) delete lib[k];
+      } else if (body.action === 'delete') delete lib[keyOf(body.name)];
+      else return json({ error: 'Unknown action' }, 400);
+      this.put('library', lib);
+      return json({ ok: true, teams: library() });
     }
 
     if (url.pathname === '/meta') {
@@ -189,7 +213,7 @@ export default {
       const r = await stub.fetch(request);
       return withCors(r, origin);
     }
-    if (request.method === 'POST' && ['/events', '/undo', '/meta', '/reset'].includes(url.pathname)) {
+    if (['/events', '/undo', '/meta', '/reset', '/library'].includes(url.pathname) && (request.method === 'POST' || url.pathname === '/library')) {
       const given = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
       if (!await keyMatches(given, env.STAT_KEY)) return json({ error: 'Wrong stat keeper key' }, 401, origin);
       const r = await stub.fetch(request);

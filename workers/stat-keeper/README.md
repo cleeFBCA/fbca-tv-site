@@ -15,13 +15,15 @@ Address: `https://eota-stat-keeper.clee-625.workers.dev`
   it: each device picks a team and sees only that team's players and plays.
 - Plays are saved on the device first. During a Wi-Fi dropout the page says
   "Offline · N waiting" and sends them when it reconnects; a play is never stored twice.
-- Anyone on fbca.tv may read the game (the stats go on air anyway). Recording
-  plays, rosters and new games needs the stat keeper key.
+- Anyone on fbca.tv may read the current game (the stats go on air anyway).
+  Recording plays, rosters, new games and the saved teams list need the stat keeper key.
 
 ## Game night
 
 1. Stat crew: open the stat keeper page, **Setup** → paste the key → **Save** (once per device).
-2. Enter both rosters (`3 Jordan Lee`, one per line) → **Save teams and rosters**.
+2. Enter both rosters (`3 Jordan Lee`, one per line), or pick them from **Saved teams**,
+   → **Save teams and rosters**. Every saved roster is kept in Saved teams by team name
+   (e.g. "FBCA Varsity", "FBCA JV", each opponent) for next time; **Forget** removes one.
    **Start a new game** clears the last game's plays; leave "Keep the teams and rosters" ticked to reuse them.
 3. Scorebug control page: **Data sources** → Stats come from **Stat keeper page** →
    **Connect to the stat keeper**, then tick what the stats should run (score, fouls, players, team stats).
