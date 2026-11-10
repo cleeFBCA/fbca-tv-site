@@ -406,12 +406,13 @@
         <p class="hint" id="sbRate" hidden></p>
         <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
         <div class="set-row"><input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…"><button id="btnSheet">Connect</button></div>
+        <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
         <p class="hint" id="sheetStatus">Not connected.</p>
         <table class="src">
           <thead><tr><th>Item</th><th>Scoreboard</th><th>Stat sheet</th></tr></thead>
           <tbody id="srcRows"></tbody>
         </table>
-        <p class="hint">Tick where each item comes from. Unticked items run from the buttons on this page. Pairs show left–right as on screen. The stat sheet is read every 20 seconds and runs behind the game while it's being typed, so the score and fouls are best from the scoreboard.</p>
+        <p class="hint">Tick where each item comes from. Unticked items run from the buttons on this page. Pairs show left–right as on screen. The stat sheet runs a few seconds behind the game while it's being typed, so the clock and score are best from the scoreboard.</p>
         <p class="hint" id="sbKeys" hidden></p>
       </div>
     </div>
@@ -587,7 +588,7 @@
     // Where each item comes from: 'board' (scoreboard file), 'sheet' (stat sheet) or '' (buttons on the page).
     src: { clock: 'board', shot: 'board', period: '', score: '', fouls: '', tos: '', players: 'sheet', team: 'sheet' },
     // Stat sheet: the share link, whether it's connected, and the last read (players and totals per side).
-    sheetUrl: '', sheetOn: false, sheet: { at: 0, err: '', home: null, away: null },
+    sheetUrl: '', sheetOn: false, sheetEvery: 1, sheet: { at: 0, err: '', home: null, away: null },
     // The sheet counts fouls for the whole game; the bug shows them since the quarter started.
     foulBase: { home: 0, away: 0 }, statsLabel: 'auto',
     flash: { home: 0, away: 0 },
@@ -1335,7 +1336,7 @@
   // The relay (workers/stat-sheet-relay) fetches the OneDrive file, which SharePoint won't serve to a page directly.
   const RELAY = 'https://eota-stat-sheet-relay.clee-625.workers.dev/';
   const SHEETJS = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-  let xlsxReady = null, sheetTimer = 0, sheetBusy = false;
+  let xlsxReady = null, sheetBusy = false;
   const loadSheetJS = () => xlsxReady || (xlsxReady = new Promise((ok, bad) => {
     const tag = document.createElement('script');
     tag.src = SHEETJS; tag.onload = ok; tag.onerror = () => { xlsxReady = null; bad(new Error('Could not load the Excel reader')); };
@@ -1376,27 +1377,59 @@
       if (s.src.fouls === 'sheet') s[side].fouls = Math.max(0, s.sheet[side].tot.pf - s.foulBase[side]);
     }
   };
+  // Reading the sheet: one read at a time. A new read starts every s.sheetEvery seconds, or as soon as
+  // the last one finishes if it took longer. After a failed read (OneDrive busy or throttling us) wait
+  // 5, then 10, then 20 seconds, then go back to the chosen rate once a read works.
+  // The timer runs in a worker so Chrome doesn't slow it when this window is behind another one.
+  const SHEET_BACKOFF = [5, 10, 20];
+  let sheetFails = 0, sheetGen = 0, sheetTimes = [], sheetCheckedAt = 0;
+  const sheetClock = new Worker(URL.createObjectURL(new Blob(
+    ['onmessage = e => setTimeout(() => postMessage(e.data[0]), e.data[1]);'], { type: 'text/javascript' })));
+  sheetClock.onmessage = e => { if (e.data === sheetGen) pullSheet(); };
+  const sheetWait = () => 1000 * Math.max(s.sheetEvery || 1, sheetFails ? SHEET_BACKOFF[Math.min(sheetFails, 3) - 1] : 0);
+  const sheetNext = startedAt => { if (s.sheetOn) sheetClock.postMessage([sheetGen, Math.max(50, sheetWait() - (performance.now() - startedAt))]); };
+  const startSheet = () => { sheetGen++; if (s.sheetOn && !sheetBusy) pullSheet(); };
+  const stopSheet = () => { s.sheetOn = false; sheetGen++; sheetFails = 0; sheetTimes = []; };
+  const sheetTimeNote = () => {
+    if (!sheetTimes.length) return '';
+    const avg = sheetTimes.reduce((a, b) => a + b, 0) / sheetTimes.length;
+    return ' Each read takes about ' + (avg / 1000).toFixed(1) + ' s (last ' + (sheetTimes[sheetTimes.length - 1] / 1000).toFixed(1) + ' s).';
+  };
+  const sheetRateNote = () => sheetFails
+    ? ' Reads are failing, so it\'s waiting ' + sheetWait() / 1000 + ' seconds between tries.'
+    : ' Reads every ' + (s.sheetEvery === 1 ? 'second' : s.sheetEvery + ' seconds') + '.';
+  const renderSheetEvery = () => { $('sheetEvery').value = String(s.sheetEvery || 1); };
+  $('sheetEvery').addEventListener('change', e => { s.sheetEvery = +e.target.value; save(); startSheet(); });
   const pullSheet = async () => {
     if (!s.sheetOn || sheetBusy) return;
     sheetBusy = true;
+    const t0 = performance.now(), url = s.sheetUrl;
+    let changed = false;
     try {
       await loadSheetJS();
-      const r = await fetch(RELAY + '?url=' + encodeURIComponent(s.sheetUrl), { cache: 'no-store' });
+      const r = await fetch(RELAY + '?url=' + encodeURIComponent(url), { cache: 'no-store' });
       if (!r.ok) throw new Error(await r.text());
-      const first = !sheetLive();
-      s.sheet = { at: Date.now(), err: '', ...readSheet(XLSX.read(await r.arrayBuffer(), { type: 'array' })) };
-      // Connecting mid-quarter with fouls from the sheet: count from here, keeping what the bug shows.
-      if (first && s.src.fouls === 'sheet') SIDES.forEach(side => s.foulBase[side] = s.sheet[side].tot.pf - s[side].fouls);
-      sheetToBug();
+      const data = readSheet(XLSX.read(await r.arrayBuffer(), { type: 'array' }));
+      if (!s.sheetOn || s.sheetUrl !== url) throw null; // disconnected while reading
+      sheetFails = 0; sheetCheckedAt = Date.now();
+      sheetTimes = [...sheetTimes, performance.now() - t0].slice(-10);
+      // Most reads find nothing new; only pass it on (and redraw the outputs) when something changed.
+      const first = !sheetLive(), { at, err, ...prev } = s.sheet;
+      if (first || err || JSON.stringify(data) !== JSON.stringify(prev)) {
+        s.sheet = { at: sheetCheckedAt, err: '', ...data };
+        // Connecting mid-quarter with fouls from the sheet: count from here, keeping what the bug shows.
+        if (first && s.src.fouls === 'sheet') SIDES.forEach(side => s.foulBase[side] = s.sheet[side].tot.pf - s[side].fouls);
+        sheetToBug(); changed = true;
+      } else s.sheet.at = sheetCheckedAt;
     } catch (e) {
-      s.sheet.err = e.message || 'Could not read the stat sheet';
+      if (e && s.sheetOn) { sheetFails++; s.sheet.err = e.message || 'Could not read the stat sheet'; changed = true; }
     }
     sheetBusy = false;
-    save();
+    if (changed) save(); else renderSheetStatus();
+    sheetNext(t0);
   };
-  const startSheet = () => { clearInterval(sheetTimer); if (s.sheetOn) { pullSheet(); sheetTimer = setInterval(pullSheet, 20000); } };
   $('btnSheet').onclick = () => {
-    if (s.sheetOn) { s.sheetOn = false; clearInterval(sheetTimer); save(); return; }
+    if (s.sheetOn) { stopSheet(); save(); return; }
     const link = $('sheetUrl').value.trim();
     if (!/^https:\/\/fortbendchristian-my\.sharepoint\.com\//.test(link)) {
       $('sheetStatus').textContent = 'Paste the share link from Excel (Share → Copy link). It starts with https://fortbendchristian-my.sharepoint.com/:x:/';
@@ -1405,16 +1438,17 @@
     s.sheetUrl = link; s.sheetOn = true; s.sheet = { at: 0, err: '', home: null, away: null };
     save(); startSheet();
   };
-  const ago = at => { const sec = Math.round((Date.now() - at) / 1000); return sec < 60 ? sec + ' sec ago' : Math.round(sec / 60) + ' min ago'; };
+  const ago = at => { const sec = Math.round((Date.now() - at) / 1000); return sec < 2 ? 'just now' : sec < 60 ? sec + ' sec ago' : Math.round(sec / 60) + ' min ago'; };
   const renderSheetStatus = () => {
     setField($('sheetUrl'), s.sheetUrl);
     $('btnSheet').textContent = s.sheetOn ? 'Disconnect' : 'Connect';
     $('sheetUrl').disabled = s.sheetOn;
+    renderSheetEvery();
     const st = $('sheetStatus');
     st.classList.toggle('warn', !!(s.sheetOn && s.sheet.err));
     st.textContent = !s.sheetOn ? 'Not connected.'
-      : s.sheet.err ? "Can't read the stat sheet: " + s.sheet.err + (s.sheet.at ? ' Showing the read from ' + ago(s.sheet.at) + '.' : '')
-      : s.sheet.at ? 'Connected. Read ' + ago(s.sheet.at) + '. Reads every 20 seconds.' : 'Connecting…';
+      : s.sheet.err ? "Can't read the stat sheet: " + s.sheet.err.replace(/[^.!?]$/, '$&.') + (s.sheet.at ? ' Showing the read from ' + ago(s.sheet.at) + '.' : '') + sheetRateNote()
+      : s.sheet.at ? 'Connected. Read ' + ago(s.sheet.at) + '.' + sheetRateNote() + sheetTimeNote() : 'Connecting…';
     $('lsAge').textContent = sheetLive() ? 'Stats as of the read ' + ago(s.sheet.at) + '.' : '';
   };
   setInterval(() => { if (s.sheetOn) renderSheetStatus(); }, 1000);

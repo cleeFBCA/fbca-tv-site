@@ -802,6 +802,7 @@
             <button id="btnSheet">Connect</button>
           </div>
           <label class="check"><input type="checkbox" id="sheetBug"> Update the bug's score and cards from the sheet</label>
+          <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
           <p class="hint" id="sheetStatus">Not connected. The counters below run the stats panel.</p>
 
           <div class="pane-h">Match stats</div>
@@ -1060,7 +1061,7 @@
     others: { title: 'Around the district', raw: '' },
     shoot: { on: false, home: [], away: [] },
     // Stat sheet sync: when on, the stats and score panels read from the sheet instead of the counters.
-    sheetUrl: '', sheetOn: false, sheetBug: true, sheetPrev: {},
+    sheetUrl: '', sheetOn: false, sheetEvery: 1, sheetBug: true, sheetPrev: {},
     sheet: { at: 0, err: '', home: {}, away: {}, goals: [] },
     xi: {
       home: { formation: '4-4-2', coach: '', raw: '', subs: '', kit: '', kitNum: '' },
@@ -2002,7 +2003,7 @@
   // Labels in column G of the sheet's Scorebug tab; FBCA's number is in column B, the opponent's in L.
   const SHEET_ROWS = { 'SHOTS': 'shots', 'SHOTS ON TARGET': 'sog', 'CORNERS': 'corners', 'KEEPER SAVES': 'saves',
                        'FOULS': 'fouls', 'OFFSIDES': 'offsides', 'YELLOW CARDS': 'yellows', 'RED CARDS': 'reds', 'GOALS': 'goals' };
-  let xlsxReady = null, sheetTimer = 0, sheetBusy = false;
+  let xlsxReady = null, sheetBusy = false;
   const loadSheetJS = () => xlsxReady || (xlsxReady = new Promise((ok, bad) => {
     const tag = document.createElement('script');
     tag.src = SHEETJS; tag.onload = ok; tag.onerror = () => { xlsxReady = null; bad(new Error('Could not load the Excel reader')); };
@@ -2031,24 +2032,57 @@
     return { home, away, goals };
   };
 
+  // Reading the sheet: one read at a time. A new read starts every s.sheetEvery seconds, or as soon as
+  // the last one finishes if it took longer. After a failed read (OneDrive busy or throttling us) wait
+  // 5, then 10, then 20 seconds, then go back to the chosen rate once a read works.
+  // The timer runs in a worker so Chrome doesn't slow it when this window is behind another one.
+  const SHEET_BACKOFF = [5, 10, 20];
+  let sheetFails = 0, sheetGen = 0, sheetTimes = [], sheetCheckedAt = 0;
+  const sheetClock = new Worker(URL.createObjectURL(new Blob(
+    ['onmessage = e => setTimeout(() => postMessage(e.data[0]), e.data[1]);'], { type: 'text/javascript' })));
+  sheetClock.onmessage = e => { if (e.data === sheetGen) pullSheet(); };
+  const sheetWait = () => 1000 * Math.max(s.sheetEvery || 1, sheetFails ? SHEET_BACKOFF[Math.min(sheetFails, 3) - 1] : 0);
+  const sheetNext = startedAt => { if (s.sheetOn) sheetClock.postMessage([sheetGen, Math.max(50, sheetWait() - (performance.now() - startedAt))]); };
+  const startSheet = () => { sheetGen++; if (s.sheetOn && !sheetBusy) pullSheet(); };
+  const stopSheet = () => { s.sheetOn = false; sheetGen++; sheetFails = 0; sheetTimes = []; };
+  const sheetTimeNote = () => {
+    if (!sheetTimes.length) return '';
+    const avg = sheetTimes.reduce((a, b) => a + b, 0) / sheetTimes.length;
+    return ' Each read takes about ' + (avg / 1000).toFixed(1) + ' s (last ' + (sheetTimes[sheetTimes.length - 1] / 1000).toFixed(1) + ' s).';
+  };
+  const sheetRateNote = () => sheetFails
+    ? ' Reads are failing, so it\'s waiting ' + sheetWait() / 1000 + ' seconds between tries.'
+    : ' Reads every ' + (s.sheetEvery === 1 ? 'second' : s.sheetEvery + ' seconds') + '.';
+  const renderSheetEvery = () => { $('sheetEvery').value = String(s.sheetEvery || 1); };
+  $('sheetEvery').addEventListener('change', e => { s.sheetEvery = +e.target.value; save(); startSheet(); });
   const pullSheet = async () => {
     if (!s.sheetOn || sheetBusy) return;
     sheetBusy = true;
+    const t0 = performance.now(), url = s.sheetUrl;
+    let changed = false;
     try {
       await loadSheetJS();
-      const r = await fetch(RELAY + '?url=' + encodeURIComponent(s.sheetUrl), { cache: 'no-store' });
+      const r = await fetch(RELAY + '?url=' + encodeURIComponent(url), { cache: 'no-store' });
       if (!r.ok) throw new Error(await r.text());
       const data = readSheet(XLSX.read(await r.arrayBuffer(), { type: 'array' }));
-      s.sheet = { at: Date.now(), err: '', ...data };
-      applySheetToBug(data);
+      if (!s.sheetOn || s.sheetUrl !== url) throw null; // disconnected while reading
+      sheetFails = 0; sheetCheckedAt = Date.now();
+      sheetTimes = [...sheetTimes, performance.now() - t0].slice(-10);
+      // Most reads find nothing new; only pass it on (and redraw the outputs) when something changed.
+      const { at, err, ...prev } = s.sheet;
+      if (!at || err || JSON.stringify(data) !== JSON.stringify(prev)) {
+        s.sheet = { at: sheetCheckedAt, err: '', ...data };
+        applySheetToBug(data); changed = true;
+      } else s.sheet.at = sheetCheckedAt;
     } catch (e) {
-      s.sheet.err = e.message || 'Could not read the stat sheet';
+      if (e && s.sheetOn) { sheetFails++; s.sheet.err = e.message || 'Could not read the stat sheet'; changed = true; }
     }
     sheetBusy = false;
-    save();
+    if (changed) save(); else renderSheetStatus();
+    sheetNext(t0);
   };
   // Copy the sheet's score and cards to the bug, but only numbers that changed on the sheet since the
-  // last read. The operator's live + stays put while the sheet catches up (about a minute behind).
+  // last read. The operator's live + stays put while the sheet catches up (a few seconds behind).
   const BUG_FIELDS = [['goals', 'Score', 99], ['yellows', 'Yellows', 20], ['reds', 'Reds', 4]];
   const applySheetToBug = data => {
     const prev = s.sheetPrev || {}, next = {};
@@ -2062,10 +2096,9 @@
     s.sheetPrev = next;
   };
 
-  const startSheet = () => { clearInterval(sheetTimer); if (s.sheetOn) { pullSheet(); sheetTimer = setInterval(pullSheet, 20000); } };
 
   $('btnSheet').onclick = () => {
-    if (s.sheetOn) { s.sheetOn = false; clearInterval(sheetTimer); save(); return; }
+    if (s.sheetOn) { stopSheet(); save(); return; }
     const link = $('sheetUrl').value.trim();
     if (!/^https:\/\/fortbendchristian-my\.sharepoint\.com\/:x:\//.test(link)) {
       $('sheetStatus').textContent = 'Paste the share link from Excel (Share → Copy link). It starts with https://fortbendchristian-my.sharepoint.com/:x:/';
@@ -2087,18 +2120,19 @@
     $('btnSheet').textContent = s.sheetOn ? 'Disconnect' : 'Connect';
     $('sheetBug').checked = s.sheetBug;
     $('sheetUrl').disabled = s.sheetOn;
+    renderSheetEvery();
     const st = $('sheetStatus');
     if (!s.sheetOn) { st.textContent = 'Not connected. The counters below run the stats panel.'; return; }
-    if (s.sheet.err) { st.textContent = '⚠ ' + s.sheet.err + ' Still trying every 20 seconds.'; return; }
+    if (s.sheet.err) { st.textContent = '⚠ ' + s.sheet.err.replace(/[^.!?]$/, '$&.') + sheetRateNote(); return; }
     if (!s.sheet.at) { st.textContent = 'Connecting…'; return; }
     const ago = Math.round((Date.now() - s.sheet.at) / 1000);
     const hg = s.sheet.home.goals || 0, ag = s.sheet.away.goals || 0;
-    let msg = `Connected. Read ${ago < 5 ? 'just now' : ago + ' sec ago'}. Sheet score: ${s.home} ${hg} – ${ag} ${s.away}. `
+    let msg = `Connected. Read ${ago < 2 ? 'just now' : ago + ' sec ago'}.${sheetRateNote()}${sheetTimeNote()} Sheet score: ${s.home} ${hg} – ${ag} ${s.away}. `
       + (s.sheetBug ? 'The stats, panels and bug follow the sheet.' : 'The stats and panels follow the sheet; the bug is manual.');
     if (hg !== s.homeScore || ag !== s.awayScore) msg += ` Heads up: the bug shows ${s.homeScore} – ${s.awayScore}.`;
     st.textContent = msg;
   };
-  setInterval(() => { if (s.sheetOn) renderSheetStatus(); }, 5000);
+  setInterval(() => { if (s.sheetOn) renderSheetStatus(); }, 1000);
 
   $('oTitle').addEventListener('input', e => { s.others.title = e.target.value; save(); });
   $('oRaw').addEventListener('input', e => { s.others.raw = e.target.value; save(); });
