@@ -883,7 +883,7 @@
           <input id="dTextIn" maxlength="40" placeholder="#10 Sarah Smith">
           <div id="dOutWrap" hidden><label for="dOutPick">Player off</label><select id="dOutPick" class="ppick"></select><label for="dOutIn" style="margin-top:6px">Player off (text)</label><input id="dOutIn" maxlength="40" placeholder="#7 Jane Doe"></div>
           <div class="two">
-            <div><label for="dMinIn">Minute (blank uses the clock)</label><input id="dMinIn" maxlength="6" placeholder="auto"></div>
+            <div><label for="dMinIn" id="dMinLabel">Minute (blank uses the clock)</label><input id="dMinIn" maxlength="6" placeholder="auto"></div>
             <div><label for="dSecs">Auto-hide after (sec, 0 = stay)</label><input id="dSecs" type="number" min="0" max="120" value="8"></div>
           </div>
           <div class="row-btns" style="margin-top:14px">
@@ -2041,7 +2041,7 @@
   const prefillDrop = (side, type) => {
     $('dTeamSel').value = side; $('dType').value = type;
     syncDropForm(); if (rosterHook) rosterHook(); if (DROP_EVENTS[type]) rosterRead();
-    $('dTextIn').value = ''; $('dOutIn').value = ''; $('dMinIn').value = gameMinute();
+    $('dTextIn').value = ''; $('dOutIn').value = ''; $('dMinIn').value = gameMinute(); $('dMinIn').dataset.typed = '';
     showTab('drop');
   };
   // The goal list follows the score: + adds an unnamed goal at the current minute, − removes that team's latest.
@@ -2497,7 +2497,7 @@
   $('dPick').addEventListener('change', () => {
     const x = picked($('dPick')); if (!x) return;
     $('dTeamSel').value = x.side; $('dTextIn').value = x.p.id || x.p.num ? playerLabel(x.p) : ''; $('dPick').value = '';
-    if (x.min) $('dMinIn').value = x.min; // a goal or card from the stat keeper: its own minute
+    if (x.min) { $('dMinIn').value = x.min; $('dMinIn').dataset.typed = '1'; } // a goal or card from the stat keeper: its own minute
     $('dTeamSel').dispatchEvent(new Event('change'));
   });
   $('dOutPick').addEventListener('change', () => {
@@ -2768,13 +2768,19 @@
     $('dCustomWrap').hidden = type !== 'CUSTOM';
     $('dOutWrap').hidden = type !== 'SUB';
     $('dTextLabel').textContent = type === 'SUB' ? 'Player on' : 'Text';
+    // A custom drop-down shows a minute only when one is typed in; clear one that was filled in for us.
+    $('dMinLabel').textContent = type === 'CUSTOM' ? 'Minute (optional: only shown if you type one)' : 'Minute (blank uses the clock)';
+    $('dMinIn').placeholder = type === 'CUSTOM' ? 'none' : 'auto';
+    if (type === 'CUSTOM' && $('dMinIn').dataset.typed !== '1') $('dMinIn').value = '';
   };
+  $('dMinIn').addEventListener('input', e => { e.target.dataset.typed = e.target.value.trim() ? '1' : ''; });
   $('dType').addEventListener('change', () => { syncDropForm(); if (rosterHook) rosterHook(); if (DROP_EVENTS[$('dType').value]) rosterRead(); });
   $('dPick').addEventListener('focus', () => { if (DROP_EVENTS[$('dType').value]) rosterRead(); }); // the newest goals and cards when the list opens
   const showDrop = () => {
     const type = $('dType').value;
     const label = type === 'CUSTOM' ? ($('dCustom').value.trim().toUpperCase() || 'UPDATE') : type;
-    const minute = $('dMinIn').value.trim().replace(/'$/, '') || gameMinute();
+    const typedMin = $('dMinIn').value.trim().replace(/'$/, '');
+    const minute = type === 'CUSTOM' ? ($('dMinIn').dataset.typed === '1' ? typedMin : '') : (typedMin || gameMinute());
     const team = $('dTeamSel').value, text = $('dTextIn').value.trim();
     s.drop = { on: true, team, label, minute, text, out: type === 'SUB' ? $('dOutIn').value.trim() : '', until: untilFrom('dSecs') };
     // A goal drop-down names that team's most recent unnamed goal for the score panel.
