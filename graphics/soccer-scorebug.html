@@ -508,6 +508,10 @@
   .sl-row img { width: 48px; height: 48px; object-fit: contain; background: var(--pine); border-radius: 6px; flex: none; }
   .sl-row input { min-width: 0; }
   .sl-row button { min-height: 0; padding: 8px 12px; flex: none; }
+  .xi-pick .slot { display: grid; grid-template-columns: 96px 1fr; gap: 6px; align-items: center; margin-top: 4px; }
+  .xi-pick .slot span { font-size: 12px; color: var(--chalk-dim); }
+  .xi-pick .slot select { min-width: 0; padding: 6px 8px; font-size: 14px; }
+  .xi-pick h4 { margin: 10px 0 2px; font-size: 13px; color: var(--chalk-dim); font-weight: 600; }
   button.small { min-height: 0; padding: 6px 12px; font-size: 14px; flex: 0 0 auto; }
   .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .team-ctl { text-align: center; }
@@ -871,9 +875,11 @@
               </select></div>
           </div>
           <div id="dCustomWrap" hidden><label for="dCustom">Custom label</label><input id="dCustom" maxlength="20" placeholder="e.g. SAVE, CORNER"></div>
+          <label for="dPick">Player (from the stat keeper roster, or the lineups)</label>
+          <select id="dPick" class="ppick"></select>
           <label for="dTextIn" id="dTextLabel">Text</label>
           <input id="dTextIn" maxlength="40" placeholder="#10 Sarah Smith">
-          <div id="dOutWrap" hidden><label for="dOutIn">Player off</label><input id="dOutIn" maxlength="40" placeholder="#7 Jane Doe"></div>
+          <div id="dOutWrap" hidden><label for="dOutPick">Player off</label><select id="dOutPick" class="ppick"></select><label for="dOutIn" style="margin-top:6px">Player off (text)</label><input id="dOutIn" maxlength="40" placeholder="#7 Jane Doe"></div>
           <div class="two">
             <div><label for="dMinIn">Minute (blank uses the clock)</label><input id="dMinIn" maxlength="6" placeholder="auto"></div>
             <div><label for="dSecs">Auto-hide after (sec, 0 = stay)</label><input id="dSecs" type="number" min="0" max="120" value="8"></div>
@@ -886,6 +892,8 @@
 
         <!-- Lower third -->
         <div data-pane="l3" hidden>
+          <label for="lPick">Player (fills the name, team and a stat line from the stats)</label>
+          <select id="lPick" class="ppick"></select>
           <label for="lName">Name</label>
           <input id="lName" maxlength="36" placeholder="#10 Sarah Smith">
           <label for="lStat">Stat line</label>
@@ -1007,7 +1015,8 @@
               <h3 id="xiHomeTitle">FBCA</h3>
               <label for="xiHomeForm">Formation</label><select id="xiHomeForm" data-xi="home" data-k="formation"></select>
               <label for="xiHomeCoach">Head coach</label><input id="xiHomeCoach" data-xi="home" data-k="coach" maxlength="30">
-              <label for="xiHomeRaw">Starters, one per line: number then name</label>
+              <div class="xi-pick" data-xside="home"></div>
+              <label for="xiHomeRaw">Starters, one per line: number then name (the menus above fill these in)</label>
               <textarea id="xiHomeRaw" data-xi="home" data-k="raw" placeholder="1 Keeper&#10;2 Left back&#10;4 Center back&#10;5 Center back&#10;3 Right back&#10;…"></textarea>
               <div class="count" id="xiHomeCount"></div>
               <label for="xiHomeSubs">Substitutes</label>
@@ -1028,7 +1037,8 @@
               <h3 id="xiAwayTitle">AWAY</h3>
               <label for="xiAwayForm">Formation</label><select id="xiAwayForm" data-xi="away" data-k="formation"></select>
               <label for="xiAwayCoach">Head coach</label><input id="xiAwayCoach" data-xi="away" data-k="coach" maxlength="30">
-              <label for="xiAwayRaw">Starters, one per line: number then name</label>
+              <div class="xi-pick" data-xside="away"></div>
+              <label for="xiAwayRaw">Starters, one per line: number then name (the menus above fill these in)</label>
               <textarea id="xiAwayRaw" data-xi="away" data-k="raw" placeholder="1 Keeper&#10;2 Left back&#10;…"></textarea>
               <div class="count" id="xiAwayCount"></div>
               <label for="xiAwaySubs">Substitutes</label>
@@ -1740,6 +1750,7 @@
   let fvRenderHook = null; // draws the Fan vote tab (set up below)
   let photoHook = null; // draws the Player photos panels (set up below)
   let logoHook = null; // draws the School logos rows (set up below)
+  let rosterHook = null; // fills the player menus (set up below)
   const save = () => {
     try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
     if (bc) bc.postMessage(s);
@@ -1814,6 +1825,7 @@
   const renderCtl = () => {
     if (fvRenderHook) fvRenderHook();
     if (logoHook) logoHook();
+    if (rosterHook) rosterHook();
     if (photoHook) photoHook();
     $('cHome').textContent = s.home; $('cAway').textContent = s.away;
     $('cHome').style.background = HOME_COLORS.bg; $('cHome').style.color = HOME_COLORS.fg;
@@ -2405,6 +2417,122 @@
     out.goals.sort((a, b) => (parseInt(a.min, 10) || 0) - (parseInt(b.min, 10) || 0));
     return out;
   };
+  // ---- Rosters from the soccer stat keeper (what the stat crew entered), read even when stats come from Excel ----
+  // Live from the stat keeper connection when it's open; otherwise read every minute.
+  let rosterGame = null;
+  const rosterRead = async () => {
+    if (skGame) return;
+    try { const r = await fetch(SK_API + '/state?game=soccer', { cache: 'no-store' }); if (r.ok) { rosterGame = await r.json(); renderCtl(); } } catch (e) { /* offline: the lineups still work */ }
+  };
+  rosterRead(); setInterval(rosterRead, 60000);
+  // The stat keeper's roster for a side, then anyone in the lineups who isn't on it: [{ num, name, id? }]
+  const teamRoster = side => {
+    const g = skGame || rosterGame, out = [], seen = new Set();
+    const add = p => { const k = p.num ? '#' + p.num : 'n:' + String(p.name).toLowerCase(); if (!p.name || seen.has(k)) return; seen.add(k); out.push(p); };
+    ((g && g.meta && g.meta.rosters && g.meta.rosters[side]) || []).forEach(p => add({ num: p.num || '', name: p.name, id: p.id }));
+    const cfg = s.xi[side] || {};
+    [...parseXI(cfg.raw || ''), ...parseXI(cfg.subs || '')].forEach(add);
+    return out.sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
+  };
+  const playerLabel = p => (p.num ? '#' + p.num + ' ' : '') + p.name;
+  // A player's game so far from the stat keeper, as a lower-third line ("2 GOALS · 1 ASSIST", "5 SAVES").
+  const playerLine = (side, p) => {
+    const g = skGame || rosterGame; if (!g || !p.id) return '';
+    const c = {}; for (const e of g.events || []) if (e.side === side && e.player === p.id) c[e.type] = (c[e.type] || 0) + 1;
+    const n = (v, one, many) => v + ' ' + (v === 1 ? one : many);
+    const shots = (c.goal || 0) + (c.sog || 0) + (c.shot || 0);
+    return [c.goal && n(c.goal, 'GOAL', 'GOALS'), c.ast && n(c.ast, 'ASSIST', 'ASSISTS'), c.save && n(c.save, 'SAVE', 'SAVES'),
+            !c.goal && shots && n(shots, 'SHOT', 'SHOTS')].filter(Boolean).join(' · ');
+  };
+  // One "Pick a player…" menu with both teams (or one team), each option remembering its player.
+  const pickSig = new WeakMap();
+  const fillPick = (sel, sides, placeholder) => {
+    const lists = sides.map(side => [side, teamRoster(side)]);
+    const sig = JSON.stringify(lists.map(([side, l]) => [side, teamName(side), l.map(playerLabel)]));
+    if (pickSig.get(sel) === sig) return;
+    pickSig.set(sel, sig);
+    sel._players = [];
+    sel.replaceChildren(new Option(placeholder, ''));
+    for (const [side, list] of lists) {
+      const g = document.createElement('optgroup'); g.label = teamName(side);
+      for (const p of list) { g.append(new Option(playerLabel(p), String(sel._players.length))); sel._players.push({ side, p }); }
+      if (list.length) sel.append(g);
+    }
+    if (!sel._players.length) sel.append(new Option('No players yet: add them on the stat keeper page or in Lineups', '', false, false));
+  };
+  const picked = sel => sel.value === '' ? null : sel._players[+sel.value];
+
+  // Drop-down: the player (and the player off for a sub) fill the text and team.
+  $('dPick').addEventListener('change', () => {
+    const x = picked($('dPick')); if (!x) return;
+    $('dTeamSel').value = x.side; $('dTextIn').value = playerLabel(x.p); $('dPick').value = '';
+    $('dTeamSel').dispatchEvent(new Event('change'));
+  });
+  $('dOutPick').addEventListener('change', () => {
+    const x = picked($('dOutPick')); if (!x) return;
+    $('dOutIn').value = playerLabel(x.p); $('dOutPick').value = '';
+  });
+  // Lower third: name, team, and the player's stats so far.
+  $('lPick').addEventListener('change', () => {
+    const x = picked($('lPick')); if (!x) return;
+    $('lName').value = playerLabel(x.p); $('lTeam').value = x.side;
+    const line = playerLine(x.side, x.p); if (line) $('lStat').value = line;
+    $('lPick').value = '';
+  });
+
+  // Lineups: a menu for each starting spot, in the formation's order (keeper, then each line left to right).
+  // Picking writes the starters list; everyone else on the roster becomes a substitute.
+  const lineNames = formation => {
+    const lines = String(formation || '4-4-2').split('-').map(Number), out = [['Goalkeeper', 1]];
+    lines.forEach((n, k) => out.push([k === 0 ? 'Defenders' : k === lines.length - 1 ? 'Forwards' : lines.length > 3 && k === 1 ? 'Defensive mids' : 'Midfielders', n]));
+    return out;
+  };
+  const xiPickSig = { home: '', away: '' };
+  const renderXiPick = side => {
+    const box = document.querySelector(`.xi-pick[data-xside="${side}"]`); if (!box) return;
+    const cfg = s.xi[side], roster = teamRoster(side).filter(p => p.name);
+    const starters = parseXI(cfg.raw || '');
+    // The spot each pick was made in (so a half-filled lineup keeps its gaps); if the starters were typed
+    // or changed by hand since, fill the spots in the order they're listed.
+    const fmt = p => (p.num ? p.num + ' ' : '') + p.name;
+    const picks = Array.isArray(cfg.picks) && cfg.picks.filter(Boolean).join('\n') === starters.map(fmt).join('\n') ? cfg.picks : starters.map(fmt);
+    const sig = JSON.stringify([cfg.formation, roster.map(playerLabel), picks]);
+    if (sig === xiPickSig[side] || box.contains(document.activeElement)) return;
+    xiPickSig[side] = sig;
+    if (!roster.length) { box.replaceChildren(el('p', 'hint', 'Add this team\'s roster on the soccer stat keeper page to pick starters from menus here, or type them below.')); return; }
+    const kids = [el('h4', null, 'Pick the starters (left to right in each line)')];
+    let slot = 0;
+    for (const [label, n] of lineNames(cfg.formation)) {
+      for (let i = 0; i < n; i++, slot++) {
+        const row = el('div', 'slot'), sel = el('select');
+        row.append(el('span', null, n === 1 ? label.replace(/s$/, '') : `${label.replace(/s$/, '')} ${i + 1}`), sel);
+        sel.append(new Option('—', ''));
+        roster.forEach((p, k) => sel.append(new Option(playerLabel(p), String(k))));
+        const cur = picks[slot] ? parseXI(picks[slot])[0] : null;
+        if (cur) { const k = roster.findIndex(p => cur.num ? p.num === cur.num : p.name.toLowerCase() === cur.name.toLowerCase()); if (k >= 0) sel.value = String(k); }
+        sel.dataset.slot = slot;
+        sel.addEventListener('change', () => {
+          const sels = [...box.querySelectorAll('select')];
+          const chosen = sels.map(x => x.value === '' ? null : roster[+x.value]);
+          s.xi[side].picks = chosen.map(p => p ? fmt(p) : '');
+          s.xi[side].raw = chosen.filter(Boolean).map(fmt).join('\n');
+          const used = new Set(chosen.filter(Boolean).map(playerLabel));
+          s.xi[side].subs = roster.filter(p => !used.has(playerLabel(p))).map(fmt).join('\n');
+          xiPickSig[side] = '';
+          save();
+        });
+        kids.push(row);
+      }
+    }
+    box.replaceChildren(...kids);
+  };
+  rosterHook = () => {
+    fillPick($('dPick'), ['home', 'away'], 'Pick a player…');
+    fillPick($('dOutPick'), ['home', 'away'], 'Pick the player coming off…');
+    fillPick($('lPick'), ['home', 'away'], 'Pick a player…');
+    renderXiPick('home'); renderXiPick('away');
+  };
+
   const keeperApply = () => {
     const data = keeperData(skGame), { at, err, ...prev } = s.sheet;
     if (!at || err || JSON.stringify(data) !== JSON.stringify(prev)) {
@@ -2694,18 +2822,12 @@
   }));
 
 
-  // Players for the nominee picker: each team's starters and subs from Lineups.
+  // Players for the nominee picker: the stat keeper roster and each team's lineups.
   const leftSideFv = () => s.swap ? 'away' : 'home';
   const teamNameFv = side => teamName(side);
   const colorsFv = side => colorsFor(side);
-  const rosterFor = side => {
-    const cfg = s.xi[side] || {}, out = [], seen = new Set();
-    for (const p of [...parseXI(cfg.raw || ''), ...parseXI(cfg.subs || '')]) {
-      const k = p.num ? '#' + p.num : 'n:' + p.name.toLowerCase(); if (!p.name || seen.has(k)) continue; seen.add(k);
-      out.push({ ...p, photo: findPhoto(teamName(side), p.num, p.name) });
-    }
-    return out;
-  };
+  // The stat keeper's roster plus the lineups (see teamRoster), with headshots.
+  const rosterFor = side => teamRoster(side).map(p => ({ num: p.num, name: p.name, photo: findPhoto(teamName(side), p.num, p.name) }));
   // --- Fan vote: pick nominees from the rosters ---
   // Tapping a player fills the next open nominee row (team, number, name, headshot); tapping again clears it.
   const fvNominated = (side, p) => s.fv.form.findIndex(n => n.side === side && n.name.trim() &&
@@ -2718,7 +2840,7 @@
     if (sig === fvPickSig) return;
     fvPickSig = sig;
     const anyone = rosters.some(([, r]) => r.length);
-    $('fvPickNote').textContent = anyone ? '' : "Type each team's starters and subs in the Lineups tab, and they'll show here to tap.";
+    $('fvPickNote').textContent = anyone ? '' : "Add rosters on the soccer stat keeper page, or type each team's starters and subs in Lineups, and they'll show here to tap.";
     $('fvPick').replaceChildren(...rosters.map(([side, roster]) => {
       const col = el('div'), c = colorsFv(side), chips = el('div', 'chips');
       col.append(el('h4', null, teamNameFv(side)));
