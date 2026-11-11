@@ -250,6 +250,17 @@
   .sp.on::after { animation: spShine 1.1s .8s ease-in-out both; }
   @keyframes spShine { from { opacity: 1; transform: translateX(-100%); } to { opacity: 1; transform: translateX(100%); } }
 
+  /* ---------- Station bug: the EOTA logo, semi-transparent, in a top corner (inside the title-safe area) ---------- */
+  .stn { position: absolute; top: 54px; width: 150px; opacity: 0; transition: opacity .8s ease; }
+  .stn.tr { right: 96px; }
+  .stn.tl { left: 96px; }
+  .stn.on { opacity: var(--o, .6); }
+  .stn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .stn-row label.switch { margin: 0; }
+  .stn-row select { width: auto; }
+  .stn-row .op { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--chalk-dim); }
+  .stn-row .op input { width: 120px; padding: 0; }
+
   /* ---------- Pop-up: a strip that rises from behind the top of the bar ----------
      Text (with an optional team tag), a team stat (both teams, in screen order), or a run. */
   /* overflow: hidden clips the strip at the top of the bar, so while it's down nothing shows (even with the bug hidden) */
@@ -569,6 +580,7 @@
 <body>
 
 <div id="stage">
+  <i class="logo stn tr" id="stn"></i>
   <div class="bbw"><div class="pop" id="pop"><div class="pop-in" id="popIn"></div></div><div class="bb" id="bb">
     <div class="nm L" id="nmL"><span class="t"></span><span class="rec"></span></div>
     <div class="cap L" id="capL"></div>
@@ -819,6 +831,12 @@
           <div class="set-row"><input id="fvKey" type="password" autocomplete="off" spellcheck="false"><button id="fvKeySave">Save key</button></div>
         </div>
 
+        <div class="stn-row">
+          <label class="switch"><input type="checkbox" id="stnOn" role="switch"><span class="track"></span><span>Station bug</span></label>
+          <select id="stnCorner" aria-label="Station bug corner"><option value="tr">Top right</option><option value="tl">Top left</option></select>
+          <span class="op">Opacity <input type="range" id="stnOp" min="20" max="100" step="5"><b id="stnOpV"></b></span>
+        </div>
+        <p class="hint" id="stnNote"></p>
       </div>
 
       <div class="card">
@@ -928,6 +946,7 @@
             <li><kbd>X</kbd> flip the possession arrow, <kbd>H</kbd> hide / show the bug</li>
             <li><kbd>N</kbd> show / hide the lower third in the form</li>
             <li><kbd>U</kbd> pop-up: show the last one again / take it down</li>
+            <li><kbd>B</kbd> station bug on / off</li>
             <li><kbd>V</kbd> fan vote QR lower third, <kbd>Esc</kbd> take down the results</li>
           </ul>
           <p class="hint">Left and right follow the screen, so they stay under your hands after a swap.</p>
@@ -971,6 +990,8 @@
     // The timeout graphic: { side, at } for the last timeout called; the bug shows it briefly from \`at\`.
     // toAuto: show it when the scoreboard's timeouts-left drops.
     toCall: null, toAuto: true,
+    // Station bug: on, corner ('tr' | 'tl'), opacity in percent.
+    stn: { on: false, corner: 'tr', opacity: 60 },
     // Pop-up above the bar: kind 'text' | 'stat' | 'run'; until = when it comes down (0 = stays up).
     // Pregame matchup (s.panel === 'match'): title, subtitle, date/time and venue. Records come from Setup.
     match: { title: '', sub: '', when: '', venue: '' },
@@ -988,7 +1009,7 @@
     out.shot = Object.assign(defaults().shot, raw.shot); out.src = Object.assign(defaults().src, raw.src);
     out.sheet = Object.assign(defaults().sheet, raw.sheet); out.foulBase = Object.assign(defaults().foulBase, raw.foulBase);
     out.fv = Object.assign(defaults().fv, raw.fv); out.l3 = Object.assign(defaults().l3, raw.l3);
-    out.pop = Object.assign(defaults().pop, raw.pop); out.match = Object.assign(defaults().match, raw.match);
+    out.pop = Object.assign(defaults().pop, raw.pop); out.stn = Object.assign(defaults().stn, raw.stn); out.match = Object.assign(defaults().match, raw.match);
     out.spot = Object.assign(blankSpot(), raw.spot);
     if (!raw.statFrom) out.statFrom = raw.sheetUrl ? 'sheet' : 'keeper'; // pages set up before the stat keeper keep their sheet
     return out;
@@ -1333,6 +1354,9 @@
     };
     const render = () => {
       applyKey(); renderL3(); renderFanVote(); renderPop();
+      const stn = $('stn');
+      stn.classList.toggle('on', s.stn.on); stn.classList.toggle('tr', s.stn.corner !== 'tl'); stn.classList.toggle('tl', s.stn.corner === 'tl');
+      stn.style.setProperty('--o', Math.min(100, Math.max(10, s.stn.opacity)) / 100);
       $('bb').classList.toggle('hidden', !s.visible);
       paintSide('L', leftSide()); paintSide('R', rightSide());
       paintTimeout('L', leftSide()); paintTimeout('R', rightSide());
@@ -1744,6 +1768,7 @@
       i: () => bump(rightSide(), 1), o: () => bump(rightSide(), 2), p: () => bump(rightSide(), 3), l: () => bump(rightSide(), -1),
       s: () => foul(leftSide(), 1), k: () => foul(rightSide(), 1),
       v: () => $('fvShowQr').click(), n: () => s.l3.on ? hideL3() : $('btnL3Show').click(), escape: () => { if (s.panel) { s.panel = ''; save(); } },
+      b: () => { s.stn = { ...s.stn, on: !s.stn.on }; save(); },
       u: () => { if (s.pop.on) hidePop(); else if (s.pop.text || s.pop.kind !== 'text') showPop({}); },
       r: () => s.shotOn && resetShot(s.shotFull), t: () => s.shotOn && resetShot(s.shotShort), x: flipPoss, h: toggleBug
     };
@@ -1752,6 +1777,17 @@
   });
   // Keep Space from also "clicking" whichever button was last pressed.
   document.addEventListener('click', e => { const b = e.target.closest('button'); if (b) b.blur(); });
+
+  // --- Station bug ---
+  $('stnOn').addEventListener('change', e => { s.stn = { ...s.stn, on: e.target.checked }; save(); });
+  $('stnCorner').addEventListener('change', e => { s.stn = { ...s.stn, corner: e.target.value }; save(); });
+  $('stnOp').addEventListener('input', e => { s.stn = { ...s.stn, opacity: +e.target.value }; save(); });
+  const renderStn = () => {
+    $('stnOn').checked = s.stn.on; $('stnCorner').value = s.stn.corner; setField($('stnOp'), s.stn.opacity); $('stnOpV').textContent = s.stn.opacity + '%';
+    // See-through only keys cleanly with fill + key; over a chroma color it would tint.
+    $('stnNote').textContent = s.stn.on && s.keyMode !== 'alpha' && s.stn.opacity < 100
+      ? 'See-through needs Fill + key (in the Output panel). On a chroma key it shows tinted, so use 100% there.' : '';
+  };
 
   // --- Pregame ---
   document.querySelectorAll('[data-match]').forEach(inp => inp.addEventListener('input', () => { s.match = { ...s.match, [inp.dataset.match]: inp.value }; save(); }));
@@ -1884,7 +1920,7 @@
     }));
   };
   const preHookBase = preHook;
-  preHook = () => { preHookBase(); renderSpotTab(); };
+  preHook = () => { preHookBase(); renderSpotTab(); renderStn(); };
 
   // --- Pop-up ---
   let popSecs = 8;
