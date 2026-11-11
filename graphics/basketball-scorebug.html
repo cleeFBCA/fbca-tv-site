@@ -126,6 +126,8 @@
   .bb .tos { position: absolute; bottom: 12px; display: flex; gap: 8px; }
   .bb .tos i { width: 20px; height: 4px; background: #fff; border-radius: 1px; }
   .bb .tos i.used { background: rgba(255,255,255,.18); }
+  /* Used timeouts go off from the middle of the bug outward: mirror the right team's row */
+  .bb .sc.R .tos { flex-direction: row-reverse; }
 
   /* ---------- Pop-up: a strip that rises from behind the top of the bar ----------
      Text (with an optional team tag), a team stat (both teams, in screen order), or a run. */
@@ -160,7 +162,7 @@
   .tov .tv-bg {
     position: absolute; inset: 0; overflow: hidden;
     background: linear-gradient(160deg, color-mix(in srgb, var(--c) 92%, #fff), color-mix(in srgb, var(--c) 72%, #000));
-    clip-path: inset(0 100% 0 0); transition: clip-path .36s cubic-bezier(.7,0,.25,1) .1s;
+    clip-path: inset(0 100% 0 0); transition: clip-path .46s cubic-bezier(.7,0,.25,1);
   }
   .tov.R .tv-bg { clip-path: inset(0 0 0 100%); }
   .tov.on .tv-bg { clip-path: inset(0 0 0 0); transition: clip-path .46s cubic-bezier(.7,0,.25,1); }
@@ -191,6 +193,12 @@
   .tov.R.on .tv-sweep { animation: tvSweepR .46s cubic-bezier(.7,0,.25,1) both; }
   @keyframes tvSweepL { 0% { opacity: 1; transform: translateX(-48px) skewX(-18deg); } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(352px) skewX(-18deg); } }
   @keyframes tvSweepR { 0% { opacity: 1; transform: translateX(352px) skewX(18deg); } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(-48px) skewX(18deg); } }
+  /* Out is the in played backward: the marks drop, the letters fall away last-to-first, then the
+     panel wipes back to the outer edge with the light bar riding it. */
+  .tov.back.L .tv-sweep { animation: tvSweepLBack .46s cubic-bezier(.7,0,.25,1) both; }
+  .tov.back.R .tv-sweep { animation: tvSweepRBack .46s cubic-bezier(.7,0,.25,1) both; }
+  @keyframes tvSweepLBack { 0% { opacity: 0; transform: translateX(352px) skewX(-18deg); } 12% { opacity: 1; } 100% { opacity: 1; transform: translateX(-48px) skewX(-18deg); } }
+  @keyframes tvSweepRBack { 0% { opacity: 0; transform: translateX(-48px) skewX(18deg); } 12% { opacity: 1; } 100% { opacity: 1; transform: translateX(352px) skewX(18deg); } }
   .tov .tv-txt {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     padding: 0 20px 4px; color: var(--f); opacity: 0; transition: opacity .14s;
@@ -201,10 +209,18 @@
   .tov .tv-word span { display: inline-block; opacity: 0; }
   .tov.on .tv-word span { animation: tvLetter .5s cubic-bezier(.2,.9,.25,1.25) both; animation-delay: calc(.2s + var(--i) * .035s); }
   @keyframes tvLetter { from { opacity: 0; transform: translateY(16px) scale(.8); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
+  .tov.on.out .tv-word span { animation: tvLetterOut .4s cubic-bezier(.75,-.25,.8,.1) both; animation-delay: calc(.12s + (6 - var(--i)) * .035s); }
+  /* The right team's panel runs the other way: letters come in from the right, and leave left to right. */
+  .tov.R.on .tv-word span { animation-delay: calc(.2s + (6 - var(--i)) * .035s); }
+  .tov.R.on.out .tv-word span { animation-delay: calc(.12s + var(--i) * .035s); }
+  @keyframes tvLetterOut { from { opacity: 1; transform: none; filter: none; } to { opacity: 0; transform: translateY(16px) scale(.8); filter: blur(5px); } }
+  .tov.on.out .tv-sub { animation: tvDown .3s ease-in both; }
+  @keyframes tvDown { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px); } }
   .tov .tv-sub { display: flex; align-items: center; opacity: 0; }
   .tov.on .tv-sub { animation: tvUp .35s .45s ease-out both; }
   @keyframes tvUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .tov .tv-pips { display: flex; gap: 5px; }
+  .tov.R .tv-pips { flex-direction: row-reverse; }
   .tov .tv-pips i { width: 16px; height: 4px; border-radius: 1px; background: currentColor; opacity: .25; }
   .tov .tv-pips i.on { opacity: 1; }
   .tov.on .tv-pips i.just { animation: tvJust 1.2s .6s ease-out both; }
@@ -880,21 +896,21 @@
       box.replaceChildren(...parts);
     };
     // Timeout graphic. The animation restarts for each new timeout (keyed by when it was called).
-    const TO_HOLD = 2000; // ms from the call to the wipe back: about 1 s to come in, then 1 s fully up
-    const toSeen = { L: '', R: '' }, pipSig = { L: '', R: '' }, toTimer = { L: 0, R: 0 };
+    // Timeline from the press: about 1 s to come in, 1 s fully up (to TO_HOLD), the text goes out
+    // (TO_TEXT), then the panel wipes back (TO_WIPE). Run from the frame loop below.
+    const TO_HOLD = 2000, TO_TEXT = 650, TO_WIPE = 500;
+    const toSeen = { L: '', R: '' }, pipSig = { L: '', R: '' }, toAt = { L: 0, R: 0 };
     const paintTimeout = (pos, side) => {
       const node = $('tov' + pos), t = s[side], call = s.toCall && s.toCall.side === side ? s.toCall : null;
       node.style.setProperty('--c', hex(t.bg, '#333333')); node.style.setProperty('--f', hex(t.fg, '#FFFFFF'));
       const mark = node.querySelector('.tv-mark'), img = t.logo ? 'url("' + t.logo + '")' : 'none';
       if (mark.dataset.v !== img) { mark.dataset.v = img; mark.style.backgroundImage = img; }
-      const key = call ? side + ':' + call.at : '', left = call ? call.at + TO_HOLD - Date.now() : 0;
-      if (key !== toSeen[pos]) {
-        toSeen[pos] = key; pipSig[pos] = '';
-        node.classList.remove('on'); clearTimeout(toTimer[pos]);
-        if (call && left > 0) {
-          void node.offsetWidth; node.classList.add('on');
-          toTimer[pos] = setTimeout(() => node.classList.remove('on'), left);
-        }
+      // A new timeout starts the animation; the control page clearing it later doesn't cut it short.
+      const key = call ? side + ':' + call.at : '';
+      if (call && key !== toSeen[pos] && Date.now() < call.at + TO_HOLD) {
+        toSeen[pos] = key; pipSig[pos] = ''; toAt[pos] = call.at;
+        node.classList.remove('on', 'out', 'back');
+        void node.offsetWidth; node.classList.add('on');
       }
       if (!call) return;
       // Timeouts left after this one, lit; the one just used flares, then dims.
@@ -993,10 +1009,13 @@
       }
       if (sig !== pillSig) { pillSig = sig; $('pill').replaceChildren(...parts.map(([c, t]) => el('span', c, t))); }
       if (s.pop.on && s.pop.until && now >= s.pop.until && $('pop').classList.contains('on')) $('pop').classList.remove('on');
-      // Timeout flash: also checked every frame, in case Chrome held back the timer.
+      // Timeout: text out after the hold, then the wipe back.
       for (const pos of ['L', 'R']) {
-        const node = $('tov' + pos);
-        if (node.classList.contains('on') && (!s.toCall || now >= s.toCall.at + TO_HOLD)) node.classList.remove('on');
+        if (!toAt[pos]) continue;
+        const node = $('tov' + pos), t = now - toAt[pos];
+        if (t >= TO_HOLD + TO_TEXT + TO_WIPE) { node.classList.remove('back'); toAt[pos] = 0; }
+        else if (t >= TO_HOLD + TO_TEXT) { if (node.classList.contains('on')) { node.classList.remove('on', 'out'); node.classList.add('back'); } }
+        else if (t >= TO_HOLD) node.classList.add('out');
       }
       requestAnimationFrame(tick);
     };
@@ -1304,7 +1323,7 @@
     if (s.pop.on && s.pop.until && now >= s.pop.until) { s.pop = { ...s.pop, on: false }; save(); }
     else if (s.pop.on && s.pop.until && popHook && Math.floor(now / 1000) !== ctlTick.sec) { ctlTick.sec = Math.floor(now / 1000); popHook(); }
     // Clear the timeout once its flash is over, so every output (even one running older code) takes it down.
-    if (s.toCall && now > s.toCall.at + 2600) { s.toCall = null; save(); }
+    if (s.toCall && now > s.toCall.at + 3600) { s.toCall = null; save(); }
     requestAnimationFrame(ctlTick);
   };
 
