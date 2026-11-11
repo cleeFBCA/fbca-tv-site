@@ -141,7 +141,8 @@
      and a center column with the EOTA logo, VS, the date and time in the bug's white pill, and the venue.
      In: it opens from the middle, the halves slide in from the sides, a light passes across. Out: it closes to the middle. */
   .pg {
-    position: absolute; left: 50%; top: 190px; width: 1560px; margin-left: -780px; color: #fff;
+    /* Centered on the 1920x1080 frame, together with its drop-down: card 514px + drop-down 74px = 588px tall */
+    position: absolute; left: 50%; top: 246px; width: 1560px; margin-left: -780px; color: #fff;
     background: linear-gradient(#2e2f33, #17181b); border-radius: 8px; overflow: hidden;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
     clip-path: inset(0 50% 0 50% round 8px); transition: clip-path .5s cubic-bezier(.6,0,.3,1);
@@ -185,7 +186,7 @@
   @keyframes pgGlow { from { opacity: .35; transform: scale(.9); } to { opacity: 1; transform: scale(1.08); } }
   .pg-vs { font-size: 110px; font-weight: 800; line-height: .9; letter-spacing: .04em; }
   /* ---- The drop-down under the card: EOTA logo, date and time, venue. Mirrors the title strip. ---- */
-  .pgd { position: absolute; left: 50%; top: 704px; transform: translateX(-50%); overflow: hidden; pointer-events: none; }
+  .pgd { position: absolute; left: 50%; top: 760px; transform: translateX(-50%); overflow: hidden; pointer-events: none; }
   .pgd-in {
     display: flex; align-items: center; justify-content: center; gap: 26px; height: 74px; padding: 0 40px; color: #fff;
     background: linear-gradient(#26272b, #17181b); border-radius: 0 0 8px 8px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
