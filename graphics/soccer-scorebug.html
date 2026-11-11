@@ -120,6 +120,11 @@
     font-size: 42px; font-weight: 800; letter-spacing: .03em; white-space: nowrap;
   }
   .sb .home .name { background: var(--field); color: var(--gold-hi); }
+  /* Scores in the middle, names on the outside (like the score panel): the second team reads score, then name,
+     with a dark line between the two scores. Whichever team is second (they swap at halftime) is flipped. */
+  .sb:not(.swapped) .away, .sb.swapped .home { flex-direction: row-reverse; }
+  .sb:not(.swapped) .away .score, .sb.swapped .home .score { box-shadow: inset 4px 0 0 var(--pine); }
+  .sb:not(.swapped) .away .cards, .sb.swapped .home .cards { left: 76px; right: 0; }
   .sb .score {
     width: 76px; display: grid; place-items: center;
     background: var(--chalk); color: var(--pine);
