@@ -242,9 +242,14 @@
     display: flex; align-items: center; justify-content: center; gap: 18px;
     font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap;
   }
-  .bb .pill .per { font-size: 26px; }
-  /* No fixed width: the period and clock center as a pair. Tabular digits keep the clock steady while it runs. */
-  .bb .pill .clk { font-size: 38px; }
+  /* Fixed boxes so nothing moves while the clock runs. The font's digits aren't all the same width (a 1 is
+     half as wide as an 8), so every character gets its own fixed slot; the clock is right-aligned so the
+     last digit stays put. Sized for "8:00" and "59.9"; a 10+ minute period widens the box. */
+  .bb .pill .per { font-size: 26px; width: 40px; text-align: center; flex: none; }
+  .bb .pill .clk { font-size: 38px; min-width: 1.72em; text-align: right; flex: none; }
+  .bb .pill .clk i, .bb .pill .shot i { display: inline-block; font-style: normal; text-align: center; }
+  .bb .pill .clk i.d, .bb .pill .shot i.d { width: .49em; }
+  .bb .pill .clk i.p { width: .25em; }
   .bb .pill .shot { font-size: 30px; padding-left: 16px; border-left: 2px solid rgba(0,0,0,.2); min-width: 50px; text-align: center; }
   .bb .pill .shot.low { color: #C8102E; }
   .bb .pill .word { font-size: 32px; letter-spacing: .06em; }
@@ -1083,7 +1088,12 @@
         if (shotShown(now)) { const sl = shotLeft(now); parts.push(['shot' + (sl <= 5000 ? ' low' : ''), fmtShot(sl)]); }
         sig = parts.map(p => p.join('=')).join('|');
       }
-      if (sig !== pillSig) { pillSig = sig; $('pill').replaceChildren(...parts.map(([c, t]) => el('span', c, t))); }
+      if (sig !== pillSig) {
+        pillSig = sig;
+        // Clock and shot clock: one fixed-width slot per character (see the .pill CSS).
+        const slots = (c, t) => { const sp = el('span', c); for (const ch of t) sp.append(el('i', /\d/.test(ch) ? 'd' : 'p', ch)); return sp; };
+        $('pill').replaceChildren(...parts.map(([c, t]) => /^(clk|shot)/.test(c) ? slots(c, t) : el('span', c, t)));
+      }
       if (s.pop.on && s.pop.until && now >= s.pop.until && $('pop').classList.contains('on')) $('pop').classList.remove('on');
       // Timeout: text out after the hold, then the wipe back.
       for (const pos of ['L', 'R']) {
