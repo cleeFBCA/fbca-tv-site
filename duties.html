@@ -150,12 +150,58 @@
   .seg button[aria-pressed=true]{background:var(--gold);color:var(--pine)}
   .setup .hint{font-weight:500;font-size:.9rem}
 
+  /* Scorebug Stats tab: the next game's pages by role, what's coming up, and every page by sport */
+  .sb-next{background:linear-gradient(160deg,var(--field),#12331f);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .sb-when{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+  .sb-badge{font:800 .95rem 'Big Shoulders Display';letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:var(--gold);color:var(--pine)}
+  .sb-badge.live{background:#E5352B;color:#fff}
+  .sb-badge.later{background:transparent;color:var(--gold-hi);box-shadow:inset 0 0 0 2px var(--gold-hi)}
+  .sb-sport{font:700 1.1rem 'Big Shoulders Display';letter-spacing:.08em;text-transform:uppercase;color:var(--chalk-dim)}
+  .sb-opp{font:800 2rem 'Big Shoulders Display';line-height:1.05;margin:6px 0 2px;text-transform:uppercase;letter-spacing:.02em}
+  .sb-det{color:var(--chalk-dim)}
+  .sb-roles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+  .sb-role{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--chalk);padding:16px;min-height:84px;border-radius:12px;background:var(--turf);border:1px solid var(--line);transition:background .15s,transform .15s}
+  a.sb-role:hover{background:var(--line);transform:translateY(-1px)}
+  .sb-role svg{flex:none;width:38px;height:38px;color:var(--gold-hi)}
+  .sb-role b{display:block;font-size:1.15rem;line-height:1.2}
+  .sb-role small{display:block;color:var(--chalk-dim);font-size:.85rem;line-height:1.3}
+  .sb-role.off{background:transparent;border-style:dashed;color:var(--chalk-dim)}
+  .sb-role.off svg{color:var(--chalk-dim);opacity:.6}
+  .sb-role .go{margin-left:auto;font-size:1.5rem;color:var(--gold-hi)}
+  .sb-h{font:800 1.2rem 'Big Shoulders Display';letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:26px 0 8px}
+  .sb-later{list-style:none}
+  .sb-later li{display:grid;grid-template-columns:92px 1fr;gap:6px 12px;align-items:center;padding:12px 0;border-top:1px solid rgba(243,239,226,.1)}
+  .sb-later .d{font:700 1rem 'Big Shoulders Display';letter-spacing:.04em;color:var(--chalk-dim);line-height:1.15}
+  .sb-later .d b{display:block;color:var(--chalk);font-size:1.2rem}
+  .sb-later .g{min-width:0}
+  .sb-later .g small{display:block;color:var(--chalk-dim);font-size:.8rem;letter-spacing:.06em;text-transform:uppercase}
+  .sb-later .g span{display:block;font-weight:600}
+  .sb-later .btns{grid-column:2;display:flex;flex-wrap:wrap;gap:8px}
+  .sb-chip{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:6px 12px 6px 9px;border-radius:999px;background:var(--turf);border:1px solid var(--line);text-decoration:none;color:var(--chalk);font-weight:600;font-size:.95rem}
+  .sb-chip:hover{background:var(--line)}
+  .sb-chip svg{width:20px;height:20px;color:var(--gold-hi)}
+  .sb-none{font-size:.85rem;color:var(--chalk-dim)}
+  .sb-sports{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .sb-sp{background:var(--field);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+  .sb-sp h3{font:800 1.35rem 'Big Shoulders Display';letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+  .sb-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(243,239,226,.1);text-decoration:none;color:var(--chalk)}
+  a.sb-row:hover b{color:var(--gold-hi)}
+  .sb-row svg{flex:none;width:26px;height:26px;color:var(--gold-hi)}
+  .sb-row.off svg{color:var(--chalk-dim);opacity:.5}
+  .sb-row b{display:block}
+  .sb-row small{display:block;color:var(--chalk-dim);font-size:.82rem}
+  .sb-outs{display:flex;gap:14px;padding:4px 0 4px 38px;font-size:.88rem}
+  .sb-outs a{color:var(--chalk-dim)}
+
   footer{border-top:1px solid rgba(217,165,33,.3);padding:20px 0 36px;color:var(--chalk-dim);font-size:.88rem}
 
   @media (max-width:640px){
     .brand-name{font-size:1.05rem}
     .crew{grid-template-columns:repeat(2,minmax(0,1fr))}
     .slot{flex-direction:column;justify-content:flex-start;gap:0}
+    .sb-roles,.sb-sports{grid-template-columns:1fr}
+    .tabs{overflow-x:auto}
+    .tabs button{white-space:nowrap;padding:10px 10px}
   }
 </style>
 </head>
@@ -199,6 +245,7 @@
         <button role="tab" data-tab="games" aria-selected="true">Games</button>
         <button role="tab" data-tab="duties" aria-selected="false">Duties</button>
         <button role="tab" data-tab="equipment" aria-selected="false">Equipment</button>
+        <button role="tab" data-tab="scorebug" aria-selected="false">Scorebug Stats</button>
       </div>
 
       <section id="tab-games">
@@ -215,6 +262,14 @@
       </div>
       <section id="tab-duties" hidden><div id="kitpanel"></div><div id="duties"></div></section>
       <section id="tab-equipment" hidden></section>
+      <section id="tab-scorebug" hidden>
+        <p class="sub" style="margin:0 0 14px">Scorebug, stats and announcer pages. Pick the game, then your job.</p>
+        <div id="sbNext"></div>
+        <h2 class="sb-h" id="sbLaterH" hidden>Coming up</h2>
+        <ul class="sb-later" id="sbLater"></ul>
+        <h2 class="sb-h">All pages</h2>
+        <div class="sb-sports" id="sbAll"></div>
+      </section>
     </div>
 
   </div>
@@ -457,6 +512,8 @@
       const d = new Date(data.updated);
       $('synced').textContent = `Signups last changed ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}. The page checks the sheet every 15 minutes.`;
     }
+    // fbca.tv/duties#scorebug opens straight to the Scorebug Stats tab (the duty cards link here).
+    if (location.hash === '#scorebug') tab('scorebug');
   }
 
   function renderGames() {
@@ -595,8 +652,94 @@
 
   function tab(name) {
     document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
-    ['games', 'duties', 'equipment'].forEach((t) => { $('tab-' + t).hidden = t !== name; });
-    $('setup').hidden = name === 'games' || (name === 'equipment' && !state.byId.equipmentlist);
+    ['games', 'duties', 'equipment', 'scorebug'].forEach((t) => { $('tab-' + t).hidden = t !== name; });
+    $('setup').hidden = name === 'games' || name === 'scorebug' || (name === 'equipment' && !state.byId.equipmentlist);
+    if (name === 'scorebug') renderScorebugTab();
+  }
+
+  // --- Scorebug Stats tab ------------------------------------------------------
+  // The next game's scorebug, stats and announcer pages (from the public schedule.json), what's coming
+  // up, and every page by sport. To add a sport, add it to SB_SPORTS (the pattern matches the schedule's sport).
+  const SB_ICON = {
+    op: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="12" rx="2"/><path d="M8 21h8M12 17v4M7 11h2M15 11h2M11 9v4"/></svg>',
+    stats: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM8.5 11h7M8.5 15h4"/></svg>',
+    ann: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>'
+  };
+  const SB_SPORTS = [
+    { name: 'Basketball', match: /basketball/i, roles: {
+      op: { href: 'graphics/basketball-scorebug.html', note: 'Run the scorebug and graphics', outs: [['Output (fill)', 'graphics/basketball-scorebug.html#bug'], ['Key', 'graphics/basketball-scorebug.html#key']] },
+      stats: { href: 'graphics/basketball-stats.html', note: 'Tap in each play' },
+      ann: { href: 'graphics/basketball-announcers.html', note: 'Live lines, leaders and box score' } } },
+    { name: 'Soccer', match: /soccer/i, roles: {
+      op: { href: 'graphics/soccer-scorebug.html', note: 'Run the scorebug and graphics', outs: [['Output (fill)', 'graphics/soccer-scorebug.html#bug'], ['Key', 'graphics/soccer-scorebug.html#key']] },
+      stats: { off: 'Uses the Excel stat sheet. Get the link from Mr. Lee.' },
+      ann: { off: 'No announcer page yet' } } }
+  ];
+  const SB_ROLES = [['op', 'Scorebug operator', 'Scorebug'], ['stats', 'Statistician', 'Stats'], ['ann', 'Announcers', 'Announcers']];
+  const sbSport = (g) => SB_SPORTS.find((s) => s.match.test(g.sport || ''));
+  const sbEl = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const sbRole = (sp, key, label, big) => {
+    const r = sp.roles[key], off = !r || r.off;
+    const n = sbEl(off ? 'div' : 'a', (big ? 'sb-role' : 'sb-row') + (off ? ' off' : ''));
+    if (!off) n.href = r.href;
+    n.innerHTML = SB_ICON[key];
+    const t = sbEl('div'); t.append(sbEl('b', null, label), sbEl('small', null, off ? (r ? r.off : 'Not available yet') : r.note));
+    n.append(t);
+    if (big && !off) n.append(sbEl('span', 'go', '→'));
+    return n;
+  };
+  let sbDone = false;
+  function renderScorebugTab() {
+    if (sbDone) return;
+    sbDone = true;
+    $('sbAll').replaceChildren(...SB_SPORTS.map((sp) => {
+      const c = sbEl('div', 'sb-sp'); c.append(sbEl('h3', null, sp.name));
+      for (const [key, label] of SB_ROLES) {
+        c.append(sbRole(sp, key, label, false));
+        const outs = sp.roles[key] && sp.roles[key].outs;
+        if (outs) { const o = sbEl('div', 'sb-outs'); outs.forEach(([t, h]) => { const a = sbEl('a', null, t); a.href = h; o.append(a); }); c.append(o); }
+      }
+      return c;
+    }));
+    const nothing = (msg) => { const p = sbEl('div', 'sb-next'); p.append(sbEl('div', 'sb-det', msg)); $('sbNext').replaceChildren(p); };
+    fetch('schedule.json', { cache: 'no-store' }).then((r) => r.json()).then((data) => {
+      const tz = data.timezone || 'America/Chicago', now = new Date();
+      const fmt = (d, opt) => d.toLocaleString('en-US', { timeZone: tz, ...opt });
+      const day = (d) => fmt(d, { year: 'numeric', month: '2-digit', day: '2-digit' });
+      const badge = (d) => {
+        const ms = d - now;
+        if (ms <= 0 && ms > -3 * 3600e3) return ['live', 'Live now'];
+        if (day(d) === day(now)) return ['', 'Today'];
+        if (day(d) === day(new Date(+now + 864e5))) return ['later', 'Tomorrow'];
+        return ['later', fmt(d, { weekday: 'long' })];
+      };
+      const games = (data.games || []).map((g) => ({ ...g, d: new Date(g.start) })).filter((g) => g.d - now > -3 * 3600e3).sort((a, b) => a.d - b.d);
+      if (!games.length) { nothing('No games on the schedule right now. All the pages are below.'); return; }
+      // The next game that has pages goes on top; games without pages (football, volleyball…) still show below.
+      const top = games.find(sbSport) || games[0], sp = sbSport(top), [cls, txt] = badge(top.d);
+      const card = sbEl('div', 'sb-next'), when = sbEl('div', 'sb-when');
+      when.append(sbEl('span', 'sb-badge ' + cls, txt), sbEl('span', 'sb-sport', top.sport));
+      card.append(when, sbEl('div', 'sb-opp', (top.homeAway === 'away' ? 'at ' : 'vs ') + top.opponent),
+        sbEl('div', 'sb-det', fmt(top.d, { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + fmt(top.d, { hour: 'numeric', minute: '2-digit' }) + (top.location ? ' · ' + top.location : '')));
+      if (sp) { const roles = sbEl('div', 'sb-roles'); SB_ROLES.forEach(([key, label]) => roles.append(sbRole(sp, key, label, true))); card.append(roles); }
+      else card.append(sbEl('p', 'sb-det', 'There are no graphics pages for ' + top.sport + ' yet.'));
+      $('sbNext').replaceChildren(card);
+      const rest = games.filter((g) => g !== top).slice(0, 6);
+      $('sbLaterH').hidden = !rest.length;
+      $('sbLater').replaceChildren(...rest.map((g) => {
+        const li = sbEl('li'), s = sbSport(g);
+        const d = sbEl('div', 'd'); d.append(sbEl('b', null, fmt(g.d, { month: 'short', day: 'numeric' })), fmt(g.d, { weekday: 'short' }) + ' ' + fmt(g.d, { hour: 'numeric', minute: '2-digit' }));
+        const gg = sbEl('div', 'g'); gg.append(sbEl('small', null, g.sport), sbEl('span', null, (g.homeAway === 'away' ? 'at ' : 'vs ') + g.opponent));
+        const btns = sbEl('div', 'btns');
+        if (s) for (const [key, label, short] of SB_ROLES) {
+          const r = s.roles[key]; if (!r || r.off) continue;
+          const a = sbEl('a', 'sb-chip'); a.href = r.href; a.setAttribute('aria-label', label + ', ' + g.sport + ' ' + g.opponent);
+          a.innerHTML = SB_ICON[key]; a.append(short); btns.append(a);
+        } else btns.append(sbEl('span', 'sb-none', 'No pages yet'));
+        li.append(d, gg, btns);
+        return li;
+      }));
+    }).catch(() => { sbDone = false; nothing("Couldn't load the schedule. All the pages are below."); });
   }
 
   /** Opens the duty cards for a position from a game or "my games". */
@@ -649,6 +792,15 @@
   });
 
   document.addEventListener('click', (e) => {
+    // A link to the Scorebug Stats tab from a duty card switches tabs instead of reloading the page.
+    const sbLink = e.target.closest('a[href$="#scorebug"]');
+    if (sbLink) {
+      e.preventDefault();
+      history.replaceState(null, '', '#scorebug');
+      tab('scorebug');
+      document.querySelector('.tabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     const pos = e.target.closest('[data-pos]');
     if (pos) { e.preventDefault(); openDuty(pos.dataset.pos, pos.dataset.modeOf, pos.dataset.game); return; }
     const mode = e.target.closest('[data-mode]');
