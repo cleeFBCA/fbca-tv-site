@@ -340,6 +340,7 @@
   }
   .pg:not(.hidden) { clip-path: inset(0 0 0 0 round 8px); }
   .pg-head { position: relative; height: 74px; display: flex; align-items: center; justify-content: center; gap: 20px; background: rgba(0,0,0,.35); }
+  .pg-hin { display: inline-flex; align-items: baseline; gap: 20px; white-space: nowrap; }
   .pg-title { font-size: 42px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
   .pg-sub { font-size: 30px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.65); }
   .pg-sub:empty { display: none; }
@@ -386,6 +387,7 @@
   }
   .pgd.on .pgd-in { transform: none; transition: transform .5s cubic-bezier(.2,.8,.2,1) .75s; }
   .pgd .logo { width: 96px; flex: none; background: #fff; } /* white, as on the basketball pregame */
+  .pgd .pg-pill, .pgd .pg-venue { white-space: nowrap; }
   .pgd .sep { width: 2px; height: 34px; background: rgba(255,255,255,.2); flex: none; }
   .pgd .sep:last-child, .pgd .sep:has(+ :empty) { display: none; }
   .pg-pill { padding: 8px 22px; border-radius: 26px; background: linear-gradient(#ffffff, #dcdde0); color: #17181b; font-size: 30px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
@@ -696,7 +698,7 @@
   </div>
 
   <div class="pg hidden" id="pMatch">
-    <div class="pg-head"><span class="pg-title" id="pgTitle"></span><span class="pg-sub" id="pgSub"></span></div>
+    <div class="pg-head"><span class="pg-hwrap"><span class="pg-hin" id="pgHead"><span class="pg-title" id="pgTitle"></span><span class="pg-sub" id="pgSub"></span></span></span></div>
     <div class="pg-split"><i id="pgBarL"></i><i id="pgBarR"></i></div>
     <div class="pg-body">
       <div class="pg-team L" id="pgL"></div>
@@ -928,16 +930,16 @@
         <div data-pane="pre" hidden>
           <div class="pane-h">Matchup</div>
           <div class="two">
-            <div><label for="mTitle">Title</label><input id="mTitle" data-match="title" maxlength="30" placeholder="Girls Soccer"></div>
-            <div><label for="mSub">Subtitle</label><input id="mSub" data-match="sub" maxlength="30" placeholder="District game"></div>
+            <div><label for="mTitle">Title</label><input id="mTitle" data-match="title" placeholder="Girls Soccer"></div>
+            <div><label for="mSub">Subtitle</label><input id="mSub" data-match="sub" placeholder="District game"></div>
           </div>
           <div class="two">
-            <div><label for="mHomeRec" id="mHomeRecL">FBCA record</label><input id="mHomeRec" data-match="homeRec" maxlength="16" placeholder="8-2-1"></div>
-            <div><label for="mAwayRec" id="mAwayRecL">AWAY record</label><input id="mAwayRec" data-match="awayRec" maxlength="16" placeholder="6-4-0"></div>
+            <div><label for="mHomeRec" id="mHomeRecL">FBCA record</label><input id="mHomeRec" data-match="homeRec" placeholder="8-2-1"></div>
+            <div><label for="mAwayRec" id="mAwayRecL">AWAY record</label><input id="mAwayRec" data-match="awayRec" placeholder="6-4-0"></div>
           </div>
           <div class="two">
-            <div><label for="mWhen">Date and time</label><input id="mWhen" data-match="when" maxlength="40"></div>
-            <div><label for="mVenue">Venue</label><input id="mVenue" data-match="venue" maxlength="40"></div>
+            <div><label for="mWhen">Date and time</label><input id="mWhen" data-match="when"></div>
+            <div><label for="mVenue">Venue</label><input id="mVenue" data-match="venue"></div>
           </div>
           <p class="hint">Picking a game in Setup fills in the title, date and venue.</p>
           <div class="row-btns" style="margin-top:10px"><button class="primary" data-panel="match">Show matchup</button></div>
@@ -1528,6 +1530,19 @@
       if (k < .6) node.style.fontSize = parseFloat(getComputedStyle(node).fontSize) * k / .6 + 'px';
       node.style.transform = `scaleX(${Math.max(.6, k)})`;
     };
+    // Long text shrinks to fit: font size scaled so the node is no wider than max (down to 45%).
+    const fitFont = (node, max) => {
+      node.style.fontSize = '';
+      const w = node.offsetWidth;
+      if (w > max) node.style.fontSize = parseFloat(getComputedStyle(node).fontSize) * Math.max(.45, max / w) + 'px';
+    };
+    const fitHead = () => {
+      const head = $('pgHead'), parts = [$('pgTitle'), $('pgSub')];
+      parts.forEach(n => n.style.fontSize = '');
+      const w = head.offsetWidth, max = 1460;
+      if (w > max) { const k = Math.max(.45, max / w); parts.forEach(n => n.style.fontSize = parseFloat(getComputedStyle(n).fontSize) * k + 'px'); }
+    };
+    const fitMatchText = () => { fitHead(); fitFont($('pgWhen'), 680); fitFont($('pgVenue'), 440); /* with the logo and gaps, the drop-down stays narrower than the card */ document.querySelectorAll('#pMatch .pg-team .rc').forEach(n => fitFont(n, 520)); };
     const renderMatchPanel = () => {
       const m = s.match;
       const sig = JSON.stringify([m, s.home, s.away, s.awayBg, s.awayFg]);
@@ -1547,6 +1562,7 @@
         const fit = () => fitWidth(nmText, 560);
         requestAnimationFrame(fit); document.fonts.ready.then(fit);
       }
+      requestAnimationFrame(fitMatchText); document.fonts.ready.then(fitMatchText);
     };
 
     const renderSpotPanel = () => {
