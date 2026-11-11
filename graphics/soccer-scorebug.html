@@ -324,6 +324,8 @@
   #pStats { left: 460px; top: 160px; width: 1000px; }
   #pStats .tm { display: grid; grid-template-columns: 1fr 1fr; height: 82px; }
   #pStats .tcell { justify-content: space-between; padding: 0 30px; font-size: 48px; }
+  /* Scores meet in the middle, names on the outside: the right-hand team is mirrored */
+  #pStats #pstAway { flex-direction: row-reverse; }
   #pStats .stat { display: grid; grid-template-columns: 140px 1fr 140px; align-items: center; height: 70px; border-top: 1px solid rgba(243,239,226,.1); }
   #pStats .v { text-align: center; font-size: 48px; font-weight: 800; font-variant-numeric: tabular-nums; }
   #pStats .lbl { text-align: center; font-size: 25px; font-weight: 700; letter-spacing: .14em; color: var(--chalk-dim); }
@@ -2038,7 +2040,7 @@
   // Pre-fill the drop-down form so a goal or card is one name away from air.
   const prefillDrop = (side, type) => {
     $('dTeamSel').value = side; $('dType').value = type;
-    syncDropForm(); if (rosterHook) rosterHook(); if (type === 'GOAL') rosterRead();
+    syncDropForm(); if (rosterHook) rosterHook(); if (DROP_EVENTS[type]) rosterRead();
     $('dTextIn').value = ''; $('dOutIn').value = ''; $('dMinIn').value = gameMinute();
     showTab('drop');
   };
@@ -2469,18 +2471,22 @@
     if (!sel._players.length) sel.append(new Option('No players yet: add them on the stat keeper page or in Lineups', '', false, false));
   };
   const picked = sel => sel.value === '' ? null : sel._players[+sel.value];
-  // For a Goal drop-down: every goal on the stat keeper, newest first, one entry per goal ("52' #9 Rae Diaz").
-  const fillGoalPick = sel => {
+  // For a Goal, Yellow card or Red card drop-down: each one on the stat keeper, newest first, one entry
+  // apiece with its minute ("52' #9 Rae Diaz").
+  const DROP_EVENTS = { GOAL: ['goal', 'goal', 'goals', 'no scorer entered'], 'YELLOW CARD': ['yc', 'yellow card', 'yellow cards', 'no player entered'],
+                        'RED CARD': ['rc', 'red card', 'red cards', 'no player entered'] };
+  const fillEventPick = (sel, dropType) => {
+    const [type, one, many, nobody] = DROP_EVENTS[dropType];
     const g = skGame || rosterGame, evs = (g && g.events) || [];
-    const goals = evs.filter(e => e.type === 'goal' && (e.side === 'home' || e.side === 'away')).map(e => {
+    const goals = evs.filter(e => e.type === type && (e.side === 'home' || e.side === 'away')).map(e => {
       const p = ((g.meta.rosters[e.side] || []).find(x => x.id === e.player)) || null;
-      return { side: e.side, min: e.min || '', p: p ? { num: p.num || '', name: p.name, id: p.id } : { num: '', name: teamName(e.side) + ' (no scorer entered)' } };
+      return { side: e.side, min: e.min || '', p: p ? { num: p.num || '', name: p.name, id: p.id } : { num: '', name: teamName(e.side) + ' (' + nobody + ')' } };
     }).reverse();
-    const sig = 'goals:' + JSON.stringify([goals.map(x => [x.side, x.min, playerLabel(x.p)]), teamName('home'), teamName('away')]);
+    const sig = type + ':' + JSON.stringify([goals.map(x => [x.side, x.min, playerLabel(x.p)]), teamName('home'), teamName('away')]);
     if (pickSig.get(sel) === sig) return;
     pickSig.set(sel, sig);
     sel._players = [];
-    sel.replaceChildren(new Option(goals.length ? 'Pick a goal…' : 'No goals on the stat keeper yet', ''));
+    sel.replaceChildren(new Option(goals.length ? 'Pick a ' + one + '…' : 'No ' + many + ' on the stat keeper yet', ''));
     for (const x of goals) {
       sel.append(new Option(`${x.min ? x.min + "' " : ''}${playerLabel(x.p)} (${teamName(x.side)})`, String(sel._players.length)));
       sel._players.push(x);
@@ -2491,7 +2497,7 @@
   $('dPick').addEventListener('change', () => {
     const x = picked($('dPick')); if (!x) return;
     $('dTeamSel').value = x.side; $('dTextIn').value = x.p.id || x.p.num ? playerLabel(x.p) : ''; $('dPick').value = '';
-    if (x.min) $('dMinIn').value = x.min; // a goal from the stat keeper: its own minute
+    if (x.min) $('dMinIn').value = x.min; // a goal or card from the stat keeper: its own minute
     $('dTeamSel').dispatchEvent(new Event('change'));
   });
   $('dOutPick').addEventListener('change', () => {
@@ -2553,9 +2559,9 @@
     box.replaceChildren(...kids);
   };
   rosterHook = () => {
-    const goalType = $('dType').value === 'GOAL';
-    if (goalType) fillGoalPick($('dPick')); else fillPick($('dPick'), ['home', 'away'], 'Pick a player…');
-    $('dPickLabel').textContent = goalType ? 'Goal (from the stat keeper: newest first, with the minute)' : 'Player (from the stat keeper roster, or the lineups)';
+    const dt = $('dType').value, fromStats = !!DROP_EVENTS[dt];
+    if (fromStats) fillEventPick($('dPick'), dt); else fillPick($('dPick'), ['home', 'away'], 'Pick a player…');
+    $('dPickLabel').textContent = fromStats ? $('dType').selectedOptions[0].text + ' (from the stat keeper: newest first, with the minute)' : 'Player (from the stat keeper roster, or the lineups)';
     fillPick($('dOutPick'), ['home', 'away'], 'Pick the player coming off…');
     fillPick($('lPick'), ['home', 'away'], 'Pick a player…');
     renderXiPick('home'); renderXiPick('away');
@@ -2763,8 +2769,8 @@
     $('dOutWrap').hidden = type !== 'SUB';
     $('dTextLabel').textContent = type === 'SUB' ? 'Player on' : 'Text';
   };
-  $('dType').addEventListener('change', () => { syncDropForm(); if (rosterHook) rosterHook(); if ($('dType').value === 'GOAL') rosterRead(); });
-  $('dPick').addEventListener('focus', () => { if ($('dType').value === 'GOAL') rosterRead(); }); // newest goals when the list opens
+  $('dType').addEventListener('change', () => { syncDropForm(); if (rosterHook) rosterHook(); if (DROP_EVENTS[$('dType').value]) rosterRead(); });
+  $('dPick').addEventListener('focus', () => { if (DROP_EVENTS[$('dType').value]) rosterRead(); }); // the newest goals and cards when the list opens
   const showDrop = () => {
     const type = $('dType').value;
     const label = type === 'CUSTOM' ? ($('dCustom').value.trim().toUpperCase() || 'UPDATE') : type;
