@@ -541,6 +541,7 @@
               <select id="lsPlayer"></select>
               <select id="lsFmt" aria-label="Stat line">
                 <option value="pts">Points</option>
+                <option value="ptsfg">PTS · FG</option>
                 <option value="basic">PTS · REB · AST</option>
                 <option value="full">PTS · FG · REB · AST (+ STL, BLK)</option>
                 <option value="shoot">Shooting: FG · 3PT · FT</option>
@@ -1948,6 +1949,7 @@
     const d = derive(p), extra = [d.stl && d.stl + ' STL', d.blk && d.blk + ' BLK'].filter(Boolean);
     const n = (v, one, many) => v + ' ' + (v === 1 ? one : many);
     if (fmt === 'pts') return n(d.pts, 'POINT', 'POINTS');
+    if (fmt === 'ptsfg') return d.pts + ' PTS · ' + d.fgm + '-' + d.fga + ' FG';
     if (fmt === 'reb') return n(d.reb, 'REBOUND', 'REBOUNDS') + ' · ' + d.oreb + ' OFF · ' + d.dreb + ' DEF';
     if (fmt === 'oreb') return n(d.oreb, 'OFFENSIVE REBOUND', 'OFFENSIVE REBOUNDS');
     if (fmt === 'dreb') return n(d.dreb, 'DEFENSIVE REBOUND', 'DEFENSIVE REBOUNDS');
