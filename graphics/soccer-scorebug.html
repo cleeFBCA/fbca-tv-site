@@ -921,6 +921,9 @@
             <option value="sheet">Excel stat sheet on OneDrive</option>
           </select>
           <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
+          <label class="check"><input type="checkbox" id="clockShare"> Share this clock with the soccer stat keeper, so goal and card minutes match the bug</label>
+          <div class="set-row" id="skKeyRow" hidden><input id="skKey" type="password" autocomplete="off" placeholder="Stat keeper key (the same one the stat crew uses)"><button id="skKeySave">Save key</button></div>
+          <p class="hint" id="clockShareStatus"></p>
           <div id="sheetBox">
           <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
           <div class="set-row">
@@ -1221,6 +1224,7 @@
     shoot: { on: false, home: [], away: [] },
     // Stat sheet sync: when on, the stats and score panels read from the sheet instead of the counters.
     statFrom: 'keeper', // 'keeper' (the soccer stat keeper page) or 'sheet' (the Excel stat sheet)
+    clockShare: true,   // send the bug's clock to the soccer stat keeper (its pages follow it)
     sheetUrl: '', sheetOn: false, sheetEvery: 1, sheetBug: true, sheetPrev: {},
     sheet: { at: 0, err: '', home: {}, away: {}, goals: [] },
     xi: {
@@ -1751,6 +1755,7 @@
   let photoHook = null; // draws the Player photos panels (set up below)
   let logoHook = null; // draws the School logos rows (set up below)
   let rosterHook = null; // fills the player menus (set up below)
+  let shareHook = null; // the clock-sharing status (set up below)
   const save = () => {
     try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
     if (bc) bc.postMessage(s);
@@ -1826,6 +1831,7 @@
     if (fvRenderHook) fvRenderHook();
     if (logoHook) logoHook();
     if (rosterHook) rosterHook();
+    if (shareHook) shareHook();
     if (photoHook) photoHook();
     $('cHome').textContent = s.home; $('cAway').textContent = s.away;
     $('cHome').style.background = HOME_COLORS.bg; $('cHome').style.color = HOME_COLORS.fg;
@@ -2532,6 +2538,59 @@
     fillPick($('lPick'), ['home', 'away'], 'Pick a player…');
     renderXiPick('home'); renderXiPick('away');
   };
+
+  // ---- Share the bug's clock with the soccer stat keeper ----
+  // Whenever the clock starts, stops, is set, or the half changes (and once a minute so the stat pages know
+  // it's still here), send the half and the time into it. The stat pages then show the same minute as the bug.
+  const SK_KEY_LS = 'eota-stats-key'; // same key storage as the stat keeper page on this site
+  const skKey = () => { try { return JSON.parse(localStorage.getItem(SK_KEY_LS) || '""'); } catch (e) { return ''; } };
+  const STAT_PER = { '1ST': '1H', '2ND': '2H', OT1: 'OT1', OT2: 'OT2' };
+  let shareSig = '', shareAt = 0, shareBusy = false, shareMsg = '';
+  const shareClock = async () => {
+    if (!s.clockShare || shareBusy) return;
+    const key = skKey(), g = skGame || rosterGame;
+    if (!key || !g) {
+      const msg = !key ? 'key' : 'Waiting for the stat keeper…';
+      if (msg !== shareMsg) { shareMsg = msg; renderShare(); }
+      return;
+    }
+    const now = Date.now(), per = STAT_PER[s.period], base = elapsed(s, now), run = !!(per && s.running);
+    const meta = { period: per || g.meta.period, halfMin: s.halfMin, otMin: s.otMin, clockSrc: 'scorebug', clock: { run, startedAt: now, base } };
+    // What changed, ignoring the time ticking by: a running clock is pinned by when it started.
+    const sig = JSON.stringify([meta.period, s.halfMin, s.otMin, run, Math.round((run ? now - base : base) / 1000), g.meta.gameId]);
+    if (sig === shareSig && now - shareAt < 60000) return;
+    shareBusy = true;
+    try {
+      const r = await fetch(SK_API + '/meta?game=soccer', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        body: JSON.stringify({ gameId: g.meta.gameId, meta }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 401) shareMsg = 'badkey';
+      else if (r.status === 409) { if (d.state) { if (skGame) skGame = { rev: d.state.rev, meta: d.state.meta, events: d.state.events }; else rosterGame = d.state; } shareMsg = 'The stat keeper started a new game; sharing with it now.'; }
+      else if (!r.ok) shareMsg = "Couldn't reach the stat keeper. Trying again.";
+      else { shareSig = sig; shareAt = now; shareMsg = 'ok'; }
+    } catch (e) { shareMsg = "Couldn't reach the stat keeper. Trying again."; }
+    shareBusy = false;
+    renderShare();
+  };
+  setInterval(shareClock, 1000);
+  const renderShare = () => {
+    $('clockShare').checked = s.clockShare;
+    const needKey = s.clockShare && (shareMsg === 'key' || shareMsg === 'badkey');
+    $('skKeyRow').hidden = !needKey;
+    $('clockShareStatus').textContent = !s.clockShare ? 'The stat keeper runs its own clock.'
+      : shareMsg === 'ok' ? 'Clock shared: the stat keeper pages show the same minute as the bug.'
+      : shareMsg === 'key' ? 'Enter the stat keeper key once on this computer to share the clock.'
+      : shareMsg === 'badkey' ? 'That stat keeper key was turned down. Check it with Mr. Lee.'
+      : shareMsg;
+  };
+  shareHook = renderShare;
+  $('clockShare').addEventListener('change', e => {
+    s.clockShare = e.target.checked; shareSig = '';
+    // Turning it off hands the clock back to the stat keeper (it stays where it is).
+    if (!s.clockShare) { const g = skGame || rosterGame, key = skKey(); if (g && key) fetch(SK_API + '/meta?game=soccer', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ gameId: g.meta.gameId, meta: { clockSrc: '' } }) }).catch(() => {}); }
+    save(); renderShare();
+  });
+  $('skKeySave').onclick = () => { const k = $('skKey').value.trim(); if (!k) return; try { localStorage.setItem(SK_KEY_LS, JSON.stringify(k)); } catch (e) {} $('skKey').value = ''; shareSig = ''; shareMsg = ''; shareClock(); };
 
   const keeperApply = () => {
     const data = keeperData(skGame), { at, err, ...prev } = s.sheet;

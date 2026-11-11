@@ -192,6 +192,10 @@ export class Game extends DurableObject {
         const n = v => Math.max(0, Math.min(1e13, Number(v) || 0));
         if (m.halfMin != null) next.halfMin = Math.max(1, Math.min(90, Math.round(Number(m.halfMin)) || 40));
         if (m.clock) next.clock = { run: !!m.clock.run, startedAt: n(m.clock.startedAt), base: n(m.clock.base) };
+        if (m.otMin != null) next.otMin = Math.max(1, Math.min(30, Math.round(Number(m.otMin)) || 10));
+        // The soccer scorebug shares its clock: who set it, and when (the stat pages follow it while it keeps checking in).
+        if (m.clockSrc != null) next.clockSrc = m.clockSrc === 'scorebug' ? 'scorebug' : '';
+        if (m.clock) next.clockAt = Date.now();
       }
       if (m.names) next.names = Object.fromEntries(SIDES.map(s => [s, clean(m.names[s], 30) || meta.names[s]]));
       if (m.colors) next.colors = Object.fromEntries(SIDES.map(s => [s, colorOk(m.colors[s]) ? m.colors[s].toUpperCase() : meta.colors[s]]));

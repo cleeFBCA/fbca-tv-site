@@ -59,6 +59,9 @@
   .clockrow { max-width: 1100px; margin: 8px auto 0; display: flex; align-items: center; gap: 8px; }
   .clockrow .clk { font-family: var(--font-display); font-weight: 800; font-size: 26px; min-width: 64px; font-variant-numeric: tabular-nums; }
   .clockrow button { min-height: 38px; padding: 4px 14px; }
+  .clockrow .sync { font-size: 14px; font-weight: 700; color: var(--ok); }
+  .clockrow .sync::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: 1px; }
+  .periods button:disabled { opacity: 1; cursor: default; }
   .clockrow button.run { background: var(--tally); border-color: var(--tally); }
   .act.yc { background: #E8C21E; color: #1a1a1a; border-color: #E8C21E; }
   .act.rc { background: #C8102E; color: #fff; border-color: #C8102E; }
@@ -161,7 +164,7 @@
     <div class="score" id="score"></div>
   </div>
   <div class="periods" id="periods" role="group" aria-label="Half"></div>
-  <div class="clockrow"><span class="clk" id="clk">0'</span><button id="btnClock">Start clock</button><button class="ghost" id="btnClockFix">Set minute</button></div>
+  <div class="clockrow"><span class="clk" id="clk">0'</span><button id="btnClock">Start clock</button><button class="ghost" id="btnClockFix">Set minute</button><span class="sync" id="clkSync" hidden>Synced with the scorebug</span></div>
 </header>
 
 <main>
@@ -416,14 +419,17 @@
   // ---- Match clock (shared through the game's meta) ----
   const clockMs = m => { const c = m.clock || {}; return (c.base || 0) + (c.run ? Date.now() - (c.startedAt || Date.now()) : 0); };
   const halfMin = m => m.halfMin || 40;
-  const halfStart = m => ({ '1H': 0, '2H': halfMin(m), OT1: 2 * halfMin(m), OT2: 2 * halfMin(m) + 10 }[m.period] || 0);
+  const otMin = m => m.otMin || 10;
+  const halfStart = m => ({ '1H': 0, '2H': halfMin(m), OT1: 2 * halfMin(m), OT2: 2 * halfMin(m) + otMin(m) }[m.period] || 0);
+  // The soccer scorebug shares its clock while it keeps checking in (about every minute); then it runs the clock here.
+  const synced = m => m.clockSrc === 'scorebug' && Date.now() - (m.clockAt || 0) < 150000;
   // The minute on a goal or card: 1-based, continuing from the half length in the 2nd half; stoppage time as 40+2.
   const minuteNow = m => {
-    const into = Math.floor(clockMs(m) / 60000) + 1, start = halfStart(m), len = /^OT/.test(m.period) ? 10 : halfMin(m);
+    const into = Math.floor(clockMs(m) / 60000) + 1, start = halfStart(m), len = /^OT/.test(m.period) ? otMin(m) : halfMin(m);
     return into > len ? `${start + len}+${into - len}` : String(start + into);
   };
   const clockLabel = m => (m.clock && (m.clock.run || m.clock.base)) ? minuteNow(m) + "'" : "0'";
-  const setClock = clock => enqueue('meta', { meta: { clock } });
+  const setClock = clock => enqueue('meta', { meta: { clock, clockSrc: '' } }); // run by hand here
   $('btnClock').onclick = () => {
     const v = view(); if (!v) return;
     const c = v.meta.clock || {};
@@ -438,7 +444,12 @@
     setClock({ run: !!c.run, startedAt: Date.now(), base: Math.max(0, (n - 1 - halfStart(v.meta)) * 60000) });
   };
   $('halfMin').addEventListener('change', e => { const n = Math.max(1, Math.min(90, parseInt(e.target.value, 10) || 40)); enqueue('meta', { meta: { halfMin: n } }); });
-  setInterval(() => { const v = view(); if (v) $('clk').textContent = clockLabel(v.meta); }, 1000);
+  let wasSynced = null;
+  setInterval(() => {
+    const v = view(); if (!v) return;
+    $('clk').textContent = clockLabel(v.meta);
+    const sync = synced(v.meta); if (sync !== wasSynced) { wasSynced = sync; render(); } // e.g. the scorebug stopped checking in
+  }, 1000);
 
   const logPlay = (side, player, type) => {
     const v = view(); if (!v) return;
@@ -506,10 +517,13 @@
     const run = !!(v.meta.clock && v.meta.clock.run);
     $('btnClock').textContent = run ? 'Stop clock' : (v.meta.clock && v.meta.clock.base ? 'Restart clock' : 'Start clock (kickoff)');
     $('btnClock').classList.toggle('run', run);
+    const sync = synced(v.meta);
+    $('btnClock').hidden = $('btnClockFix').hidden = sync; $('clkSync').hidden = !sync;
     $('periods').replaceChildren(...PERIODS.map(p => {
       const b = el('button', p === v.meta.period ? 'on' : '', PER_LABEL[p]); b.setAttribute('aria-pressed', p === v.meta.period);
       // A new half starts its clock at zero, stopped until kickoff.
-      b.onclick = () => { if (p !== v.meta.period && confirm('Start the ' + PER_LABEL[p] + '? The match clock resets for it.')) enqueue('meta', { meta: { period: p, clock: { run: false, startedAt: 0, base: 0 } } }); };
+      b.disabled = synced(v.meta); // the scorebug sets the half while it's synced
+      b.onclick = () => { if (p !== v.meta.period && confirm('Start the ' + PER_LABEL[p] + '? The match clock resets for it.')) enqueue('meta', { meta: { period: p, clock: { run: false, startedAt: 0, base: 0 }, clockSrc: '' } }); };
       return b;
     }));
 
