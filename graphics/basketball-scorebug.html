@@ -181,6 +181,40 @@
   .pg.on::after { animation: pgShine 1.1s .7s ease-in-out both; }
   @keyframes pgShine { from { opacity: 1; transform: translateX(-100%); } to { opacity: 1; transform: translateX(100%); } }
 
+  /* ---------- Player spotlight, in the bug's style ----------
+     The photo (or big jersey number) on the team's color, then a charcoal info side: kicker, name, details,
+     and up to three stats over team-colored rules, with the team's logo in the corner. */
+  .sp {
+    position: absolute; left: 50%; top: 190px; width: 1360px; margin-left: -680px; height: 528px; color: #fff;
+    display: grid; grid-template-columns: 440px 1fr; border-radius: 8px; overflow: hidden;
+    background: linear-gradient(#2e2f33, #17181b); box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
+    clip-path: inset(0 100% 0 0 round 8px); transition: clip-path .55s cubic-bezier(.6,0,.3,1);
+  }
+  .sp.on { clip-path: inset(0 0 0 0 round 8px); }
+  .sp-photo { position: relative; overflow: hidden; display: grid; place-items: center;
+              background: linear-gradient(160deg, color-mix(in srgb, var(--c) 92%, #fff), color-mix(in srgb, var(--c) 68%, #000)); }
+  .sp-photo::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(255,255,255,.05) 0 2px, transparent 2px 14px); }
+  .sp-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .sp-photo .bignum { position: relative; font-size: 280px; font-weight: 800; line-height: 1; color: var(--f); text-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .sp-info { position: relative; display: flex; flex-direction: column; padding: 46px 56px 44px; border-left: 5px solid var(--a); }
+  .sp-mark { position: absolute; top: 34px; right: 44px; height: 70px; max-width: 160px; object-fit: contain; }
+  .sp-info .logo.sp-mark { width: 120px; height: auto; }
+  .sp-kicker { font-size: 26px; font-weight: 800; letter-spacing: .22em; color: rgba(255,255,255,.65); }
+  .sp-name { font-size: 104px; font-weight: 800; line-height: .95; margin-top: 10px; white-space: nowrap; text-transform: uppercase; }
+  .sp-name span { display: inline-block; transform-origin: left center; }
+  .sp-meta { font-size: 34px; font-weight: 700; letter-spacing: .08em; color: rgba(255,255,255,.75); margin-top: 12px; text-transform: uppercase; }
+  .sp-stats { display: flex; gap: 28px; margin-top: auto; }
+  .sp-stats > div { flex: 1; border-top: 5px solid var(--a); padding-top: 12px; }
+  .sp-stats b { display: block; font-size: 92px; font-weight: 800; line-height: 1; }
+  .sp-stats span { font-size: 24px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.65); }
+  .sp-photo > *, .sp-info > * { opacity: 0; }
+  .sp.on .sp-photo > * { animation: pgFromL .7s .3s cubic-bezier(.2,.8,.2,1) both; }
+  .sp.on .sp-info > * { animation: pgUp .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(.4s + var(--d, 0) * .08s); }
+  .sp.on .sp-stats > div { animation: pgUp .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(.7s + var(--d, 0) * .1s); }
+  .sp::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0;
+               background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.16) 50%, transparent 60%); }
+  .sp.on::after { animation: pgShine 1.1s .8s ease-in-out both; }
+
   /* ---------- Pop-up: a strip that rises from behind the top of the bar ----------
      Text (with an optional team tag), a team stat (both teams, in screen order), or a run. */
   /* overflow: hidden clips the strip at the top of the bar, so while it's down nothing shows (even with the bug hidden) */
@@ -483,6 +517,10 @@
   table.mini { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
   table.mini th, table.mini td { padding: 4px 6px; border-top: 1px solid var(--line); text-align: center; }
   table.mini td:first-child, table.mini th:first-child { text-align: left; color: var(--chalk-dim); }
+  .spot-stats { display: grid; grid-template-columns: 1fr 2fr; gap: 6px 10px; }
+  .sp-fit { display: grid; grid-template-columns: 183px 1fr; gap: 14px; align-items: start; margin-top: 10px; }
+  .sp-fit canvas { width: 183px; height: 220px; border-radius: 4px; }
+  .pane-h { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; font-size: 16px; color: var(--gold); margin: 18px 0 4px; }
   button.small { min-height: 0; padding: 6px 12px; font-size: 14px; flex: 0 0 auto; }
   .l3-list { list-style: none; margin: 12px 0 0; padding: 0; }
   .l3-list li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
@@ -536,6 +574,11 @@
       <div class="pg-team R" id="pgR"></div>
     </div>
     <div class="pg-split"><i id="pgBarL2"></i><i id="pgBarR2"></i></div>
+  </div>
+
+  <div class="sp" id="pSpot">
+    <div class="sp-photo" id="spPhoto"></div>
+    <div class="sp-info" id="spInfo"></div>
   </div>
 
   <div class="pn wipe hidden" id="pStats">
@@ -669,6 +712,43 @@
           </div>
           <p class="hint" id="mRecs"></p>
           <div class="row-btns" style="margin-top:10px"><button class="primary" id="btnPre">Show pregame</button></div>
+
+          <div class="pane-h">Player spotlight</div>
+          <div class="two">
+            <div><label for="spTeam">Team</label><select id="spTeam"><option value="home"></option><option value="away"></option></select></div>
+            <div><label for="spNum">Number</label><input id="spNum" maxlength="3" inputmode="numeric"></div>
+          </div>
+          <label for="spNameIn">Name</label><input id="spNameIn" maxlength="30" placeholder="Jordan Lee">
+          <div class="two">
+            <div><label for="spPos">Position</label><input id="spPos" maxlength="20" placeholder="Guard"></div>
+            <div><label for="spYear">Class</label><input id="spYear" maxlength="20" placeholder="Senior"></div>
+          </div>
+          <label>Stats (number, then what it is)</label>
+          <div class="spot-stats">
+            <input id="spV1" maxlength="6" placeholder="18.4"><input id="spL1" maxlength="20" placeholder="PPG">
+            <input id="spV2" maxlength="6" placeholder="7.2"><input id="spL2" maxlength="20" placeholder="RPG">
+            <input id="spV3" maxlength="6" placeholder="3.1"><input id="spL3" maxlength="20" placeholder="APG">
+          </div>
+          <div id="spFromStats" hidden>
+            <label for="spPick">Or fill tonight's numbers from the stats</label>
+            <div class="two"><select id="spPick"></select><button id="spFill">Fill PTS · REB · AST</button></div>
+          </div>
+          <label for="spFile">Photo (optional; without one, the jersey number shows)</label>
+          <div class="set-row"><input type="file" id="spFile" accept="image/*"><button id="spPhotoClear">Remove</button></div>
+          <p class="hint">Best: a PNG cutout with a transparent background, waist up. It's sized from the player's outline so the top of the head lands on the dashed line, with the team color behind. Use Size and Up / down to adjust.</p>
+          <div class="sp-fit" id="spFit" hidden>
+            <canvas id="spPrev" width="440" height="528"></canvas>
+            <div>
+              <label for="spZoom">Size</label><input type="range" id="spZoom" min="60" max="160" value="100">
+              <label for="spShift">Up / down</label><input type="range" id="spShift" min="-150" max="150" value="0">
+              <button id="spFitReset" style="margin-top:10px">Reset fit</button>
+            </div>
+          </div>
+          <div class="row-btns" style="margin-top:12px">
+            <button class="primary" id="btnSpShow">Show spotlight</button>
+            <button id="btnSpSave">Save to list</button>
+          </div>
+          <ul class="l3-list" id="spList"></ul>
         </div>
 
         <div data-pane="stats" hidden>
@@ -828,6 +908,7 @@
   document.body.className = isBug ? 'bug' + (isMatte ? ' matte' : '') : 'ctl';
 
   const team = (name, bg, fg) => ({ name, rec: '', bg, fg, logo: '', score: 0, fouls: 0, to: 5 });
+  const blankSpot = () => ({ team: 'home', num: '', name: '', pos: '', year: '', stats: [{ v: '', l: '' }, { v: '', l: '' }, { v: '', l: '' }], photo: '' });
   const defaults = () => ({
     home: team('FBCA', '#17402B', '#F2C14E'), away: team('AWAY', '#1F3A93', '#FFFFFF'),
     swap: false, // false: away on the left, home on the right (the broadcast convention)
@@ -856,6 +937,8 @@
     // Pop-up above the bar: kind 'text' | 'stat' | 'run'; until = when it comes down (0 = stays up).
     // Pregame matchup (s.panel === 'match'): title, subtitle, date/time and venue. Records come from Setup.
     match: { title: '', sub: '', when: '', venue: '' },
+    // Player spotlight (s.panel === 'spot') and the saved spotlights.
+    spot: blankSpot(), spotList: [],
     pop: { on: false, kind: 'text', text: '', team: '', stat: 'FG', run: null, until: 0, at: 0 },
     // Score after each change, [home, away], to work out runs (the last 80 kept).
     scoreLog: [],
@@ -869,6 +952,7 @@
     out.sheet = Object.assign(defaults().sheet, raw.sheet); out.foulBase = Object.assign(defaults().foulBase, raw.foulBase);
     out.fv = Object.assign(defaults().fv, raw.fv); out.l3 = Object.assign(defaults().l3, raw.l3);
     out.pop = Object.assign(defaults().pop, raw.pop); out.match = Object.assign(defaults().match, raw.match);
+    out.spot = Object.assign(blankSpot(), raw.spot);
     if (!raw.statFrom) out.statFrom = raw.sheetUrl ? 'sheet' : 'keeper'; // pages set up before the stat keeper keep their sheet
     return out;
   };
@@ -1146,6 +1230,28 @@
       }
       if (on !== box.classList.contains('on')) box.classList.toggle('on', on);
     };
+    let spSig = '';
+    const renderSpot = () => {
+      const on = s.panel === 'spot', box = $('pSpot'), p = s.spot, t = s[p.team] || s.home;
+      const sig = JSON.stringify([p.team, p.num, p.name, p.pos, p.year, p.stats, p.photo.length, p.photo.slice(-40), t.name, t.bg, t.fg, t.logo.length]);
+      if (sig !== spSig) {
+        spSig = sig;
+        box.style.setProperty('--c', hex(t.bg, '#333333')); box.style.setProperty('--f', hex(t.fg, '#FFFFFF'));
+        // The rules on the charcoal side use the team color, lightened when it's too dark to see there.
+        const bgc = hex(t.bg, '#333333'), n = parseInt(bgc.slice(1), 16), lum = (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255;
+        box.style.setProperty('--a', lum < .3 ? `color-mix(in srgb, ${bgc} 55%, #fff)` : bgc);
+        $('spPhoto').replaceChildren(p.photo ? Object.assign(el('img'), { src: p.photo, alt: '' }) : el('div', 'bignum', p.num ? '#' + p.num : ''));
+        const mark = t.logo ? Object.assign(el('img', 'sp-mark'), { src: t.logo, alt: '' }) : el('i', 'logo sp-mark');
+        const name = el('div', 'sp-name'), nameText = el('span', null, p.name); name.append(nameText);
+        const stats = el('div', 'sp-stats');
+        p.stats.filter(x => x.v || x.l).forEach((x, i) => { const d = el('div'); d.style.setProperty('--d', i); d.append(el('b', null, x.v), el('span', null, x.l)); stats.append(d); });
+        const parts = [el('div', 'sp-kicker', 'Player spotlight'), name, el('div', 'sp-meta', [p.num && '#' + p.num, p.pos, p.year, t.name].filter(Boolean).join(' · ')), stats];
+        parts.forEach((n, i) => n.style.setProperty('--d', i));
+        $('spInfo').replaceChildren(mark, ...parts);
+        requestAnimationFrame(() => fitWidth(nameText, 760));
+      }
+      if (on !== box.classList.contains('on')) box.classList.toggle('on', on);
+    };
     const renderStatsPanel = () => {
       if (!sheetLive()) return;
       $('pstTitle').textContent = statsTitle() ? '· ' + statsTitle() : '';
@@ -1177,7 +1283,7 @@
       if (s.panel === 'vote') renderVotePanel();
       $('pStats').classList.toggle('hidden', s.panel !== 'stats' || !sheetLive());
       if (s.panel === 'stats') renderStatsPanel();
-      renderPregame();
+      renderPregame(); renderSpot();
     };
     const render = () => {
       applyKey(); renderL3(); renderFanVote(); renderPop();
@@ -1609,6 +1715,130 @@
     $('btnPre').textContent = s.panel === 'match' ? 'Take down pregame' : 'Show pregame';
     $('mRecs').textContent = 'Records: ' + SIDES.map(side => s[side].name + ' ' + (s[side].rec || '(none)')).join(', ') + '. Set them in Setup → Record.';
   };
+
+  // --- Player spotlight ---
+  let spotPhoto = '';
+  const spotFromForm = () => ({
+    team: $('spTeam').value, num: $('spNum').value.trim(), name: $('spNameIn').value.trim(),
+    pos: $('spPos').value.trim(), year: $('spYear').value.trim(),
+    stats: [1, 2, 3].map(i => ({ v: $('spV' + i).value.trim(), l: $('spL' + i).value.trim() })),
+    photo: spotPhoto
+  });
+  const spotToForm = p => {
+    $('spTeam').value = p.team; $('spNum').value = p.num; $('spNameIn').value = p.name;
+    $('spPos').value = p.pos; $('spYear').value = p.year;
+    [1, 2, 3].forEach(i => { $('spV' + i).value = p.stats[i - 1].v; $('spL' + i).value = p.stats[i - 1].l; });
+    clearPhoto(); spotPhoto = p.photo || '';
+  };
+  // Photos are fitted to the 440x528 frame and stored small (WebP keeps transparency). A cutout is sized
+  // from the player's outline: the top of the head sits HEADROOM below the frame top. Others fill the frame.
+  const PHOTO_W = 440, PHOTO_H = 528, HEADROOM = 40;
+  let photoImg = null, photoBox = null;
+  const subjectBox = img => {
+    const k = Math.min(1, 400 / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * k)), h = Math.max(1, Math.round(img.height * k));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    const a = ctx.getImageData(0, 0, w, h).data;
+    let x0 = w, y0 = h, x1 = -1, y1 = -1, clear = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (a[(y * w + x) * 4 + 3] > 40) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      else clear++;
+    }
+    if (x1 < 0 || clear < w * h * .05) return null;
+    return { x: x0 / k, y: y0 / k, w: (x1 - x0 + 1) / k, h: (y1 - y0 + 1) / k };
+  };
+  const fitPlacement = (img, b, z = 1, dy = 0) => {
+    let k, ax, ay, fy;
+    if (b) { k = Math.max(PHOTO_W * .78 / b.w, (PHOTO_H - HEADROOM) / b.h); ax = b.x + b.w / 2; ay = b.y; fy = HEADROOM; }
+    else { k = Math.max(PHOTO_W / img.width, PHOTO_H / img.height); ax = img.width / 2; ay = 0; fy = (PHOTO_H - img.height * k) / 3; }
+    k *= z;
+    return { x: PHOTO_W / 2 - ax * k, y: fy + dy - ay * k, w: img.width * k, h: img.height * k };
+  };
+  const refitPhoto = () => {
+    if (!photoImg) return;
+    const p = fitPlacement(photoImg, photoBox, $('spZoom').value / 100, +$('spShift').value);
+    const out = document.createElement('canvas'); out.width = PHOTO_W; out.height = PHOTO_H;
+    out.getContext('2d').drawImage(photoImg, p.x, p.y, p.w, p.h);
+    spotPhoto = out.toDataURL('image/webp', .85);
+    const ctx = $('spPrev').getContext('2d');
+    ctx.fillStyle = hex(s[$('spTeam').value].bg, '#17402B'); ctx.fillRect(0, 0, PHOTO_W, PHOTO_H);
+    ctx.drawImage(photoImg, p.x, p.y, p.w, p.h);
+    ctx.setLineDash([14, 10]); ctx.lineWidth = 3; ctx.strokeStyle = '#F3EFE2';
+    ctx.beginPath(); ctx.moveTo(0, HEADROOM); ctx.lineTo(PHOTO_W, HEADROOM); ctx.stroke();
+  };
+  const clearPhoto = () => { spotPhoto = ''; photoImg = photoBox = null; $('spFile').value = ''; $('spFit').hidden = true; };
+  const resetFit = () => { $('spZoom').value = 100; $('spShift').value = 0; };
+  $('spFile').addEventListener('change', () => {
+    const file = $('spFile').files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => { photoImg = img; photoBox = subjectBox(img); resetFit(); $('spFit').hidden = false; refitPhoto(); };
+    img.src = URL.createObjectURL(file);
+  });
+  $('spZoom').addEventListener('input', refitPhoto);
+  $('spShift').addEventListener('input', refitPhoto);
+  $('spTeam').addEventListener('change', refitPhoto);
+  $('spFitReset').onclick = () => { resetFit(); refitPhoto(); };
+  $('spPhotoClear').onclick = clearPhoto;
+  const showSpot = p => { s.spot = p; s.panel = 'spot'; save(); };
+  $('btnSpShow').onclick = () => {
+    if (s.panel === 'spot') { s.panel = ''; save(); return; }
+    const p = spotFromForm();
+    if (!p.name) { $('spNameIn').focus(); return; }
+    showSpot(p);
+  };
+  $('btnSpSave').onclick = () => {
+    const p = spotFromForm();
+    if (!p.name) { $('spNameIn').focus(); return; }
+    s.spotList.push(p); save();
+    spotToForm(blankSpot());
+  };
+  // Tonight's points, rebounds and assists from the connected stats.
+  $('spFill').onclick = () => {
+    const [side, i] = ($('spPick').value || '').split(':'), pl = side && s.sheet[side] && s.sheet[side].players[+i];
+    if (!pl) return;
+    const d = derive(pl);
+    $('spTeam').value = side; $('spNum').value = pl.num || ''; $('spNameIn').value = pl.name;
+    [[d.pts, 'Points'], [d.reb, 'Rebounds'], [d.ast, 'Assists']].forEach(([v, l], k) => { $('spV' + (k + 1)).value = v; $('spL' + (k + 1)).value = l; });
+    refitPhoto();
+  };
+  let spPickSig = '';
+  const renderSpotTab = () => {
+    for (const side of SIDES) $('spTeam').querySelector(`[value="${side}"]`).textContent = s[side].name;
+    const live = sheetLive();
+    $('spFromStats').hidden = !live;
+    if (live) {
+      const sig = JSON.stringify(SIDES.map(side => [s[side].name, s.sheet[side].players.map(pl => pl.num + pl.name)]));
+      if (sig !== spPickSig) {
+        spPickSig = sig;
+        const sel = $('spPick'), keep = sel.value;
+        sel.replaceChildren(new Option('Pick a player…', ''));
+        for (const side of SIDES) {
+          const g = document.createElement('optgroup'); g.label = s[side].name;
+          s.sheet[side].players.forEach((pl, i) => g.append(new Option((pl.num ? '#' + pl.num + ' ' : '') + pl.name, side + ':' + i)));
+          sel.append(g);
+        }
+        sel.value = keep;
+      }
+    }
+    $('btnSpShow').textContent = s.panel === 'spot' ? 'Take down spotlight' : 'Show spotlight';
+    $('spList').replaceChildren(...s.spotList.map((item, i) => {
+      const li = el('li'), txt = el('div', 'txt');
+      txt.append(el('b', null, (item.num ? '#' + item.num + ' ' : '') + item.name), el('span', null, [item.pos, item.year, s[item.team] ? s[item.team].name : ''].filter(Boolean).join(' · ')));
+      const live2 = s.panel === 'spot' && s.spot.name === item.name && s.spot.num === item.num;
+      if (live2) txt.prepend(el('div', 'on-air', 'ON AIR'));
+      const show = el('button', 'small', live2 ? 'Hide' : 'Show');
+      show.onclick = () => { if (live2) { s.panel = ''; save(); } else showSpot(JSON.parse(JSON.stringify(item))); };
+      const edit = el('button', 'small', 'Edit'); edit.onclick = () => spotToForm(item);
+      const del = el('button', 'small', '✕'); del.title = 'Remove';
+      del.onclick = () => { s.spotList.splice(i, 1); save(); };
+      li.append(txt, show, edit, del);
+      return li;
+    }));
+  };
+  const preHookBase = preHook;
+  preHook = () => { preHookBase(); renderSpotTab(); };
 
   // --- Pop-up ---
   let popSecs = 8;
