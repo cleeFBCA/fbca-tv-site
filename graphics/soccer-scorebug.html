@@ -159,7 +159,10 @@
   .drop .dlabel { gap: 10px; padding: 0 18px; background: var(--gold); color: var(--pine); font-weight: 800; letter-spacing: .08em; }
   .drop .dmin { padding-left: 18px; color: var(--gold-hi); font-weight: 800; }
   .drop .dtext { padding: 0 24px 0 14px; gap: 12px; }
-  .drop .dtext .off { margin-left: 14px; color: var(--chalk-dim); }
+  .drop .dtext .off { color: var(--chalk-dim); }
+  /* Substitution: each arrow sits right against its player; the two pairs are well apart */
+  .drop .dtext .subp { display: inline-flex; align-items: center; gap: 7px; }
+  .drop .dtext .subp + .subp { margin-left: 22px; }
   /* Penalty shootout strip: kicks under each team name, total under its score. It drops out of the
      bug like the drop-down (sitting between the two), and folds away when off so the drop-down stays snug. */
   .pk { position: relative; align-self: stretch; height: 44px; }
@@ -1395,7 +1398,8 @@
       $('dMin').hidden = !d.minute;
       if (d.label === 'SUB' && d.out) {
         // Substitution: green arrow for the player coming on, red for the player going off.
-        $('dText').replaceChildren(el('i', 'arr in'), el('span', null, d.text), el('i', 'arr out'), el('span', 'off', d.out));
+        const pair = (arrow, name, cls) => { const p = el('span', 'subp'); p.append(el('i', 'arr ' + arrow), el('span', cls, name)); return p; };
+        $('dText').replaceChildren(pair('in', d.text, null), pair('out', d.out, 'off'));
       } else {
         $('dText').textContent = d.text;
       }
