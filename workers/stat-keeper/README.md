@@ -23,6 +23,7 @@ goals with minutes from a shared match clock, assists, shots on and off target, 
 corners, fouls, offsides and cards. The soccer scorebug connects under **Stats & score →
 Stats come from → Stat keeper page**, and gets the score, cards, team stats and goal list
 the Excel sheet used to supply. Same stat keeper key as basketball.
+Soccer announcers follow it at **fbca.tv/graphics/soccer-announcers.html**.
 
 Announcers follow the same game, read-only, at
 **fbca.tv/graphics/basketball-announcers.html** (phone first, works on a laptop): ready-to-read

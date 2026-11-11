@@ -673,7 +673,7 @@
     { name: 'Soccer', match: /soccer/i, roles: {
       op: { href: 'graphics/soccer-scorebug.html', note: 'Run the scorebug and graphics', outs: [['Output (fill)', 'graphics/soccer-scorebug.html#bug'], ['Key', 'graphics/soccer-scorebug.html#key']] },
       stats: { href: 'graphics/soccer-stats.html', note: 'Tap in each play' },
-      ann: { off: 'No announcer page yet' } } }
+      ann: { href: 'graphics/soccer-announcers.html', note: 'Live goals, leaders and box score' } } }
   ];
   const SB_ROLES = [['op', 'Scorebug operator', 'Scorebug'], ['stats', 'Statistician', 'Stats'], ['ann', 'Announcers', 'Announcers']];
   const sbSport = (g) => SB_SPORTS.find((s) => s.match.test(g.sport || ''));

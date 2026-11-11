@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EOTA Soccer Announcer Stats</title>
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAEH0lEQVR42u2WS2xVVRSG/3/tc24vbS99UUoFLgq0xYpIkRSkEA3MfATFCDhgYBz4SoxxqImOjBGZiK+ZJkaQmBBifESDTkRTJTyKwYC1xdsCLdzb1r7u49xz9l4OemlT7MDEMOufNVnJ2uvLztrrz2Zi9RLcSgluseYB84D/L+9mIOEUS6p0a7NL1rmKMpC0VscL+GNQfuo2uWKp5j/KlNVWTvUlIQKn6GhyD6+3VQvUNxDCulJpY7W2Jd3wpAxP0ggIkAABgDc6TKVzAHQqFB1NdluzCyKQ6Enz527vbD8H/pa4j/IyBBHuWe4GRjmS5dSRad2UTotTVnH4mQIFAJbVaCwm352Td7/3MhNsaVRrNTPBsTw3rXRv7S4ao9ZhYJTOsaoCRzrNoU6vMo4De4KldXjtqN/VJyIz9y7NYPtakPAMsgVW1+Lgt8xM8MDeYjFCT9osqrSnU+b8FbQsBUBr9c6lUNXyWnalFMCO1ujJDqXhU+noxb7YHEMey6pn8MInsVRGysq0L8NXHyk+ttG+d9zzPY152Lwq6ur3t78ZE+CdfcG6JF4+5HX1m5GsAth1rw2KyBbcjjW6OOGnJzj9EEoACjyDP69Lb7o0qaFJCUMLxWQe1XEsSiAR1wsDAiAIGY/hUkZ+v0qAd9S7+1td3xDT4+y4Sx5abz8+4U0DSntARWRx+Nngx1fyv71RaFvhLg6yPI7qSkQOJChoWAgReAIhoCjzVAQAdrbZ2gb56qzZ/40vBrs2RiKwOtceVFeoc6iuRNzH0CQLRWxYYeOe5ENGlvUL1Tl4nvqm9GCcQzyGRzdEhTGe6JbTKdOdCjc3YUPSnUrJLIASnsHu98u6r4lvdCzHe1bYyHFNox75RQohayu0GIFEw0Isq9EgpGdI4oEW27qc4xP69t5QEVbEVMjd7dGpVGw2QGEVOhWA78ETNtagL4Mn2m1tpV4dwevHYqpoX+kiC3ej+PGNlsRkASJKIFdkNq/bW11dpQ5PcgZQHgOJz54PcgEaqvHSp7HPT5p9H/r79xYB/NojB4/7l0e4arG7vd6NB0hWIB+iPqEPrrdhxKc/il0cNCIw1CPPBVvu5p5N0Qc/+DND7r2O3uvIjMM3yAa4b7VdlNDOXjnXz/NX5Otz5vII1y53O9uss8gV+dcgR3PY0mRHI/PlGZ5OmWyAiTxGczzc6fVfQ/tKN2uTfQOhOuXWZrut2eWKAHBhQBqqdNNqe/Sktziht9VoEGJBDEdPmb5hRo6eqCpDC2LGhVThC4zRQsgZL3IK6+gUqSEpRkzWqRAVcc0VODQhA6Ncl3ShpVV8ccb0pMU66o0j/5ZTRI6zzI4EWTLFyyO8lJHEAiTi2tKozY1qhPkiLgzIsTNeepwiM8ZGzmVwnHFVzv+L5gHzAPwDMNXxTQ6uySIAAAAASUVORK5CYII=">
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,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">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0D2418">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  Live soccer stats for the Eagles on the Air play-by-play and color announcers. Read-only: it
+  listens to the "soccer" game the stat crew enters plays into (graphics/soccer-stats.html), so it
+  updates the moment a play is recorded. Built for a phone first, works on a laptop.
+
+  Tabs: Talk (ready-to-read lines: score and last goal, the goal list with minutes and assists,
+  braces and hat tricks, cards, leaders, shooting, set pieces), Players (each player's game as a
+  sentence and raw numbers), Team (side by side, goals by half), Plays (the log with minutes and
+  the running score). ?api=http://localhost:8787 points it at a local copy of the worker.
+-->
+<style>
+  :root {
+    --pine: #0D2418; --field: #17402B; --turf: #1E5638; --line: #2C6A46;
+    --gold: #D9A521; --gold-hi: #F2C14E; --chalk: #F3EFE2; --chalk-dim: #B9C6B4; --tally: #E5352B; --ok: #5FC48A;
+    --font-display: 'Big Shoulders Display', Impact, 'Arial Narrow', sans-serif;
+    --font-body: 'Barlow', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--pine); color: var(--chalk); font-family: var(--font-body); font-size: 17px; line-height: 1.4; -webkit-tap-highlight-color: transparent; }
+  button { font: 600 15px var(--font-body); color: var(--chalk); background: var(--turf); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; min-height: 42px; }
+  button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 1px; }
+
+  /* Score header: always in view */
+  .top { position: sticky; top: 0; z-index: 5; background: var(--pine); border-bottom: 1px solid var(--line); padding: 8px 14px 8px; padding-top: max(8px, env(safe-area-inset-top)); }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  .sb { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+  .tm { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .tm.R { flex-direction: row-reverse; text-align: right; }
+  .chip { flex: none; width: 10px; align-self: stretch; border-radius: 3px; background: var(--c); box-shadow: 0 0 0 1px rgba(255,255,255,.45); }
+  .tm .nm { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tm .nm .short { display: none; }
+  @media (max-width: 640px) { .tm .nm .full { display: none; } .tm .nm .short { display: inline; } }
+  .tm .sub { font-size: 13px; color: var(--chalk-dim); white-space: nowrap; }
+  .tm .sub b.yc { color: #F2D43A; }
+  .tm .sub b.rc { color: #ff6b6b; }
+  .tm .meta { min-width: 0; }
+  .mid { text-align: center; }
+  .score { font-family: var(--font-display); font-weight: 800; font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .per { font-size: 13px; font-weight: 700; letter-spacing: .1em; color: var(--chalk-dim); text-transform: uppercase; }
+  .conn { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--tally); margin-right: 5px; vertical-align: 1px; }
+  .conn.ok { background: var(--ok); }
+  .last { margin-top: 6px; font-size: 14px; color: var(--chalk-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; border-radius: 6px; padding: 2px 6px; }
+  .last b { color: var(--chalk); }
+  .last.flash { animation: flash 1.6s ease-out; }
+  @keyframes flash { 0% { background: rgba(242,193,78,.35); } 100% { background: transparent; } }
+  .tabs { display: flex; gap: 6px; margin-top: 8px; }
+  .tabs button { flex: 1; min-height: 38px; padding: 4px 6px; }
+  .tabs button.on { background: var(--gold); color: var(--pine); border-color: var(--gold); }
+
+  main { max-width: 980px; margin: 0 auto; padding: 12px 14px 60px; }
+  .warn { color: var(--gold-hi); font-size: 15px; }
+  .card { background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+  .card h2 { font-family: var(--font-display); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: 17px; color: var(--gold); margin: 0 0 6px; }
+  .say { list-style: none; margin: 0; padding: 0; }
+  .say li { padding: 7px 0; border-top: 1px solid rgba(243,239,226,.1); font-size: 18px; }
+  .say li:first-child { border-top: 0; }
+  .say li small { display: block; font-size: 13px; color: var(--chalk-dim); }
+  .say .big { font-size: 21px; font-weight: 700; }
+  .say .hot { color: var(--gold-hi); font-weight: 700; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--c); margin-right: 6px; vertical-align: 0; box-shadow: 0 0 0 1px rgba(255,255,255,.45); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* Players */
+  .pl { padding: 9px 0; border-top: 1px solid rgba(243,239,226,.1); }
+  .pl:first-of-type { border-top: 0; }
+  .pl .who { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .pl .who b { font-size: 19px; }
+  .pl .who > span { font-family: var(--font-display); font-weight: 800; font-size: 26px; font-variant-numeric: tabular-nums; }
+  .pl .line { font-size: 16px; }
+  .pl .raw { font-size: 13px; color: var(--chalk-dim); font-variant-numeric: tabular-nums; }
+  .pl .tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: 10px; margin-left: 6px; background: rgba(229,53,43,.25); color: #ffb3ad; vertical-align: 2px; }
+  .pl .tag.yc { background: rgba(242,212,58,.22); color: #F2D43A; }
+  .pl .tag.dd { background: rgba(242,193,78,.2); color: var(--gold-hi); }
+  .pl.dnp { color: var(--chalk-dim); }
+
+  /* Team comparison */
+  table.cmp { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  table.cmp td { padding: 7px 4px; border-top: 1px solid rgba(243,239,226,.1); font-size: 17px; }
+  table.cmp tr:first-child td { border-top: 0; }
+  table.cmp td:first-child { text-align: left; font-weight: 700; }
+  table.cmp td:last-child { text-align: right; font-weight: 700; }
+  table.cmp td.lbl { text-align: center; font-size: 13px; letter-spacing: .08em; color: var(--chalk-dim); text-transform: uppercase; width: 34%; }
+  table.cmp tr.head td { font-family: var(--font-display); font-weight: 800; font-size: 19px; letter-spacing: .05em; text-transform: uppercase; color: var(--gold); padding-bottom: 10px; vertical-align: bottom; }
+  table.cmp tr.head td.vs { font-size: 15px; color: var(--chalk-dim); letter-spacing: .12em; }
+  table.cmp tr:nth-child(2) td { border-top: 0; }
+  table.cmp small { font-size: 13px; color: var(--chalk-dim); font-weight: 600; }
+  .bar { display: flex; height: 5px; margin-top: 3px; background: rgba(243,239,226,.1); border-radius: 3px; overflow: hidden; }
+  table.qs { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; text-align: center; }
+  table.qs th, table.qs td { padding: 6px 4px; border-top: 1px solid rgba(243,239,226,.1); }
+  table.qs th { font-size: 12px; color: var(--chalk-dim); border-top: 0; letter-spacing: .08em; }
+  table.qs td:first-child, table.qs th:first-child { text-align: left; }
+  table.qs td.t { font-weight: 800; }
+
+  /* Plays */
+  .plays { list-style: none; margin: 0; padding: 0; }
+  .plays li { display: grid; grid-template-columns: 36px 1fr auto; gap: 8px; align-items: baseline; padding: 7px 0; border-top: 1px solid rgba(243,239,226,.1); font-size: 16px; }
+  .plays li .p { font-size: 12px; color: var(--chalk-dim); }
+  .plays li .s { font-variant-numeric: tabular-nums; color: var(--chalk-dim); font-size: 14px; white-space: nowrap; }
+  .plays li.sc { font-weight: 700; }
+  .plays li.sc .s { color: var(--chalk); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="sb" id="sb"></div>
+    <div class="last" id="last"></div>
+    <div class="tabs" role="tablist">
+      <button data-tab="talk" class="on">Talk</button>
+      <button data-tab="players">Players</button>
+      <button data-tab="team">Team</button>
+      <button data-tab="plays">Plays</button>
+    </div>
+  </div>
+</header>
+<main>
+  <p class="warn" id="warn">Connecting to the live stats…</p>
+  <section data-pane="talk"></section>
+  <section data-pane="players" hidden></section>
+  <section data-pane="team" hidden></section>
+  <section data-pane="plays" hidden></section>
+</main>
+
+<script>
+(() => {
+  const qs = new URLSearchParams(location.search);
+  const API = (qs.get('api') || 'https://eota-stat-keeper.clee-625.workers.dev').replace(/\/$/, '');
+  const GAME = 'soccer';
+  const SIDES = ['home', 'away'];
+  const PERIODS = ['1H', '2H', 'OT1', 'OT2'];
+  const PER_LABEL = { '1H': '1st half', '2H': '2nd half', OT1: '1st overtime', OT2: '2nd overtime' };
+  const PER_SHORT = { '1H': '1st half', '2H': '2nd half', OT1: 'OT', OT2: '2OT' };
+  const KEYS = ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc'];
+  const PLAY = { goal: 'scored', ast: 'assist', sog: 'shot on target', shot: 'shot off target', save: 'save', corner: 'corner kick',
+                 foul: 'foul', offside: 'offside', yc: 'yellow card', rc: 'red card' };
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const html = (tag, cls, h) => { const n = el(tag, cls); n.innerHTML = h; return n; };
+  const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const plural = (n, one, many) => n + ' ' + (n === 1 ? one : (many || one + 's'));
+  const pct = (m, a) => a ? Math.round(100 * m / a) + '%' : '–';
+  const lastName = n => { const w = String(n || '').trim().split(/\s+/); return w.length > 1 ? w[w.length - 1] : w[0] || ''; };
+  const initials = name => {
+    const words = String(name).toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
+    const main = words.filter(w => !['THE', 'OF', 'AND', 'AT'].includes(w)), use = main.length ? main : words;
+    const ini = use.length > 1 ? use.map(w => w[0]).join('') : (use[0] || '');
+    return ini === 'VS' ? use[0] : ini; // "Village School" would read as "versus"; use VILLAGE
+  };
+
+  // ---------------- Live game from the stat keeper ----------------
+  let game = null, ws = null, open = false, lastPong = 0, lastSeenId = '';
+  const connect = () => {
+    try { ws = new WebSocket(API.replace(/^http/, 'ws') + '/ws?game=' + GAME); } catch (e) { setTimeout(connect, 3000); return; }
+    ws.onopen = () => { open = true; lastPong = Date.now(); render(); };
+    ws.onclose = () => { open = false; render(); setTimeout(connect, 2000); };
+    ws.onmessage = e => {
+      lastPong = Date.now();
+      if (e.data === 'pong') return;
+      let m; try { m = JSON.parse(e.data); } catch (err) { return; }
+      if (m.t === 'state') game = { rev: m.rev, meta: m.meta, events: m.events };
+      else if (!game || m.rev !== game.rev + 1) { ws.send('sync'); return; }
+      else {
+        game.rev = m.rev;
+        if (m.t === 'add') { const have = new Set(game.events.map(x => x.id)); game.events.push(...m.events.filter(x => !have.has(x.id))); }
+        if (m.t === 'del') game.events = game.events.filter(x => !m.ids.includes(x.id));
+        if (m.t === 'meta') game.meta = m.meta;
+      }
+      render();
+    };
+  };
+  setInterval(() => { if (ws && ws.readyState === 1) { if (Date.now() - lastPong > 40000) ws.close(); else ws.send('ping'); } }, 15000);
+
+  // ---------------- Everything the page shows, worked out from the plays ----------------
+  const blank = () => Object.fromEntries(KEYS.map(k => [k, 0]));
+  // A goal is also a shot on target.
+  const derive = p => ({ ...p, shots: p.goal + p.sog + p.shot, onT: p.goal + p.sog });
+  const minNum = m => { const [a, b] = String(m || '').split('+'); return (parseInt(a, 10) || 0) + (parseInt(b, 10) || 0) / 100; };
+  const analyze = g => {
+    const meta = g.meta, names = meta.names, colors = meta.colors || { home: '#17402B', away: '#1F3A93' };
+    const T = {};
+    for (const side of SIDES) {
+      const players = (meta.rosters[side] || []).map(p => ({ ...p, side, ...blank(), byPer: {} }));
+      // FBCA ("our team" on the stat keeper) shows in gold here, which reads better than its green on this page.
+      T[side] = { side, name: names[side], short: initials(names[side]), color: side === 'home' ? '#F2C14E' : colors[side], players, byId: new Map(players.map(p => [p.id, p])),
+                  tot: blank(), perGoals: {}, perShots: {} };
+    }
+    const score = { home: 0, away: 0 }, plays = [], goals = [], cards = [];
+    let streak = { side: '', n: 0 }, lastLeader = '', leadChanges = 0, ties = 0;
+    const evs = g.events;
+    evs.forEach((e, i) => {
+      const t = T[e.side]; if (!t || !KEYS.includes(e.type)) return;
+      t.tot[e.type]++;
+      const p = t.byId.get(e.player), who = p ? (p.num ? '#' + p.num + ' ' : '') + p.name : t.name + ' team';
+      if (p) p[e.type]++;
+      if (e.type === 'goal' || e.type === 'sog' || e.type === 'shot') t.perShots[e.period] = (t.perShots[e.period] || 0) + 1;
+      if (e.type === 'goal') {
+        score[e.side]++;
+        t.perGoals[e.period] = (t.perGoals[e.period] || 0) + 1;
+        if (p) p.byPer[e.period] = (p.byPer[e.period] || 0) + 1;
+        // The assist: the next assist play for that team, before their next goal.
+        let assist = null;
+        for (let j = i + 1; j < evs.length; j++) {
+          if (evs[j].side !== e.side) continue;
+          if (evs[j].type === 'goal') break;
+          if (evs[j].type === 'ast') { assist = t.byId.get(evs[j].player) || null; break; }
+        }
+        goals.push({ side: e.side, min: e.min || '', period: e.period, scorer: p, who, assist, score: { ...score } });
+        streak = streak.side === e.side ? { side: e.side, n: streak.n + 1 } : { side: e.side, n: 1 };
+        const leader = score.home > score.away ? 'home' : score.away > score.home ? 'away' : '';
+        if (leader && lastLeader && leader !== lastLeader) leadChanges++;
+        if (!leader) ties++;
+        if (leader) lastLeader = leader;
+      }
+      if (e.type === 'yc' || e.type === 'rc') cards.push({ side: e.side, type: e.type, min: e.min || '', period: e.period, player: p, who });
+      plays.push({ ...e, who, goal: e.type === 'goal', score: { ...score } });
+    });
+    for (const side of SIDES) { T[side].tot = derive(T[side].tot); T[side].players = T[side].players.map(derive); }
+    return { meta, T, score, plays, goals, cards, streak, leadChanges, ties, period: meta.period };
+  };
+  const other = side => side === 'home' ? 'away' : 'home';
+  // The match clock the stat keeper runs (shared through the game), as a minute like 23' or 40+2'.
+  const minuteNow = m => {
+    const c = m.clock || {}; if (!c.run && !c.base) return '';
+    const ms = (c.base || 0) + (c.run ? Date.now() - (c.startedAt || Date.now()) : 0), h = m.halfMin || 40;
+    const into = Math.floor(ms / 60000) + 1, start = { '1H': 0, '2H': h, OT1: 2 * h, OT2: 2 * h + 10 }[m.period] || 0, len = /^OT/.test(m.period) ? 10 : h;
+    return (into > len ? `${start + len}+${into - len}` : String(start + into)) + "'";
+  };
+
+  // A player's game as one sentence an announcer can read on air.
+  const sentence = p => {
+    const bits = [];
+    if (p.goal) bits.push(plural(p.goal, 'goal') + (p.goal === 3 ? ' (a hat trick)' : p.goal === 2 ? ' (a brace)' : ''));
+    if (p.ast) bits.push(plural(p.ast, 'assist'));
+    if (p.shots) bits.push(plural(p.shots, 'shot') + ' (' + p.onT + ' on target)');
+    if (p.save) bits.push(plural(p.save, 'save'));
+    if (p.foul) bits.push(plural(p.foul, 'foul'));
+    if (p.offside) bits.push('offside ' + plural(p.offside, 'time'));
+    if (p.rc || p.yc >= 2) bits.push('sent off');
+    else if (p.yc) bits.push('on a yellow card');
+    if (!bits.length) return 'No stats yet.';
+    const list = bits.length < 3 ? bits.join(' and ') : bits.slice(0, -1).join(', ') + ', and ' + bits[bits.length - 1];
+    return list.charAt(0).toUpperCase() + list.slice(1) + '.';
+  };
+  const raw = p => [p.goal + ' G', p.ast + ' A', p.shots + ' SH', p.onT + ' SOG', p.save + ' SV', p.foul + ' FC', p.offside + ' OFF', p.yc + ' YC', p.rc + ' RC'].join(' · ');
+  const leaders = (t, k) => { const top = Math.max(0, ...t.players.map(p => p[k])); return top ? t.players.filter(p => p[k] === top) : []; };
+  const nm = p => (p.num ? '#' + p.num + ' ' : '') + p.name;
+  const goalLine = (A, gl) => `${gl.min ? gl.min + "' " : ''}${esc(gl.scorer ? lastName(gl.scorer.name) : 'Own goal / team')}` + (gl.assist ? ` <small>assist ${esc(lastName(gl.assist.name))}</small>` : '');
+
+  // ---------------- Drawing ----------------
+  let tab = 'talk';
+  const render = () => {
+    $('warn').hidden = !!game;
+    $('warn').textContent = open ? 'Waiting for the game…' : 'Connecting to the live stats…';
+    if (!game) return;
+    const A = analyze(game), L = 'home', R = 'away'; // as on the soccer bug: FBCA first
+    // Header
+    const team = (side, cls) => {
+      const t = A.T[side], d = el('div', 'tm ' + cls);
+      d.style.setProperty('--c', t.color);
+      const m = el('div', 'meta');
+      const n = el('div', 'nm'); n.append(el('span', 'full', t.name), el('span', 'short', t.short)); m.append(n);
+      const cardsTxt = (t.tot.yc ? ` · <b class="yc">${t.tot.yc} YC</b>` : '') + (t.tot.rc ? ` · <b class="rc">${t.tot.rc} RC</b>` : '');
+      m.append(html('div', 'sub', `Shots ${t.tot.shots}${cardsTxt}`));
+      d.append(el('i', 'chip'), m);
+      return d;
+    };
+    const mid = el('div', 'mid');
+    mid.append(el('div', 'score', A.score[L] + '–' + A.score[R]));
+    const min = minuteNow(A.meta);
+    mid.append(html('div', 'per', `<span class="conn${open ? ' ok' : ''}"></span>${PER_SHORT[A.period] || A.period}${min ? ' · ' + min : ''}`));
+    $('sb').replaceChildren(team(L, 'L'), mid, team(R, 'R'));
+    const lp = A.plays[A.plays.length - 1];
+    $('last').innerHTML = lp ? `Last: <b>${esc(lp.who)}</b> (${esc(A.T[lp.side].short)}) ${PLAY[lp.type]}${lp.min ? ' · ' + esc(lp.min) + "'" : ''}` : 'No plays yet.';
+    if (lp && lp.id !== lastSeenId) { if (lastSeenId) { $('last').classList.remove('flash'); void $('last').offsetWidth; $('last').classList.add('flash'); } lastSeenId = lp.id; }
+    if (tab === 'talk') renderTalk(A);
+    if (tab === 'players') renderPlayers(A);
+    if (tab === 'team') renderTeam(A);
+    if (tab === 'plays') renderPlays(A);
+  };
+  // The minute in the header keeps moving between plays.
+  setInterval(() => { if (game && game.meta.clock && game.meta.clock.run) render(); }, 15000);
+
+  const card = (title, items) => {
+    const c = el('div', 'card'); c.append(el('h2', null, title));
+    const ul = el('ul', 'say');
+    items.filter(Boolean).forEach(h => ul.append(html('li', null, h)));
+    if (!ul.children.length) ul.append(html('li', null, '<small>Nothing yet.</small>'));
+    c.append(ul); return c;
+  };
+  const tshort = (A, side) => `<span class="dot" style="--c:${esc(A.T[side].color)}"></span>${esc(A.T[side].short)}`;
+  const tname = (A, side) => `<span class="dot" style="--c:${esc(A.T[side].color)}"></span>${esc(A.T[side].name)}`;
+
+  const renderTalk = A => {
+    const { T, score, period, goals, cards } = A, h = score.home, a = score.away;
+    // Right now
+    const now = [];
+    now.push(`<span class="big">${h === a ? (h ? `Tied ${h}–${a}` : 'Scoreless, 0–0') : `${tshort(A, h > a ? 'home' : 'away')} leads ${Math.max(h, a)}–${Math.min(h, a)}`}</span>`);
+    const lg = goals[goals.length - 1];
+    if (lg) now.push(`Last goal: ${tshort(A, lg.side)} ${goalLine(A, lg)}`);
+    if (A.streak.n >= 2) now.push(`<span class="hot">${esc(T[A.streak.side].short)} has scored ${A.streak.n} straight</span>`);
+    const perG = SIDES.map(s => T[s].perGoals[period] || 0), perS = SIDES.map(s => T[s].perShots[period] || 0);
+    if (perS[0] + perS[1]) now.push(`This ${PER_LABEL[period] || 'period'}: shots ${esc(T.home.short)} ${perS[0]}, ${esc(T.away.short)} ${perS[1]}` + (perG[0] + perG[1] ? ` · goals ${perG[0]}–${perG[1]}` : ''));
+    if (period !== '1H') {
+      const x = T.home.perGoals['1H'] || 0, y = T.away.perGoals['1H'] || 0;
+      now.push(`Halftime score was ${esc(T.home.short)} ${x}, ${esc(T.away.short)} ${y}`);
+    }
+    // Goals
+    const gl = goals.map(gx => `${tshort(A, gx.side)} ${goalLine(A, gx)} <small>${gx.score.home}–${gx.score.away} (${esc(T.home.short)}–${esc(T.away.short)})</small>`);
+    // Watch: milestones, cards, keepers
+    const watch = [];
+    for (const side of SIDES) for (const p of T[side].players) {
+      if (p.goal >= 3) watch.push(`<span class="hot">${esc(nm(p))} (${esc(T[side].short)}) has a hat trick</span>`);
+      else if (p.goal === 2) watch.push(`<span class="hot">${esc(nm(p))} (${esc(T[side].short)}) has a brace</span>`);
+      if (p.goal && p.ast) watch.push(`${esc(nm(p))} has a goal and an assist`);
+      if (p.rc || p.yc >= 2) watch.push(`${esc(nm(p))} (${esc(T[side].short)}) was <span class="hot">sent off</span>. ${esc(T[side].short)} is down a player`);
+      else if (p.yc) watch.push(`${esc(nm(p))} (${esc(T[side].short)}) is on a yellow card`);
+      if (p.save >= 3) watch.push(`${esc(nm(p))} has ${p.save} saves`);
+    }
+    // Leaders
+    const lead = [];
+    for (const side of SIDES) {
+      const parts = [['goal', 'G', 'G'], ['ast', 'A', 'A'], ['shots', 'shot', 'shots'], ['save', 'save', 'saves']].map(([k, one, many]) => {
+        const l = leaders(T[side], k);
+        if (!l.length) return '';
+        return `${l.length > 2 ? l.length + ' tied at' : l.map(p => esc(lastName(p.name))).join('/')} ${l[0][k]} ${l[0][k] === 1 ? one : many}`;
+      }).filter(Boolean);
+      if (parts.length) lead.push(`${tshort(A, side)}: ${parts.join(' · ')}`);
+    }
+    // Shooting
+    const shoot = SIDES.map(side => {
+      const t = T[side].tot, opp = T[other(side)].tot;
+      if (!t.shots) return '';
+      return `${tshort(A, side)} ${plural(t.shots, 'shot')}, ${t.onT} on target` + (t.goal ? `, ${t.goal} scored (${pct(t.goal, t.shots)} of shots)` : '') + (opp.save ? ` <small>${opp.save} saved</small>` : '');
+    });
+    const th = T.home.tot, ta = T.away.tot;
+    const sets = [];
+    if (th.corner + ta.corner) sets.push(`Corners: ${esc(T.home.short)} ${th.corner}, ${esc(T.away.short)} ${ta.corner}`);
+    if (th.foul + ta.foul) sets.push(`Fouls: ${esc(T.home.short)} ${th.foul}, ${esc(T.away.short)} ${ta.foul}`);
+    if (th.offside + ta.offside) sets.push(`Offsides: ${esc(T.home.short)} ${th.offside}, ${esc(T.away.short)} ${ta.offside}`);
+    if (cards.length) sets.push('Cards: ' + cards.map(c => `${c.min ? c.min + "' " : ''}${esc(c.player ? lastName(c.player.name) : c.who)} (${esc(T[c.side].short)}, ${c.type === 'rc' ? 'red' : 'yellow'})`).join(', '));
+    const pane = document.querySelector('[data-pane=talk]');
+    const two = el('div', 'grid2');
+    two.append(card('Leaders', lead), card('Shooting', shoot));
+    pane.replaceChildren(card('Right now', now), card('Goals', gl), card('Watch', watch), two, card('Set pieces and discipline', sets),
+      card('Game flow', [`${plural(A.leadChanges, 'lead change')}, ${plural(A.ties, 'tie')}`]));
+  };
+
+  const renderPlayers = A => {
+    const pane = document.querySelector('[data-pane=players]'), two = el('div', 'grid2');
+    for (const side of ['home', 'away']) {
+      const t = A.T[side], c = el('div', 'card');
+      c.append(html('h2', null, `${tname(A, side)} · ${t.tot.goal}`));
+      const list = [...t.players].sort((x, y) => y.goal - x.goal || y.ast - x.ast || y.shots - x.shots || y.save - x.save);
+      for (const p of list) {
+        const played = KEYS.some(k => p[k]);
+        const d = el('div', 'pl' + (played ? '' : ' dnp'));
+        const who = el('div', 'who'), b = el('b', null, nm(p));
+        if (p.rc || p.yc >= 2) b.append(el('span', 'tag', 'SENT OFF')); else if (p.yc) b.append(el('span', 'tag yc', 'YELLOW'));
+        if (p.goal >= 3) b.append(el('span', 'tag dd', 'HAT TRICK')); else if (p.goal === 2) b.append(el('span', 'tag dd', 'BRACE'));
+        who.append(b, el('span', null, p.goal));
+        d.append(who);
+        if (played) d.append(el('div', 'line', lastName(p.name) + ': ' + sentence(p)), el('div', 'raw', raw(p)));
+        else d.append(el('div', 'raw', 'No stats yet'));
+        c.append(d);
+      }
+      if (!list.length) c.append(el('p', 'raw', 'No roster entered on the stat keeper page.'));
+      two.append(c);
+    }
+    pane.replaceChildren(two);
+  };
+
+  const ROWS = [['Goals', t => [t.goal, '', t.goal]], ['Shots', t => [t.shots, '', t.shots]], ['On target', t => [t.onT, pct(t.onT, t.shots), t.onT]],
+                ['Saves', t => [t.save, '', t.save]], ['Corners', t => [t.corner, '', t.corner]], ['Fouls', t => [t.foul, '', t.foul]],
+                ['Offsides', t => [t.offside, '', t.offside]], ['Yellow cards', t => [t.yc, '', t.yc]], ['Red cards', t => [t.rc, '', t.rc]]];
+  // Very dark team colors are lightened for the bars so they show on the green card.
+  const barColor = c => { const n = parseInt(String(c).slice(1), 16); return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255 < .3 ? `color-mix(in srgb, ${c} 55%, #fff)` : c; };
+  const renderTeam = A => {
+    const pane = document.querySelector('[data-pane=team]'), L = A.T.home, R = A.T.away;
+    // Header row lines up with the columns: FBCA on the left, VS in the middle, the opponent on the right.
+    const c = el('div', 'card'), tbl = el('table', 'cmp'), names = el('tr', 'head');
+    names.append(html('td', null, tname(A, 'home')), el('td', 'lbl vs', 'vs'), html('td', null, tname(A, 'away')));
+    tbl.append(names);
+    for (const [label, fn] of ROWS) {
+      const [lv, lp, ln] = fn(L.tot), [rv, rp, rn] = fn(R.tot), tr = el('tr');
+      const mid = html('td', 'lbl', esc(label) + ((ln + rn) > 0 ? `<div class="bar"><i style="width:${100 * ln / (ln + rn)}%;background:${esc(barColor(L.color))}"></i><i style="width:${100 * rn / (ln + rn)}%;background:${esc(barColor(R.color))}"></i></div>` : ''));
+      tr.append(html('td', null, `${lv} <small>${lp}</small>`), mid, html('td', null, `<small>${rp}</small> ${rv}`));
+      tbl.append(tr);
+    }
+    c.append(tbl);
+    // Goals and shots by half
+    const used = PERIODS.filter(p => p === A.period || L.perShots[p] || R.perShots[p] || PERIODS.indexOf(p) <= Math.max(1, PERIODS.indexOf(A.period)));
+    const q = el('div', 'card'); q.append(el('h2', null, 'Goals by half (shots)'));
+    const qt = el('table', 'qs'), head = el('tr');
+    head.append(el('th', null, ''), ...used.map(p => el('th', null, PER_SHORT[p])), el('th', null, 'T'));
+    qt.append(head);
+    for (const t of [L, R]) {
+      const tr = el('tr'); tr.append(html('td', null, `<span class="dot" style="--c:${esc(t.color)}"></span>${esc(t.short)}`),
+        ...used.map(p => html('td', null, `${t.perGoals[p] || 0} <small>(${t.perShots[p] || 0})</small>`)), el('td', 't', t.tot.goal));
+      qt.append(tr);
+    }
+    q.append(qt);
+    pane.replaceChildren(c, q);
+  };
+
+  const renderPlays = A => {
+    const pane = document.querySelector('[data-pane=plays]'), c = el('div', 'card'), ul = el('ul', 'plays');
+    c.append(el('h2', null, 'Plays, newest first'));
+    for (const p of [...A.plays].reverse().slice(0, 150)) {
+      const li = el('li', p.goal ? 'sc' : '');
+      li.append(el('span', 'p', p.min ? p.min + "'" : p.period), html('span', null, `<span class="dot" style="--c:${esc(A.T[p.side].color)}"></span>${esc(p.who)} ${PLAY[p.type]}`),
+                el('span', 's', p.goal ? `${A.T.home.short} ${p.score.home}–${p.score.away} ${A.T.away.short}` : ''));
+      ul.append(li);
+    }
+    if (!ul.children.length) ul.append(el('li', null, 'No plays yet.'));
+    c.append(ul); pane.replaceChildren(c);
+  };
+
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+    tab = b.dataset.tab;
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== tab);
+    render(); scrollTo(0, 0);
+  });
+  // Keep the phone awake while it's open.
+  let wake = null;
+  const keepAwake = () => { if (!wake && navigator.wakeLock) navigator.wakeLock.request('screen').then(w => { wake = w; w.onrelease = () => wake = null; }).catch(() => {}); };
+  document.addEventListener('click', keepAwake, { once: true });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+  connect();
+})();
+</script>
+</body>
+</html>
