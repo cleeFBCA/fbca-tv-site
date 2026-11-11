@@ -187,6 +187,10 @@
   .l3 { position: absolute; left: 96px; bottom: 96px; display: flex; }
   .l3.hidden { clip-path: inset(0 100% 0 0); }
   .l3 .accent { width: 14px; background: var(--gold); }
+  /* Headshot from Lineups → Player photos, on the team color, between the stripe and the name */
+  .l3 .lph { position: relative; width: 124px; flex: none; overflow: hidden; background: var(--c, var(--field)); }
+  .l3 .lph:empty { display: none; }
+  .l3 .lph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
   .l3 .lbody { display: flex; flex-direction: column; }
   .l3 .lname { padding: 8px 30px 4px; font-size: 54px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
   .l3 .lstat { padding: 8px 30px; background: var(--pine); color: var(--chalk); font-size: 30px; font-weight: 600; letter-spacing: .05em; white-space: nowrap; }
@@ -413,6 +417,14 @@
   button.active { outline: 2px solid var(--gold-hi); outline-offset: -2px; color: var(--gold-hi); }
   button.primary.active { color: var(--pine); outline-color: var(--chalk); }
   button.danger { background: transparent; border-color: var(--tally); color: var(--tally); }
+  .pph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 8px; }
+  .pph-tile { background: var(--pine); border: 1px solid var(--line); border-radius: 8px; padding: 6px; text-align: center; font-size: 13px; }
+  .pph-tile .ph { aspect-ratio: 440 / 528; border-radius: 5px; overflow: hidden; display: grid; place-items: center; margin-bottom: 4px; background: var(--c); color: var(--f); font: 800 30px var(--font-display); }
+  .pph-tile .ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .pph-tile b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pph-tile .acts { display: flex; gap: 4px; margin-top: 4px; }
+  .pph-tile .acts button { flex: 1; min-height: 0; padding: 5px 4px; font-size: 12px; }
+  .pph-tile input[type=file] { display: none; }
   button.small { min-height: 0; padding: 6px 12px; font-size: 14px; flex: 0 0 auto; }
   .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .team-ctl { text-align: center; }
@@ -501,6 +513,15 @@
   .shoot-cols h3 { font-family: var(--font-display); text-transform: uppercase; font-size: 22px; margin: 0 0 6px; }
   .shoot-seq { font-size: 22px; letter-spacing: 3px; min-height: 30px; }
   .fv-noms { display: grid; gap: 6px; }
+  .fv-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0 12px; }
+  @media (max-width: 560px) { .fv-pick { grid-template-columns: 1fr; } }
+  .fv-pick h4 { margin: 0 0 6px; font: 800 15px var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--chalk-dim); }
+  .fv-pick .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fv-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 0; padding: 4px 10px 4px 4px; font-size: 14px; border-radius: 999px; }
+  .fv-chip .av { width: 30px; height: 30px; border-radius: 50%; overflow: hidden; flex: none; display: grid; place-items: center; font: 800 12px var(--font-display); background: var(--c); color: var(--f); }
+  .fv-chip .av img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .fv-chip.on { background: var(--gold); color: var(--pine); border-color: var(--gold-hi); }
+  .fv-pick .none { font-size: 13px; color: var(--chalk-dim); }
   .fv-nom { display: grid; grid-template-columns: 96px 56px 1fr 104px auto; gap: 6px; }
   .fv-nom select, .fv-nom input { min-width: 0; }
   .fv-nom button { min-height: 0; padding: 8px 10px; font-size: 13px; white-space: nowrap; }
@@ -534,6 +555,7 @@
 
   <div class="l3 wipe hidden" id="l3">
     <div class="accent"></div>
+    <div class="lph" id="l3Photo"></div>
     <div class="lbody"><div class="lname" id="l3Name"></div><div class="lstat" id="l3Stat"></div></div>
   </div>
 
@@ -786,6 +808,7 @@
             <div><label for="lTeam">Colors</label><select id="lTeam"><option value="home">FBCA</option><option value="away">AWAY</option><option value="none">Neutral</option></select></div>
             <div><label for="lSecs">Auto-hide after (sec, 0 = stay)</label><input id="lSecs" type="number" min="0" max="120" value="8"></div>
           </div>
+          <label class="check"><input type="checkbox" id="lPhoto" checked> Show the player's headshot (from Lineups → Player photos)</label>
           <div class="row-btns" style="margin-top:14px">
             <button class="primary" id="btnL3Show">Show lower third</button>
             <button id="btnL3Hide">Hide</button>
@@ -895,6 +918,12 @@
                 <div><label for="xiHomeKitNum">Number</label><input type="color" id="xiHomeKitNum" data-xi="home" data-k="kitNum"></div>
               </div>
               <div class="row-btns" style="margin-top:8px"><button class="small" data-kitreset="home">Default jersey colors</button></div>
+              <div class="row-btns" style="margin-top:10px"><button class="pph-btn" data-pside="home">Player photos</button></div>
+              <div class="pph" data-pside="home" hidden>
+                <div class="two" style="align-items:end"><div><label>Roster</label><select class="pph-squad"><option value="boys">Boys</option><option value="girls">Girls</option><option value="">Not set</option></select></div><p class="hint" style="margin:0">Picking a game from the schedule sets this.</p></div>
+                <p class="hint">Headshots for the graphics: player spotlight, lower thirds and the fan vote. The list is this team's starters and subs above. Kept for this team (by name) and roster on this computer. A PNG cutout with a transparent background looks best.</p>
+                <div class="pph-grid"></div>
+              </div>
             </div>
             <div>
               <h3 id="xiAwayTitle">AWAY</h3>
@@ -910,6 +939,12 @@
                 <div><label for="xiAwayKitNum">Number</label><input type="color" id="xiAwayKitNum" data-xi="away" data-k="kitNum"></div>
               </div>
               <div class="row-btns" style="margin-top:8px"><button class="small" data-kitreset="away">Use team colors</button></div>
+              <div class="row-btns" style="margin-top:10px"><button class="pph-btn" data-pside="away">Player photos</button></div>
+              <div class="pph" data-pside="away" hidden>
+                <div class="two" style="align-items:end"><div><label>Roster</label><select class="pph-squad"><option value="boys">Boys</option><option value="girls">Girls</option><option value="">Not set</option></select></div><p class="hint" style="margin:0">Picking a game from the schedule sets this.</p></div>
+                <p class="hint">Headshots for the graphics: player spotlight, lower thirds and the fan vote. The list is this team's starters and subs above. Kept for this team (by name) and roster on this computer. A PNG cutout with a transparent background looks best.</p>
+                <div class="pph-grid"></div>
+              </div>
             </div>
           </div>
           <p class="hint">List the goalkeeper first, then defenders, midfielders, and forwards. Within each line, go from the team's left side to its right. The graphic shows the field from behind the team's own goal, so left is left on screen. Last names fit best.</p>
@@ -961,7 +996,10 @@
         <div data-pane="fv" hidden>
           <div class="pane-h">Player of the Game fan vote</div>
           <p class="hint">Fans vote at fbca.tv/vote, one vote per phone or computer. Pick the nominees, open voting, put up the QR lower third a few times, then close voting and show the results.</p>
-          <label>Nominees (2–4): team, number, name, position, and a headshot for the results (optional)</label>
+          <label>Pick nominees: tap up to 4 players (tap again to take one off)</label>
+          <div class="fv-pick" id="fvPick"></div>
+          <p class="hint" id="fvPickNote" style="margin-top:0"></p>
+          <label>Nominees (2–4): team, number, name, position, and a headshot for the results (optional). Picking above fills these in.</label>
           <div class="fv-noms" id="fvNoms"></div>
           <datalist id="fvPlayers"></datalist>
           <div class="row-btns" style="margin-top:12px">
@@ -1046,7 +1084,9 @@
     sbUse: { clock: true, period: false, score: false },
     clockShow: true, // false hides the time on the bug (the clock keeps running)
     drop: { on: false, team: 'home', label: 'GOAL', minute: '', text: '', out: '', until: 0 },
-    l3: { on: false, name: '', stat: '', team: 'home', until: 0 },
+    l3: { on: false, name: '', stat: '', team: 'home', until: 0, photo: '' },
+    // Which roster the player photos are for ('boys' | 'girls' | ''): FBCA has a boys' and a girls' team.
+    squad: '',
     l3List: [],
     // One full-screen graphic at a time: '', 'xi-home', 'xi-away', 'score', 'stats', 'match', 'spot', 'next', 'others'
     panel: '',
@@ -1245,6 +1285,9 @@
       $('l3Name').textContent = l.name;
       $('l3Name').style.background = c.bg; $('l3Name').style.color = c.fg;
       $('l3Stat').textContent = l.stat;
+      const ph = $('l3Photo'), cur = ph.firstChild ? ph.firstChild.src : '';
+      ph.style.setProperty('--c', c.bg);
+      if ((l.photo || '') !== cur) ph.replaceChildren(...(l.photo ? [Object.assign(el('img'), { src: l.photo, alt: '' })] : []));
     };
 
     const renderFanVote = () => {
@@ -1544,6 +1587,7 @@
   // ---------- Control mode ----------
   let sbHandle = null; // scoreboard file from Scorebridge, when connected (see below)
   let fvRenderHook = null; // draws the Fan vote tab (set up below)
+  let photoHook = null; // draws the Player photos panels (set up below)
   const save = () => {
     try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
     if (bc) bc.postMessage(s);
@@ -1617,6 +1661,7 @@
 
   const renderCtl = () => {
     if (fvRenderHook) fvRenderHook();
+    if (photoHook) photoHook();
     $('cHome').textContent = s.home; $('cAway').textContent = s.away;
     $('cHome').style.background = HOME_COLORS.bg; $('cHome').style.color = HOME_COLORS.fg;
     $('cAway').style.background = s.awayBg; $('cAway').style.color = s.awayFg;
@@ -1882,7 +1927,8 @@
     team: $('spTeam').value, num: $('spNum').value.trim(), name: $('spNameIn').value.trim(),
     pos: $('spPos').value.trim(), year: $('spYear').value.trim(),
     stats: [1, 2, 3].map(i => ({ v: $('spV' + i).value.trim(), l: $('spL' + i).value.trim() })),
-    photo: spotPhoto
+    // A photo uploaded here, or else the player's headshot from Lineups → Player photos.
+    photo: spotPhoto || findPhoto(teamName($('spTeam').value), $('spNum').value.trim(), $('spNameIn').value.trim())
   });
   const spotToForm = p => {
     $('spTeam').value = p.team; $('spNum').value = p.num; $('spNameIn').value = p.name;
@@ -1926,6 +1972,90 @@
     return { x: PHOTO_W / 2 - ax * k, y: fy + dy - ay * k, w: img.width * k, h: img.height * k };
   };
   // A photo file fitted to the frame the same way, as a small image for the shared state.
+  // --- Player photos: headshots per team (by name) and roster (boys/girls), in IndexedDB on this computer ---
+  const phIdb = (mode, fn) => new Promise((ok, fail) => {
+    const open = indexedDB.open('eota-soccer-photos', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('p');
+    open.onerror = () => fail(open.error);
+    open.onsuccess = () => {
+      try { const tx = open.result.transaction('p', mode), req = fn(tx.objectStore('p')); tx.oncomplete = () => ok(req && req.result); tx.onerror = () => fail(tx.error); }
+      catch (e) { fail(e); }
+    };
+  });
+  const phTeam = t => String(t || '').trim().toUpperCase();
+  const phKey = (team, num, name, squad = s.squad || '') => phTeam(team) + '|' + squad + '|' + (String(num || '').trim() ? '#' + String(num).trim() : 'n:' + String(name || '').trim().toLowerCase());
+  let photoLib = new Map();
+  const pphSig = { home: '', away: '' };
+  phIdb('readonly', st => st.getAll()).then(list => { photoLib = new Map((list || []).map(r => [phKey(r.team, r.num, r.name, r.squad || ''), r])); renderCtl(); }).catch(() => {});
+  const putPhoto = rec => {
+    const squad = s.squad || '', k = phKey(rec.team, rec.num, rec.name, squad);
+    const next = { ...rec, squad, team: phTeam(rec.team) };
+    photoLib.set(k, next); pphSig.home = pphSig.away = ''; renderCtl();
+    return phIdb('readwrite', st => st.put(next, k)).catch(() => {});
+  };
+  const findPhoto = (team, num, name) => {
+    const t = phTeam(team), n = String(num || '').trim(), nm = String(name || '').trim().toLowerCase();
+    for (const sq of [...new Set([s.squad || '', ''])]) {
+      if (n) { const r = photoLib.get(t + '|' + sq + '|#' + n); if (r && r.photo) return r.photo; }
+      if (nm) for (const r of photoLib.values()) if (r.team === t && (r.squad || '') === sq && r.photo && r.name.trim().toLowerCase() === nm) return r.photo;
+    }
+    return '';
+  };
+  const photoForLine = (side, line) => {
+    if (side !== 'home' && side !== 'away') return '';
+    const m = String(line || '').trim().match(/^#?(\d{1,3})\s+(.+)$/);
+    return m ? findPhoto(teamName(side), m[1], m[2]) : findPhoto(teamName(side), '', line);
+  };
+  const rosterPhoto = file => new Promise((ok, fail) => {
+    const img = new Image();
+    img.onload = () => {
+      const p = fitPlacement(img, subjectBox(img)), c = document.createElement('canvas');
+      c.width = PHOTO_W; c.height = PHOTO_H; c.getContext('2d').drawImage(img, p.x, p.y, p.w, p.h);
+      URL.revokeObjectURL(img.src); ok(c.toDataURL('image/webp', .85));
+    };
+    img.onerror = () => fail(new Error('Not an image'));
+    img.src = URL.createObjectURL(file);
+  });
+  const renderPhotos = side => {
+    const pph = document.querySelector(`.pph[data-pside="${side}"]`), btn = document.querySelector(`.pph-btn[data-pside="${side}"]`);
+    if (!pph) return;
+    const team = phTeam(teamName(side)), c = colorsFor(side);
+    const mine = [...photoLib.values()].filter(r => r.team === team && (r.squad || '') === (s.squad || '') && r.photo);
+    btn.textContent = (pph.hidden ? 'Player photos' : 'Hide player photos') + (mine.length ? ` (${mine.length})` : '');
+    if (pph.hidden) return;
+    pph.querySelector('.pph-squad').value = s.squad || '';
+    const cfg = s.xi[side] || {}, seen = new Set(), list = [];
+    [...parseXI(cfg.raw || ''), ...parseXI(cfg.subs || '')].forEach(p => { const k = phKey(team, p.num, p.name); if (!seen.has(k)) { seen.add(k); list.push({ ...p, key: k }); } });
+    const sig = JSON.stringify([team, s.squad, c.bg, c.fg, list.map(x => x.key + ((photoLib.get(x.key) || {}).photo || '').length)]);
+    if (sig === pphSig[side]) return;
+    pphSig[side] = sig;
+    const grid = pph.querySelector('.pph-grid');
+    grid.style.setProperty('--c', c.bg); grid.style.setProperty('--f', c.fg);
+    grid.replaceChildren(...list.map(x => {
+      const rec = photoLib.get(x.key), photo = rec && rec.photo;
+      const tile = el('div', 'pph-tile'), ph = el('div', 'ph');
+      if (photo) ph.append(Object.assign(el('img'), { src: photo, alt: '' })); else ph.textContent = x.num ? '#' + x.num : '?';
+      const file = el('input'); file.type = 'file'; file.accept = 'image/*';
+      file.addEventListener('change', async () => {
+        if (!file.files[0]) return;
+        try { await putPhoto({ team, num: x.num, name: x.name, photo: await rosterPhoto(file.files[0]) }); }
+        catch (e) { alert("That file isn't a picture Chrome can read. Try a PNG or JPG."); }
+      });
+      const up = el('button', null, photo ? 'Change' : 'Add photo'); up.onclick = () => file.click();
+      const acts = el('div', 'acts'); acts.append(up);
+      if (photo) { const rm = el('button', null, 'Remove'); rm.onclick = () => putPhoto({ team, num: x.num, name: x.name, photo: '' }); acts.append(rm); }
+      tile.append(ph, el('b', null, (x.num ? '#' + x.num + ' ' : '') + x.name), acts, file);
+      return tile;
+    }));
+    if (!list.length) grid.append(el('p', 'hint', 'Type this team\'s starters and subs above, and they\'ll show here.'));
+  };
+  document.querySelectorAll('.pph-btn').forEach(b => b.onclick = () => {
+    const side = b.dataset.pside, pph = document.querySelector(`.pph[data-pside="${side}"]`);
+    pph.hidden = !pph.hidden; pphSig[side] = ''; renderPhotos(side);
+  });
+  document.querySelectorAll('.pph-squad').forEach(sel => sel.addEventListener('change', e => { s.squad = e.target.value; pphSig.home = pphSig.away = ''; save(); }));
+  photoHook = () => { renderPhotos('home'); renderPhotos('away'); };
+
   const fittedPhoto = file => new Promise((ok, fail) => {
     const img = new Image();
     img.onload = () => {
@@ -2186,7 +2316,7 @@
 
   // --- Lower third ---
   const showL3 = item => {
-    s.l3 = { on: true, name: item.name, stat: item.stat, team: item.team, until: untilFrom('lSecs') };
+    s.l3 = { on: true, name: item.name, stat: item.stat, team: item.team, until: untilFrom('lSecs'), photo: $('lPhoto').checked ? photoForLine(item.team, item.name) : '' };
     s.fv.l3 = false; // same spot as the fan vote lower third
     save();
   };
@@ -2282,6 +2412,8 @@
       const m = name.value.match(/^#(\d{1,3})\s+(.+)$/);
       if (m) { num.value = m[1]; name.value = m[2]; }
       s.fv.form[i] = { ...s.fv.form[i], side: side.value, num: num.value, name: name.value, pos: pos.value };
+      // No headshot yet: use the player's photo from Lineups → Player photos.
+      if (!s.fv.form[i].photo) s.fv.form[i].photo = findPhoto(teamName(side.value), num.value, name.value);
       save();
     };
     [side, num, name, pos].forEach(x => x.addEventListener(x === side ? 'change' : 'input', sync));
@@ -2302,7 +2434,60 @@
     return row;
   }));
 
+
+  // Players for the nominee picker: each team's starters and subs from Lineups.
+  const leftSideFv = () => s.swap ? 'away' : 'home';
+  const teamNameFv = side => teamName(side);
+  const colorsFv = side => colorsFor(side);
+  const rosterFor = side => {
+    const cfg = s.xi[side] || {}, out = [], seen = new Set();
+    for (const p of [...parseXI(cfg.raw || ''), ...parseXI(cfg.subs || '')]) {
+      const k = p.num ? '#' + p.num : 'n:' + p.name.toLowerCase(); if (!p.name || seen.has(k)) continue; seen.add(k);
+      out.push({ ...p, photo: findPhoto(teamName(side), p.num, p.name) });
+    }
+    return out;
+  };
+  // --- Fan vote: pick nominees from the rosters ---
+  // Tapping a player fills the next open nominee row (team, number, name, headshot); tapping again clears it.
+  const fvNominated = (side, p) => s.fv.form.findIndex(n => n.side === side && n.name.trim() &&
+    (p.num && n.num.trim() ? n.num.trim() === p.num : n.name.trim().toLowerCase() === p.name.toLowerCase()));
+  let fvPickSig = '';
+  const renderFvPick = () => {
+    const sides = ['away', 'home'].sort((a, b) => a === leftSideFv() ? -1 : 1);
+    const rosters = sides.map(side => [side, rosterFor(side)]);
+    const sig = JSON.stringify([rosters.map(([side, r]) => [side, teamNameFv(side), r.map(p => p.num + p.name + (p.photo || '').length)]), s.fv.form.map(n => [n.side, n.num, n.name])]);
+    if (sig === fvPickSig) return;
+    fvPickSig = sig;
+    const anyone = rosters.some(([, r]) => r.length);
+    $('fvPickNote').textContent = anyone ? '' : "Type each team's starters and subs in the Lineups tab, and they'll show here to tap.";
+    $('fvPick').replaceChildren(...rosters.map(([side, roster]) => {
+      const col = el('div'), c = colorsFv(side), chips = el('div', 'chips');
+      col.append(el('h4', null, teamNameFv(side)));
+      for (const p of roster) {
+        const on = fvNominated(side, p) >= 0, b = el('button', 'fv-chip' + (on ? ' on' : ''));
+        b.type = 'button';
+        const av = el('span', 'av'); av.style.setProperty('--c', c.bg); av.style.setProperty('--f', c.fg);
+        if (p.photo) av.append(Object.assign(el('img'), { src: p.photo, alt: '' })); else av.textContent = p.num || '?';
+        b.append(av, (p.num ? '#' + p.num + ' ' : '') + p.name);
+        b.setAttribute('aria-pressed', on);
+        b.onclick = () => {
+          const i = fvNominated(side, p);
+          if (i >= 0) { s.fv.form[i] = { side: s.fv.form[i].side, num: '', name: '', pos: '', photo: '' }; save(); return; }
+          const free = s.fv.form.findIndex(n => !n.name.trim());
+          if (free < 0) { $('fvPickNote').textContent = 'All 4 spots are taken. Tap a nominee to take them off first.'; return; }
+          s.fv.form[free] = { side, num: p.num || '', name: p.name, pos: '', photo: p.photo || '' };
+          save();
+        };
+        chips.append(b);
+      }
+      if (!roster.length) chips.append(el('span', 'none', 'No players listed yet.'));
+      col.append(chips);
+      return col;
+    }));
+  };
+
   const renderFv = () => {
+    renderFvPick();
     const v = s.fv, total = v.total || 0;
     v.form.forEach((n, i) => {
       const side = $('fvSide' + i);
@@ -2689,6 +2874,7 @@
       const g = games.find(x => x.id === sel.value);
       if (!g) return;
       s.away = shortName(g.opponent);
+      s.squad = /girls/i.test(g.sport) ? 'girls' : /boys/i.test(g.sport) ? 'boys' : '';
       Object.assign(s.match, {
         title: g.sport, venue: g.location || '',
         when: fmtGame(g.start, { weekday: 'long', month: 'short', day: 'numeric' }) + ' · ' + fmtGame(g.start, { hour: 'numeric', minute: '2-digit' })

@@ -561,6 +561,15 @@
   .sb-use label.check { margin-top: 8px; }
   .sb-use small { color: var(--chalk-dim); font-size: 13px; }
   .fv-noms { display: grid; gap: 6px; }
+  .fv-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0 12px; }
+  @media (max-width: 560px) { .fv-pick { grid-template-columns: 1fr; } }
+  .fv-pick h4 { margin: 0 0 6px; font: 800 15px var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--chalk-dim); }
+  .fv-pick .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fv-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 0; padding: 4px 10px 4px 4px; font-size: 14px; border-radius: 999px; }
+  .fv-chip .av { width: 30px; height: 30px; border-radius: 50%; overflow: hidden; flex: none; display: grid; place-items: center; font: 800 12px var(--font-display); background: var(--c); color: var(--f); }
+  .fv-chip .av img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .fv-chip.on { background: var(--gold); color: var(--pine); border-color: var(--gold-hi); }
+  .fv-pick .none { font-size: 13px; color: var(--chalk-dim); }
   .fv-nom { display: grid; grid-template-columns: 96px 56px 1fr 104px auto; gap: 6px; }
   .fv-nom select, .fv-nom input { min-width: 0; }
   .fv-nom button { min-height: 0; padding: 8px 10px; font-size: 13px; white-space: nowrap; }
@@ -833,7 +842,10 @@
         <div data-pane="fv" hidden>
           <div class="pane-h">Player of the Game fan vote</div>
           <p class="hint">Fans vote at fbca.tv/vote, one vote per phone or computer. Pick the nominees, open voting, put up the QR lower third a few times, then close voting and show the results. This is the same vote the soccer page runs, so only one game can have a vote at a time.</p>
-          <label>Nominees (2–4): team, number, name, position, and a headshot for the results (optional)</label>
+          <label>Pick nominees: tap up to 4 players (tap again to take one off)</label>
+          <div class="fv-pick" id="fvPick"></div>
+          <p class="hint" id="fvPickNote" style="margin-top:0"></p>
+          <label>Nominees (2–4): team, number, name, position, and a headshot for the results (optional). Picking above fills these in.</label>
           <div class="fv-noms" id="fvNoms"></div>
           <div class="row-btns" style="margin-top:12px">
             <button class="primary" id="fvOpen">Open voting</button>
@@ -1009,6 +1021,8 @@
     // The timeout graphic: { side, at } for the last timeout called; the bug shows it briefly from \`at\`.
     // toAuto: show it when the scoreboard's timeouts-left drops.
     toCall: null, toAuto: true,
+    // Which roster the player photos are for ('boys' | 'girls' | ''): FBCA has a boys' and a girls' team.
+    squad: '',
     // Station bug: on, corner ('tr' | 'tl'), opacity in percent.
     stn: { on: false, corner: 'tr', opacity: 60 },
     // Pop-up above the bar: kind 'text' | 'stat' | 'run'; until = when it comes down (0 = stays up).
@@ -1573,7 +1587,8 @@
       <div class="logo-row"><img alt="" hidden><input type="file" accept="image/*"><button hidden>Remove</button></div>
       <div class="row-btns" style="margin:10px 0 0"><button class="pph-btn">Player photos</button></div>
       <div class="pph" hidden>
-        <p class="hint">Headshots for the graphics: player spotlight, lower thirds and the fan vote. Kept for this team (by name) on this computer. A PNG cutout with a transparent background looks best; it's sized from the player's outline.</p>
+        <div class="two" style="align-items:end"><div><label>Roster</label><select class="pph-squad"><option value="boys">Boys</option><option value="girls">Girls</option><option value="">Not set</option></select></div><p class="hint" style="margin:0">Picking a game from the schedule sets this.</p></div>
+        <p class="hint">Headshots for the graphics: player spotlight, lower thirds and the fan vote. Kept for this team (by name) and roster on this computer. A PNG cutout with a transparent background looks best; it's sized from the player's outline.</p>
         <div class="pph-grid"></div>
         <div class="pph-add"><input class="pa-num" maxlength="3" inputmode="numeric" placeholder="#" aria-label="Number"><input class="pa-name" maxlength="30" placeholder="Player name" aria-label="Name"><button class="pa-btn">Add player</button></div>
       </div>
@@ -1636,6 +1651,7 @@
     setupRedraw[side] = () => drawFit(false); // the preview follows the team color
     setupFor[side] = d;
     const pph = d.querySelector('.pph');
+    d.querySelector('.pph-squad').addEventListener('change', e => { s.squad = e.target.value; pphSig.home = pphSig.away = ''; save(); });
     d.querySelector('.pph-btn').onclick = () => { pph.hidden = !pph.hidden; pphSig[side] = ''; renderPhotos(side); };
     d.querySelector('.pa-btn').onclick = () => {
       const num = d.querySelector('.pa-num').value.trim(), name = d.querySelector('.pa-name').value.trim();
@@ -1847,22 +1863,25 @@
     };
   });
   const phTeam = t => String(t || '').trim().toUpperCase();
-  const phKey = (team, num, name) => phTeam(team) + '|' + (String(num || '').trim() ? '#' + String(num).trim() : 'n:' + String(name || '').trim().toLowerCase());
+  const phKey = (team, num, name, squad = s.squad || '') => phTeam(team) + '|' + squad + '|' + (String(num || '').trim() ? '#' + String(num).trim() : 'n:' + String(name || '').trim().toLowerCase());
   let photoLib = new Map();
   const pphSig = { home: '', away: '' };
-  phIdb('readonly', st => st.getAll()).then(list => { photoLib = new Map((list || []).map(r => [phKey(r.team, r.num, r.name), r])); renderCtl(); }).catch(() => {});
+  phIdb('readonly', st => st.getAll()).then(list => { photoLib = new Map((list || []).map(r => [phKey(r.team, r.num, r.name, r.squad || ''), r])); renderCtl(); }).catch(() => {});
   const putPhoto = rec => {
-    const k = phKey(rec.team, rec.num, rec.name), was = photoLib.get(k);
-    const next = { ...(was || {}), ...rec, team: phTeam(rec.team), photo: rec.photo !== undefined ? rec.photo : (was ? was.photo : '') };
+    const squad = rec.squad !== undefined ? rec.squad : (s.squad || ''), k = phKey(rec.team, rec.num, rec.name, squad), was = photoLib.get(k);
+    const next = { ...(was || {}), ...rec, squad, team: phTeam(rec.team), photo: rec.photo !== undefined ? rec.photo : (was ? was.photo : '') };
     photoLib.set(k, next); pphSig.home = pphSig.away = ''; renderCtl();
     return phIdb('readwrite', st => st.put(next, k)).catch(() => {});
   };
-  const dropPhoto = rec => { const k = phKey(rec.team, rec.num, rec.name); photoLib.delete(k); pphSig.home = pphSig.away = ''; renderCtl(); return phIdb('readwrite', st => st.delete(k)).catch(() => {}); };
+  const dropPhoto = rec => { const k = phKey(rec.team, rec.num, rec.name, rec.squad || ''); photoLib.delete(k); pphSig.home = pphSig.away = ''; renderCtl(); return phIdb('readwrite', st => st.delete(k)).catch(() => {}); };
   // A player's headshot: by number first, then by name.
   const findPhoto = (team, num, name) => {
     const t = phTeam(team), n = String(num || '').trim(), nm = String(name || '').trim().toLowerCase();
-    if (n) { const r = photoLib.get(t + '|#' + n); if (r && r.photo) return r.photo; }
-    if (nm) for (const r of photoLib.values()) if (r.team === t && r.photo && r.name.trim().toLowerCase() === nm) return r.photo;
+    // This roster first (boys or girls), then photos saved without one.
+    for (const sq of [...new Set([s.squad || '', ''])]) {
+      if (n) { const r = photoLib.get(t + '|' + sq + '|#' + n); if (r && r.photo) return r.photo; }
+      if (nm) for (const r of photoLib.values()) if (r.team === t && (r.squad || '') === sq && r.photo && r.name.trim().toLowerCase() === nm) return r.photo;
+    }
     return '';
   };
   // For a lower third: its name line reads like "#3 Jordan Lee".
@@ -1885,7 +1904,8 @@
   const renderPhotos = side => {
     const d = setupFor[side]; if (!d) return;
     const pph = d.querySelector('.pph'), t = s[side], team = phTeam(t.name);
-    const mine = [...photoLib.values()].filter(r => r.team === team);
+    const mine = [...photoLib.values()].filter(r => r.team === team && (r.squad || '') === (s.squad || ''));
+    d.querySelector('.pph-squad').value = s.squad || '';
     d.querySelector('.pph-btn').textContent = (pph.hidden ? 'Player photos' : 'Hide player photos') + (mine.some(r => r.photo) ? ` (${mine.filter(r => r.photo).length})` : '');
     if (pph.hidden) return;
     // Everyone on the stats roster, then anyone added by hand.
@@ -1893,7 +1913,7 @@
     const add = (num, name) => { const k = phKey(team, num, name); if (seen.has(k)) return; seen.add(k); list.push({ num: String(num || ''), name: name || '', key: k }); };
     if (sheetLive() && s.sheet[side]) s.sheet[side].players.forEach(pl => add(pl.num, pl.name));
     mine.sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999)).forEach(r => add(r.num, r.name));
-    const sig = JSON.stringify([team, t.bg, t.fg, list.map(x => x.key + (photoLib.get(x.key) || {}).photo?.length)]);
+    const sig = JSON.stringify([team, s.squad, t.bg, t.fg, list.map(x => x.key + (photoLib.get(x.key) || {}).photo?.length)]);
     if (sig === pphSig[side]) return;
     pphSig[side] = sig;
     const grid = d.querySelector('.pph-grid');
@@ -2236,7 +2256,60 @@
     return row;
   }));
 
+
+  // Players for the nominee picker: the stats roster, plus anyone in Player photos for this team and roster.
+  const leftSideFv = () => leftSide();
+  const teamNameFv = side => s[side].name;
+  const colorsFv = side => ({ bg: hex(s[side].bg, '#17402B'), fg: hex(s[side].fg, '#FFFFFF') });
+  const rosterFor = side => {
+    const team = phTeam(s[side].name), out = [], seen = new Set();
+    const add = (num, name) => { num = String(num || '').trim(); name = String(name || '').trim(); if (!name) return;
+      const k = num ? '#' + num : 'n:' + name.toLowerCase(); if (seen.has(k)) return; seen.add(k); out.push({ num, name, photo: findPhoto(s[side].name, num, name) }); };
+    if (sheetLive() && s.sheet[side]) s.sheet[side].players.forEach(pl => add(pl.num, pl.name));
+    for (const r of photoLib.values()) if (r.team === team && (r.squad || '') === (s.squad || '')) add(r.num, r.name);
+    return out.sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
+  };
+  // --- Fan vote: pick nominees from the rosters ---
+  // Tapping a player fills the next open nominee row (team, number, name, headshot); tapping again clears it.
+  const fvNominated = (side, p) => s.fv.form.findIndex(n => n.side === side && n.name.trim() &&
+    (p.num && n.num.trim() ? n.num.trim() === p.num : n.name.trim().toLowerCase() === p.name.toLowerCase()));
+  let fvPickSig = '';
+  const renderFvPick = () => {
+    const sides = ['away', 'home'].sort((a, b) => a === leftSideFv() ? -1 : 1);
+    const rosters = sides.map(side => [side, rosterFor(side)]);
+    const sig = JSON.stringify([rosters.map(([side, r]) => [side, teamNameFv(side), r.map(p => p.num + p.name + (p.photo || '').length)]), s.fv.form.map(n => [n.side, n.num, n.name])]);
+    if (sig === fvPickSig) return;
+    fvPickSig = sig;
+    const anyone = rosters.some(([, r]) => r.length);
+    $('fvPickNote').textContent = anyone ? '' : "Connect the stats (Data sources) or add players in Setup → Player photos, and they'll show here to tap.";
+    $('fvPick').replaceChildren(...rosters.map(([side, roster]) => {
+      const col = el('div'), c = colorsFv(side), chips = el('div', 'chips');
+      col.append(el('h4', null, teamNameFv(side)));
+      for (const p of roster) {
+        const on = fvNominated(side, p) >= 0, b = el('button', 'fv-chip' + (on ? ' on' : ''));
+        b.type = 'button';
+        const av = el('span', 'av'); av.style.setProperty('--c', c.bg); av.style.setProperty('--f', c.fg);
+        if (p.photo) av.append(Object.assign(el('img'), { src: p.photo, alt: '' })); else av.textContent = p.num || '?';
+        b.append(av, (p.num ? '#' + p.num + ' ' : '') + p.name);
+        b.setAttribute('aria-pressed', on);
+        b.onclick = () => {
+          const i = fvNominated(side, p);
+          if (i >= 0) { s.fv.form[i] = { side: s.fv.form[i].side, num: '', name: '', pos: '', photo: '' }; save(); return; }
+          const free = s.fv.form.findIndex(n => !n.name.trim());
+          if (free < 0) { $('fvPickNote').textContent = 'All 4 spots are taken. Tap a nominee to take them off first.'; return; }
+          s.fv.form[free] = { side, num: p.num || '', name: p.name, pos: '', photo: p.photo || '' };
+          save();
+        };
+        chips.append(b);
+      }
+      if (!roster.length) chips.append(el('span', 'none', 'No players listed yet.'));
+      col.append(chips);
+      return col;
+    }));
+  };
+
   const renderFv = () => {
+    renderFvPick();
     const v = s.fv, total = v.total || 0;
     v.form.forEach((n, i) => {
       const side = $('fvSide' + i);
@@ -2603,6 +2676,7 @@
     }
     const apply = () => { const g = games.find(x => x.id === sel.value); if (!g) return; s.away.name = shortName(g.opponent); s.away.logo = knownLogo(s.away.name);
       s.swap = g.homeAway === 'away'; // the home team sits on the right
+      s.squad = /girls/i.test(g.sport) ? 'girls' : /boys/i.test(g.sport) ? 'boys' : '';
       const d = new Date(g.start);
       s.match = { ...s.match, title: g.sport, venue: g.location || '',
         when: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) };
