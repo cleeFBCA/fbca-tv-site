@@ -864,7 +864,7 @@
         <div class="tabs" id="tabs">
           <button data-tab="drop" class="active">Drop-down</button>
           <button data-tab="l3">Lower third</button>
-          <button data-tab="stats">Stats &amp; score</button>
+          <button data-tab="stats">Stats &amp; Score</button>
           <button data-tab="pre">Pregame</button>
           <button data-tab="xi">Lineups</button>
           <button data-tab="pk">Shootout</button>
@@ -922,29 +922,8 @@
           <ul class="l3-list" id="l3List"></ul>
         </div>
 
-        <!-- Stats & score -->
+        <!-- Stats & Score: the match stats and score panel graphics -->
         <div data-pane="stats" hidden>
-          <div class="pane-h">Stats</div>
-          <label for="statFrom">Stats come from</label>
-          <select id="statFrom">
-            <option value="keeper">Stat keeper page (live, fbca.tv/graphics/soccer-stats.html)</option>
-            <option value="sheet">Excel stat sheet on OneDrive</option>
-          </select>
-          <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
-          <label class="check"><input type="checkbox" id="clockShare"> Share this clock with the soccer stat keeper, so goal and card minutes match the bug</label>
-          <div class="set-row" id="skKeyRow" hidden><input id="skKey" type="password" autocomplete="off" placeholder="Stat keeper key (the same one the stat crew uses)"><button id="skKeySave">Save key</button></div>
-          <p class="hint" id="clockShareStatus"></p>
-          <div id="sheetBox">
-          <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
-          <div class="set-row">
-            <input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…">
-            <button id="btnSheet">Connect</button>
-          </div>
-          <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
-          </div>
-          <label class="check"><input type="checkbox" id="sheetBug"> Update the bug's score and cards from the stats</label>
-          <p class="hint" id="sheetStatus">Not connected. The counters below run the stats panel.</p>
-
           <div class="pane-h">Match stats</div>
           <table class="stat-table">
             <thead><tr><th></th><th id="stHomeH">FBCA</th><th id="stAwayH">AWAY</th></tr></thead>
@@ -1157,6 +1136,26 @@
             <div class="slogo" data-lside="home"><b class="sl-name"></b><div class="sl-row"><img alt="" hidden><input type="file" accept="image/*"><button hidden>Remove</button></div></div>
             <div class="slogo" data-lside="away"><b class="sl-name"></b><div class="sl-row"><img alt="" hidden><input type="file" accept="image/*"><button hidden>Remove</button></div></div>
           </div>
+          <div class="pane-h">Stats</div>
+          <label for="statFrom">Stats come from</label>
+          <select id="statFrom">
+            <option value="keeper">Stat keeper page (live, fbca.tv/graphics/soccer-stats.html)</option>
+            <option value="sheet">Excel stat sheet on OneDrive</option>
+          </select>
+          <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
+          <label class="check"><input type="checkbox" id="clockShare"> Share this clock with the soccer stat keeper, so goal and card minutes match the bug</label>
+          <div class="set-row" id="skKeyRow" hidden><input id="skKey" type="password" autocomplete="off" placeholder="Stat keeper key (the same one the stat crew uses)"><button id="skKeySave">Save key</button></div>
+          <p class="hint" id="clockShareStatus"></p>
+          <div id="sheetBox">
+          <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
+          <div class="set-row">
+            <input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…">
+            <button id="btnSheet">Connect</button>
+          </div>
+          <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
+          </div>
+          <label class="check"><input type="checkbox" id="sheetBug"> Update the bug's score and cards from the stats</label>
+          <p class="hint" id="sheetStatus">Not connected. The counters on the Stats &amp; Score tab run the stats panel.</p>
           <div id="chromaOpts">
           <label for="keyColor">Key color (the background the ATEM keys out)</label>
           <div class="set-row">
@@ -1898,7 +1897,7 @@
     });
     document.querySelectorAll('#statRows button').forEach(b => { b.disabled = fromSheet; });
     $('statHint').textContent = fromSheet
-      ? 'These numbers come from the stats (Stats & score → Stats). Disconnect to count by hand.'
+      ? 'These numbers come from the stats (Setup → Stats). Disconnect to count by hand.'
       : 'Cards here are the same counts as the Score card and the bug.';
     setField('psLabelSel', s.scoreLabel);
     renderGoalLog();
@@ -2727,7 +2726,7 @@
     $('keeperBox').hidden = !keeper; $('sheetBox').hidden = keeper;
     $('btnKeeper').textContent = s.sheetOn ? 'Disconnect' : 'Connect to the stat keeper';
     const st = $('sheetStatus');
-    if (!s.sheetOn) { st.textContent = keeper ? "Not connected. Open fbca.tv/graphics/soccer-stats.html on the stat crew's phone or laptop, then connect here. Until then the counters below run the stats panel." : 'Not connected. The counters below run the stats panel.'; return; }
+    if (!s.sheetOn) { st.textContent = keeper ? "Not connected. Open fbca.tv/graphics/soccer-stats.html on the stat crew's phone or laptop, then connect here. Until then the counters on the Stats & Score tab run the stats panel." : 'Not connected. The counters on the Stats & Score tab run the stats panel.'; return; }
     if (keeper) {
       if (s.sheet.err) { st.textContent = s.sheet.err; return; }
       if (!skOpen || !skGame) { st.textContent = 'Connecting…'; return; }

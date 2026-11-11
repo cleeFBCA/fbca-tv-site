@@ -20,7 +20,7 @@ Address: `https://eota-stat-keeper.clee-625.workers.dev`
 
 Soccer has its own stat keeper at **fbca.tv/graphics/soccer-stats.html** (game "soccer"):
 goals with minutes from a shared match clock, assists, shots on and off target, saves,
-corners, fouls, offsides and cards. The soccer scorebug connects under **Stats & score →
+corners, fouls, offsides and cards. The soccer scorebug connects under **Setup →
 Stats come from → Stat keeper page**, and gets the score, cards, team stats and goal list
 the Excel sheet used to supply. Same stat keeper key as basketball.
 Soccer announcers follow it at **fbca.tv/graphics/soccer-announcers.html**.
