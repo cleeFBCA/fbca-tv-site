@@ -127,6 +127,29 @@
   .bb .tos i { width: 20px; height: 4px; background: #fff; border-radius: 1px; }
   .bb .tos i.used { background: rgba(255,255,255,.18); }
 
+  /* ---------- Pop-up: a strip that rises from behind the top of the bar ----------
+     Text (with an optional team tag), a team stat (both teams, in screen order), or a run. */
+  .pop { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); pointer-events: none; }
+  .pop-in {
+    display: flex; align-items: stretch; height: 58px; min-width: 520px; max-width: 1240px;
+    background: linear-gradient(#34353a, #1f2023); color: #fff; overflow: hidden; white-space: nowrap;
+    border-radius: 6px 6px 0 0; border-top: 3px solid var(--pc, var(--gold-hi));
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
+    transform: translateY(100%); transition: transform .42s cubic-bezier(.2,.8,.2,1);
+  }
+  .pop.on .pop-in { transform: none; }
+  .pop-in > * { opacity: 0; }
+  .pop.on .pop-in > * { animation: popIn .35s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(.22s + var(--d, 0) * .06s); }
+  @keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .pop .p-tag { display: flex; align-items: center; gap: 10px; padding: 0 20px; background: var(--tc); color: var(--tf); font-size: 28px; font-weight: 800; letter-spacing: .05em; }
+  .pop .p-tag img { height: 40px; width: auto; }
+  .pop .p-text { display: flex; align-items: center; gap: 12px; padding: 0 30px; font-size: 32px; font-weight: 800; letter-spacing: .06em; flex: 1; justify-content: center; }
+  .pop .p-text b { color: var(--gold-hi); font-size: 40px; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+  .pop .p-val { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 150px; padding: 0 18px; font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .pop .p-val small { font-size: 22px; color: rgba(255,255,255,.7); font-weight: 700; }
+  .pop .p-val.lead { color: var(--gold-hi); }
+  .pop .p-lbl { display: flex; align-items: center; justify-content: center; padding: 0 22px; min-width: 190px; font-size: 24px; font-weight: 800; letter-spacing: .14em; color: rgba(255,255,255,.75); border-left: 1px solid rgba(255,255,255,.12); border-right: 1px solid rgba(255,255,255,.12); }
+
   /* ---------- Timeout: wipes over the logo, bonus and fouls up to the score ----------
      In: a gold light bar rides the wipe from the outer edge to the score, the letters of TIMEOUT
      rise in one after another, then the timeouts-left marks (the one just used flares and dims).
@@ -383,7 +406,7 @@
 <body>
 
 <div id="stage">
-  <div class="bbw"><div class="bb" id="bb">
+  <div class="bbw"><div class="pop" id="pop"><div class="pop-in" id="popIn"></div></div><div class="bb" id="bb">
     <div class="nm L" id="nmL"><span class="t"></span><span class="rec"></span></div>
     <div class="cap L" id="capL"></div>
     <div class="info L" id="infoL"><span class="bonus">BONUS</span><span class="fouls"></span></div>
@@ -513,6 +536,7 @@
       <div class="card">
         <div class="tabs" id="tabs">
           <button data-tab="l3" class="active">Lower third</button>
+          <button data-tab="pop">Pop-up</button>
           <button data-tab="stats">Team stats</button>
           <button data-tab="fv">Fan vote</button>
           <button data-tab="setup">Setup</button>
@@ -566,6 +590,27 @@
           </div>
           <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (Output card), so there is no key color.</p>
           <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, fouls, timeouts, clock)</button></div>
+        </div>
+
+        <div data-pane="pop" hidden>
+          <p class="hint" style="margin-top:0">A strip that rises above the bug. It shares the space with the lower third and the fan vote QR, so showing one takes down the others.</p>
+          <label for="popText">Text</label>
+          <input id="popText" maxlength="70" placeholder="e.g. SENIOR NIGHT · #3 LEE NEEDS 6 FOR 1,000">
+          <div class="two" style="margin-top:8px">
+            <select id="popTeam" aria-label="Team tag"><option value="">No team tag</option><option value="home"></option><option value="away"></option></select>
+            <button class="primary" id="btnPopText">Show text</button>
+          </div>
+          <label>Run</label>
+          <div class="row-btns"><button id="btnPopRun">Show the run</button></div>
+          <p class="hint" id="popRunNote"></p>
+          <label>Team stat (both teams)</label>
+          <div class="row-btns" id="popStats"></div>
+          <p class="hint" id="popStatsNote"></p>
+          <div class="two">
+            <div><label for="popSecs">Take it down after (seconds, 0 = stays up)</label><input id="popSecs" type="number" min="0" max="120"></div>
+            <div><label>&nbsp;</label><button class="danger" id="btnPopHide" style="width:100%">Take down pop-up</button></div>
+          </div>
+          <p class="hint" id="popNow"></p>
         </div>
 
         <div data-pane="stats" hidden>
@@ -632,6 +677,7 @@
             <li><kbd>R</kbd> shot clock full reset, <kbd>T</kbd> short reset (when the shot clock is on)</li>
             <li><kbd>X</kbd> flip the possession arrow, <kbd>H</kbd> hide / show the bug</li>
             <li><kbd>N</kbd> show / hide the lower third in the form</li>
+            <li><kbd>U</kbd> pop-up: show the last one again / take it down</li>
             <li><kbd>V</kbd> fan vote QR lower third, <kbd>Esc</kbd> take down the results</li>
           </ul>
           <p class="hint">Left and right follow the screen, so they stay under your hands after a swap.</p>
@@ -674,6 +720,10 @@
     // The timeout graphic: { side, at } for the last timeout called; the bug shows it briefly from \`at\`.
     // toAuto: show it when the scoreboard's timeouts-left drops.
     toCall: null, toAuto: true,
+    // Pop-up above the bar: kind 'text' | 'stat' | 'run'; until = when it comes down (0 = stays up).
+    pop: { on: false, kind: 'text', text: '', team: '', stat: 'FG', run: null, until: 0, at: 0 },
+    // Score after each change, [home, away], to work out runs (the last 80 kept).
+    scoreLog: [],
     l3: { on: false, name: '', stat: '', team: 'home', until: 0 },
     l3List: []
   });
@@ -683,6 +733,7 @@
     out.shot = Object.assign(defaults().shot, raw.shot); out.src = Object.assign(defaults().src, raw.src);
     out.sheet = Object.assign(defaults().sheet, raw.sheet); out.foulBase = Object.assign(defaults().foulBase, raw.foulBase);
     out.fv = Object.assign(defaults().fv, raw.fv); out.l3 = Object.assign(defaults().l3, raw.l3);
+    out.pop = Object.assign(defaults().pop, raw.pop);
     if (!raw.statFrom) out.statFrom = raw.sheetUrl ? 'sheet' : 'keeper'; // pages set up before the stat keeper keep their sheet
     return out;
   };
@@ -730,6 +781,33 @@
   const sheetLive = () => s.sheetOn && s.sheet.at > 0 && !!s.sheet.home;
   const teamTot = side => derive(s.sheet[side].tot);
   // Rows for the team stats panel: [label, left value, right value, number for the bar, small text].
+  // The current run: points one team has scored since the other last scored, from the score log.
+  const currentRun = () => {
+    const log = [[0, 0], ...(s.scoreLog || [])], cur = [s.home.score, s.away.score], last = log[log.length - 1];
+    if (last[0] !== cur[0] || last[1] !== cur[1]) log.push(cur);
+    let i = log.length - 1;
+    while (i > 0 && !(log[i][0] > log[i - 1][0] || log[i][1] > log[i - 1][1])) i--; // the last basket
+    if (i === 0) return null;
+    const x = log[i][0] > log[i - 1][0] ? 0 : 1, y = 1 - x;
+    let j = i;
+    while (j > 0 && !(log[j][y] > log[j - 1][y])) j--; // the other team's last basket
+    const pts = cur[x] - log[j][x];
+    return pts > 0 ? { side: x === 0 ? 'home' : 'away', pts, opp: 0 } : null;
+  };
+  // Team stats the pop-up can show: [label, value(team side) → [text, number for "who leads", small text], needs stats?]
+  const POP_STATS = [
+    ['FG', side => { const t = teamTot(side); return [t.fgm + '-' + t.fga, t.fga ? t.fgm / t.fga : 0, pct(t.fgm, t.fga)]; }, true],
+    ['3PT', side => { const t = teamTot(side); return [t.m3 + '-' + t.tpa, t.tpa ? t.m3 / t.tpa : 0, pct(t.m3, t.tpa)]; }, true],
+    ['FT', side => { const t = teamTot(side); return [t.mft + '-' + t.fta, t.fta ? t.mft / t.fta : 0, pct(t.mft, t.fta)]; }, true],
+    ['Rebounds', side => { const t = teamTot(side); return [t.reb, t.reb]; }, true],
+    ['Off. rebounds', side => { const t = teamTot(side); return [t.oreb, t.oreb]; }, true],
+    ['Assists', side => { const t = teamTot(side); return [t.ast, t.ast]; }, true],
+    ['Steals', side => { const t = teamTot(side); return [t.stl, t.stl]; }, true],
+    ['Blocks', side => { const t = teamTot(side); return [t.blk, t.blk]; }, true],
+    ['Turnovers', side => { const t = teamTot(side); return [t.to, -t.to]; }, true],
+    ['Team fouls', side => [s[side].fouls, -s[side].fouls], false],
+    ['Timeouts left', side => [s[side].to, s[side].to], false]
+  ];
   const TEAM_ROWS = [
     ['FG', t => [t.fgm + '-' + t.fga, t.fga ? t.fgm / t.fga : 0, pct(t.fgm, t.fga)]],
     ['3PT', t => [t.m3 + '-' + t.tpa, t.tpa ? t.m3 / t.tpa : 0, pct(t.m3, t.tpa)]],
@@ -765,6 +843,41 @@
       if (tos.childElementCount !== dots) tos.replaceChildren(...Array.from({ length: dots }, () => el('i')));
       [...tos.children].forEach((d, i) => d.classList.toggle('used', i >= t.to));
       $('poss' + pos).classList.toggle('on', s.poss === side);
+    };
+    // Pop-up: rebuilt when its content changes; new content animates in on its own.
+    let popSig = '';
+    const popTag = side => {
+      const t = s[side], tag = el('div', 'p-tag');
+      tag.style.setProperty('--tc', hex(t.bg, '#333333')); tag.style.setProperty('--tf', hex(t.fg, '#FFFFFF'));
+      if (t.logo) tag.append(Object.assign(el('img'), { src: t.logo, alt: '' }));
+      tag.append(t.name);
+      return tag;
+    };
+    const renderPop = () => {
+      const p = s.pop, on = p.on && s.visible && (!p.until || Date.now() < p.until);
+      $('pop').classList.toggle('on', on);
+      const sig = JSON.stringify([p.kind, p.text, p.team, p.stat, p.run, p.at, leftSide(), s.home.name, s.away.name, s.home.bg, s.away.bg,
+        p.kind === 'stat' ? SIDES.map(side => { const r = POP_STATS.find(x => x[0] === p.stat); return r && (!r[2] || sheetLive()) ? r[1](side) : ''; }) : '']);
+      if (sig === popSig) return;
+      popSig = sig;
+      const box = $('popIn'), parts = [];
+      box.style.setProperty('--pc', p.team && p.kind !== 'stat' ? hex(s[p.team].bg, '#F2C14E') : 'var(--gold-hi)');
+      if (p.kind === 'stat') {
+        const row = POP_STATS.find(x => x[0] === p.stat);
+        const L = leftSide(), R = rightSide();
+        const v = side => row && (!row[2] || sheetLive()) ? row[1](side) : ['–', 0];
+        const lv = v(L), rv = v(R);
+        const val = (x, lead) => { const d = el('div', 'p-val' + (lead ? ' lead' : '')); d.append(String(x[0])); if (x[2]) d.append(el('small', null, x[2])); return d; };
+        parts.push(popTag(L), val(lv, lv[1] > rv[1]), el('div', 'p-lbl', (p.stat || '').toUpperCase()), val(rv, rv[1] > lv[1]), popTag(R));
+      } else if (p.kind === 'run' && p.run) {
+        const txt = el('div', 'p-text'); txt.append('ON A', el('b', null, p.run.pts + '–' + p.run.opp), 'RUN');
+        parts.push(popTag(p.run.side), txt);
+      } else {
+        if (p.team) parts.push(popTag(p.team));
+        parts.push(el('div', 'p-text', p.text));
+      }
+      parts.forEach((n, i) => n.style.setProperty('--d', i));
+      box.replaceChildren(...parts);
     };
     // Timeout graphic. The animation restarts for each new timeout (keyed by when it was called).
     const TO_HOLD = 2000; // ms from the call to the wipe back: about 1 s to come in, then 1 s fully up
@@ -861,7 +974,7 @@
       if (s.panel === 'stats') renderStatsPanel();
     };
     const render = () => {
-      applyKey(); renderL3(); renderFanVote();
+      applyKey(); renderL3(); renderFanVote(); renderPop();
       $('bb').classList.toggle('hidden', !s.visible);
       paintSide('L', leftSide()); paintSide('R', rightSide());
       paintTimeout('L', leftSide()); paintTimeout('R', rightSide());
@@ -879,6 +992,12 @@
         sig = parts.map(p => p.join('=')).join('|');
       }
       if (sig !== pillSig) { pillSig = sig; $('pill').replaceChildren(...parts.map(([c, t]) => el('span', c, t))); }
+      if (s.pop.on && s.pop.until && now >= s.pop.until && $('pop').classList.contains('on')) $('pop').classList.remove('on');
+      // Timeout flash: also checked every frame, in case Chrome held back the timer.
+      for (const pos of ['L', 'R']) {
+        const node = $('tov' + pos);
+        if (node.classList.contains('on') && (!s.toCall || now >= s.toCall.at + TO_HOLD)) node.classList.remove('on');
+      }
       requestAnimationFrame(tick);
     };
     const accept = next => { s = merge(next); render(); };
@@ -890,6 +1009,8 @@
 
   // ---------- Control mode ----------
   const save = () => {
+    const log = s.scoreLog || (s.scoreLog = []), last = log[log.length - 1] || [0, 0];
+    if (last[0] !== s.home.score || last[1] !== s.away.score) { log.push([s.home.score, s.away.score]); if (log.length > 80) log.splice(0, log.length - 80); }
     try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
     if (bc) bc.postMessage(s);
     renderCtl();
@@ -1119,10 +1240,12 @@
 
   let fvRenderHook = null; // draws the Fan vote tab (set up below)
   let l3Hook = null; // lower third list and form labels (set up below)
+  let popHook = null; // pop-up tab (set up below)
   let sheetHook = null; // data sources table, stat sheet status, sheet players, team stats tab (set up below)
   const renderCtl = () => {
     if (fvRenderHook) fvRenderHook();
     if (l3Hook) l3Hook();
+    if (popHook) popHook();
     if (sheetHook) sheetHook();
     const now = Date.now(), alpha = s.keyMode === 'alpha';
     applyKey();
@@ -1177,6 +1300,11 @@
     $('cClock').textContent = clockOff() ? '—' : fmtClock(remaining(now));
     $('cShot').textContent = s.shotOn ? (shotShown(now) ? 'Shot ' + fmtShot(shotLeft(now)) : 'Shot clock hidden') : '';
     if (s.running && remaining(now) === 0) startStop(); // the horn: stop at 0.0
+    // Pop-up: take it down when its time is up (the outputs also hide it on time by themselves).
+    if (s.pop.on && s.pop.until && now >= s.pop.until) { s.pop = { ...s.pop, on: false }; save(); }
+    else if (s.pop.on && s.pop.until && popHook && Math.floor(now / 1000) !== ctlTick.sec) { ctlTick.sec = Math.floor(now / 1000); popHook(); }
+    // Clear the timeout once its flash is over, so every output (even one running older code) takes it down.
+    if (s.toCall && now > s.toCall.at + 2600) { s.toCall = null; save(); }
     requestAnimationFrame(ctlTick);
   };
 
@@ -1216,7 +1344,7 @@
   $('btnReset').onclick = () => {
     if (!confirm('Reset scores, fouls, timeouts, possession and the clock?')) return;
     for (const side of SIDES) Object.assign(s[side], { score: 0, fouls: 0, to: s.toMax });
-    s.poss = ''; s.l3.on = false; s.fv.l3 = false; s.panel = ''; s.foulBase = { home: 0, away: 0 }; setPeriod('1Q');
+    s.poss = ''; s.l3.on = false; s.fv.l3 = false; s.panel = ''; s.foulBase = { home: 0, away: 0 }; s.pop.on = false; s.scoreLog = []; setPeriod('1Q');
   };
   const showTab = name => {
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -1232,6 +1360,7 @@
       i: () => bump(rightSide(), 1), o: () => bump(rightSide(), 2), p: () => bump(rightSide(), 3), l: () => bump(rightSide(), -1),
       s: () => foul(leftSide(), 1), k: () => foul(rightSide(), 1),
       v: () => $('fvShowQr').click(), n: () => s.l3.on ? hideL3() : $('btnL3Show').click(), escape: () => { if (s.panel) { s.panel = ''; save(); } },
+      u: () => { if (s.pop.on) hidePop(); else if (s.pop.text || s.pop.kind !== 'text') showPop({}); },
       r: () => s.shotOn && resetShot(s.shotFull), t: () => s.shotOn && resetShot(s.shotShort), x: flipPoss, h: toggleBug
     };
     const fn = map[e.key.toLowerCase()];
@@ -1240,11 +1369,56 @@
   // Keep Space from also "clicking" whichever button was last pressed.
   document.addEventListener('click', e => { const b = e.target.closest('button'); if (b) b.blur(); });
 
+  // --- Pop-up ---
+  let popSecs = 8;
+  try { popSecs = Math.max(0, parseInt(localStorage.getItem('eota-bb-pop-secs') ?? '8', 10) || 0); } catch (e) {}
+  const showPop = patch => {
+    const now = Date.now();
+    s.pop = { ...s.pop, ...patch, on: true, at: now, until: popSecs ? now + popSecs * 1000 : 0 };
+    s.l3.on = false; s.fv.l3 = false; // the same space
+    save();
+  };
+  const hidePop = () => { if (s.pop.on) { s.pop = { ...s.pop, on: false }; save(); } };
+  $('popSecs').value = popSecs;
+  $('popSecs').addEventListener('input', e => { popSecs = Math.max(0, Math.min(120, parseInt(e.target.value, 10) || 0)); try { localStorage.setItem('eota-bb-pop-secs', popSecs); } catch (err) {} });
+  $('btnPopText').onclick = () => {
+    const text = $('popText').value.trim();
+    if (!text) { $('popText').focus(); return; }
+    showPop({ kind: 'text', text, team: $('popTeam').value });
+  };
+  $('popText').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnPopText').click(); });
+  $('btnPopRun').onclick = () => { const run = currentRun(); if (run) showPop({ kind: 'run', run }); };
+  $('btnPopHide').onclick = hidePop;
+  const popStatBtns = POP_STATS.map(([label, , needs]) => {
+    const b = el('button', null, label);
+    b.onclick = () => showPop({ kind: 'stat', stat: label });
+    b.dataset.needs = needs ? '1' : '';
+    return b;
+  });
+  $('popStats').replaceChildren(...popStatBtns);
+  const renderPopTab = () => {
+    for (const side of SIDES) $('popTeam').querySelector(`[value="${side}"]`).textContent = s[side].name + ' tag';
+    const live = sheetLive();
+    popStatBtns.forEach(b => {
+      b.disabled = b.dataset.needs === '1' && !live;
+      b.classList.toggle('active', s.pop.on && s.pop.kind === 'stat' && s.pop.stat === b.textContent);
+    });
+    $('popStatsNote').textContent = live ? '' : 'Shooting, rebounds and the rest need the stats connected (Setup → Data sources). Team fouls and timeouts work any time.';
+    const run = currentRun();
+    $('btnPopRun').disabled = !run;
+    $('btnPopRun').textContent = run ? `Show: ${s[run.side].name} on a ${run.pts}–0 run` : 'Show the run';
+    $('popRunNote').textContent = run ? '' : 'No run yet: it counts points since the other team last scored.';
+    const p = s.pop, up = p.on && (!p.until || Date.now() < p.until);
+    $('btnPopHide').disabled = !up;
+    $('popNow').textContent = up ? 'On air: ' + (p.kind === 'stat' ? p.stat : p.kind === 'run' ? 'the run' : '"' + p.text + '"') + (p.until ? ', down in ' + Math.ceil((p.until - Date.now()) / 1000) + ' s' : '') + '.' : '';
+  };
+  popHook = renderPopTab;
+
   // --- Lower third ---
   const untilFrom = id => { const sec = Math.max(0, parseInt($(id).value, 10) || 0); return sec ? Date.now() + sec * 1000 : 0; };
   const showL3 = item => {
     s.l3 = { on: true, name: item.name, stat: item.stat, team: item.team, until: untilFrom('lSecs') };
-    s.fv.l3 = false; // same spot as the fan vote lower third
+    s.fv.l3 = false; s.pop.on = false; // same spot as the fan vote lower third and the pop-up
     save();
   };
   const hideL3 = () => { s.l3.on = false; save(); };
@@ -1439,7 +1613,7 @@
     save();
     fvSay('Vote cleared. fbca.tv/vote shows that no vote is running.');
   };
-  $('fvShowQr').onclick = () => { s.fv.l3 = !s.fv.l3; if (s.fv.l3) s.l3.on = false; save(); };
+  $('fvShowQr').onclick = () => { s.fv.l3 = !s.fv.l3; if (s.fv.l3) { s.l3.on = false; s.pop.on = false; } save(); };
   $('fvShowRes').onclick = () => { s.panel = s.panel === 'vote' ? '' : 'vote'; save(); };
   $('fvKeySave').onclick = () => {
     try { localStorage.setItem(FV_KEY, $('fvKey').value.trim()); } catch (e) {}
