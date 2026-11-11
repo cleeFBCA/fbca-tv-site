@@ -875,7 +875,7 @@
               </select></div>
           </div>
           <div id="dCustomWrap" hidden><label for="dCustom">Custom label</label><input id="dCustom" maxlength="20" placeholder="e.g. SAVE, CORNER"></div>
-          <label for="dPick">Player (from the stat keeper roster, or the lineups)</label>
+          <label for="dPick" id="dPickLabel">Player (from the stat keeper roster, or the lineups)</label>
           <select id="dPick" class="ppick"></select>
           <label for="dTextIn" id="dTextLabel">Text</label>
           <input id="dTextIn" maxlength="40" placeholder="#10 Sarah Smith">
@@ -2038,7 +2038,7 @@
   // Pre-fill the drop-down form so a goal or card is one name away from air.
   const prefillDrop = (side, type) => {
     $('dTeamSel').value = side; $('dType').value = type;
-    syncDropForm();
+    syncDropForm(); if (rosterHook) rosterHook(); if (type === 'GOAL') rosterRead();
     $('dTextIn').value = ''; $('dOutIn').value = ''; $('dMinIn').value = gameMinute();
     showTab('drop');
   };
@@ -2428,7 +2428,9 @@
   let rosterGame = null;
   const rosterRead = async () => {
     if (skGame) return;
-    try { const r = await fetch(SK_API + '/state?game=soccer', { cache: 'no-store' }); if (r.ok) { rosterGame = await r.json(); renderCtl(); } } catch (e) { /* offline: the lineups still work */ }
+    let got = null;
+    try { const r = await fetch(SK_API + '/state?game=soccer', { cache: 'no-store' }); if (r.ok) got = await r.json(); } catch (e) { /* offline: the lineups still work */ }
+    if (got) { rosterGame = got; renderCtl(); }
   };
   rosterRead(); setInterval(rosterRead, 60000);
   // The stat keeper's roster for a side, then anyone in the lineups who isn't on it: [{ num, name, id? }]
@@ -2467,11 +2469,29 @@
     if (!sel._players.length) sel.append(new Option('No players yet: add them on the stat keeper page or in Lineups', '', false, false));
   };
   const picked = sel => sel.value === '' ? null : sel._players[+sel.value];
+  // For a Goal drop-down: every goal on the stat keeper, newest first, one entry per goal ("52' #9 Rae Diaz").
+  const fillGoalPick = sel => {
+    const g = skGame || rosterGame, evs = (g && g.events) || [];
+    const goals = evs.filter(e => e.type === 'goal' && (e.side === 'home' || e.side === 'away')).map(e => {
+      const p = ((g.meta.rosters[e.side] || []).find(x => x.id === e.player)) || null;
+      return { side: e.side, min: e.min || '', p: p ? { num: p.num || '', name: p.name, id: p.id } : { num: '', name: teamName(e.side) + ' (no scorer entered)' } };
+    }).reverse();
+    const sig = 'goals:' + JSON.stringify([goals.map(x => [x.side, x.min, playerLabel(x.p)]), teamName('home'), teamName('away')]);
+    if (pickSig.get(sel) === sig) return;
+    pickSig.set(sel, sig);
+    sel._players = [];
+    sel.replaceChildren(new Option(goals.length ? 'Pick a goal…' : 'No goals on the stat keeper yet', ''));
+    for (const x of goals) {
+      sel.append(new Option(`${x.min ? x.min + "' " : ''}${playerLabel(x.p)} (${teamName(x.side)})`, String(sel._players.length)));
+      sel._players.push(x);
+    }
+  };
 
   // Drop-down: the player (and the player off for a sub) fill the text and team.
   $('dPick').addEventListener('change', () => {
     const x = picked($('dPick')); if (!x) return;
-    $('dTeamSel').value = x.side; $('dTextIn').value = playerLabel(x.p); $('dPick').value = '';
+    $('dTeamSel').value = x.side; $('dTextIn').value = x.p.id || x.p.num ? playerLabel(x.p) : ''; $('dPick').value = '';
+    if (x.min) $('dMinIn').value = x.min; // a goal from the stat keeper: its own minute
     $('dTeamSel').dispatchEvent(new Event('change'));
   });
   $('dOutPick').addEventListener('change', () => {
@@ -2533,7 +2553,9 @@
     box.replaceChildren(...kids);
   };
   rosterHook = () => {
-    fillPick($('dPick'), ['home', 'away'], 'Pick a player…');
+    const goalType = $('dType').value === 'GOAL';
+    if (goalType) fillGoalPick($('dPick')); else fillPick($('dPick'), ['home', 'away'], 'Pick a player…');
+    $('dPickLabel').textContent = goalType ? 'Goal (from the stat keeper: newest first, with the minute)' : 'Player (from the stat keeper roster, or the lineups)';
     fillPick($('dOutPick'), ['home', 'away'], 'Pick the player coming off…');
     fillPick($('lPick'), ['home', 'away'], 'Pick a player…');
     renderXiPick('home'); renderXiPick('away');
@@ -2741,7 +2763,8 @@
     $('dOutWrap').hidden = type !== 'SUB';
     $('dTextLabel').textContent = type === 'SUB' ? 'Player on' : 'Text';
   };
-  $('dType').addEventListener('change', syncDropForm);
+  $('dType').addEventListener('change', () => { syncDropForm(); if (rosterHook) rosterHook(); if ($('dType').value === 'GOAL') rosterRead(); });
+  $('dPick').addEventListener('focus', () => { if ($('dType').value === 'GOAL') rosterRead(); }); // newest goals when the list opens
   const showDrop = () => {
     const type = $('dType').value;
     const label = type === 'CUSTOM' ? ($('dCustom').value.trim().toUpperCase() || 'UPDATE') : type;
