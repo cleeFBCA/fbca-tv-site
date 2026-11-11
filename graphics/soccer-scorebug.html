@@ -213,6 +213,9 @@
   .xi.hidden { clip-path: inset(0 0 100% 0); }
   .xi > svg { position: absolute; inset: 0; width: 1920px; height: 1080px; }
   .xi .xshield { position: absolute; left: 366px; top: 58px; width: 132px; height: 158px; z-index: 2; }
+  /* The school's logo (Setup → School logos) takes the shield's place when there is one */
+  .xi .xlogoimg { position: absolute; left: 352px; top: 50px; width: 160px; height: 174px; z-index: 2; object-fit: contain; filter: drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
+  .xi .xlogoimg[hidden], .xi .xshield.off { display: none; }
   .xi .xbanner {
     position: absolute; left: 440px; top: 96px; width: 1120px; height: 80px;
     display: flex; align-items: center; padding: 0 32px 0 104px;
@@ -668,7 +671,8 @@
       <rect width="1920" height="1080" fill="url(#xVig)"/>
       <g id="xField"></g>
     </svg>
-    <svg class="xshield" viewBox="0 0 100 120" aria-hidden="true">
+    <img class="xlogoimg" id="xLogo" alt="" hidden>
+    <svg class="xshield" id="xShield" viewBox="0 0 100 120" aria-hidden="true">
       <path id="xShieldBody" d="M6 6 H94 V56 Q94 96 50 114 Q6 96 6 56 Z" stroke="#D9A521" stroke-width="5"/>
       <path d="M14 14 H86 V56 Q86 89 50 105 Q14 89 14 56 Z" fill="none" stroke="#F2C14E" stroke-opacity=".5" stroke-width="2"/>
       <text id="xShieldText" x="50" y="68" text-anchor="middle" font-family="Big Shoulders Display, Impact, sans-serif" font-weight="800" font-size="30"></text>
@@ -1454,6 +1458,9 @@
       st.setAttribute('fill', c.fg);
       st.setAttribute('font-size', name.length <= 4 ? 32 : name.length <= 6 ? 24 : 19);
       st.textContent = name;
+      const logo = side === 'home' ? s.homeLogo : s.awayLogo, li = $('xLogo');
+      li.hidden = !logo; $('xShield').classList.toggle('off', !!logo);
+      if (logo && li.src !== logo) li.src = logo;
       $('xTeam').textContent = name;
       $('xForm').textContent = cfg.formation;
       $('xCoach').textContent = cfg.coach ? 'Head coach ' + cfg.coach : '';
