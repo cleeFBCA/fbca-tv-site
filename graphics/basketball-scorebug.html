@@ -158,7 +158,6 @@
   .pop .p-text b { color: var(--gold-hi); font-size: 40px; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
   .pop .p-val { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 150px; padding: 0 18px; font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
   .pop .p-val small { font-size: inherit; color: rgba(255,255,255,.7); margin-left: 6px; } /* the % matches the made-attempts size */
-  .pop .p-val.lead { color: var(--gold-hi); }
   .pop .p-lbl { display: flex; align-items: center; justify-content: center; padding: 0 22px; min-width: 190px; font-size: 24px; font-weight: 800; letter-spacing: .14em; color: rgba(255,255,255,.75); border-left: 1px solid rgba(255,255,255,.12); border-right: 1px solid rgba(255,255,255,.12); }
 
   /* ---------- Timeout: wipes over the logo, bonus and fouls up to the score ----------
@@ -809,6 +808,11 @@
   const sheetLive = () => s.sheetOn && s.sheet.at > 0 && !!s.sheet.home;
   const teamTot = side => derive(s.sheet[side].tot);
   // Rows for the team stats panel: [label, left value, right value, number for the bar, small text].
+  // "FORT BEND CHRISTIAN ACADEMY" → FBCA, "EMERY WEINER SCHOOL" → EWS; a one-word name stays as it is.
+  const initials = name => {
+    const words = String(name).toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
+    return words.length > 1 ? words.map(w => w[0]).join('') : (words[0] || '');
+  };
   // The current run: points one team has scored since the other last scored, from the score log.
   const currentRun = () => {
     const log = [[0, 0], ...(s.scoreLog || [])], cur = [s.home.score, s.away.score], last = log[log.length - 1];
@@ -890,11 +894,6 @@
     };
     // Pop-up: rebuilt when its content changes; new content animates in on its own.
     let popSig = '';
-    // "FORT BEND CHRISTIAN ACADEMY" → FBCA, "EMERY WEINER SCHOOL" → EWS; a one-word name stays as it is.
-    const initials = name => {
-      const words = String(name).toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
-      return words.length > 1 ? words.map(w => w[0]).join('') : (words[0] || '');
-    };
     // A team on the pop-up: its logo, or its initials when it has no logo.
     const popTag = side => {
       const t = s[side], tag = el('div', 'p-tag');
@@ -918,9 +917,10 @@
         const L = leftSide(), R = rightSide();
         const v = side => row && (!row[2] || sheetLive()) ? row[1](side) : ['–', 0];
         const lv = v(L), rv = v(R);
-        const val = (x, lead) => { const d = el('div', 'p-val' + (lead ? ' lead' : '')); d.append(String(x[0])); if (x[2]) d.append(el('small', null, x[2])); return d; };
+        // Values in white; gold is kept for highlights.
+        const val = x => { const d = el('div', 'p-val'); d.append(String(x[0])); if (x[2]) d.append(el('small', null, x[2])); return d; };
         const half = (...kids) => { const h = el('div', 'p-half'); h.append(...kids); return h; };
-        parts.push(half(popTag(L), val(lv, lv[1] > rv[1])), el('div', 'p-lbl', (p.stat || '').toUpperCase()), half(val(rv, rv[1] > lv[1]), popTag(R)));
+        parts.push(half(popTag(L), val(lv)), el('div', 'p-lbl', (p.stat || '').toUpperCase()), half(val(rv), popTag(R)));
       } else if (p.kind === 'run' && p.run) {
         const txt = el('div', 'p-text'); txt.append('ON A', el('b', null, p.run.pts + '–' + p.run.opp), 'RUN');
         parts.push(popTag(p.run.side), txt);
@@ -1002,7 +1002,7 @@
       const L = leftSide(), R = rightSide();
       for (const [id, side] of [['pstL', L], ['pstR', R]]) {
         const c = $(id); c.style.background = hex(s[side].bg, '#17402B'); c.style.color = hex(s[side].fg, '#FFFFFF');
-        c.replaceChildren(el('span', null, s[side].name), el('span', null, s[side].score));
+        c.replaceChildren(el('span', null, initials(s[side].name)), el('span', null, s[side].score));
       }
       const tl = teamTot(L), tr = teamTot(R);
       $('pstRows').replaceChildren(...TEAM_ROWS.map(([label, fn]) => {
