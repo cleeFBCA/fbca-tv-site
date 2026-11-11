@@ -267,12 +267,20 @@
   .pn .pb { background: var(--pine); color: var(--chalk); }
   .pn .pf { height: 8px; background: var(--gold); }
   /* Lower third: name in team colors over a stat line, just above the bar (same spot as the fan vote one) */
-  .l3 { position: absolute; left: 300px; bottom: 188px; display: flex; }
+  /* Lower third: over the end of the bug for the player's team. Name on the team's main color, the stat
+     line on the bug's gray, and a stripe in the team's text color on the outer edge. The right team's
+     is a mirror image: it lines up with the bug's right end, stripe on the right, wiping in from the right. */
+  .l3 { position: absolute; left: 300px; bottom: 188px; display: flex; --c: #F3EFE2; --f: #0D2418; --s: var(--gold); }
+  .l3.R { left: auto; right: 300px; flex-direction: row-reverse; }
   .l3.hidden { clip-path: inset(0 100% 0 0); }
-  .l3 .accent { width: 14px; background: var(--gold); }
+  .l3.R.hidden { clip-path: inset(0 0 0 100%); }
+  .l3 .accent { width: 14px; background: var(--s); }
   .l3 .lbody { display: flex; flex-direction: column; }
-  .l3 .lname { padding: 8px 30px 4px; font-size: 54px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
-  .l3 .lstat { padding: 8px 30px; background: var(--pine); color: var(--chalk); font-size: 30px; font-weight: 600; letter-spacing: .05em; white-space: nowrap; }
+  .l3.R .lbody { align-items: stretch; text-align: right; }
+  .l3 .lname { padding: 8px 30px 4px; font-size: 54px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; color: var(--f);
+               background: linear-gradient(90deg, var(--c), color-mix(in srgb, var(--c) 82%, #000)); }
+  .l3.R .lname { background: linear-gradient(270deg, var(--c), color-mix(in srgb, var(--c) 82%, #000)); }
+  .l3 .lstat { padding: 8px 30px; background: linear-gradient(#2e2f33, #17181b); color: #fff; font-size: 30px; font-weight: 600; letter-spacing: .05em; white-space: nowrap; }
   .l3 .lstat:empty { display: none; }
   /* Fan vote: a lower third with the QR code for fbca.tv/vote at its end, just above the bar */
   .fvl { position: absolute; left: 300px; bottom: 188px; display: flex; height: 176px; }
@@ -580,6 +588,12 @@
                 <option value="basic">PTS · REB · AST</option>
                 <option value="full">PTS · FG · REB · AST (+ STL, BLK)</option>
                 <option value="shoot">Shooting: FG · 3PT · FT</option>
+                <option value="reb">Rebounds: total · offensive · defensive</option>
+                <option value="oreb">Offensive rebounds</option>
+                <option value="dreb">Defensive rebounds</option>
+                <option value="blk">Blocks</option>
+                <option value="stl">Steals</option>
+                <option value="ft">Free throws</option>
               </select>
             </div>
             <p class="hint" id="lsAge"></p>
@@ -979,13 +993,19 @@
         return row;
       }));
     };
+    const readableOn = c => { const n = parseInt(c.slice(1), 16); return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255 > .6 ? '#0D2418' : '#FFFFFF'; };
     const renderL3 = () => {
       const l = s.l3;
       $('l3').classList.toggle('hidden', !l.on || !!s.panel);
       if (!l.on) return; // the old text stays while it wipes away
-      const c = l.team === 'none' ? { bg: '#F3EFE2', fg: '#0D2418' } : { bg: hex(s[l.team].bg, '#17402B'), fg: hex(s[l.team].fg, '#FFFFFF') };
+      const box = $('l3'), team = l.team === 'none' ? null : s[l.team];
+      // Main color behind the name (with white or dark text to suit it), stripe in the team's text color.
+      const bg = team ? hex(team.bg, '#17402B') : '#F3EFE2';
+      box.style.setProperty('--c', bg);
+      box.style.setProperty('--f', team ? readableOn(bg) : '#0D2418');
+      box.style.setProperty('--s', team ? hex(team.fg, '#F2C14E') : 'var(--gold)');
+      box.classList.toggle('R', !!team && l.team === rightSide());
       $('l3Name').textContent = l.name;
-      $('l3Name').style.background = c.bg; $('l3Name').style.color = c.fg;
       $('l3Stat').textContent = l.stat;
     };
     const statsTitle = () => s.statsLabel !== 'auto' ? s.statsLabel
@@ -1908,6 +1928,13 @@
   // Lower thirds from the sheet: the player list, and tonight's line in the chosen format.
   const statLine = (p, fmt) => {
     const d = derive(p), extra = [d.stl && d.stl + ' STL', d.blk && d.blk + ' BLK'].filter(Boolean);
+    const n = (v, one, many) => v + ' ' + (v === 1 ? one : many);
+    if (fmt === 'reb') return n(d.reb, 'REBOUND', 'REBOUNDS') + ' · ' + d.oreb + ' OFF · ' + d.dreb + ' DEF';
+    if (fmt === 'oreb') return n(d.oreb, 'OFFENSIVE REBOUND', 'OFFENSIVE REBOUNDS');
+    if (fmt === 'dreb') return n(d.dreb, 'DEFENSIVE REBOUND', 'DEFENSIVE REBOUNDS');
+    if (fmt === 'blk') return n(d.blk, 'BLOCK', 'BLOCKS');
+    if (fmt === 'stl') return n(d.stl, 'STEAL', 'STEALS');
+    if (fmt === 'ft') return d.mft + '-' + d.fta + ' FREE THROWS' + (d.fta ? ' (' + Math.round(100 * d.mft / d.fta) + '%)' : '');
     if (fmt === 'shoot') return [d.fgm + '-' + d.fga + ' FG', d.tpa && d.m3 + '-' + d.tpa + ' 3PT', d.fta && d.mft + '-' + d.fta + ' FT'].filter(Boolean).join(' · ');
     if (fmt === 'full') return [d.pts + ' PTS', d.fga && d.fgm + '-' + d.fga + ' FG', d.reb + ' REB', d.ast + ' AST', ...extra].filter(Boolean).join(' · ');
     return d.pts + ' PTS · ' + d.reb + ' REB · ' + d.ast + ' AST';
