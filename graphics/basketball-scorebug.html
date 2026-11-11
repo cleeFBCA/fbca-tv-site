@@ -152,7 +152,8 @@
   .pop-in.stat { display: grid; grid-template-columns: 1fr auto 1fr; }
   .pop .p-half { display: flex; align-items: stretch; justify-content: space-between; }
   .pop .p-tag { display: flex; align-items: center; gap: 10px; padding: 0 20px; background: var(--tc); color: var(--tf); font-size: 28px; font-weight: 800; letter-spacing: .05em; }
-  .pop .p-tag img { height: 40px; width: auto; }
+  .pop .p-tag img { height: 46px; width: auto; max-width: 120px; object-fit: contain; }
+  .pop .p-tag:has(img) { padding: 0 14px; }
   .pop .p-text { display: flex; align-items: center; gap: 12px; padding: 0 30px; font-size: 32px; font-weight: 800; letter-spacing: .06em; flex: 1; justify-content: center; }
   .pop .p-text b { color: var(--gold-hi); font-size: 40px; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
   .pop .p-val { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 150px; padding: 0 18px; font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -894,11 +895,12 @@
       const words = String(name).toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
       return words.length > 1 ? words.map(w => w[0]).join('') : (words[0] || '');
     };
-    const popTag = (side, short) => {
+    // A team on the pop-up: its logo, or its initials when it has no logo.
+    const popTag = side => {
       const t = s[side], tag = el('div', 'p-tag');
       tag.style.setProperty('--tc', hex(t.bg, '#333333')); tag.style.setProperty('--tf', hex(t.fg, '#FFFFFF'));
-      if (t.logo) tag.append(Object.assign(el('img'), { src: t.logo, alt: '' }));
-      tag.append(short ? initials(t.name) : t.name);
+      if (t.logo) tag.append(Object.assign(el('img'), { src: t.logo, alt: t.name }));
+      else tag.append(initials(t.name));
       return tag;
     };
     const renderPop = () => {
@@ -918,7 +920,7 @@
         const lv = v(L), rv = v(R);
         const val = (x, lead) => { const d = el('div', 'p-val' + (lead ? ' lead' : '')); d.append(String(x[0])); if (x[2]) d.append(el('small', null, x[2])); return d; };
         const half = (...kids) => { const h = el('div', 'p-half'); h.append(...kids); return h; };
-        parts.push(half(popTag(L, true), val(lv, lv[1] > rv[1])), el('div', 'p-lbl', (p.stat || '').toUpperCase()), half(val(rv, rv[1] > lv[1]), popTag(R, true)));
+        parts.push(half(popTag(L), val(lv, lv[1] > rv[1])), el('div', 'p-lbl', (p.stat || '').toUpperCase()), half(val(rv, rv[1] > lv[1]), popTag(R)));
       } else if (p.kind === 'run' && p.run) {
         const txt = el('div', 'p-text'); txt.append('ON A', el('b', null, p.run.pts + '–' + p.run.opp), 'RUN');
         parts.push(popTag(p.run.side), txt);
