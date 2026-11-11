@@ -18,6 +18,12 @@ Address: `https://eota-stat-keeper.clee-625.workers.dev`
 - Anyone on fbca.tv may read the current game (the stats go on air anyway).
   Recording plays, rosters, new games and the saved teams list need the stat keeper key.
 
+Soccer has its own stat keeper at **fbca.tv/graphics/soccer-stats.html** (game "soccer"):
+goals with minutes from a shared match clock, assists, shots on and off target, saves,
+corners, fouls, offsides and cards. The soccer scorebug connects under **Stats & score →
+Stats come from → Stat keeper page**, and gets the score, cards, team stats and goal list
+the Excel sheet used to supply. Same stat keeper key as basketball.
+
 Announcers follow the same game, read-only, at
 **fbca.tv/graphics/basketball-announcers.html** (phone first, works on a laptop): ready-to-read
 lines (score, runs, leaders, shooting, quarters, foul trouble, double-doubles), each player's

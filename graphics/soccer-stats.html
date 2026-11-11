@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EOTA Soccer Stat Keeper</title>
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAEH0lEQVR42u2WS2xVVRSG/3/tc24vbS99UUoFLgq0xYpIkRSkEA3MfATFCDhgYBz4SoxxqImOjBGZiK+ZJkaQmBBifESDTkRTJTyKwYC1xdsCLdzb1r7u49xz9l4OemlT7MDEMOufNVnJ2uvLztrrz2Zi9RLcSgluseYB84D/L+9mIOEUS6p0a7NL1rmKMpC0VscL+GNQfuo2uWKp5j/KlNVWTvUlIQKn6GhyD6+3VQvUNxDCulJpY7W2Jd3wpAxP0ggIkAABgDc6TKVzAHQqFB1NdluzCyKQ6Enz527vbD8H/pa4j/IyBBHuWe4GRjmS5dSRad2UTotTVnH4mQIFAJbVaCwm352Td7/3MhNsaVRrNTPBsTw3rXRv7S4ao9ZhYJTOsaoCRzrNoU6vMo4De4KldXjtqN/VJyIz9y7NYPtakPAMsgVW1+Lgt8xM8MDeYjFCT9osqrSnU+b8FbQsBUBr9c6lUNXyWnalFMCO1ujJDqXhU+noxb7YHEMey6pn8MInsVRGysq0L8NXHyk+ttG+d9zzPY152Lwq6ur3t78ZE+CdfcG6JF4+5HX1m5GsAth1rw2KyBbcjjW6OOGnJzj9EEoACjyDP69Lb7o0qaFJCUMLxWQe1XEsSiAR1wsDAiAIGY/hUkZ+v0qAd9S7+1td3xDT4+y4Sx5abz8+4U0DSntARWRx+Nngx1fyv71RaFvhLg6yPI7qSkQOJChoWAgReAIhoCjzVAQAdrbZ2gb56qzZ/40vBrs2RiKwOtceVFeoc6iuRNzH0CQLRWxYYeOe5ENGlvUL1Tl4nvqm9GCcQzyGRzdEhTGe6JbTKdOdCjc3YUPSnUrJLIASnsHu98u6r4lvdCzHe1bYyHFNox75RQohayu0GIFEw0Isq9EgpGdI4oEW27qc4xP69t5QEVbEVMjd7dGpVGw2QGEVOhWA78ETNtagL4Mn2m1tpV4dwevHYqpoX+kiC3ej+PGNlsRkASJKIFdkNq/bW11dpQ5PcgZQHgOJz54PcgEaqvHSp7HPT5p9H/r79xYB/NojB4/7l0e4arG7vd6NB0hWIB+iPqEPrrdhxKc/il0cNCIw1CPPBVvu5p5N0Qc/+DND7r2O3uvIjMM3yAa4b7VdlNDOXjnXz/NX5Otz5vII1y53O9uss8gV+dcgR3PY0mRHI/PlGZ5OmWyAiTxGczzc6fVfQ/tKN2uTfQOhOuXWZrut2eWKAHBhQBqqdNNqe/Sktziht9VoEGJBDEdPmb5hRo6eqCpDC2LGhVThC4zRQsgZL3IK6+gUqSEpRkzWqRAVcc0VODQhA6Ncl3ShpVV8ccb0pMU66o0j/5ZTRI6zzI4EWTLFyyO8lJHEAiTi2tKozY1qhPkiLgzIsTNeepwiM8ZGzmVwnHFVzv+L5gHzAPwDMNXxTQ6uySIAAAAASUVORK5CYII=">
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,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">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0D2418">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  Soccer stat keeper for Eagles on the Air. Replaces the Excel stat sheet.
+
+  Works on a phone, tablet or laptop. Each tap records one play: a player and what they did
+  (goal, assist, shot on or off target, save, corner, foul, offside, yellow or red card).
+  Plays go to the eota-stat-keeper Cloudflare Worker (game "soccer"), which sends them straight
+  to the soccer scorebug control page (Stats & score → Stats come from → Stat keeper page).
+
+  A shared match clock (start it at kickoff) stamps each goal and card with its minute. One stat
+  keeper (the default) keeps both teams; with two, each device picks a team. Plays are saved on the
+  device first, so a Wi-Fi dropout loses nothing. ?api=http://localhost:8787 for a local worker.
+-->
+<style>
+  :root {
+    --pine: #0D2418; --field: #17402B; --turf: #1E5638; --line: #2C6A46;
+    --gold: #D9A521; --gold-hi: #F2C14E; --chalk: #F3EFE2; --chalk-dim: #B9C6B4; --tally: #E5352B; --ok: #5FC48A;
+    --font-display: 'Big Shoulders Display', Impact, 'Arial Narrow', sans-serif;
+    --font-body: 'Barlow', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--pine); color: var(--chalk); font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
+  button { font: 600 16px var(--font-body); color: var(--chalk); background: var(--turf); border: 1px solid var(--line); border-radius: 8px; padding: 10px; cursor: pointer; min-height: 48px; touch-action: manipulation; }
+  button:hover { background: var(--line); }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 1px; }
+  button.primary { background: var(--gold); color: var(--pine); border-color: var(--gold); font-weight: 700; }
+  button.danger { background: transparent; border-color: var(--tally); color: var(--tally); }
+  label { display: block; font-size: 13px; color: var(--chalk-dim); margin: 12px 0 4px; }
+  input, select, textarea { width: 100%; font: 500 16px var(--font-body); color: var(--chalk); background: var(--pine); border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+  textarea { min-height: 220px; resize: vertical; line-height: 1.5; }
+  .hint { font-size: 14px; color: var(--chalk-dim); margin: 8px 0 0; line-height: 1.4; }
+  .hint.warn { color: var(--gold-hi); }
+
+  /* Top bar: title, connection, score, period */
+  .top { position: sticky; top: 0; z-index: 5; background: var(--pine); border-bottom: 1px solid var(--line); padding: 10px 16px 8px; padding-top: max(10px, env(safe-area-inset-top)); }
+  .top-row { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+  .top h1 { font-family: var(--font-display); font-weight: 800; font-size: 24px; letter-spacing: .04em; color: var(--gold-hi); margin: 0; text-transform: uppercase; }
+  .conn { font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .conn.ok { color: var(--ok); } .conn.wait { color: var(--gold-hi); } .conn.bad { color: var(--tally); }
+  .score { margin-left: auto; font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: .03em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .score small { font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--chalk-dim); letter-spacing: 0; display: block; text-align: right; }
+  .periods { max-width: 1100px; margin: 8px auto 0; display: flex; gap: 6px; overflow-x: auto; }
+  .periods button { min-height: 38px; padding: 6px 12px; flex: 1 0 auto; font-size: 15px; }
+  .periods button.on { background: var(--gold); color: var(--pine); border-color: var(--gold); }
+
+  .clockrow { max-width: 1100px; margin: 8px auto 0; display: flex; align-items: center; gap: 8px; }
+  .clockrow .clk { font-family: var(--font-display); font-weight: 800; font-size: 26px; min-width: 64px; font-variant-numeric: tabular-nums; }
+  .clockrow button { min-height: 38px; padding: 4px 14px; }
+  .clockrow button.run { background: var(--tally); border-color: var(--tally); }
+  .act.yc { background: #E8C21E; color: #1a1a1a; border-color: #E8C21E; }
+  .act.rc { background: #C8102E; color: #fff; border-color: #C8102E; }
+  .log li .min { font-size: 12px; color: var(--gold-hi); width: 32px; flex: 0 0 auto; }
+  main { max-width: 1100px; margin: 0 auto; padding: 12px 16px 120px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .tabs button { flex: 1; min-height: 42px; }
+  .tabs button.on { outline: 2px solid var(--gold-hi); outline-offset: -2px; color: var(--gold-hi); }
+
+  /* Players */
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .teams.single { grid-template-columns: 1fr; }
+  .team h2 { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 8px; color: var(--gold); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; } /* score and fouls right next to the name */
+  .team h2 small { font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--chalk-dim); letter-spacing: 0; text-transform: none; align-self: center; }
+  .switch { display: none; gap: 6px; margin-bottom: 10px; }
+  .switch button { flex: 1; min-height: 42px; }
+  .switch button.on { background: var(--gold); color: var(--pine); border-color: var(--gold); }
+  @media (max-width: 760px) {
+    .teams { grid-template-columns: 1fr; }
+    .teams.both .team:not(.on) { display: none; }
+    .switch.both { display: flex; }
+  }
+  .players { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
+  /* Each team's buttons in its own color (Setup → Teams and rosters), text in white or dark to suit it */
+  .team { --tc: var(--turf); --tf: var(--chalk); }
+  .team h2 { border-left: 6px solid var(--tc); padding-left: 8px; }
+  .pl { background: var(--tc); color: var(--tf); border-color: color-mix(in srgb, var(--tc) 65%, #fff); }
+  .pl:hover { background: color-mix(in srgb, var(--tc) 85%, #fff); }
+  .pl small { color: inherit; opacity: .85; }
+  /* Picked player: a white and gold ring that shows on any team color */
+  .pl.sel { outline: 3px solid var(--chalk); outline-offset: 2px; box-shadow: 0 0 0 7px var(--gold); position: relative; z-index: 1; }
+  .switch button i, .seg button i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; background: var(--tc); border: 1px solid rgba(255,255,255,.5); vertical-align: -1px; }
+  .card h3.tc { border-left: 6px solid var(--tc); padding-left: 8px; }
+  input.swatch { flex: 0 0 56px; width: 56px; padding: 4px; height: auto; cursor: pointer; }
+  .pl { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 64px; padding: 6px 4px; line-height: 1.1; }
+  .pl b { font-family: var(--font-display); font-size: 26px; font-weight: 800; }
+  .pl span { font-size: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pl small { font-size: 11px; }
+  .pl.team-pl b { font-size: 18px; letter-spacing: .06em; }
+  .act.sel { background: var(--gold); color: var(--pine); border-color: var(--gold-hi); }
+  .pl.out { opacity: .55; }
+  .empty { font-size: 14px; color: var(--chalk-dim); padding: 10px; border: 1px dashed var(--line); border-radius: 8px; }
+
+  /* Play buttons, pinned to the bottom on phones so they're always under the thumb */
+  .pad { margin-top: 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .act { min-height: 54px; font-size: 16px; font-weight: 700; padding: 6px 4px; }
+  .act.made { color: var(--gold-hi); }
+  .act.miss { background: transparent; }
+  .act.foul { border-color: var(--tally); color: #ff8a80; }
+  .pick-hint { grid-column: 1 / -1; font-size: 14px; color: var(--chalk-dim); text-align: center; min-height: 20px; }
+  .pick-hint b { color: var(--gold-hi); }
+
+  .assist { margin-top: 12px; background: var(--field); border: 1px solid var(--gold); border-radius: 10px; padding: 10px; }
+  .assist p { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+  .assist .row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .assist button { min-height: 44px; padding: 6px 12px; }
+
+  .log { margin-top: 16px; }
+  .log h3, .card h3 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; font-size: 17px; margin: 0 0 8px; color: var(--gold); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .log h3 button { min-height: 38px; padding: 4px 14px; font-family: var(--font-body); letter-spacing: 0; text-transform: none; font-size: 15px; }
+  .log ol { list-style: none; margin: 0; padding: 0; }
+  .log li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid rgba(243,239,226,.1); font-size: 15px; }
+  .log li .per { font-size: 12px; color: var(--chalk-dim); width: 30px; flex: 0 0 auto; }
+  .log li .what { flex: 1; min-width: 0; }
+  .log li .unsent { font-size: 12px; color: var(--gold-hi); }
+  .log li button { min-height: 36px; padding: 2px 12px; font-size: 14px; background: transparent; }
+
+  .toast { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--chalk); color: var(--pine); font-weight: 700; padding: 10px 16px; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.4); display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); z-index: 10; }
+  .toast[hidden] { display: none; }
+  .toast button { min-height: 34px; padding: 2px 12px; background: var(--pine); color: var(--chalk); border: 0; }
+
+  /* Box score */
+  .card { background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+  .scroll { overflow-x: auto; }
+  table.box { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.box th, table.box td { padding: 6px 8px; text-align: right; border-top: 1px solid rgba(243,239,226,.1); }
+  table.box th { color: var(--chalk-dim); font-weight: 600; font-size: 12px; border-top: 0; }
+  table.box th:nth-child(-n+2), table.box td:nth-child(-n+2) { text-align: left; }
+  table.box tr.tot td { font-weight: 700; border-top: 2px solid var(--line); }
+  table.box tr.teamrow td { color: var(--chalk-dim); }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 560px) { .two { grid-template-columns: 1fr; } }
+  .seg { display: flex; gap: 6px; }
+  .seg button { flex: 1; }
+  .seg button.on { background: var(--gold); color: var(--pine); border-color: var(--gold); }
+  .set-row { display: flex; gap: 8px; }
+  .set-row input { flex: 1; }
+  .set-row button { flex: 0 0 auto; }
+  .set-row select { flex: 1; min-width: 0; }
+  button.ghost { background: transparent; min-height: 0; padding: 8px 12px; font-size: 14px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-row">
+    <h1>Soccer stats</h1>
+    <span class="conn wait" id="conn" role="status">Connecting…</span>
+    <div class="score" id="score"></div>
+  </div>
+  <div class="periods" id="periods" role="group" aria-label="Half"></div>
+  <div class="clockrow"><span class="clk" id="clk">0'</span><button id="btnClock">Start clock</button><button class="ghost" id="btnClockFix">Set minute</button></div>
+</header>
+
+<main>
+  <div class="tabs" role="tablist">
+    <button data-tab="plays" class="on">Plays</button>
+    <button data-tab="box">Box score</button>
+    <button data-tab="setup">Setup</button>
+  </div>
+
+  <section data-pane="plays">
+    <p class="hint warn" id="playsWarn" hidden></p>
+    <div class="switch" id="switch"></div>
+    <div class="teams" id="teams"></div>
+    <div class="pad" id="pad"></div>
+    <div class="assist" id="assist" hidden></div>
+    <div class="log">
+      <h3>Plays <button id="btnUndo">Undo last</button></h3>
+      <ol id="log"></ol>
+    </div>
+  </section>
+
+  <section data-pane="box" hidden>
+    <div id="boxes"></div>
+  </section>
+
+  <section data-pane="setup" hidden>
+    <div class="card">
+      <h3>Stat keeper key</h3>
+      <div class="set-row"><input id="key" type="password" autocomplete="off" placeholder="Paste the key from Mr. Lee"><button id="btnKey">Save</button></div>
+      <p class="hint" id="keyNote">Needed once on each device to send plays.</p>
+    </div>
+    <div class="card">
+      <h3>Stat keepers</h3>
+      <div class="seg" id="keepers">
+        <button data-k="1">One (keeps both teams)</button>
+        <button data-k="2">Two (one per team)</button>
+      </div>
+      <div id="mySideBox" hidden>
+        <label>This device keeps</label>
+        <div class="seg" id="mySide"></div>
+      </div>
+      <p class="hint">Both devices share this setting. With two keepers, each one sees only their team's players and plays.</p>
+    </div>
+    <div class="card">
+      <h3>Teams and rosters</h3>
+      <div class="two">
+        <div>
+          <label for="libHome">Saved teams</label>
+          <div class="set-row"><select id="libHome"></select><button id="forgetHome" class="ghost">Forget</button></div>
+          <label for="nameHome">Our team and its color</label><div class="set-row"><input id="nameHome" maxlength="30"><input type="color" id="colorHome" class="swatch" aria-label="Our team's color"></div>
+          <label for="rosterHome">Roster: one player per line, number then name</label>
+          <textarea id="rosterHome" placeholder="2 Luke Tran&#10;3 Jordan Lee&#10;5 Noah Kim"></textarea>
+        </div>
+        <div>
+          <label for="libAway">Saved teams</label>
+          <div class="set-row"><select id="libAway"></select><button id="forgetAway" class="ghost">Forget</button></div>
+          <label for="nameAway">Opponent and its color</label><div class="set-row"><input id="nameAway" maxlength="30"><input type="color" id="colorAway" class="swatch" aria-label="Opponent's color"></div>
+          <label for="rosterAway">Roster: one player per line, number then name</label>
+          <textarea id="rosterAway" placeholder="1 Sam Ortiz&#10;4 Eli Brooks"></textarea>
+        </div>
+      </div>
+      <div class="set-row" style="margin-top:10px"><button class="primary" id="btnRoster">Save teams and rosters</button></div>
+      <p class="hint" id="rosterNote">Saving also keeps each team in Saved teams for next time, by team name. Use names like "FBCA Varsity" and "FBCA JV" to keep both. A player's name can be fixed mid-game; their plays stay with them.</p>
+    </div>
+    <div class="card">
+      <h3>Match clock</h3>
+      <div class="set-row"><label for="halfMin" style="margin:auto 0;flex:0 0 auto">Half length (minutes)</label><input id="halfMin" type="number" min="1" max="90" style="max-width:100px"></div>
+      <p class="hint">Start the clock at kickoff and stop it at halftime. Goals and cards get the minute from it (2nd half minutes continue from the half length). Both stat keepers share it. "Set minute" fixes it if it's off.</p>
+    </div>
+    <div class="card">
+      <h3>New game</h3>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--chalk);font-size:15px"><input type="checkbox" id="keepRosters" checked style="width:auto"> Keep the teams and rosters</label>
+      <div class="set-row" style="margin-top:10px"><button class="danger" id="btnReset">Start a new game</button></div>
+      <p class="hint">Clears every play for both keepers and the scorebug. Do this before kickoff, not at halftime.</p>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden><span id="toastText"></span><button id="toastUndo">Undo</button></div>
+
+<script>
+(() => {
+  const qs = new URLSearchParams(location.search);
+  const API = (qs.get('api') || 'https://eota-stat-keeper.clee-625.workers.dev').replace(/\/$/, '');
+  const GAME = 'soccer';
+  const SIDES = ['home', 'away'];
+  const PERIODS = ['1H', '2H', 'OT1', 'OT2'];
+  const PER_LABEL = { '1H': '1st half', '2H': '2nd half', OT1: 'OT 1', OT2: 'OT 2' };
+  const TYPES = { goal: 'Goal', ast: 'Assist', sog: 'Shot on target', shot: 'Shot off target', save: 'Save', corner: 'Corner kick',
+                  foul: 'Foul', offside: 'Offside', yc: 'Yellow card', rc: 'Red card' };
+  // The play buttons, in pad order: [type, label, style]
+  const PAD = [['goal', 'Goal', 'made'], ['sog', 'On target', ''], ['shot', 'Off target', 'miss'], ['save', 'Save', ''],
+               ['corner', 'Corner', ''], ['foul', 'Foul', 'foul'], ['offside', 'Offside', ''], ['ast', 'Assist', ''],
+               ['yc', 'Yellow', 'yc'], ['rc', 'Red', 'rc']];
+  // Same stat keeper key as the basketball page; everything else kept separately.
+  const LS = { key: 'eota-stats-key', side: 'eota-soccer-stats-side', pending: 'eota-soccer-stats-pending', cache: 'eota-soccer-stats-cache' };
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const rid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
+
+  let server = store.get(LS.cache, null);   // the game as the worker last sent it: { rev, meta, events }
+  let pending = store.get(LS.pending, []);  // changes not sent yet, oldest first: { kind, body }
+  let key = store.get(LS.key, '');
+  let mySide = store.get(LS.side, 'home');
+  let shown = 'home';                       // team on screen on a phone with one keeper
+  let pick = {};                            // { side, player } or { type }, waiting for the other half
+  let assist = null;                        // { side, scorer, until } after a goal
+  let ws = null, wsOpen = false, lastPong = 0, sending = false, sendErr = '', tab = 'plays';
+
+  // ---- The game as this device sees it: the worker's copy plus plays not sent yet ----
+  const view = () => {
+    if (!server) return null;
+    const meta = { ...server.meta };
+    let events = server.events.slice();
+    const have = new Set(events.map(e => e.id));
+    for (const p of pending) {
+      if (p.body.gameId !== server.meta.gameId) continue;
+      if (p.kind === 'events') for (const e of p.body.events) if (!have.has(e.id)) { events.push({ ...e, unsent: true }); have.add(e.id); }
+      if (p.kind === 'undo') events = events.filter(e => !p.body.ids.includes(e.id));
+      if (p.kind === 'meta') Object.assign(meta, p.body.meta);
+    }
+    return { meta, events };
+  };
+  const blank = () => Object.fromEntries(Object.keys(TYPES).map(k => [k, 0]));
+  const pts = t => t.goal;                          // goals
+  const shots = t => t.goal + t.sog + t.shot;       // a goal is also a shot on target
+  const onTarget = t => t.goal + t.sog;
+  const tally = v => {
+    const out = {};
+    for (const side of SIDES) {
+      const players = (v.meta.rosters[side] || []).map(p => ({ ...p, ...blank() }));
+      const byId = new Map(players.map(p => [p.id, p]));
+      const team = blank(), tot = blank();
+      for (const e of v.events) {
+        if (e.side !== side || !(e.type in TYPES)) continue;
+        tot[e.type]++;
+        (byId.get(e.player) || team)[e.type]++;
+      }
+      out[side] = { players, team, tot };
+    }
+    return out;
+  };
+  const DEFAULT_COLORS = { home: '#17402B', away: '#1F3A93' };
+  const colorOf = (v, side) => (v.meta.colors && /^#[0-9a-f]{6}$/i.test(v.meta.colors[side])) ? v.meta.colors[side] : DEFAULT_COLORS[side];
+  // White text on dark colors, dark text on light ones.
+  const textOn = hex => {
+    const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
+    return .2126 * r + .7152 * g + .0722 * b > .35 ? '#0D2418' : '#FFFFFF';
+  };
+  const paint = (node, v, side) => { const c = colorOf(v, side); node.style.setProperty('--tc', c); node.style.setProperty('--tf', textOn(c)); return node; };
+  const dot = (v, side) => paint(el('i'), v, side);
+  const sidesShown = v => v.meta.keepers === 2 ? [mySide] : SIDES;
+  const lastName = n => { const w = String(n || '').trim().split(/\s+/); return w.length > 1 ? w[w.length - 1] : w[0] || ''; };
+  const who = (v, side, player) => {
+    if (player === 'team') return v.meta.names[side] + ' team';
+    const p = (v.meta.rosters[side] || []).find(x => x.id === player);
+    return p ? (p.num ? '#' + p.num + ' ' : '') + p.name : 'Removed player';
+  };
+
+  // ---- Sending ----
+  const savePending = () => store.set(LS.pending, pending);
+  const setServer = st => {
+    if (server && st.meta.gameId !== server.meta.gameId) {
+      const dropped = pending.filter(p => p.body.gameId === server.meta.gameId && p.kind === 'events').reduce((a, p) => a + p.body.events.length, 0);
+      pending = pending.filter(p => p.body.gameId === st.meta.gameId); savePending();
+      pick = {}; assist = null;
+      toast('A new game was started' + (dropped ? '. ' + dropped + ' unsent plays from the last game were dropped.' : '.'));
+    }
+    server = { rev: st.rev, meta: st.meta, events: st.events };
+    store.set(LS.cache, server);
+  };
+  const enqueue = (kind, payload) => {
+    if (!server) return;
+    const body = { gameId: server.meta.gameId, ...payload }, last = pending[pending.length - 1];
+    const lastBusy = sending && pending.length === 1; // the one being sent can't change
+    if (kind === 'events' && last && last.kind === 'events' && !lastBusy && last.body.gameId === body.gameId) last.body.events.push(...payload.events);
+    else if (kind === 'meta' && last && last.kind === 'meta' && !lastBusy && last.body.gameId === body.gameId) last.body.meta = { ...last.body.meta, ...payload.meta };
+    else pending.push({ kind, body });
+    savePending(); render(); flush();
+  };
+  let retryTimer = 0;
+  const flush = async () => {
+    if (sending || !pending.length || !server) return;
+    if (!key) { sendErr = 'key'; render(); return; }
+    sending = true;
+    const job = pending[0];
+    try {
+      const r = await fetch(API + '/' + job.kind + '?game=' + GAME, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify(job.body)
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.status === 401) { sending = false; sendErr = 'badkey'; render(); return; }
+      if (r.status === 409 && data.state) { sending = false; setServer(data.state); sendErr = ''; render(); flush(); return; }
+      if (!r.ok) throw new Error(data.error || 'Error ' + r.status);
+      // Fold the change into our copy now; the WebSocket echo of it is then a no-op.
+      if (job.kind === 'events') { const have = new Set(server.events.map(e => e.id)); server.events.push(...job.body.events.filter(e => !have.has(e.id))); }
+      if (job.kind === 'undo') server.events = server.events.filter(e => !job.body.ids.includes(e.id));
+      if (job.kind === 'meta' && data.meta) server.meta = data.meta;
+      store.set(LS.cache, server);
+      pending.shift(); savePending(); sendErr = '';
+    } catch (e) {
+      sending = false; sendErr = 'offline'; render();
+      clearTimeout(retryTimer); retryTimer = setTimeout(flush, 2000);
+      return;
+    }
+    sending = false; render();
+    if (pending.length) flush();
+  };
+
+  // ---- Live updates from the worker ----
+  const connect = () => {
+    try { ws = new WebSocket(API.replace(/^http/, 'ws') + '/ws?game=' + GAME); } catch (e) { setTimeout(connect, 3000); return; }
+    ws.onopen = () => { wsOpen = true; lastPong = Date.now(); render(); flush(); };
+    ws.onclose = () => { wsOpen = false; render(); setTimeout(connect, 2000); };
+    ws.onerror = () => {};
+    ws.onmessage = e => {
+      lastPong = Date.now();
+      if (e.data === 'pong') return;
+      let m; try { m = JSON.parse(e.data); } catch (err) { return; }
+      if (m.t === 'state') { setServer(m); render(); return; }
+      if (!server || m.rev !== server.rev + 1) { ws.send('sync'); return; } // missed one: get the whole game
+      server.rev = m.rev;
+      if (m.t === 'add') { const have = new Set(server.events.map(x => x.id)); server.events.push(...m.events.filter(x => !have.has(x.id))); }
+      if (m.t === 'del') server.events = server.events.filter(x => !m.ids.includes(x.id));
+      if (m.t === 'meta') server.meta = m.meta;
+      store.set(LS.cache, server); render();
+    };
+  };
+  // Ping every 15 s; a connection that stops answering is replaced.
+  setInterval(() => {
+    if (!ws || ws.readyState !== 1) return;
+    if (Date.now() - lastPong > 40000) { ws.close(); return; }
+    ws.send('ping');
+  }, 15000);
+  addEventListener('online', () => { flush(); if (ws && ws.readyState !== 1) ws.close(); });
+
+  // ---- Recording plays ----
+  let wake = null;
+  const keepAwake = () => { if (!wake && navigator.wakeLock) navigator.wakeLock.request('screen').then(w => { wake = w; w.onrelease = () => wake = null; }).catch(() => {}); };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && wake === null && server) keepAwake(); });
+
+  // ---- Match clock (shared through the game's meta) ----
+  const clockMs = m => { const c = m.clock || {}; return (c.base || 0) + (c.run ? Date.now() - (c.startedAt || Date.now()) : 0); };
+  const halfMin = m => m.halfMin || 40;
+  const halfStart = m => ({ '1H': 0, '2H': halfMin(m), OT1: 2 * halfMin(m), OT2: 2 * halfMin(m) + 10 }[m.period] || 0);
+  // The minute on a goal or card: 1-based, continuing from the half length in the 2nd half; stoppage time as 40+2.
+  const minuteNow = m => {
+    const into = Math.floor(clockMs(m) / 60000) + 1, start = halfStart(m), len = /^OT/.test(m.period) ? 10 : halfMin(m);
+    return into > len ? `${start + len}+${into - len}` : String(start + into);
+  };
+  const clockLabel = m => (m.clock && (m.clock.run || m.clock.base)) ? minuteNow(m) + "'" : "0'";
+  const setClock = clock => enqueue('meta', { meta: { clock } });
+  $('btnClock').onclick = () => {
+    const v = view(); if (!v) return;
+    const c = v.meta.clock || {};
+    if (c.run) setClock({ run: false, startedAt: 0, base: clockMs(v.meta) });
+    else setClock({ run: true, startedAt: Date.now(), base: c.base || 0 });
+  };
+  $('btnClockFix').onclick = () => {
+    const v = view(); if (!v) return;
+    const ans = prompt('What minute is it now? (' + (PER_LABEL[v.meta.period] || v.meta.period) + ')', String(parseInt(minuteNow(v.meta), 10)));
+    const n = parseInt(ans, 10); if (isNaN(n)) return;
+    const c = v.meta.clock || {};
+    setClock({ run: !!c.run, startedAt: Date.now(), base: Math.max(0, (n - 1 - halfStart(v.meta)) * 60000) });
+  };
+  $('halfMin').addEventListener('change', e => { const n = Math.max(1, Math.min(90, parseInt(e.target.value, 10) || 40)); enqueue('meta', { meta: { halfMin: n } }); });
+  setInterval(() => { const v = view(); if (v) $('clk').textContent = clockLabel(v.meta); }, 1000);
+
+  const logPlay = (side, player, type) => {
+    const v = view(); if (!v) return;
+    const ev = { id: rid(), side, player, type, period: v.meta.period, at: Date.now() };
+    if (type === 'goal' || type === 'yc' || type === 'rc') ev.min = minuteNow(v.meta); // for the goal list and cards
+    enqueue('events', { events: [ev] });
+    if (navigator.vibrate) navigator.vibrate(15);
+    keepAwake();
+    assist = type === 'goal' && player !== 'team' ? { side, scorer: player, until: Date.now() + 8000 } : null;
+    toast(who(v, side, player) + ' · ' + TYPES[type] + (ev.min ? ' · ' + ev.min + "'" : ''), ev.id);
+  };
+  const undo = id => {
+    // Not sent yet: just take it out. Otherwise ask the worker to remove it.
+    for (let i = pending.length - 1; i >= 0; i--) {
+      const p = pending[i];
+      if (p.kind !== 'events' || (i === 0 && sending)) continue;
+      const j = p.body.events.findIndex(e => e.id === id);
+      if (j < 0) continue;
+      p.body.events.splice(j, 1);
+      if (!p.body.events.length) pending.splice(i, 1);
+      savePending(); render(); return;
+    }
+    enqueue('undo', { ids: [id] });
+  };
+  const tapPlayer = (side, player) => {
+    if (pick.type) { logPlay(side, player, pick.type); pick = {}; }
+    else pick = pick.side === side && pick.player === player ? {} : { side, player };
+    render();
+  };
+  const tapAction = type => {
+    if (pick.player) { logPlay(pick.side, pick.player, type); pick = {}; }
+    else pick = pick.type === type ? {} : { type };
+    render();
+  };
+
+  // ---- Toast with undo ----
+  let toastTimer = 0, toastId = null;
+  const toast = (text, id) => {
+    $('toastText').textContent = text; toastId = id || null; $('toastUndo').hidden = !id; $('toast').hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, id ? 4000 : 6000);
+  };
+  $('toastUndo').onclick = () => { if (toastId) undo(toastId); $('toast').hidden = true; assist = null; render(); };
+
+  // ---- Drawing ----
+  const render = () => {
+    const v = view();
+    // Connection
+    const c = $('conn'), waiting = pending.reduce((a, p) => a + (p.kind === 'events' ? p.body.events.length : 1), 0);
+    if (sendErr === 'key' || sendErr === 'badkey') { c.className = 'conn bad'; c.textContent = sendErr === 'key' ? 'Add the key in Setup' : 'Wrong key'; }
+    else if (!wsOpen || sendErr === 'offline') { c.className = 'conn bad'; c.textContent = 'Offline' + (waiting ? ' · ' + waiting + ' waiting' : ''); }
+    else if (waiting) { c.className = 'conn wait'; c.textContent = 'Sending ' + waiting + '…'; }
+    else { c.className = 'conn ok'; c.textContent = 'Live'; }
+    const warn = $('playsWarn');
+    warn.hidden = !(sendErr || !v);
+    warn.textContent = !v ? 'Connecting to the stats server…'
+      : sendErr === 'key' ? 'Plays are saved on this device but can\'t send until you add the stat keeper key in Setup.'
+      : sendErr === 'badkey' ? 'That stat keeper key is wrong. Plays are saved on this device; fix the key in Setup to send them.'
+      : sendErr === 'offline' ? 'No connection. Keep going: plays are saved on this device and send when it reconnects.' : '';
+    if (!v) return;
+    const t = tally(v), names = v.meta.names, two = v.meta.keepers === 2, sides = sidesShown(v);
+
+    $('score').replaceChildren(document.createTextNode(names.home + ' ' + pts(t.home.tot) + ' – ' + pts(t.away.tot) + ' ' + names.away),
+      el('small', null, 'Shots ' + shots(t.home.tot) + ' – ' + shots(t.away.tot) + ' · Corners ' + t.home.tot.corner + ' – ' + t.away.tot.corner));
+    $('clk').textContent = clockLabel(v.meta);
+    const run = !!(v.meta.clock && v.meta.clock.run);
+    $('btnClock').textContent = run ? 'Stop clock' : (v.meta.clock && v.meta.clock.base ? 'Restart clock' : 'Start clock (kickoff)');
+    $('btnClock').classList.toggle('run', run);
+    $('periods').replaceChildren(...PERIODS.map(p => {
+      const b = el('button', p === v.meta.period ? 'on' : '', PER_LABEL[p]); b.setAttribute('aria-pressed', p === v.meta.period);
+      // A new half starts its clock at zero, stopped until kickoff.
+      b.onclick = () => { if (p !== v.meta.period && confirm('Start the ' + PER_LABEL[p] + '? The match clock resets for it.')) enqueue('meta', { meta: { period: p, clock: { run: false, startedAt: 0, base: 0 } } }); };
+      return b;
+    }));
+
+    if (tab === 'plays') renderPlays(v, t, sides, two);
+    if (tab === 'box') renderBox(v, t);
+    if (tab === 'setup') renderSetup(v);
+  };
+
+  const renderPlays = (v, t, sides, two) => {
+    const sw = $('switch');
+    sw.className = 'switch' + (two ? '' : ' both');
+    sw.replaceChildren(...(two ? [] : SIDES.map(side => {
+      const b = el('button', side === shown ? 'on' : ''); b.append(dot(v, side), v.meta.names[side]); b.onclick = () => { shown = side; render(); }; return b;
+    })));
+    const teams = $('teams');
+    teams.className = 'teams ' + (sides.length === 1 ? 'single' : 'both');
+    teams.replaceChildren(...sides.map(side => {
+      const box = paint(el('div', 'team' + (side === shown || sides.length === 1 ? ' on' : '')), v, side);
+      const h = el('h2', null, v.meta.names[side]);
+      h.append(el('small', null, pts(t[side].tot) + (pts(t[side].tot) === 1 ? ' goal · ' : ' goals · ') + shots(t[side].tot) + ' shots'));
+      const grid = el('div', 'players');
+      for (const p of t[side].players) {
+        // Sent off: a red card, or two yellows.
+        const off = p.rc > 0 || p.yc >= 2, card = off ? ' · RED' : p.yc ? ' · YC' : '';
+        const b = el('button', 'pl' + (pick.side === side && pick.player === p.id ? ' sel' : '') + (off ? ' out' : ''));
+        b.append(el('b', null, p.num ? '#' + p.num : '–'), el('span', null, lastName(p.name)), el('small', null, p.goal + ' G · ' + p.ast + ' A' + card));
+        b.setAttribute('aria-label', (p.num ? '#' + p.num + ' ' : '') + p.name + ', ' + p.goal + ' goals, ' + p.ast + ' assists' + (off ? ', sent off' : p.yc ? ', yellow card' : ''));
+        b.onclick = () => tapPlayer(side, p.id);
+        grid.append(b);
+      }
+      const tb = el('button', 'pl team-pl' + (pick.side === side && pick.player === 'team' ? ' sel' : ''));
+      tb.append(el('b', null, 'TEAM'), el('small', null, 'corners, team fouls'));
+      tb.onclick = () => tapPlayer(side, 'team');
+      grid.append(tb);
+      box.append(h);
+      if (!t[side].players.length) box.append(el('p', 'empty', 'No roster yet. Add players in Setup, or use TEAM for now.'));
+      box.append(grid);
+      return box;
+    }));
+
+    const hint = el('div', 'pick-hint');
+    if (pick.player) hint.append('Now tap what ', el('b', null, who(v, pick.side, pick.player)), ' did.');
+    else if (pick.type) hint.append('Now tap who: ', el('b', null, TYPES[pick.type]), '.');
+    else hint.textContent = 'Tap a player, then the play. Or the play, then the player.';
+    $('pad').replaceChildren(hint, ...PAD.map(([type, label, cls]) => {
+      const b = el('button', 'act ' + cls + (pick.type === type ? ' sel' : ''), label);
+      b.setAttribute('aria-label', TYPES[type]);
+      b.onclick = () => tapAction(type);
+      return b;
+    }));
+
+    // Assist prompt after a made basket
+    const as = $('assist');
+    if (assist && Date.now() < assist.until && sides.includes(assist.side)) {
+      as.hidden = false;
+      const row = el('div', 'row');
+      for (const p of t[assist.side].players) {
+        if (p.id === assist.scorer) continue;
+        const b = el('button', null, (p.num ? '#' + p.num + ' ' : '') + lastName(p.name));
+        b.onclick = () => { const a = assist; assist = null; logPlay(a.side, p.id, 'ast'); render(); };
+        row.append(b);
+      }
+      const no = el('button', null, 'No assist'); no.onclick = () => { assist = null; render(); }; row.append(no);
+      as.replaceChildren(el('p', null, 'Assist on that goal?'), row);
+    } else { as.hidden = true; if (assist && Date.now() >= assist.until) assist = null; }
+
+    // Recent plays, newest first (this keeper's team only, with two keepers)
+    const mine = v.events.filter(e => sides.includes(e.side));
+    $('btnUndo').disabled = !mine.length;
+    $('log').replaceChildren(...mine.slice(-12).reverse().map(e => {
+      const li = el('li');
+      li.append(el('span', 'min', e.min ? e.min + "'" : e.period), el('span', 'what', who(v, e.side, e.player) + ' · ' + TYPES[e.type]));
+      if (e.unsent) li.append(el('span', 'unsent', 'not sent'));
+      const b = el('button', null, 'Undo'); b.onclick = () => undo(e.id); li.append(b);
+      return li;
+    }));
+    if (!mine.length) $('log').append(el('li', null, 'No plays yet.'));
+  };
+  $('btnUndo').onclick = () => {
+    const v = view(); if (!v) return;
+    const mine = v.events.filter(e => sidesShown(v).includes(e.side));
+    if (mine.length) { const e = mine[mine.length - 1]; undo(e.id); toast('Undid ' + who(v, e.side, e.player) + ' · ' + TYPES[e.type]); }
+  };
+  setInterval(() => { if (assist && Date.now() >= assist.until) render(); }, 1000);
+
+  const COLS = [['G', p => p.goal], ['A', p => p.ast], ['SH', p => shots(p)], ['SOG', p => onTarget(p)], ['SV', p => p.save],
+                ['CK', p => p.corner], ['FC', p => p.foul], ['OFF', p => p.offside], ['YC', p => p.yc], ['RC', p => p.rc]];
+  const renderBox = (v, t) => {
+    $('boxes').replaceChildren(...SIDES.map(side => {
+      const card = el('div', 'card'), tbl = el('table', 'box'), head = el('tr');
+      card.append(paint(el('h3', 'tc', v.meta.names[side] + ' · ' + pts(t[side].tot)), v, side));
+      ['#', 'Player', ...COLS.map(c => c[0])].forEach(h => head.append(el('th', null, h)));
+      tbl.append(head);
+      const row = (cls, num, name, p) => { const tr = el('tr', cls); tr.append(el('td', null, num), el('td', null, name), ...COLS.map(c => el('td', null, String(c[1](p))))); tbl.append(tr); };
+      t[side].players.forEach(p => row('', p.num, p.name, p));
+      if (Object.values(t[side].team).some(Boolean)) row('teamrow', '', 'Team / removed', t[side].team);
+      row('tot', '', 'Total', t[side].tot);
+      const wrap = el('div', 'scroll'); wrap.append(tbl); card.append(wrap);
+      return card;
+    }));
+  };
+
+  // ---- Saved teams: rosters kept by team name, shared by every stat device ----
+  let library = null, libNote = '';
+  const rosterBase = { home: null, away: null }; // a loaded saved roster: its players keep their ids
+  const Cap = side => side === 'home' ? 'Home' : 'Away';
+  const libFetch = async (method, body) => {
+    const r = await fetch(API + '/library?game=' + GAME, {
+      method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: body ? JSON.stringify(body) : undefined
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(r.status === 401 ? 'wrong key' : d.error || 'error ' + r.status);
+    library = d.teams; libNote = '';
+  };
+  const loadLibrary = async () => {
+    if (!key) { library = null; libNote = 'Saved teams show once the key is saved.'; renderLibrary(); return; }
+    try { await libFetch('GET'); } catch (e) { libNote = "Couldn't load saved teams (" + e.message + ')'; }
+    renderLibrary();
+  };
+  const renderLibrary = () => {
+    for (const side of SIDES) {
+      const sel = $('lib' + Cap(side)), keep = sel.value;
+      const opts = [new Option(library ? (library.length ? 'Load a saved team…' : 'No saved teams yet') : libNote || 'Loading saved teams…', '')];
+      for (const t of library || []) opts.push(new Option(t.name + ' (' + t.roster.length + ' players)', t.name));
+      sel.replaceChildren(...opts);
+      sel.value = (library || []).some(t => t.name === keep) ? keep : '';
+      sel.disabled = !library || !library.length;
+      $('forget' + Cap(side)).disabled = !sel.value;
+    }
+  };
+  for (const side of SIDES) {
+    $('lib' + Cap(side)).addEventListener('change', e => {
+      const t = (library || []).find(x => x.name === e.target.value);
+      $('forget' + Cap(side)).disabled = !t;
+      if (!t) return;
+      $('name' + Cap(side)).value = t.name; $('roster' + Cap(side)).value = rosterText(t.roster);
+      if (t.color) { $('color' + Cap(side)).value = t.color.toLowerCase(); $('color' + Cap(side)).dataset.dirty = '1'; }
+      $('name' + Cap(side)).dataset.dirty = '1'; $('roster' + Cap(side)).dataset.dirty = '1';
+      rosterBase[side] = t.roster;
+      const v = view(), played = v && v.events.some(ev => ev.side === side);
+      $('rosterNote').textContent = 'Loaded ' + t.name + '. Tap Save teams and rosters to use it.'
+        + (played ? ' This game already has plays for this side; start a new game first if this is a different team.' : '');
+      $('rosterNote').className = 'hint warn';
+    });
+    $('forget' + Cap(side)).onclick = async () => {
+      const name = $('lib' + Cap(side)).value;
+      if (!name || !confirm('Forget the saved roster for ' + name + '? The current game keeps its roster.')) return;
+      try { await libFetch('POST', { action: 'delete', name }); toast('Forgot ' + name + '.'); }
+      catch (e) { toast("Couldn't forget " + name + ': ' + e.message); }
+      renderLibrary();
+    };
+  }
+
+  const setField = (id, value) => { const f = $(id); if (document.activeElement !== f && f.dataset.dirty !== '1') f.value = value; };
+  const rosterText = list => (list || []).map(p => (p.num ? p.num + ' ' : '') + p.name).join('\n');
+  const renderSetup = v => {
+    setField('key', key);
+    $('keyNote').textContent = key ? (sendErr === 'badkey' ? 'That key was turned down. Check it with Mr. Lee.' : 'Key saved on this device.') : 'Needed once on each device to send plays.';
+    $('keyNote').className = 'hint' + (sendErr === 'badkey' || !key ? ' warn' : '');
+    for (const b of $('keepers').children) b.classList.toggle('on', +b.dataset.k === v.meta.keepers);
+    $('mySideBox').hidden = v.meta.keepers !== 2;
+    $('mySide').replaceChildren(...SIDES.map(side => {
+      const b = el('button', side === mySide ? 'on' : ''); b.append(dot(v, side), v.meta.names[side]);
+      b.onclick = () => { mySide = side; store.set(LS.side, side); pick = {}; render(); };
+      return b;
+    }));
+    setField('halfMin', String(halfMin(v.meta)));
+    setField('nameHome', v.meta.names.home); setField('nameAway', v.meta.names.away);
+    setField('colorHome', colorOf(v, 'home').toLowerCase()); setField('colorAway', colorOf(v, 'away').toLowerCase());
+    setField('rosterHome', rosterText(v.meta.rosters.home)); setField('rosterAway', rosterText(v.meta.rosters.away));
+  };
+  for (const id of ['nameHome', 'nameAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway']) $(id).addEventListener('input', () => { $(id).dataset.dirty = '1'; $('rosterNote').textContent = 'Not saved yet.'; $('rosterNote').className = 'hint warn'; });
+  $('btnKey').onclick = () => { key = $('key').value.trim(); store.set(LS.key, key); sendErr = ''; render(); flush(); loadLibrary(); };
+  for (const b of $('keepers').children) b.onclick = () => { const k = +b.dataset.k; pick = {}; enqueue('meta', { meta: { keepers: k } }); };
+
+  // "3 Jordan Lee", "#3 Jordan Lee", "3 - Jordan Lee", or just a name. Keeps each player's id
+  // (matched by number, then name) so their plays stay with them when the list is edited.
+  const parseRoster = (text, old) => text.split('\n').map(line => {
+    const m = line.trim().match(/^#?(\d{1,3})?\s*[-–.,:]?\s*(.*)$/);
+    return m ? { num: m[1] || '', name: m[2].trim() } : null;
+  }).filter(p => p && (p.num || p.name)).map(p => {
+    const same = old.find(o => p.num && o.num === p.num) || old.find(o => !p.num && o.name === p.name);
+    return { id: same ? same.id : rid(), ...p };
+  });
+  $('btnRoster').onclick = () => {
+    const v = view(); if (!v) return;
+    const base = side => [...(rosterBase[side] || []), ...(v.meta.rosters[side] || [])];
+    const rosters = { home: parseRoster($('rosterHome').value, base('home')), away: parseRoster($('rosterAway').value, base('away')) };
+    const names = { home: $('nameHome').value.trim() || 'FBCA', away: $('nameAway').value.trim() || 'Opponent' };
+    const colors = { home: $('colorHome').value.toUpperCase(), away: $('colorAway').value.toUpperCase() };
+    for (const id of ['nameHome', 'nameAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway']) $(id).dataset.dirty = '';
+    enqueue('meta', { meta: { names, colors, rosters } });
+    $('rosterNote').textContent = 'Saved. ' + rosters.home.length + ' and ' + rosters.away.length + ' players.'; $('rosterNote').className = 'hint';
+    rosterBase.home = rosterBase.away = null;
+    const teams = SIDES.filter(side => rosters[side].length).map(side => ({ name: names[side], color: colors[side], roster: rosters[side] }));
+    if (teams.length && key) libFetch('POST', { action: 'save', teams })
+      .then(() => { $('rosterNote').textContent += ' Kept in Saved teams.'; renderLibrary(); })
+      .catch(() => { $('rosterNote').textContent += " (Couldn't add them to Saved teams right now.)"; });
+  };
+  $('btnReset').onclick = async () => {
+    if (!confirm('Start a new game? Every play is cleared for both stat keepers and the scorebug.')) return;
+    if (!key) { tab = 'setup'; showTab(); toast('Add the stat keeper key first.'); return; }
+    try {
+      const r = await fetch(API + '/reset?game=' + GAME, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ keepRosters: $('keepRosters').checked }) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || 'Error ' + r.status);
+      pending = []; savePending();
+      server = { rev: data.rev, meta: data.meta, events: data.events }; store.set(LS.cache, server);
+      for (const id of ['nameHome', 'nameAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway']) $(id).dataset.dirty = '';
+      pick = {}; assist = null; toast('New game started.'); render();
+    } catch (e) { toast("Couldn't start a new game: " + e.message); }
+  };
+
+  const showTab = () => {
+    document.querySelectorAll('.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
+    document.querySelectorAll('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== tab);
+    render();
+  };
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; showTab(); if (tab === 'setup') loadLibrary(); });
+
+  if (!key) tab = 'setup';
+  showTab(); connect(); loadLibrary();
+})();
+</script>
+</body>
+</html>

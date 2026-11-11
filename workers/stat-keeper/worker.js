@@ -4,7 +4,7 @@
 // The basketball scorebug control page listens over a WebSocket and turns the events into
 // player and team stats for the bug, lower thirds and stats panel.
 //
-// One game is kept per name (default "basketball") in a Durable Object, so every tap is
+// One game is kept per name ("basketball", or "soccer" for the soccer stat page) in a Durable Object, so every tap is
 // stored in one place in order, and two stat keepers can write to the same game.
 //
 //   GET  /state?game=basketball         the game: { rev, meta, events }
@@ -27,7 +27,12 @@
 import { DurableObject } from 'cloudflare:workers';
 
 const SITE_ORIGINS = ['https://fbca.tv', 'https://www.fbca.tv'];
-const TYPES = ['m2', 'x2', 'm3', 'x3', 'mft', 'xft', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf'];
+// Plays each sport records. A game named "soccer…" is soccer; anything else is basketball.
+const TYPES_BY_SPORT = {
+  basketball: ['m2', 'x2', 'm3', 'x3', 'mft', 'xft', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf'],
+  soccer: ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc']
+};
+const sportOf = game => /^soccer/.test(game || '') ? 'soccer' : 'basketball';
 const SIDES = ['home', 'away'];
 const MAX_EVENTS = 3000, MAX_ROSTER = 30, MAX_SAVED = 150;
 
@@ -68,9 +73,11 @@ const cleanRoster = list => (Array.isArray(list) ? list : []).slice(0, MAX_ROSTE
   id: idOk(p && p.id) ? p.id : newId(), num: clean(p && p.num, 3), name: clean(p && p.name, 40)
 })).filter(p => p.num || p.name);
 
-const defaultMeta = () => ({
-  gameId: newId(), startedAt: Date.now(), keepers: 1, period: '1Q',
-  names: { home: 'FBCA', away: 'Opponent' }, colors: { ...DEFAULT_COLORS }, rosters: { home: [], away: [] }
+// Soccer also keeps a match clock (shared by every stat device, for goal minutes) and its half length.
+const defaultMeta = (sport = 'basketball') => ({
+  gameId: newId(), startedAt: Date.now(), keepers: 1, period: sport === 'soccer' ? '1H' : '1Q',
+  names: { home: 'FBCA', away: 'Opponent' }, colors: { ...DEFAULT_COLORS }, rosters: { home: [], away: [] },
+  ...(sport === 'soccer' ? { halfMin: 40, clock: { run: false, startedAt: 0, base: 0 } } : {})
 });
 
 export class Game extends DurableObject {
@@ -81,6 +88,9 @@ export class Game extends DurableObject {
       id TEXT PRIMARY KEY, seq INTEGER NOT NULL, side TEXT NOT NULL, player TEXT NOT NULL,
       type TEXT NOT NULL, period TEXT NOT NULL, at INTEGER NOT NULL, deleted INTEGER NOT NULL DEFAULT 0)`);
     this.sql.exec('CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)');
+    // The minute of a play (soccer goals), added after the first games were stored.
+    try { this.sql.exec('ALTER TABLE events ADD COLUMN min TEXT'); } catch (e) { /* already there */ }
+    this.sport = 'basketball';
     // Keep-alive pings from the pages are answered without waking the object.
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
   }
@@ -89,14 +99,15 @@ export class Game extends DurableObject {
   put(k, v) { this.sql.exec('INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v', k, JSON.stringify(v)); }
   meta() {
     let m = this.get('meta');
-    if (!m) { m = defaultMeta(); this.put('meta', m); }
+    if (!m) { m = defaultMeta(this.sport); this.put('meta', m); }
     if (!m.colors) m.colors = { ...DEFAULT_COLORS }; // games started before team colors
     return m;
   }
   rev() { return this.get('rev', 0); }
   bump() { const r = this.rev() + 1; this.put('rev', r); return r; }
   events() {
-    return this.sql.exec('SELECT id, side, player, type, period, at FROM events WHERE deleted = 0 ORDER BY seq').toArray();
+    return this.sql.exec('SELECT id, side, player, type, period, at, min FROM events WHERE deleted = 0 ORDER BY seq').toArray()
+      .map(e => { if (!e.min) delete e.min; return e; });
   }
   state() { return { rev: this.rev(), meta: this.meta(), events: this.events() }; }
   send(msg) {
@@ -106,6 +117,7 @@ export class Game extends DurableObject {
 
   async fetch(request) {
     const url = new URL(request.url);
+    this.sport = sportOf(url.searchParams.get('game'));
     if (url.pathname === '/ws') {
       const [client, server] = Object.values(new WebSocketPair());
       this.ctx.acceptWebSocket(server);
@@ -127,13 +139,13 @@ export class Game extends DurableObject {
       let seq = this.get('seq', 0), count = this.sql.exec('SELECT COUNT(*) AS n FROM events').one().n;
       const added = [];
       for (const e of list) {
-        if (!e || !idOk(e.id) || !SIDES.includes(e.side) || !TYPES.includes(e.type)) continue;
+        if (!e || !idOk(e.id) || !SIDES.includes(e.side) || !TYPES_BY_SPORT[this.sport].includes(e.type)) continue;
         if (count >= MAX_EVENTS) break;
         const ev = { id: e.id, side: e.side, player: idOk(e.player) || e.player === 'team' ? e.player : 'team',
-                     type: e.type, period: clean(e.period, 4) || meta.period, at: Number(e.at) || Date.now() };
+                     type: e.type, period: clean(e.period, 4) || meta.period, at: Number(e.at) || Date.now(), ...(e.min ? { min: clean(e.min, 6) } : {}) };
         // INSERT OR IGNORE: a retried play, or one already undone (kept as deleted), changes nothing.
-        const r = this.sql.exec('INSERT OR IGNORE INTO events (id, seq, side, player, type, period, at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          ev.id, seq + 1, ev.side, ev.player, ev.type, ev.period, ev.at);
+        const r = this.sql.exec('INSERT OR IGNORE INTO events (id, seq, side, player, type, period, at, min) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          ev.id, seq + 1, ev.side, ev.player, ev.type, ev.period, ev.at, ev.min || null);
         if (r.rowsWritten > 0) { seq++; count++; added.push(ev); }
       }
       this.put('seq', seq);
@@ -176,6 +188,11 @@ export class Game extends DurableObject {
       const m = body.meta || {}, next = { ...meta };
       if (m.keepers === 1 || m.keepers === 2) next.keepers = m.keepers;
       if (m.period != null) next.period = clean(m.period, 4) || meta.period;
+      if (this.sport === 'soccer') {
+        const n = v => Math.max(0, Math.min(1e13, Number(v) || 0));
+        if (m.halfMin != null) next.halfMin = Math.max(1, Math.min(90, Math.round(Number(m.halfMin)) || 40));
+        if (m.clock) next.clock = { run: !!m.clock.run, startedAt: n(m.clock.startedAt), base: n(m.clock.base) };
+      }
       if (m.names) next.names = Object.fromEntries(SIDES.map(s => [s, clean(m.names[s], 30) || meta.names[s]]));
       if (m.colors) next.colors = Object.fromEntries(SIDES.map(s => [s, colorOk(m.colors[s]) ? m.colors[s].toUpperCase() : meta.colors[s]]));
       if (m.rosters) next.rosters = Object.fromEntries(SIDES.map(s => [s, m.rosters[s] ? cleanRoster(m.rosters[s]) : meta.rosters[s]]));
@@ -185,8 +202,8 @@ export class Game extends DurableObject {
     }
 
     if (url.pathname === '/reset') {
-      const next = defaultMeta();
-      if (body.keepRosters) { next.rosters = meta.rosters; next.names = meta.names; next.colors = meta.colors; next.keepers = meta.keepers; }
+      const next = defaultMeta(this.sport);
+      if (body.keepRosters) { next.rosters = meta.rosters; next.names = meta.names; next.colors = meta.colors; next.keepers = meta.keepers; if (meta.halfMin) next.halfMin = meta.halfMin; }
       this.sql.exec('DELETE FROM events');
       this.put('seq', 0); this.put('meta', next);
       this.bump();

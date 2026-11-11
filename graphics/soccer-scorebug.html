@@ -902,14 +902,22 @@
 
         <!-- Stats & score -->
         <div data-pane="stats" hidden>
-          <div class="pane-h">Stat sheet</div>
+          <div class="pane-h">Stats</div>
+          <label for="statFrom">Stats come from</label>
+          <select id="statFrom">
+            <option value="keeper">Stat keeper page (live, fbca.tv/graphics/soccer-stats.html)</option>
+            <option value="sheet">Excel stat sheet on OneDrive</option>
+          </select>
+          <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
+          <div id="sheetBox">
           <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
           <div class="set-row">
             <input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…">
             <button id="btnSheet">Connect</button>
           </div>
-          <label class="check"><input type="checkbox" id="sheetBug"> Update the bug's score and cards from the sheet</label>
           <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
+          </div>
+          <label class="check"><input type="checkbox" id="sheetBug"> Update the bug's score and cards from the stats</label>
           <p class="hint" id="sheetStatus">Not connected. The counters below run the stats panel.</p>
 
           <div class="pane-h">Match stats</div>
@@ -1198,6 +1206,7 @@
     others: { title: 'Around the district', raw: '' },
     shoot: { on: false, home: [], away: [] },
     // Stat sheet sync: when on, the stats and score panels read from the sheet instead of the counters.
+    statFrom: 'keeper', // 'keeper' (the soccer stat keeper page) or 'sheet' (the Excel stat sheet)
     sheetUrl: '', sheetOn: false, sheetEvery: 1, sheetBug: true, sheetPrev: {},
     sheet: { at: 0, err: '', home: {}, away: {}, goals: [] },
     xi: {
@@ -1208,6 +1217,7 @@
   const merge = raw => {
     const out = Object.assign(defaults(), raw);
     delete out.lineupShow; // replaced by `panel`
+    if (!raw.statFrom) out.statFrom = raw.sheetUrl ? 'sheet' : 'keeper'; // set up before the stat keeper: keep the sheet
     return out;
   };
 
@@ -1852,7 +1862,7 @@
     });
     document.querySelectorAll('#statRows button').forEach(b => { b.disabled = fromSheet; });
     $('statHint').textContent = fromSheet
-      ? 'These numbers come from the stat sheet. Disconnect it to count by hand.'
+      ? 'These numbers come from the stats (Stats & score → Stats). Disconnect to count by hand.'
       : 'Cards here are the same counts as the Score card and the bug.';
     setField('psLabelSel', s.scoreLabel);
     renderGoalLog();
@@ -2312,8 +2322,99 @@
   sheetClock.onmessage = e => { if (e.data === sheetGen) pullSheet(); };
   const sheetWait = () => 1000 * Math.max(s.sheetEvery || 1, sheetFails ? SHEET_BACKOFF[Math.min(sheetFails, 3) - 1] : 0);
   const sheetNext = startedAt => { if (s.sheetOn) sheetClock.postMessage([sheetGen, Math.max(50, sheetWait() - (performance.now() - startedAt))]); };
-  const startSheet = () => { sheetGen++; if (s.sheetOn && !sheetBusy) pullSheet(); };
-  const stopSheet = () => { s.sheetOn = false; sheetGen++; sheetFails = 0; sheetTimes = []; };
+  const startSheet = () => {
+    sheetGen++; keeperStop();
+    if (!s.sheetOn) return;
+    if (s.statFrom === 'keeper') keeperStart(); else if (!sheetBusy) pullSheet();
+  };
+  const stopSheet = () => { s.sheetOn = false; sheetGen++; sheetFails = 0; sheetTimes = []; keeperStop(); };
+
+  // ---- Soccer stat keeper page: plays arrive over a WebSocket from the eota-stat-keeper worker (game "soccer") ----
+  // They're turned into the same team stats, cards and goal list the Excel sheet gives.
+  const SK_API = (new URLSearchParams(location.search).get('skapi') || 'https://eota-stat-keeper.clee-625.workers.dev').replace(/\/$/, '');
+  let skWs = null, skGame = null, skOpen = false, skPong = 0, skRetry = 0;
+  const keeperStop = () => {
+    clearTimeout(skRetry); skOpen = false;
+    if (skWs) { skWs.onclose = null; try { skWs.close(); } catch (e) {} skWs = null; }
+  };
+  const keeperStart = () => {
+    keeperStop();
+    if (!s.sheetOn || s.statFrom !== 'keeper') return;
+    try { skWs = new WebSocket(SK_API.replace(/^http/, 'ws') + '/ws?game=soccer'); }
+    catch (e) { skRetry = setTimeout(keeperStart, 3000); return; }
+    skWs.onopen = () => { skOpen = true; skPong = Date.now(); renderSheetStatus(); };
+    skWs.onclose = () => {
+      skOpen = false; skWs = null;
+      if (s.sheetOn && s.statFrom === 'keeper') { s.sheet.err = 'Lost the connection to the stat keeper. Reconnecting…'; renderSheetStatus(); skRetry = setTimeout(keeperStart, 2000); }
+    };
+    skWs.onmessage = e => {
+      skPong = Date.now();
+      if (e.data === 'pong') return;
+      let m; try { m = JSON.parse(e.data); } catch (err) { return; }
+      if (m.t === 'state') skGame = { rev: m.rev, meta: m.meta, events: m.events };
+      else if (!skGame || m.rev !== skGame.rev + 1) { skWs.send('sync'); return; }
+      else {
+        skGame.rev = m.rev;
+        if (m.t === 'add') { const have = new Set(skGame.events.map(x => x.id)); skGame.events.push(...m.events.filter(x => !have.has(x.id))); }
+        if (m.t === 'del') skGame.events = skGame.events.filter(x => !m.ids.includes(x.id));
+        if (m.t === 'meta') skGame.meta = m.meta;
+      }
+      keeperApply();
+    };
+  };
+  setInterval(() => {
+    if (!skWs || skWs.readyState !== 1) return;
+    if (Date.now() - skPong > 40000) { skWs.close(); return; }
+    skWs.send('ping');
+  }, 15000);
+  // Plays → { home: {shots, sog, corners, saves, fouls, offsides, yellows, reds, goals}, away, goals: [{ side, min, name, assist }] }
+  const keeperData = g => {
+    const blank = () => ({ shots: 0, sog: 0, corners: 0, saves: 0, fouls: 0, offsides: 0, yellows: 0, reds: 0, goals: 0 });
+    const out = { home: blank(), away: blank(), goals: [] };
+    const nameOf = (side, id) => { const p = (g.meta.rosters[side] || []).find(x => x.id === id); return p ? p.name : ''; };
+    const evs = g.events;
+    evs.forEach((e, i) => {
+      const t = out[e.side]; if (!t) return;
+      if (e.type === 'goal') {
+        t.goals++; t.shots++; t.sog++;
+        // The assist is the next assist play for that team, before their next goal.
+        let assist = '';
+        for (let j = i + 1; j < evs.length; j++) {
+          if (evs[j].side !== e.side) continue;
+          if (evs[j].type === 'goal') break;
+          if (evs[j].type === 'ast') { assist = nameOf(e.side, evs[j].player); break; }
+        }
+        out.goals.push({ side: e.side, min: e.min || '', name: nameOf(e.side, e.player) || 'Own goal / team', assist });
+      }
+      else if (e.type === 'sog') { t.shots++; t.sog++; }
+      else if (e.type === 'shot') t.shots++;
+      else if (e.type === 'save') t.saves++;
+      else if (e.type === 'corner') t.corners++;
+      else if (e.type === 'foul') t.fouls++;
+      else if (e.type === 'offside') t.offsides++;
+      else if (e.type === 'yc') t.yellows++;
+      else if (e.type === 'rc') t.reds++;
+    });
+    out.goals.sort((a, b) => (parseInt(a.min, 10) || 0) - (parseInt(b.min, 10) || 0));
+    return out;
+  };
+  const keeperApply = () => {
+    const data = keeperData(skGame), { at, err, ...prev } = s.sheet;
+    if (!at || err || JSON.stringify(data) !== JSON.stringify(prev)) {
+      s.sheet = { at: Date.now(), err: '', ...data };
+      applySheetToBug(data); save();
+    } else renderSheetStatus();
+  };
+  $('btnKeeper').onclick = () => {
+    if (s.sheetOn) { stopSheet(); save(); return; }
+    s.sheetOn = true; s.sheet = { at: 0, err: '', home: {}, away: {}, goals: [] }; s.sheetPrev = {}; skGame = null;
+    save(); startSheet();
+  };
+  $('statFrom').addEventListener('change', e => {
+    if (s.sheetOn) stopSheet();
+    s.statFrom = e.target.value; s.sheet = { at: 0, err: '', home: {}, away: {}, goals: [] };
+    save();
+  });
   const sheetTimeNote = () => {
     if (!sheetTimes.length) return '';
     const avg = sheetTimes.reduce((a, b) => a + b, 0) / sheetTimes.length;
@@ -2325,7 +2426,7 @@
   const renderSheetEvery = () => { $('sheetEvery').value = String(s.sheetEvery || 1); };
   $('sheetEvery').addEventListener('change', e => { s.sheetEvery = +e.target.value; save(); startSheet(); });
   const pullSheet = async () => {
-    if (!s.sheetOn || sheetBusy) return;
+    if (!s.sheetOn || s.statFrom !== 'sheet' || sheetBusy) return;
     sheetBusy = true;
     const t0 = performance.now(), url = s.sheetUrl;
     let changed = false;
@@ -2390,8 +2491,22 @@
     $('sheetBug').checked = s.sheetBug;
     $('sheetUrl').disabled = s.sheetOn;
     renderSheetEvery();
+    const keeper = s.statFrom === 'keeper';
+    $('statFrom').value = s.statFrom; $('statFrom').disabled = s.sheetOn;
+    $('keeperBox').hidden = !keeper; $('sheetBox').hidden = keeper;
+    $('btnKeeper').textContent = s.sheetOn ? 'Disconnect' : 'Connect to the stat keeper';
     const st = $('sheetStatus');
-    if (!s.sheetOn) { st.textContent = 'Not connected. The counters below run the stats panel.'; return; }
+    if (!s.sheetOn) { st.textContent = keeper ? "Not connected. Open fbca.tv/graphics/soccer-stats.html on the stat crew's phone or laptop, then connect here. Until then the counters below run the stats panel." : 'Not connected. The counters below run the stats panel.'; return; }
+    if (keeper) {
+      if (s.sheet.err) { st.textContent = s.sheet.err; return; }
+      if (!skOpen || !skGame) { st.textContent = 'Connecting…'; return; }
+      const hg = s.sheet.home.goals || 0, ag = s.sheet.away.goals || 0, plays = skGame.events.length;
+      let msg = `Live from the stat keeper: ${plays} ${plays === 1 ? 'play' : 'plays'}, score ${s.home} ${hg} – ${ag} ${s.away}. `
+        + (s.sheetBug ? 'The stats, panels and bug follow it.' : 'The stats and panels follow it; the bug is manual.');
+      if (hg !== s.homeScore || ag !== s.awayScore) msg += ` Heads up: the bug shows ${s.homeScore} – ${s.awayScore}.`;
+      st.textContent = msg;
+      return;
+    }
     if (s.sheet.err) { st.textContent = '⚠ ' + s.sheet.err.replace(/[^.!?]$/, '$&.') + sheetRateNote(); return; }
     if (!s.sheet.at) { st.textContent = 'Connecting…'; return; }
     const ago = Math.round((Date.now() - s.sheet.at) / 1000);
