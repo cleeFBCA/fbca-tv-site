@@ -410,6 +410,10 @@
   .l3.hidden { clip-path: inset(0 100% 0 0); }
   .l3.R.hidden { clip-path: inset(0 0 0 100%); }
   .l3 .accent { width: 14px; background: var(--s); }
+  /* Headshot from Player photos, on the team color, between the stripe and the name */
+  .l3 .lph { position: relative; width: 124px; flex: none; overflow: hidden; background: linear-gradient(160deg, color-mix(in srgb, var(--c) 90%, #fff), color-mix(in srgb, var(--c) 70%, #000)); }
+  .l3 .lph:empty { display: none; }
+  .l3 .lph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; } /* fills the lower third's height, never sets it */
   .l3 .lbody { display: flex; flex-direction: column; }
   .l3.R .lbody { align-items: stretch; text-align: right; }
   .l3 .lname { padding: 8px 30px 4px; font-size: 54px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; color: var(--f);
@@ -521,6 +525,17 @@
   .pane-h { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; font-size: 16px; color: var(--gold-hi); margin: 18px 0 6px; }
   .pane-h:first-child { margin-top: 0; }
   #teamSetup .pane-h { margin-top: 18px; }
+  .pph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; margin-top: 8px; }
+  .pph-tile { background: var(--pine); border: 1px solid var(--line); border-radius: 8px; padding: 6px; text-align: center; font-size: 13px; }
+  .pph-tile .ph { aspect-ratio: 440 / 528; border-radius: 5px; overflow: hidden; display: grid; place-items: center; margin-bottom: 4px;
+                  background: linear-gradient(160deg, color-mix(in srgb, var(--c) 90%, #fff), color-mix(in srgb, var(--c) 70%, #000)); color: var(--f); font: 800 30px var(--font-display); }
+  .pph-tile .ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .pph-tile b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pph-tile .acts { display: flex; gap: 4px; margin-top: 4px; }
+  .pph-tile .acts button { flex: 1; min-height: 0; padding: 5px 4px; font-size: 12px; }
+  .pph-tile input[type=file] { display: none; }
+  .pph-add { display: grid; grid-template-columns: 60px 1fr auto; gap: 6px; margin-top: 10px; }
+  .pph-add button { min-height: 0; padding: 8px 12px; }
   .logo-row { display: flex; gap: 8px; align-items: center; }
   .logo-row img { width: 44px; height: 44px; object-fit: contain; background: var(--pine); border-radius: 6px; }
   .logo-row button { min-height: 0; padding: 8px 12px; flex: 0 0 auto; }
@@ -605,6 +620,7 @@
 
   <div class="l3 wipe hidden" id="l3">
     <div class="accent"></div>
+    <div class="lph" id="l3Photo"></div>
     <div class="lbody"><div class="lname" id="l3Name"></div><div class="lstat" id="l3Stat"></div></div>
   </div>
 
@@ -721,6 +737,7 @@
             <div><label for="lTeam">Colors</label><select id="lTeam"><option value="home"></option><option value="away"></option><option value="none">Neutral</option></select></div>
             <div><label for="lSecs">Auto-hide after (sec, 0 = stay)</label><input id="lSecs" type="number" min="0" max="120" value="8"></div>
           </div>
+          <label class="check"><input type="checkbox" id="lPhoto" checked> Show the player's headshot (from Setup → Player photos)</label>
           <div class="row-btns" style="margin-top:14px">
             <button class="primary" id="btnL3Show">Show lower third</button>
             <button id="btnL3Hide">Hide</button>
@@ -1002,7 +1019,7 @@
     pop: { on: false, kind: 'text', text: '', team: '', stat: 'FG', run: null, until: 0, at: 0 },
     // Score after each change, [home, away], to work out runs (the last 80 kept).
     scoreLog: [],
-    l3: { on: false, name: '', stat: '', team: 'home', until: 0 },
+    l3: { on: false, name: '', stat: '', team: 'home', until: 0, photo: '' },
     l3List: []
   });
   const merge = raw => {
@@ -1250,6 +1267,8 @@
       box.classList.toggle('R', !!team && l.team === rightSide());
       $('l3Name').textContent = l.name;
       $('l3Stat').textContent = l.stat;
+      const ph = $('l3Photo'), cur = ph.firstChild ? ph.firstChild.src : '';
+      if ((l.photo || '') !== cur) ph.replaceChildren(...(l.photo ? [Object.assign(el('img'), { src: l.photo, alt: '' })] : []));
     };
     const statsTitle = () => s.statsLabel !== 'auto' ? s.statsLabel
       : s.period === 'HALF' ? 'HALFTIME' : s.period === 'FINAL' ? 'FINAL' : periodLabel(s.period) + (/OT/.test(s.period) ? '' : ' QUARTER');
@@ -1552,6 +1571,12 @@
         <div><label>Text color on the logo end</label><input data-k="fg" type="color"></div></div>
       <label>Logo (any PNG or JPG; adjust it below. Remembered for this team on this computer)</label>
       <div class="logo-row"><img alt="" hidden><input type="file" accept="image/*"><button hidden>Remove</button></div>
+      <div class="row-btns" style="margin:10px 0 0"><button class="pph-btn">Player photos</button></div>
+      <div class="pph" hidden>
+        <p class="hint">Headshots for the graphics: player spotlight, lower thirds and the fan vote. Kept for this team (by name) on this computer. A PNG cutout with a transparent background looks best; it's sized from the player's outline.</p>
+        <div class="pph-grid"></div>
+        <div class="pph-add"><input class="pa-num" maxlength="3" inputmode="numeric" placeholder="#" aria-label="Number"><input class="pa-name" maxlength="30" placeholder="Player name" aria-label="Name"><button class="pa-btn">Add player</button></div>
+      </div>
       <div class="logo-fit" hidden>
         <canvas width="224" height="164" aria-label="Logo preview on the end cap"></canvas>
         <div>
@@ -1610,6 +1635,14 @@
     d.querySelector('.logo-row button').onclick = () => { rememberLogo(s[side].name, ''); s[side].logo = ''; ed = null; fit.hidden = true; save(); };
     setupRedraw[side] = () => drawFit(false); // the preview follows the team color
     setupFor[side] = d;
+    const pph = d.querySelector('.pph');
+    d.querySelector('.pph-btn').onclick = () => { pph.hidden = !pph.hidden; pphSig[side] = ''; renderPhotos(side); };
+    d.querySelector('.pa-btn').onclick = () => {
+      const num = d.querySelector('.pa-num').value.trim(), name = d.querySelector('.pa-name').value.trim();
+      if (!num && !name) return;
+      putPhoto({ team: s[side].name, num, name, photo: '' });
+      d.querySelector('.pa-num').value = d.querySelector('.pa-name').value = '';
+    };
   }
   $('teamSetup').append(setupFor.away, setupFor.home);
 
@@ -1681,6 +1714,7 @@
       d.querySelectorAll('[data-k]').forEach(inp => setField(inp, t[inp.dataset.k]));
       d.querySelector('.fitnote').textContent = nameFitNote(t);
       setupRedraw[side]();
+      renderPhotos(side);
       const img = d.querySelector('img'), rm = d.querySelector('.logo-row button');
       img.hidden = rm.hidden = !t.logo; if (t.logo) img.src = t.logo;
       d.querySelector('.warn').textContent = !alpha && (nearKey(hex(t.bg, '#333333')) || nearKey(hex(t.fg, '#FFFFFF')))
@@ -1800,13 +1834,98 @@
     $('mRecs').textContent = 'Records: ' + SIDES.map(side => s[side].name + ' ' + (s[side].rec || '(none)')).join(', ') + '. Set them in Setup → Record.';
   };
 
+  // --- Player photos: headshots per team (by team name), kept in IndexedDB on this computer ---
+  // Records: { team, num, name, photo } with the photo in the spotlight's 440x528 frame. The player
+  // list is the stats roster (when stats are connected) plus anyone added by hand.
+  const phIdb = (mode, fn) => new Promise((ok, fail) => {
+    const open = indexedDB.open('eota-bball-photos', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('p');
+    open.onerror = () => fail(open.error);
+    open.onsuccess = () => {
+      try { const tx = open.result.transaction('p', mode), req = fn(tx.objectStore('p')); tx.oncomplete = () => ok(req && req.result); tx.onerror = () => fail(tx.error); }
+      catch (e) { fail(e); }
+    };
+  });
+  const phTeam = t => String(t || '').trim().toUpperCase();
+  const phKey = (team, num, name) => phTeam(team) + '|' + (String(num || '').trim() ? '#' + String(num).trim() : 'n:' + String(name || '').trim().toLowerCase());
+  let photoLib = new Map();
+  const pphSig = { home: '', away: '' };
+  phIdb('readonly', st => st.getAll()).then(list => { photoLib = new Map((list || []).map(r => [phKey(r.team, r.num, r.name), r])); renderCtl(); }).catch(() => {});
+  const putPhoto = rec => {
+    const k = phKey(rec.team, rec.num, rec.name), was = photoLib.get(k);
+    const next = { ...(was || {}), ...rec, team: phTeam(rec.team), photo: rec.photo !== undefined ? rec.photo : (was ? was.photo : '') };
+    photoLib.set(k, next); pphSig.home = pphSig.away = ''; renderCtl();
+    return phIdb('readwrite', st => st.put(next, k)).catch(() => {});
+  };
+  const dropPhoto = rec => { const k = phKey(rec.team, rec.num, rec.name); photoLib.delete(k); pphSig.home = pphSig.away = ''; renderCtl(); return phIdb('readwrite', st => st.delete(k)).catch(() => {}); };
+  // A player's headshot: by number first, then by name.
+  const findPhoto = (team, num, name) => {
+    const t = phTeam(team), n = String(num || '').trim(), nm = String(name || '').trim().toLowerCase();
+    if (n) { const r = photoLib.get(t + '|#' + n); if (r && r.photo) return r.photo; }
+    if (nm) for (const r of photoLib.values()) if (r.team === t && r.photo && r.name.trim().toLowerCase() === nm) return r.photo;
+    return '';
+  };
+  // For a lower third: its name line reads like "#3 Jordan Lee".
+  const photoForLine = (side, line) => {
+    if (side !== 'home' && side !== 'away') return '';
+    const m = String(line || '').trim().match(/^#?(\d{1,3})\s+(.+)$/);
+    return m ? findPhoto(s[side].name, m[1], m[2]) : findPhoto(s[side].name, '', line);
+  };
+  // A file fitted like a spotlight photo (cutouts sized from the outline).
+  const rosterPhoto = file => new Promise((ok, fail) => {
+    const img = new Image();
+    img.onload = () => {
+      const p = fitPlacement(img, subjectBox(img)), c = document.createElement('canvas');
+      c.width = PHOTO_W; c.height = PHOTO_H; c.getContext('2d').drawImage(img, p.x, p.y, p.w, p.h);
+      URL.revokeObjectURL(img.src); ok(c.toDataURL('image/webp', .85));
+    };
+    img.onerror = () => fail(new Error('Not an image'));
+    img.src = URL.createObjectURL(file);
+  });
+  const renderPhotos = side => {
+    const d = setupFor[side]; if (!d) return;
+    const pph = d.querySelector('.pph'), t = s[side], team = phTeam(t.name);
+    const mine = [...photoLib.values()].filter(r => r.team === team);
+    d.querySelector('.pph-btn').textContent = (pph.hidden ? 'Player photos' : 'Hide player photos') + (mine.some(r => r.photo) ? ` (${mine.filter(r => r.photo).length})` : '');
+    if (pph.hidden) return;
+    // Everyone on the stats roster, then anyone added by hand.
+    const list = [], seen = new Set();
+    const add = (num, name) => { const k = phKey(team, num, name); if (seen.has(k)) return; seen.add(k); list.push({ num: String(num || ''), name: name || '', key: k }); };
+    if (sheetLive() && s.sheet[side]) s.sheet[side].players.forEach(pl => add(pl.num, pl.name));
+    mine.sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999)).forEach(r => add(r.num, r.name));
+    const sig = JSON.stringify([team, t.bg, t.fg, list.map(x => x.key + (photoLib.get(x.key) || {}).photo?.length)]);
+    if (sig === pphSig[side]) return;
+    pphSig[side] = sig;
+    const grid = d.querySelector('.pph-grid');
+    grid.style.setProperty('--c', hex(t.bg, '#17402B')); grid.style.setProperty('--f', hex(t.fg, '#FFFFFF'));
+    grid.replaceChildren(...list.map(x => {
+      const rec = photoLib.get(x.key), photo = rec && rec.photo;
+      const tile = el('div', 'pph-tile'), ph = el('div', 'ph');
+      if (photo) ph.append(Object.assign(el('img'), { src: photo, alt: '' })); else ph.textContent = x.num ? '#' + x.num : '?';
+      const file = el('input'); file.type = 'file'; file.accept = 'image/*';
+      file.addEventListener('change', async () => {
+        if (!file.files[0]) return;
+        try { await putPhoto({ team, num: x.num, name: x.name, photo: await rosterPhoto(file.files[0]) }); }
+        catch (e) { alert("That file isn't a picture Chrome can read. Try a PNG or JPG."); }
+      });
+      const up = el('button', null, photo ? 'Change' : 'Add photo'); up.onclick = () => file.click();
+      const acts = el('div', 'acts'); acts.append(up);
+      if (photo) { const rm = el('button', null, 'Remove'); rm.onclick = () => putPhoto({ team, num: x.num, name: x.name, photo: '' }); acts.append(rm); }
+      else if (rec) { const rm = el('button', null, '✕'); rm.title = 'Take off the list'; rm.onclick = () => dropPhoto(rec); acts.append(rm); }
+      tile.append(ph, el('b', null, (x.num ? '#' + x.num + ' ' : '') + x.name), acts, file);
+      return tile;
+    }));
+    if (!list.length) grid.append(el('p', 'hint', 'No players yet. Connect the stats (Data sources) to list the roster, or add players below.'));
+  };
+
   // --- Player spotlight ---
   let spotPhoto = '';
   const spotFromForm = () => ({
     team: $('spTeam').value, num: $('spNum').value.trim(), name: $('spNameIn').value.trim(),
     pos: $('spPos').value.trim(), year: $('spYear').value.trim(),
     stats: [1, 2, 3].map(i => ({ v: $('spV' + i).value.trim(), l: $('spL' + i).value.trim() })),
-    photo: spotPhoto
+    // A photo uploaded here, or else the player's headshot from Player photos.
+    photo: spotPhoto || findPhoto(s[$('spTeam').value].name, $('spNum').value.trim(), $('spNameIn').value.trim())
   });
   const spotToForm = p => {
     $('spTeam').value = p.team; $('spNum').value = p.num; $('spNameIn').value = p.name;
@@ -1972,7 +2091,7 @@
   // --- Lower third ---
   const untilFrom = id => { const sec = Math.max(0, parseInt($(id).value, 10) || 0); return sec ? Date.now() + sec * 1000 : 0; };
   const showL3 = item => {
-    s.l3 = { on: true, name: item.name, stat: item.stat, team: item.team, until: untilFrom('lSecs') };
+    s.l3 = { on: true, name: item.name, stat: item.stat, team: item.team, until: untilFrom('lSecs'), photo: $('lPhoto').checked ? photoForLine(item.team, item.name) : '' };
     s.fv.l3 = false; s.pop.on = false; // same spot as the fan vote lower third and the pop-up
     save();
   };
@@ -2095,6 +2214,8 @@
       const m = name.value.match(/^#(\d{1,3})\s+(.+)$/);
       if (m) { num.value = m[1]; name.value = m[2]; }
       s.fv.form[i] = { ...s.fv.form[i], side: side.value, num: num.value, name: name.value, pos: pos.value };
+      // No headshot yet: use the player's photo from Setup → Player photos.
+      if (!s.fv.form[i].photo) s.fv.form[i].photo = findPhoto(s[side.value].name, num.value, name.value);
       save();
     };
     [side, num, name, pos].forEach(x => x.addEventListener(x === side ? 'change' : 'input', sync));
