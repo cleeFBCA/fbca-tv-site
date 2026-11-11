@@ -90,6 +90,9 @@
   table.cmp td:first-child { text-align: left; font-weight: 700; }
   table.cmp td:last-child { text-align: right; font-weight: 700; }
   table.cmp td.lbl { text-align: center; font-size: 13px; letter-spacing: .08em; color: var(--chalk-dim); text-transform: uppercase; width: 34%; }
+  table.cmp tr.head td { font-family: var(--font-display); font-weight: 800; font-size: 19px; letter-spacing: .05em; text-transform: uppercase; color: var(--gold); padding-bottom: 10px; vertical-align: bottom; }
+  table.cmp tr.head td.vs { font-size: 15px; color: var(--chalk-dim); letter-spacing: .12em; }
+  table.cmp tr:nth-child(2) td { border-top: 0; }
   table.cmp small { font-size: 13px; color: var(--chalk-dim); font-weight: 600; }
   .bar { display: flex; height: 5px; margin-top: 3px; background: rgba(243,239,226,.1); border-radius: 3px; overflow: hidden; }
   table.qs { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; text-align: center; }
@@ -380,13 +383,17 @@
                 ['Free throws', t => [t.mft + '-' + t.fta, pct(t.mft, t.fta), t.fta ? t.mft / t.fta : 0]], ['Rebounds', t => [t.reb, '', t.reb]], ['Offensive reb.', t => [t.oreb, '', t.oreb]],
                 ['Defensive reb.', t => [t.dreb, '', t.dreb]], ['Assists', t => [t.ast, '', t.ast]], ['Steals', t => [t.stl, '', t.stl]], ['Blocks', t => [t.blk, '', t.blk]],
                 ['Turnovers', t => [t.to, '', t.to]], ['Fouls', t => [t.pf, '', t.pf]]];
+  // Very dark team colors are lightened for the bars so they show on the green card.
+  const barColor = c => { const n = parseInt(String(c).slice(1), 16); return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255 < .3 ? `color-mix(in srgb, ${c} 55%, #fff)` : c; };
   const renderTeam = A => {
     const pane = document.querySelector('[data-pane=team]'), L = A.T.away, R = A.T.home;
-    const c = el('div', 'card'); c.append(html('h2', null, `${tname(A, 'away')} vs ${tname(A, 'home')}`));
-    const tbl = el('table', 'cmp');
+    // Header row lines up with the columns: opponent on the left, VS in the middle, FBCA on the right.
+    const c = el('div', 'card'), tbl = el('table', 'cmp'), names = el('tr', 'head');
+    names.append(html('td', null, tname(A, 'away')), el('td', 'lbl vs', 'vs'), html('td', null, tname(A, 'home')));
+    tbl.append(names);
     for (const [label, fn] of ROWS) {
       const [lv, lp, ln] = fn(L.tot), [rv, rp, rn] = fn(R.tot), tr = el('tr');
-      const mid = html('td', 'lbl', esc(label) + ((ln + rn) > 0 ? `<div class="bar"><i style="width:${100 * ln / (ln + rn)}%;background:${esc(L.color)}"></i><i style="width:${100 * rn / (ln + rn)}%;background:${esc(R.color)}"></i></div>` : ''));
+      const mid = html('td', 'lbl', esc(label) + ((ln + rn) > 0 ? `<div class="bar"><i style="width:${100 * ln / (ln + rn)}%;background:${esc(barColor(L.color))}"></i><i style="width:${100 * rn / (ln + rn)}%;background:${esc(barColor(R.color))}"></i></div>` : ''));
       tr.append(html('td', null, `${lv} <small>${lp}</small>`), mid, html('td', null, `<small>${rp}</small> ${rv}`));
       tbl.append(tr);
     }
