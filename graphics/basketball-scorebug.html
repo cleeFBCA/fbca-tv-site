@@ -344,8 +344,11 @@
   button.active { outline: 2px solid var(--gold-hi); outline-offset: -2px; color: var(--gold-hi); }
   button.danger { background: transparent; border-color: var(--tally); color: var(--tally); }
   .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .team-ctl { text-align: center; }
-  .team-ctl .tname { display: inline-block; padding: 2px 12px; border-radius: 4px; font-family: var(--font-display); font-weight: 800; font-size: 26px; text-transform: uppercase; }
+  .team-ctl { text-align: center; min-width: 0; } /* equal columns, even with a long name */
+  /* One line, so both teams' scores and buttons stay level; a long name is cut with "…" (full name on hover) */
+  .team-ctl .tname { display: inline-block; max-width: 100%; padding: 2px 12px; border-radius: 4px; font-family: var(--font-display); font-weight: 800; font-size: 26px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: top; }
+  /* "In the bonus" keeps its line even when empty, for the same reason */
+  .team-ctl .bon { min-height: 1.4em; }
   .team-ctl .tscore { font-family: var(--font-display); font-weight: 800; font-size: 64px; line-height: 1.1; }
   .team-ctl .row-btns button { font-size: 22px; }
   .stat-ctl { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; color: var(--chalk-dim); margin: 6px 0; }
@@ -1317,7 +1320,7 @@
     $('toAuto').checked = s.toAuto;
     for (const side of SIDES) {
       const t = s[side], c = teamCards[side];
-      const nm = c.querySelector('.tname'); nm.textContent = t.name; nm.style.background = t.bg; nm.style.color = t.fg;
+      const nm = c.querySelector('.tname'); nm.textContent = t.name; nm.title = t.name; nm.style.background = t.bg; nm.style.color = t.fg;
       c.querySelector('.tscore').textContent = t.score;
       c.querySelector('.fv').textContent = t.fouls;
       c.querySelector('.bon').textContent = inBonus(side) ? 'In the bonus' : '';
