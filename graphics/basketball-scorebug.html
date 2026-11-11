@@ -879,7 +879,7 @@
         <label for="statFrom">Stats come from</label>
         <select id="statFrom">
           <option value="keeper">Stat keeper page (live, fbca.tv/graphics/basketball-stats.html)</option>
-          <option value="sheet">Excel stat sheet on OneDrive</option>
+          <option value="sheet">Excel stat sheet on OneDrive (deprecated)</option>
         </select>
         <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
         <div id="sheetBox">
@@ -1010,7 +1010,7 @@
     // Where each item comes from: 'board' (scoreboard file), 'sheet' (stat sheet) or '' (buttons on the page).
     src: { clock: 'board', shot: 'board', period: '', score: '', fouls: '', tos: '', players: 'sheet', team: 'sheet' },
     // Stat sheet: the share link, whether it's connected, and the last read (players and totals per side).
-    statFrom: 'keeper', sheetUrl: '', sheetOn: false, sheetEvery: 1, sheet: { at: 0, err: '', home: null, away: null },
+    statFrom: 'keeper', statsV: 2, sheetUrl: '', sheetOn: false, sheetEvery: 1, sheet: { at: 0, err: '', home: null, away: null },
     // The sheet counts fouls for the whole game; the bug shows them since the quarter started.
     foulBase: { home: 0, away: 0 }, statsLabel: 'auto',
     flash: { home: 0, away: 0 },
@@ -1045,7 +1045,9 @@
     out.fv = Object.assign(defaults().fv, raw.fv); out.l3 = Object.assign(defaults().l3, raw.l3);
     out.pop = Object.assign(defaults().pop, raw.pop); out.stn = Object.assign(defaults().stn, raw.stn); out.match = Object.assign(defaults().match, raw.match);
     out.spot = Object.assign(blankSpot(), raw.spot);
-    if (!raw.statFrom) out.statFrom = raw.sheetUrl ? 'sheet' : 'keeper'; // pages set up before the stat keeper keep their sheet
+    // The Excel stat sheets are retired: every page moves to the stat keeper once (Excel stays in the menu,
+    // marked deprecated). A page that was connected to a sheet is disconnected, so it can connect to the stat keeper.
+    if (raw.statsV !== 2) { if (out.statFrom !== 'keeper') { out.statFrom = 'keeper'; out.sheetOn = false; } out.statsV = 2; }
     return out;
   };
   const load = () => { try { const r = localStorage.getItem(STORE); if (r) return merge(JSON.parse(r)); } catch (e) {} return defaults(); };

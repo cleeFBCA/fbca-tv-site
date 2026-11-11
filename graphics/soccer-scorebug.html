@@ -1140,7 +1140,7 @@
           <label for="statFrom">Stats come from</label>
           <select id="statFrom">
             <option value="keeper">Stat keeper page (live, fbca.tv/graphics/soccer-stats.html)</option>
-            <option value="sheet">Excel stat sheet on OneDrive</option>
+            <option value="sheet">Excel stat sheet on OneDrive (deprecated)</option>
           </select>
           <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
           <label class="check"><input type="checkbox" id="clockShare"> Share this clock with the soccer stat keeper, so goal and card minutes match the bug</label>
@@ -1232,7 +1232,7 @@
     others: { title: 'Around the district', raw: '' },
     shoot: { on: false, home: [], away: [] },
     // Stat sheet sync: when on, the stats and score panels read from the sheet instead of the counters.
-    statFrom: 'keeper', // 'keeper' (the soccer stat keeper page) or 'sheet' (the Excel stat sheet)
+    statFrom: 'keeper', statsV: 2, // 'keeper' (the soccer stat keeper page) or 'sheet' (the Excel stat sheet)
     clockShare: true,   // send the bug's clock to the soccer stat keeper (its pages follow it)
     sheetUrl: '', sheetOn: false, sheetEvery: 1, sheetBug: true, sheetPrev: {},
     sheet: { at: 0, err: '', home: {}, away: {}, goals: [] },
@@ -1244,7 +1244,9 @@
   const merge = raw => {
     const out = Object.assign(defaults(), raw);
     delete out.lineupShow; // replaced by `panel`
-    if (!raw.statFrom) out.statFrom = raw.sheetUrl ? 'sheet' : 'keeper'; // set up before the stat keeper: keep the sheet
+    // The Excel stat sheets are retired: every page moves to the stat keeper once (Excel stays in the menu,
+    // marked deprecated). A page that was connected to a sheet is disconnected, so it can connect to the stat keeper.
+    if (raw.statsV !== 2) { if (out.statFrom !== 'keeper') { out.statFrom = 'keeper'; out.sheetOn = false; } out.statsV = 2; }
     return out;
   };
 
