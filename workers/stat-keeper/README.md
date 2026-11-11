@@ -18,6 +18,11 @@ Address: `https://eota-stat-keeper.clee-625.workers.dev`
 - Anyone on fbca.tv may read the current game (the stats go on air anyway).
   Recording plays, rosters, new games and the saved teams list need the stat keeper key.
 
+Announcers follow the same game, read-only, at
+**fbca.tv/graphics/basketball-announcers.html** (phone first, works on a laptop): ready-to-read
+lines (score, runs, leaders, shooting, quarters, foul trouble, double-doubles), each player's
+line, a team comparison and the play log. No key needed.
+
 ## Game night
 
 1. Stat crew: open the stat keeper page, **Setup** → paste the key → **Save** (once per device).
