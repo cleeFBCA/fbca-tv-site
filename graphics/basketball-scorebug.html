@@ -136,7 +136,8 @@
 
   /* ---------- Pop-up: a strip that rises from behind the top of the bar ----------
      Text (with an optional team tag), a team stat (both teams, in screen order), or a run. */
-  .pop { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); pointer-events: none; }
+  /* overflow: hidden clips the strip at the top of the bar, so while it's down nothing shows (even with the bug hidden) */
+  .pop { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); pointer-events: none; overflow: hidden; }
   .pop-in {
     display: flex; align-items: stretch; height: 58px; min-width: 520px; max-width: 1240px;
     background: linear-gradient(#34353a, #1f2023); color: #fff; overflow: hidden; white-space: nowrap;
