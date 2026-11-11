@@ -323,6 +323,8 @@
   #pStats .ph small { font-size: 30px; letter-spacing: .1em; color: var(--turf); }
   #pStats .ph small:empty { display: none; }
   #pStats .tm { display: grid; grid-template-columns: 1fr 1fr; height: 82px; }
+  /* Scores meet in the middle, names on the outside: the right team's cell is mirrored */
+  #pStats #pstR { flex-direction: row-reverse; }
   #pStats .tcell { display: flex; align-items: center; justify-content: space-between; padding: 0 30px; font-size: 48px; font-weight: 800; white-space: nowrap; overflow: hidden; }
   #pStats .stat { display: grid; grid-template-columns: 200px 1fr 200px; align-items: center; height: 64px; border-top: 1px solid rgba(243,239,226,.1); }
   #pStats .v { text-align: center; font-size: 44px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; }
