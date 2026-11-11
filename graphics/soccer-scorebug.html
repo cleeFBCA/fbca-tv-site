@@ -934,6 +934,11 @@
             <div><label for="mSub">Subtitle</label><input id="mSub" data-match="sub" placeholder="District game"></div>
           </div>
           <div class="two">
+            <div><label for="mHomeFull" id="mHomeFullL">FBCA full name</label><input id="mHomeFull" data-match="homeFull" placeholder="Fort Bend Christian Academy"></div>
+            <div><label for="mAwayFull" id="mAwayFullL">AWAY full name</label><input id="mAwayFull" data-match="awayFull" placeholder="The Village School"></div>
+          </div>
+          <p class="hint" style="margin-top:4px">Shown on the pregame card. Leave blank to use the short name from Setup. Picking a game in Setup fills these in.</p>
+          <div class="two">
             <div><label for="mHomeRec" id="mHomeRecL">FBCA record</label><input id="mHomeRec" data-match="homeRec" placeholder="8-2-1"></div>
             <div><label for="mAwayRec" id="mAwayRecL">AWAY record</label><input id="mAwayRec" data-match="awayRec" placeholder="6-4-0"></div>
           </div>
@@ -1170,7 +1175,8 @@
     goals: [],
     stats: { home: blankStats(), away: blankStats() },
     scoreLabel: 'auto',
-    match: { title: '', sub: '', homeRec: '', awayRec: '', when: '', venue: '' },
+    // homeFull / awayFull: full school names for the pregame card (the bug keeps the short names).
+    match: { title: '', sub: '', homeFull: '', awayFull: '', homeRec: '', awayRec: '', when: '', venue: '' },
     spot: blankSpot(), spotList: [],
     // Fan vote: the current vote on the server (control page keeps it in sync), the nominee form,
     // and whether the QR lower third is up.
@@ -1554,7 +1560,8 @@
         const c = colorsFor(side), node = $('pg' + pos);
         node.style.setProperty('--c', c.bg); node.style.setProperty('--f', c.fg);
         $('pgBar' + pos).style.background = $('pgBar' + pos + '2').style.background = c.bg;
-        const nm = el('div', 'nm'), nmText = el('span', null, teamName(side)), rc = el('div', 'rc', side === 'home' ? m.homeRec : m.awayRec);
+        const full = String((side === 'home' ? m.homeFull : m.awayFull) || '').trim();
+        const nm = el('div', 'nm'), nmText = el('span', null, full || teamName(side)), rc = el('div', 'rc', side === 'home' ? m.homeRec : m.awayRec);
         nm.append(nmText);
         const crest = shield(side);
         [crest, nm, rc].forEach((n, i) => n.style.setProperty('--d', i));
@@ -1801,6 +1808,7 @@
     $('xiHomeTitle').textContent = s.home; $('xiAwayTitle').textContent = s.away;
     for (const [a, b] of [['stHomeH', 'pkHomeT'], ['stAwayH', 'pkAwayT']]) { $(a).textContent = $(b).textContent = a.includes('Home') ? s.home : s.away; }
     $('mHomeRecL').textContent = s.home + ' record'; $('mAwayRecL').textContent = s.away + ' record';
+    $('mHomeFullL').textContent = s.home + ' full name'; $('mAwayFullL').textContent = s.away + ' full name';
 
     // Full-screen graphic on air
     document.querySelectorAll('[data-panel]').forEach(b => {
@@ -2990,6 +2998,7 @@
       s.squad = /girls/i.test(g.sport) ? 'girls' : /boys/i.test(g.sport) ? 'boys' : '';
       Object.assign(s.match, {
         title: g.sport, venue: g.location || '',
+        homeFull: data.school || s.match.homeFull || '', awayFull: g.opponent || '',
         when: fmtGame(g.start, { weekday: 'long', month: 'short', day: 'numeric' }) + ' · ' + fmtGame(g.start, { hour: 'numeric', minute: '2-digit' })
       });
       save();
