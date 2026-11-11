@@ -500,6 +500,11 @@
   .pph-tile .acts { display: flex; gap: 4px; margin-top: 4px; }
   .pph-tile .acts button { flex: 1; min-height: 0; padding: 5px 4px; font-size: 12px; }
   .pph-tile input[type=file] { display: none; }
+  .slogo .sl-name { display: block; font-size: 13px; color: var(--chalk-dim); margin-bottom: 4px; }
+  .sl-row { display: flex; gap: 8px; align-items: center; }
+  .sl-row img { width: 48px; height: 48px; object-fit: contain; background: var(--pine); border-radius: 6px; flex: none; }
+  .sl-row input { min-width: 0; }
+  .sl-row button { min-height: 0; padding: 8px 12px; flex: none; }
   button.small { min-height: 0; padding: 6px 12px; font-size: 14px; flex: 0 0 auto; }
   .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .team-ctl { text-align: center; }
@@ -1112,6 +1117,11 @@
             <div><label for="awayFg">Away text color</label><input id="awayFg" type="color"></div>
           </div>
           <p class="warn" id="awayWarn"></p>
+          <label>School logos (any PNG or JPG; a plain background is taken out. Remembered for each team on this computer)</label>
+          <div class="two">
+            <div class="slogo" data-lside="home"><b class="sl-name"></b><div class="sl-row"><img alt="" hidden><input type="file" accept="image/*"><button hidden>Remove</button></div></div>
+            <div class="slogo" data-lside="away"><b class="sl-name"></b><div class="sl-row"><img alt="" hidden><input type="file" accept="image/*"><button hidden>Remove</button></div></div>
+          </div>
           <div id="chromaOpts">
           <label for="keyColor">Key color (the background the ATEM keys out)</label>
           <div class="set-row">
@@ -1159,7 +1169,9 @@
 
   const defaults = () => ({
     home: 'FBCA', away: 'AWAY', homeScore: 0, awayScore: 0, homeReds: 0, awayReds: 0, homeYellows: 0, awayYellows: 0,
-    awayBg: '#1F3A93', awayFg: '#FFFFFF', keyColor: '#FF00FF', keyMode: 'chroma', // 'alpha' = fill + key outputs
+    awayBg: '#1F3A93', awayFg: '#FFFFFF',
+    homeLogo: '', awayLogo: '', // school logos (trimmed, transparent background) for the pregame card
+    keyColor: '#FF00FF', keyMode: 'chroma', // 'alpha' = fill + key outputs
     period: '1ST', halfMin: 40, otMin: 10, dir: 'down', pos: 'tl', visible: true, swap: false,
     len: 40 * 60000, base: 0, running: false, startedAt: 0, added: 0,
     // What the scoreboard file (Scorebridge) drives when connected.
@@ -1551,7 +1563,7 @@
     const fitMatchText = () => { fitHead(); fitFont($('pgWhen'), 680); fitFont($('pgVenue'), 440); /* with the logo and gaps, the drop-down stays narrower than the card */ document.querySelectorAll('#pMatch .pg-team .rc').forEach(n => fitFont(n, 520)); };
     const renderMatchPanel = () => {
       const m = s.match;
-      const sig = JSON.stringify([m, s.home, s.away, s.awayBg, s.awayFg]);
+      const sig = JSON.stringify([m, s.home, s.away, s.awayBg, s.awayFg, s.homeLogo.length, s.awayLogo.length, s.homeLogo.slice(-40), s.awayLogo.slice(-40)]);
       if (sig === pgSig) return;
       pgSig = sig;
       $('pgTitle').textContent = m.title || 'Soccer'; $('pgSub').textContent = m.sub;
@@ -1563,7 +1575,9 @@
         const full = String((side === 'home' ? m.homeFull : m.awayFull) || '').trim();
         const nm = el('div', 'nm'), nmText = el('span', null, full || teamName(side)), rc = el('div', 'rc', side === 'home' ? m.homeRec : m.awayRec);
         nm.append(nmText);
-        const crest = shield(side);
+        const logo = side === 'home' ? s.homeLogo : s.awayLogo;
+        node.style.setProperty('--wm', logo ? `url("${logo}")` : 'none');
+        const crest = logo ? Object.assign(el('img'), { src: logo, alt: '' }) : shield(side);
         [crest, nm, rc].forEach((n, i) => n.style.setProperty('--d', i));
         node.replaceChildren(crest, nm, rc);
         const fit = () => fitWidth(nmText, 560);
@@ -1708,6 +1722,7 @@
   let sbHandle = null; // scoreboard file from Scorebridge, when connected (see below)
   let fvRenderHook = null; // draws the Fan vote tab (set up below)
   let photoHook = null; // draws the Player photos panels (set up below)
+  let logoHook = null; // draws the School logos rows (set up below)
   const save = () => {
     try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
     if (bc) bc.postMessage(s);
@@ -1781,6 +1796,7 @@
 
   const renderCtl = () => {
     if (fvRenderHook) fvRenderHook();
+    if (logoHook) logoHook();
     if (photoHook) photoHook();
     $('cHome').textContent = s.home; $('cAway').textContent = s.away;
     $('cHome').style.background = HOME_COLORS.bg; $('cHome').style.color = HOME_COLORS.fg;
@@ -2678,8 +2694,83 @@
     s.drop.on = false; s.l3.on = false; s.panel = ''; s.swap = false;
     s.running = false; setPeriod('1ST');
   };
-  $('homeName').addEventListener('input', e => { s.home = e.target.value.toUpperCase(); save(); });
-  $('awayName').addEventListener('input', e => { s.away = e.target.value.toUpperCase(); save(); });
+  // --- School logos: kept per team name on this computer, so a school's logo comes back next time ---
+  const LOGOS = 'eota-soccer-logos';
+  const logoLib = () => { try { return JSON.parse(localStorage.getItem(LOGOS) || '{}'); } catch (e) { return {}; } };
+  const rememberLogo = (name, url) => {
+    const lib = logoLib(); if (url) lib[name] = url; else delete lib[name];
+    try { localStorage.setItem(LOGOS, JSON.stringify(lib)); } catch (e) { /* storage full: still used for this game */ }
+  };
+  const knownLogo = name => logoLib()[name] || '';
+  const logoSource = (img, bg) => {
+    const k = Math.min(1, 800 / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * k)), h = Math.max(1, Math.round(img.height * k));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    const data = ctx.getImageData(0, 0, w, h), a = data.data;
+    if (bg) {
+      const corners = [0, w - 1, (h - 1) * w, h * w - 1].map(i => [a[i * 4], a[i * 4 + 1], a[i * 4 + 2]]);
+      const ref = [0, 1, 2].map(j => corners.reduce((sum, c) => sum + c[j], 0) / 4);
+      for (let i = 0; i < a.length; i += 4) {
+        const dist = Math.hypot(a[i] - ref[0], a[i + 1] - ref[1], a[i + 2] - ref[2]);
+        a[i + 3] = Math.round(a[i + 3] * Math.min(1, Math.max(0, (dist - 24) / 40)));
+      }
+      ctx.putImageData(data, 0, 0);
+    }
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
+      if (a[(y * w + x) * 4 + 3] > 40) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    const box = x1 < 0 ? { x: 0, y: 0, w, h } : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+    return { src: c, box };
+  };
+  // Turn background removal on by default for pictures with no transparency and a plain, even border.
+  const needsBgRemoval = img => {
+    const k = Math.min(1, 200 / Math.max(img.width, img.height));
+    const w = Math.max(2, Math.round(img.width * k)), h = Math.max(2, Math.round(img.height * k));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    const a = ctx.getImageData(0, 0, w, h).data;
+    let clear = 0; for (let i = 3; i < a.length; i += 4) if (a[i] < 250) clear++;
+    if (clear > w * h * .01) return false; // already has a transparent background
+    const px = i => [a[i * 4], a[i * 4 + 1], a[i * 4 + 2]];
+    const cs = [px(0), px(w - 1), px((h - 1) * w), px(h * w - 1)];
+    return cs.every(c => Math.hypot(c[0] - cs[0][0], c[1] - cs[0][1], c[2] - cs[0][2]) < 30);
+  };
+  // A logo file trimmed to its outline (plain background taken out), up to 600px, as WebP with transparency.
+  const cleanLogo = file => new Promise((ok, fail) => {
+    const img = new Image();
+    img.onload = () => {
+      const { src, box } = logoSource(img, needsBgRemoval(img));
+      const k = Math.min(1, 600 / Math.max(box.w, box.h)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(box.w * k)); c.height = Math.max(1, Math.round(box.h * k));
+      const ctx = c.getContext('2d'); ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(src, box.x, box.y, box.w, box.h, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src); ok(c.toDataURL('image/webp', .92));
+    };
+    img.onerror = () => fail(new Error('Not an image'));
+    img.src = URL.createObjectURL(file);
+  });
+  const logoKey = side => side === 'home' ? 'homeLogo' : 'awayLogo';
+  document.querySelectorAll('.slogo').forEach(box => {
+    const side = box.dataset.lside, file = box.querySelector('input'), rm = box.querySelector('button');
+    file.addEventListener('change', async () => {
+      if (!file.files[0]) return;
+      try { const url = await cleanLogo(file.files[0]); s[logoKey(side)] = url; rememberLogo(teamName(side), url); save(); }
+      catch (e) { alert("That file isn't a picture Chrome can read. Try a PNG or JPG."); }
+      file.value = '';
+    });
+    rm.onclick = () => { s[logoKey(side)] = ''; rememberLogo(teamName(side), ''); save(); };
+  });
+  const renderLogos = () => document.querySelectorAll('.slogo').forEach(box => {
+    const side = box.dataset.lside, url = s[logoKey(side)], img = box.querySelector('img');
+    box.querySelector('.sl-name').textContent = teamName(side);
+    img.hidden = box.querySelector('button').hidden = !url;
+    if (url && img.src !== url) img.src = url;
+  });
+  logoHook = renderLogos;
+  // A new team name brings back that school's remembered logo (or none).
+  $('homeName').addEventListener('input', e => { s.home = e.target.value.toUpperCase(); s.homeLogo = knownLogo(s.home); save(); });
+  $('awayName').addEventListener('input', e => { s.away = e.target.value.toUpperCase(); s.awayLogo = knownLogo(s.away); save(); });
   $('awayBg').addEventListener('input', e => { s.awayBg = e.target.value; save(); });
   $('awayFg').addEventListener('input', e => { s.awayFg = e.target.value; save(); });
   $('keyColor').addEventListener('input', e => { s.keyColor = e.target.value; save(); });
@@ -2995,6 +3086,7 @@
       const g = games.find(x => x.id === sel.value);
       if (!g) return;
       s.away = shortName(g.opponent);
+      s.awayLogo = knownLogo(s.away);
       s.squad = /girls/i.test(g.sport) ? 'girls' : /boys/i.test(g.sport) ? 'boys' : '';
       Object.assign(s.match, {
         title: g.sport, venue: g.location || '',
