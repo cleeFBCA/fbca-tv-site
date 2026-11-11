@@ -525,60 +525,12 @@
       </div>
 
       <div class="card">
-        <h2>Data sources</h2>
-        <div class="row-btns"><button id="btnSb">Connect scoreboard</button></div>
-        <p class="hint" id="sbStatus">Run the clock, score and fouls from the gym scoreboard. Pick the file Scorebridge writes.</p>
-        <p class="hint" id="sbRate" hidden></p>
-        <label for="statFrom">Stats come from</label>
-        <select id="statFrom">
-          <option value="keeper">Stat keeper page (live, fbca.tv/graphics/basketball-stats.html)</option>
-          <option value="sheet">Excel stat sheet on OneDrive</option>
-        </select>
-        <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
-        <div id="sheetBox">
-        <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
-        <div class="set-row"><input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…"><button id="btnSheet">Connect</button></div>
-        <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
-        </div>
-        <p class="hint" id="sheetStatus">Not connected.</p>
-        <table class="src">
-          <thead><tr><th>Item</th><th>Scoreboard</th><th>Stats</th></tr></thead>
-          <tbody id="srcRows"></tbody>
-        </table>
-        <p class="hint">Tick where each item comes from. Unticked items run from the buttons on this page. Pairs show left–right as on screen. Stats arrive as the stat crew enters them, a moment after the play, so the clock and score are best from the scoreboard.</p>
-        <p class="hint" id="sbKeys" hidden></p>
-      </div>
-    </div>
-
-    <div class="stack">
-      <div class="card">
-        <h2>Output</h2>
-        <div class="preview"><iframe id="preview" title="Graphics preview" tabindex="-1"></iframe></div>
-        <div class="row-btns" style="margin-top:10px">
-          <button id="btnShow">Hide bug</button>
-          <button id="btnOpen">Open output window</button>
-          <button id="btnOpenKey" hidden>Open key window</button>
-        </div>
-        <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
-          <span>Fill + key (alpha channel)<small id="alphaHint"></small></span></label>
-      </div>
-
-      <div class="card">
-        <h2>Score</h2>
-        <div class="teams" id="teams"></div>
-        <div class="row-btns" style="margin-top:12px"><button id="btnSwap">Swap sides &#8644;</button></div>
-        <p class="hint" id="sideNote"></p>
-      </div>
-
-      <div class="card">
+        <h2>Graphic inserts</h2>
         <div class="tabs" id="tabs">
           <button data-tab="l3" class="active">Lower third</button>
           <button data-tab="pop">Pop-up</button>
           <button data-tab="stats">Team stats</button>
           <button data-tab="fv">Fan vote</button>
-          <button data-tab="setup">Setup</button>
-          <button data-tab="rules">Rules</button>
-          <button data-tab="keys">Keys</button>
         </div>
 
         <div data-pane="l3">
@@ -615,24 +567,6 @@
           </div>
           <p class="hint">Save lower thirds before the game (announcers, starters, key players), then show them from the list with one click. Showing one takes down the fan vote QR, since they share a spot.</p>
           <ul class="l3-list" id="l3List"></ul>
-        </div>
-
-        <div data-pane="setup" hidden>
-          <label for="game">Load from schedule</label>
-          <select id="game"><option value="">Schedule not loaded. Type teams below.</option></select>
-          <div id="teamSetup"></div>
-          <div id="chromaOpts">
-            <label for="keyColor">Key color (the background the ATEM keys out)</label>
-            <div class="set-row">
-              <input id="keyColor" type="color" style="flex:0 0 90px">
-              <button data-keypreset="#FF00FF">Magenta</button>
-              <button data-keypreset="#00FF00">Green</button>
-              <button data-keypreset="#0000FF">Blue</button>
-            </div>
-            <p class="warn" id="keyWarn"></p>
-          </div>
-          <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (Output card), so there is no key color.</p>
-          <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, fouls, timeouts, clock)</button></div>
         </div>
 
         <div data-pane="pop" hidden>
@@ -685,6 +619,81 @@
           </div>
           <label for="fvKey">Admin key (saved on this computer only)</label>
           <div class="set-row"><input id="fvKey" type="password" autocomplete="off" spellcheck="false"><button id="fvKeySave">Save key</button></div>
+        </div>
+
+      </div>
+
+      <div class="card">
+        <h2>Data sources</h2>
+        <div class="row-btns"><button id="btnSb">Connect scoreboard</button></div>
+        <p class="hint" id="sbStatus">Run the clock, score and fouls from the gym scoreboard. Pick the file Scorebridge writes.</p>
+        <p class="hint" id="sbRate" hidden></p>
+        <label for="statFrom">Stats come from</label>
+        <select id="statFrom">
+          <option value="keeper">Stat keeper page (live, fbca.tv/graphics/basketball-stats.html)</option>
+          <option value="sheet">Excel stat sheet on OneDrive</option>
+        </select>
+        <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
+        <div id="sheetBox">
+        <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
+        <div class="set-row"><input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…"><button id="btnSheet">Connect</button></div>
+        <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
+        </div>
+        <p class="hint" id="sheetStatus">Not connected.</p>
+        <table class="src">
+          <thead><tr><th>Item</th><th>Scoreboard</th><th>Stats</th></tr></thead>
+          <tbody id="srcRows"></tbody>
+        </table>
+        <p class="hint">Tick where each item comes from. Unticked items run from the buttons on this page. Pairs show left–right as on screen. Stats arrive as the stat crew enters them, a moment after the play, so the clock and score are best from the scoreboard.</p>
+        <p class="hint" id="sbKeys" hidden></p>
+      </div>
+
+    </div>
+
+    <div class="stack">
+      <div class="card">
+        <h2>Output</h2>
+        <div class="preview"><iframe id="preview" title="Graphics preview" tabindex="-1"></iframe></div>
+        <div class="row-btns" style="margin-top:10px">
+          <button id="btnShow">Hide bug</button>
+          <button id="btnOpen">Open output window</button>
+          <button id="btnOpenKey" hidden>Open key window</button>
+        </div>
+        <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
+          <span>Fill + key (alpha channel)<small id="alphaHint"></small></span></label>
+      </div>
+
+      <div class="card">
+        <h2>Score</h2>
+        <div class="teams" id="teams"></div>
+        <div class="row-btns" style="margin-top:12px"><button id="btnSwap">Swap sides &#8644;</button></div>
+        <p class="hint" id="sideNote"></p>
+      </div>
+
+
+      <div class="card">
+        <div class="tabs">
+          <button data-tab="setup" class="active">Setup</button>
+          <button data-tab="rules">Rules</button>
+          <button data-tab="keys">Keys</button>
+        </div>
+
+        <div data-pane="setup">
+          <label for="game">Load from schedule</label>
+          <select id="game"><option value="">Schedule not loaded. Type teams below.</option></select>
+          <div id="teamSetup"></div>
+          <div id="chromaOpts">
+            <label for="keyColor">Key color (the background the ATEM keys out)</label>
+            <div class="set-row">
+              <input id="keyColor" type="color" style="flex:0 0 90px">
+              <button data-keypreset="#FF00FF">Magenta</button>
+              <button data-keypreset="#00FF00">Green</button>
+              <button data-keypreset="#0000FF">Blue</button>
+            </div>
+            <p class="warn" id="keyWarn"></p>
+          </div>
+          <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (Output card), so there is no key color.</p>
+          <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, fouls, timeouts, clock)</button></div>
         </div>
 
         <div data-pane="rules" hidden>
@@ -1443,11 +1452,13 @@
     for (const side of SIDES) Object.assign(s[side], { score: 0, fouls: 0, to: s.toMax });
     s.poss = ''; s.l3.on = false; s.fv.l3 = false; s.panel = ''; s.foulBase = { home: 0, away: 0 }; s.pop.on = false; s.scoreLog = []; setPeriod('1Q');
   };
+  // Two tab bars: graphics (right column) and Setup / Rules / Keys (left column). Each runs the panes in its own card.
   const showTab = name => {
-    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-    document.querySelectorAll('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== name);
+    const btn = document.querySelector(`.tabs button[data-tab="${name}"]`), card = btn.closest('.card');
+    card.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b === btn));
+    card.querySelectorAll('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== name);
   };
-  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 
   document.addEventListener('keydown', e => {
     if (e.target.closest('input, select, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
