@@ -62,7 +62,7 @@
   /* Players */
   .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .teams.single { grid-template-columns: 1fr; }
-  .team h2 { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 8px; color: var(--gold); display: flex; justify-content: space-between; gap: 8px; }
+  .team h2 { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 8px; color: var(--gold); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; } /* score and fouls right next to the name */
   .team h2 small { font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--chalk-dim); letter-spacing: 0; text-transform: none; align-self: center; }
   .switch { display: none; gap: 6px; margin-bottom: 10px; }
   .switch button { flex: 1; min-height: 42px; }
