@@ -1166,7 +1166,7 @@
       box.replaceChildren(...parts);
       // Make the two halves of a team stat exactly equal, so its label is dead center over the bug.
       const halves = box.querySelectorAll('.p-half');
-      if (halves.length === 2) { const w = Math.max(...[...halves].map(h => h.getBoundingClientRect().width)); halves.forEach(h => h.style.minWidth = w + 'px'); }
+      if (halves.length === 2) { const w = Math.max(...[...halves].map(h => h.offsetWidth)); /* layout size, not the window-scaled one */ halves.forEach(h => h.style.minWidth = w + 'px'); }
     };
     // Timeout graphic. The animation restarts for each new timeout (keyed by when it was called).
     // Timeline from the press: about 1 s to come in, 1 s fully up (to TO_HOLD), the text goes out
