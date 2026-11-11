@@ -179,6 +179,12 @@
 
   <section data-pane="setup" hidden>
     <div class="card">
+      <h3>Announcer stats</h3>
+      <p class="hint" style="margin-top:0">Live stats for the announcers, from the plays you enter here: ready-to-read lines, each player's line, team stats and the play log. No key needed.</p>
+      <p style="margin:8px 0;word-break:break-all"><a id="annLink" href="basketball-announcers.html" target="_blank" rel="noopener" style="color:var(--gold-hi)">fbca.tv/graphics/basketball-announcers.html</a></p>
+      <div class="set-row"><button id="annOpen">Open</button><button id="annCopy">Copy link</button><button id="annShare" hidden>Share</button></div>
+    </div>
+    <div class="card">
       <h3>Stat keeper key</h3>
       <div class="set-row"><input id="key" type="password" autocomplete="off" placeholder="Paste the key from Mr. Lee"><button id="btnKey">Save</button></div>
       <p class="hint" id="keyNote">Needed once on each device to send plays.</p>
@@ -667,6 +673,16 @@
       pick = {}; assist = null; toast('New game started.'); render();
     } catch (e) { toast("Couldn't start a new game: " + e.message); }
   };
+
+  // Announcer page link (same folder; keeps ?api= so a test copy points both pages at the same worker).
+  const annUrl = new URL('basketball-announcers.html' + (qs.get('api') ? '?api=' + encodeURIComponent(qs.get('api')) : ''), location.href).href;
+  $('annLink').href = annUrl;
+  $('annOpen').onclick = () => window.open(annUrl, '_blank', 'noopener');
+  $('annCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText(annUrl); toast('Announcer link copied.'); }
+    catch (e) { toast(annUrl); }
+  };
+  if (navigator.share) { $('annShare').hidden = false; $('annShare').onclick = () => navigator.share({ title: 'EOTA announcer stats', url: annUrl }).catch(() => {}); }
 
   const showTab = () => {
     document.querySelectorAll('.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });

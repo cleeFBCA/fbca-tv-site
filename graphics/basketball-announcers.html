@@ -190,7 +190,8 @@
     const T = {};
     for (const side of SIDES) {
       const players = (meta.rosters[side] || []).map(p => ({ ...p, side, ...blank(), byPer: {} }));
-      T[side] = { side, name: names[side], short: initials(names[side]), color: colors[side], players, byId: new Map(players.map(p => [p.id, p])),
+      // FBCA ("our team" on the stat keeper) shows in gold here, which reads better than its green on this page.
+      T[side] = { side, name: names[side], short: initials(names[side]), color: side === 'home' ? '#F2C14E' : colors[side], players, byId: new Map(players.map(p => [p.id, p])),
                   tot: blank(), perPts: {}, perFouls: {} };
     }
     const score = { home: 0, away: 0 }, plays = [];
