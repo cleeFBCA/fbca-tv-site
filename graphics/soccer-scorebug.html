@@ -868,7 +868,8 @@
           <button data-tab="drop" class="active">Drop-down</button>
           <button data-tab="l3">Lower third</button>
           <button data-tab="stats">Stats &amp; Score</button>
-          <button data-tab="pre">Pregame</button>
+          <button data-tab="pre">Title Card</button>
+          <button data-tab="spot">Player Spotlight</button>
           <button data-tab="xi">Lineups</button>
           <button data-tab="pk">Shootout</button>
           <button data-tab="next">Up next</button>
@@ -946,7 +947,7 @@
           <div class="row-btns" style="margin-top:12px"><button class="primary" data-panel="score">Show score panel</button></div>
         </div>
 
-        <!-- Pregame -->
+        <!-- Title Card: the pregame matchup -->
         <div data-pane="pre" hidden>
           <div class="pane-h">Matchup</div>
           <div class="two">
@@ -968,7 +969,10 @@
           </div>
           <p class="hint">Picking a game in Setup fills in the title, date and venue.</p>
           <div class="row-btns" style="margin-top:10px"><button class="primary" data-panel="match">Show matchup</button></div>
+        </div>
 
+        <!-- Player Spotlight -->
+        <div data-pane="spot" hidden>
           <div class="pane-h">Player spotlight</div>
           <div class="two">
             <div><label for="spTeam">Team</label><select id="spTeam"><option value="home">FBCA</option><option value="away">AWAY</option></select></div>
