@@ -1117,6 +1117,9 @@
             <p class="warn" id="keyWarn"></p>
           </div>
           <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (Output card), so there is no key color.</p>
+          <div class="pane-h" id="storeHead">Storage on this computer</div>
+          <p class="hint" style="margin-top:0">Everything below stays in this browser on this computer (it's still there after a restart). Clearing something here can't be undone.</p>
+          <ul class="l3-list" id="storeList"><li><div class="txt"><span>Open this tab to check.</span></div></li></ul>
           <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, fouls, timeouts, clock)</button></div>
         </div>
 
@@ -1218,8 +1221,54 @@
     l3List: []
   });
   function blankLu() { return { p: Array.from({ length: 5 }, () => ({ line: '', pos: '' })), coach: '' }; }
+  // ---- Pictures kept out of localStorage ----
+  // This browser's localStorage for fbca.tv is about 5 MB, shared by every page on the site, and each saved
+  // spotlight's photo is ~140 KB. Saved spotlight photos (and the remembered school logos, below) live in
+  // IndexedDB on this computer instead; the saved state keeps a short reference (photoRef) to each photo.
+  const MEDIA_DB = 'eota-bball-media';
+  const media = (store, mode, fn) => new Promise((ok, fail) => {
+    let open; try { open = indexedDB.open(MEDIA_DB, 1); } catch (e) { fail(e); return; }
+    open.onupgradeneeded = () => { for (const n of ['spot', 'logos']) if (!open.result.objectStoreNames.contains(n)) open.result.createObjectStore(n); };
+    open.onerror = () => fail(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      try {
+        const tx = db.transaction(store, mode), req = fn(tx.objectStore(store));
+        tx.oncomplete = () => { db.close(); ok(req && req.result); };
+        tx.onerror = tx.onabort = () => { db.close(); fail(tx.error); };
+      } catch (e) { db.close(); fail(e); }
+    };
+  });
+  // [[key, value], ...] for a whole store.
+  const mediaEntries = store => media(store, 'readonly', st => {
+    const k = st.getAllKeys(), v = st.getAll();
+    return { get result() { return k.result.map((key, i) => [key, v.result[i]]); } };
+  });
+  const spotPics = new Map(), picRefs = new Map(); // reference → photo, photo → reference
+  const picRef = photo => {
+    let r = picRefs.get(photo);
+    if (r) return r;
+    let h = 0x811c9dc5;
+    for (let i = 0; i < photo.length; i++) h = Math.imul(h ^ photo.charCodeAt(i), 16777619);
+    r = 'p' + (h >>> 0).toString(36) + '-' + photo.length.toString(36);
+    picRefs.set(photo, r);
+    if (!spotPics.has(r)) { spotPics.set(r, photo); media('spot', 'readwrite', st => st.put(photo, r)).catch(() => {}); }
+    return r;
+  };
+  // What goes in localStorage: each saved spotlight's photo swapped for its reference.
+  const forStorage = st => ({ ...st, spotList: (st.spotList || []).map(it => {
+    if (!it || !it.photo) return it;
+    it.photoRef = picRef(it.photo); // kept on the item too, so other windows learn the pair
+    return { ...it, photo: '' };
+  }) });
+  // Photos filled back in from their references (remembering any photo that arrives with its reference).
+  const withPics = list => {
+    list.forEach(it => { if (it && it.photo && it.photoRef) spotPics.set(it.photoRef, it.photo); });
+    return list.map(it => it && it.photoRef && !it.photo ? { ...it, photo: spotPics.get(it.photoRef) || '' } : it);
+  };
   const merge = raw => {
     const d = defaults(), out = Object.assign(d, raw);
+    out.spotList = withPics(Array.isArray(out.spotList) ? out.spotList : []);
     out.home = Object.assign(d.home, raw.home); out.away = Object.assign(defaults().away, raw.away);
     out.shot = Object.assign(defaults().shot, raw.shot); out.src = Object.assign(defaults().src, raw.src);
     out.sheet = Object.assign(defaults().sheet, raw.sheet); out.foulBase = Object.assign(defaults().foulBase, raw.foulBase);
@@ -1244,6 +1293,13 @@
   };
   const load = () => { try { const r = localStorage.getItem(STORE); if (r) return merge(JSON.parse(r)); } catch (e) {} return defaults(); };
   let s = load();
+  let picsHook = null; // redraws once the saved photos are read back (set for each mode)
+  let picsRead = null; // [[reference, photo], ...] once read, for the control page's cleanup
+  mediaEntries('spot').then(entries => {
+    picsRead = entries;
+    for (const [k, v] of entries) if (!spotPics.has(k)) spotPics.set(k, v);
+    s = merge(s); if (picsHook) picsHook();
+  }).catch(() => {});
   let bc = null;
   try { bc = new BroadcastChannel(STORE); } catch (e) {}
 
@@ -1723,6 +1779,7 @@
       requestAnimationFrame(tick);
     };
     const accept = next => { s = merge(next); render(); };
+    picsHook = render;
     if (bc) bc.onmessage = e => accept(e.data);
     addEventListener('storage', e => { if (e.key === STORE && e.newValue) accept(JSON.parse(e.newValue)); });
     render(); tick();
@@ -1730,10 +1787,37 @@
   }
 
   // ---------- Control mode ----------
+  // Saved photos: redraw once they're read back, then drop any no saved spotlight uses any more.
+  picsHook = () => {
+    renderCtl();
+    const used = new Set(s.spotList.map(it => it && it.photoRef).filter(Boolean));
+    const unused = (picsRead || []).map(([k]) => k).filter(k => !used.has(k));
+    if (unused.length) media('spot', 'readwrite', st => { unused.forEach(k => st.delete(k)); }).catch(() => {});
+  };
+  // When this browser's storage is full, changes still go to air but won't be there after a reload: say so.
+  let storeOk = true;
+  const storeWarn = ok => {
+    if (ok === storeOk) return;
+    storeOk = ok;
+    let bar = $('storeWarn');
+    if (!bar) {
+      bar = el('div'); bar.id = 'storeWarn'; bar.setAttribute('role', 'alert');
+      bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:10px 16px;background:#8B1A1A;color:#fff;font:600 14px/1.35 system-ui,sans-serif;text-align:center';
+      const go = el('button', 'small', 'Open Storage');
+      go.style.marginLeft = '12px';
+      go.onclick = () => { const t = document.querySelector('button[data-tab="setup"]'); if (t) t.click(); $('storeHead').scrollIntoView({ block: 'start' }); };
+      bar.append("This browser's storage is full, so changes aren't being saved. They still go to air, but a reload or a new output window will bring back older settings. Free up space in Setup → Storage.", go);
+      document.body.append(bar);
+    }
+    bar.hidden = ok;
+  };
+  const store = () => {
+    try { localStorage.setItem(STORE, JSON.stringify(forStorage(s))); storeWarn(true); } catch (e) { storeWarn(false); }
+  };
   const save = () => {
     const log = s.scoreLog || (s.scoreLog = []), last = log[log.length - 1] || [0, 0];
     if (last[0] !== s.home.score || last[1] !== s.away.score) { log.push([s.home.score, s.away.score]); if (log.length > 80) log.splice(0, log.length - 80); }
-    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {}
+    store();
     if (bc) bc.postMessage(s);
     renderCtl();
   };
@@ -1816,10 +1900,21 @@
   // Logo library: every uploaded logo is remembered by team name on this computer, so a school's logo
   // comes back the next time they're picked from the schedule or typed in.
   const LOGOS = 'eota-team-logos';
-  const logoLib = () => { try { return JSON.parse(localStorage.getItem(LOGOS) || '{}'); } catch (e) { return {}; } };
+  // Kept in IndexedDB (see "Pictures kept out of localStorage"); the old localStorage list moves there once.
+  let logoMem = (() => { try { return JSON.parse(localStorage.getItem(LOGOS) || '{}'); } catch (e) { return {}; } })();
+  mediaEntries('logos').then(async entries => {
+    const old = logoMem;
+    logoMem = Object.fromEntries(entries);
+    const moving = Object.entries(old).filter(([n]) => !(n in logoMem));
+    moving.forEach(([n, url]) => { logoMem[n] = url; });
+    if (moving.length) await media('logos', 'readwrite', st => { moving.forEach(([n, url]) => st.put(url, n)); });
+    localStorage.removeItem(LOGOS);
+    renderCtl();
+  }).catch(() => {});
+  const logoLib = () => logoMem;
   const rememberLogo = (name, url) => {
-    const lib = logoLib(); if (url) lib[name] = url; else delete lib[name];
-    try { localStorage.setItem(LOGOS, JSON.stringify(lib)); } catch (e) {}
+    if (url) logoMem[name] = url; else delete logoMem[name];
+    media('logos', 'readwrite', st => url ? st.put(url, name) : st.delete(name)).catch(() => {});
   };
   const knownLogo = name => logoLib()[name] || '';
 
@@ -2254,6 +2349,63 @@
   const listSigs = new Map();
   const listChanged = (id, sig) => { if (listSigs.get(id) === sig) return false; listSigs.set(id, sig); return true; };
   const itemSig = item => JSON.stringify({ ...item, photo: (item.photo || '').length });
+  // --- Setup → Storage: what this page keeps on this computer, with safe ways to clear it ---
+  // localStorage (about 5 MB for all of fbca.tv) holds each page's settings; IndexedDB holds the pictures.
+  const PROTECTED = { [STORE]: 'this scorebug', 'eota-soccer-bug-v1': 'the soccer scorebug', 'eota-stats-key': 'the stat keeper key' };
+  const kb = n => n >= 1e6 ? (n / 1e6).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1e3)) + ' KB';
+  const lsBytes = k => k.length + (localStorage.getItem(k) || '').length; // Chrome's limit counts characters
+  const LS_LIMIT = 5 * 1024 * 1024;
+  let storeBusy = false;
+  // Ask Chrome to keep this site's data even when the disk runs low (it decides; there's no prompt).
+  const askPersist = () => navigator.storage && navigator.storage.persist ? navigator.storage.persist().catch(() => false) : Promise.resolve(false);
+  if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { if (!p) askPersist(); }).catch(() => {});
+  const renderStorage = async () => {
+    if (storeBusy) return;
+    storeBusy = true;
+    try {
+      const row = (title, detail, ...btns) => { const li = el('li'), txt = el('div', 'txt'); txt.append(el('b', null, title), el('span', null, detail)); li.append(txt, ...btns); return li; };
+      const btn = (label, ask, act, cls = 'small danger') => { const b = el('button', cls, label); b.onclick = async () => { if (ask && !confirm(ask)) return; await act(); renderStorage(); }; return b; };
+      const rows = [];
+      // Kept through low disk space?
+      const persisted = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted().catch(() => false) : false;
+      rows.push(row('Kept permanently: ' + (persisted ? 'yes' : 'not yet'),
+        persisted ? "Chrome won't clear this site's data to free up disk space."
+                  : 'Chrome may clear saved photos if the disk gets nearly full. Chrome decides; bookmarking fbca.tv and using it often helps.',
+        ...(persisted ? [] : [btn('Ask again', '', async () => { if (!(await askPersist())) alert("Chrome said not yet. It usually agrees once fbca.tv is bookmarked or used regularly. Your data is still saved; this only protects it when the disk is nearly full."); }, 'small')])));
+      // Settings storage
+      const keys = Object.keys(localStorage), used = keys.reduce((n, k) => n + lsBytes(k), 0);
+      rows.push(row('Settings storage: ' + kb(used) + ' of about 5 MB' + (used > LS_LIMIT * .8 ? ' (nearly full)' : ''),
+        'Shared by every fbca.tv page in this browser. This scorebug uses ' + kb(lsBytes(STORE)) + '.'));
+      // Saved spotlights and lower thirds
+      const pics = await mediaEntries('spot').catch(() => []);
+      const picBytes = pics.reduce((n, [, v]) => n + String(v || '').length, 0);
+      rows.push(row('Saved spotlights: ' + s.spotList.length, pics.length ? pics.length + ' photo' + (pics.length === 1 ? '' : 's') + ', ' + kb(picBytes) + ' (not in settings storage)' : 'No photos saved',
+        ...(s.spotList.length ? [btn('Remove all', 'Remove all ' + s.spotList.length + ' saved spotlights? One on air stays on air.', async () => {
+          s.spotList = []; save(); await media('spot', 'readwrite', st => { st.clear(); }).catch(() => {});
+        })] : [])));
+      rows.push(row('Saved lower thirds: ' + s.l3List.length, 'Text only, so these take almost no space.',
+        ...(s.l3List.length ? [btn('Remove all', 'Remove all ' + s.l3List.length + ' saved lower thirds?', () => { s.l3List = []; save(); })] : [])));
+      // School logos and player headshots
+      const logos = Object.keys(logoLib());
+      rows.push(row('School logos remembered: ' + logos.length, logos.length ? logos.slice(0, 6).join(', ') + (logos.length > 6 ? ', …' : '') + '. Logos showing now stay.' : 'None yet',
+        ...(logos.length ? [btn('Forget all', 'Forget all ' + logos.length + ' remembered school logos? You would need to upload each one again.', () => { logos.forEach(n => rememberLogo(n, '')); })] : [])));
+      const heads = [...photoLib.values()].filter(r => r.photo).length;
+      rows.push(row('Player photos (headshots): ' + heads, 'Every team and roster on this computer, used by the spotlight, lower thirds, starting lineup and fan vote.',
+        ...(heads ? [btn('Remove all', 'Remove all ' + heads + ' player headshots for every team? You would need to add each one again.', async () => {
+          await phIdb('readwrite', st => st.clear()).catch(() => {}); photoLib = new Map(); pphSig.home = pphSig.away = ''; renderCtl();
+        })] : [])));
+      // Other pages' settings: anything not protected can go (that page starts fresh next time).
+      const others = keys.filter(k => !PROTECTED[k]).map(k => [k, lsBytes(k)]).sort((a, b) => b[1] - a[1]);
+      for (const [k, n] of others.slice(0, 8)) rows.push(row(k, kb(n) + ' of settings storage, saved by another fbca.tv page or an older version.',
+        btn('Remove', 'Remove "' + k + '"? The page that saved it starts fresh next time.', () => { localStorage.removeItem(k); })));
+      if (others.length > 8) rows.push(row('…and ' + (others.length - 8) + ' smaller items', 'Remove the big ones above first.'));
+      $('storeList').replaceChildren(...rows);
+      if (!storeOk) store(); // space may have been freed: try the save again (this clears the warning)
+    } finally { storeBusy = false; }
+  };
+  document.querySelectorAll('button[data-tab="setup"]').forEach(b => b.addEventListener('click', renderStorage));
+  setTimeout(renderStorage, 1500); // once the photo libraries have been read
+
   // --- Player spotlight ---
   let spotPhoto = '';
   const spotFromForm = () => ({
