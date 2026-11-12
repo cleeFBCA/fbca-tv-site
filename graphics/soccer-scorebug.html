@@ -955,8 +955,6 @@
           <button id="btnOpen">Open output window</button>
           <button id="btnOpenKey" hidden>Open key window</button>
         </div>
-        <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
-          <span>Fill + key (alpha channel)<small id="alphaHint">Off: one output on a chroma key color.</small></span></label>
         <div class="row-btns" style="margin:0">
           <p class="panel-note" id="panelNote"></p>
           <button id="btnPanelHide" style="flex:0 0 auto">Take down</button>
@@ -975,6 +973,7 @@
           <button data-tab="next">Up next</button>
           <button data-tab="fv">Fan vote</button>
           <button data-tab="setup">Setup</button>
+          <button data-tab="storage">Storage</button>
         </div>
 
         <!-- Drop-down -->
@@ -1270,6 +1269,10 @@
           </div>
           <label class="check"><input type="checkbox" id="sheetBug"> Update the bug's score and cards from the stats</label>
           <p class="hint" id="sheetStatus">Not connected. The counters on the Stats &amp; Score tab run the stats panel.</p>
+          <div class="pane-h">Output signal</div>
+          <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
+            <span>Fill + key (alpha channel)<small id="alphaHint">Off: one output on a chroma key color.</small></span></label>
+          <p class="hint" style="margin-top:4px">Set this before the broadcast, to match how the ATEM is wired. Changing it asks first, because it changes what goes out to the ATEM.</p>
           <div id="chromaOpts">
           <label for="keyColor">Key color (the background the ATEM keys out)</label>
           <div class="set-row">
@@ -1280,7 +1283,7 @@
           </div>
           <p class="warn" id="keyWarn"></p>
           </div>
-          <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (Output card), so there is no key color. The graphics go out on black, with a separate key signal.</p>
+          <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (above), so there is no key color. The graphics go out on black, with a separate key signal.</p>
           <div class="two">
             <div><label for="halfLen">Half length (min)</label><input id="halfLen" type="number" min="1" max="60"></div>
             <div><label for="otLen">OT length (min)</label><input id="otLen" type="number" min="1" max="30"></div>
@@ -1291,10 +1294,13 @@
             <div><label for="pos">Bug position</label>
               <select id="pos"><option value="tl">Top left</option><option value="tr">Top right</option></select></div>
           </div>
+          <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, cards and clock)</button></div>
+        </div>
+
+        <div data-pane="storage" hidden>
           <div class="pane-h" id="storeHead">Storage on this computer</div>
           <p class="hint" style="margin-top:0">Everything below stays in this browser on this computer (it's still there after a restart). Clearing something here can't be undone.</p>
           <ul class="l3-list" id="storeList"><li><div class="txt"><span>Open this tab to check.</span></div></li></ul>
-          <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, cards and clock)</button></div>
         </div>
       </div>
     </div>
@@ -1780,7 +1786,10 @@
           const span = el('span', null, full || teamName(side)), nm = at(el('div', 'tname ' + cls), .45);
           nm.append(span);
           node.replaceChildren(at(crestOf(side, cls), .35), nm);
-          fitLater(span, 470);
+          // Fit the room actually left inside the slab (its padding keeps names clear of the slanted edge).
+          const room = () => { const cs = getComputedStyle(node); return node.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight); };
+          const fit = () => fitWidth(span, room());
+          requestAnimationFrame(fit); document.fonts.ready.then(fit);
         }
       }
       $('psLabel').textContent = scoreTitle();
@@ -2120,8 +2129,8 @@
       bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:10px 16px;background:#8B1A1A;color:#fff;font:600 14px/1.35 system-ui,sans-serif;text-align:center';
       const go = el('button', 'small', 'Open Storage');
       go.style.marginLeft = '12px';
-      go.onclick = () => { const t = document.querySelector('button[data-tab="setup"]'); if (t) t.click(); $('storeHead').scrollIntoView({ block: 'start' }); };
-      bar.append("This browser's storage is full, so changes aren't being saved. They still go to air, but a reload or a new output window will bring back older settings. Free up space in Setup → Storage.", go);
+      go.onclick = () => { const t = document.querySelector('button[data-tab="storage"]'); if (t) t.click(); $('storeHead').scrollIntoView({ block: 'start' }); };
+      bar.append("This browser's storage is full, so changes aren't being saved. They still go to air, but a reload or a new output window will bring back older settings. Free up space in the Storage tab.", go);
       document.body.append(bar);
     }
     bar.hidden = ok;
@@ -2735,7 +2744,7 @@
       if (!storeOk) store(); // space may have been freed: try the save again (this clears the warning)
     } finally { storeBusy = false; }
   };
-  document.querySelectorAll('button[data-tab="setup"]').forEach(b => b.addEventListener('click', renderStorage));
+  document.querySelectorAll('button[data-tab="storage"]').forEach(b => b.addEventListener('click', renderStorage));
   setTimeout(renderStorage, 1500); // once the photo libraries have been read
 
   // --- Shootout ---
@@ -3242,7 +3251,13 @@
   const freshUrl = hash => { const q = new URLSearchParams(location.search); q.set('v', Date.now()); return location.pathname + '?' + q + hash; };
   $('btnOpen').onclick = () => window.open(freshUrl('#bug'), 'eota-soccer-bug', 'width=1280,height=720');
   $('btnOpenKey').onclick = () => window.open(freshUrl('#key'), 'eota-soccer-key', 'width=1280,height=720');
-  $('alphaKey').addEventListener('change', e => { s.keyMode = e.target.checked ? 'alpha' : 'chroma'; save(); });
+  $('alphaKey').addEventListener('change', e => {
+    // A slip here changes the signal on air, so it asks first.
+    const on = e.target.checked;
+    if (!confirm(on ? 'Switch to fill + key? The output window goes to black with a separate key window, so the ATEM must be set up for fill + key.'
+                    : 'Switch back to one chroma key output? The ATEM must be keying out the key color instead of using fill + key.')) { e.target.checked = !on; return; }
+    s.keyMode = on ? 'alpha' : 'chroma'; save();
+  });
 
   // --- Tabs ---
   const showTab = name => {

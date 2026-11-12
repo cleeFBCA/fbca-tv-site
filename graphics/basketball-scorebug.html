@@ -389,7 +389,7 @@
   .stn.tr { right: 96px; }
   .stn.tl { left: 96px; }
   .stn.on { opacity: var(--o, .6); }
-  .stn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .stn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 4px; }
   .stn-row label.switch { margin: 0; }
   .stn-row select { width: auto; }
   .stn-row .op { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--chalk-dim); }
@@ -640,9 +640,13 @@
   .st-team { display: flex; align-items: center; gap: 18px; padding: 0 0 0 26px; }
   .st-team.L { clip-path: polygon(0 0, 100% 0, calc(100% - 36px) 100%, 0 100%); margin-right: -18px; }
   .st-team.R { flex-direction: row-reverse; padding: 0 26px 0 0; clip-path: polygon(36px 0, 100% 0, 100% 100%, 0 100%); margin-left: -18px; }
-  .st-team .cp-tn { flex: 1; min-width: 0; }
-  .st-team.R .cp-tn { text-align: right; }
+  /* The name gets whatever room the crest and score leave. A long name goes to two balanced lines, and
+     anything still too wide is squeezed toward the score, never over the logo (see fitTeam). */
+  .st-team .cp-tn { flex: 1; min-width: 0; display: flex; align-items: center; }
+  .st-team.R .cp-tn { justify-content: flex-end; text-align: right; }
+  .st-team .cp-tn span { flex: none; }
   .st-team.R .cp-tn span { transform-origin: right center; }
+  .st-team .cp-tn span.two { white-space: normal; text-wrap: balance; font-size: 38px; line-height: .98; }
   .st-team .sc { align-self: stretch; display: grid; place-items: center; min-width: 132px; padding: 0 22px; background: rgba(0,0,0,.38);
                  font-size: 72px; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; }
   .st-team.L .sc { padding-right: 44px; }
@@ -949,6 +953,7 @@
           <button data-tab="pop">Pop-up</button>
           <button data-tab="stats">Team stats</button>
           <button data-tab="fv">Fan vote</button>
+          <button data-tab="stn">Station Bug</button>
         </div>
 
         <div data-pane="l3">
@@ -1118,12 +1123,15 @@
           <div class="set-row"><input id="fvKey" type="password" autocomplete="off" spellcheck="false"><button id="fvKeySave">Save key</button></div>
         </div>
 
-        <div class="stn-row">
-          <label class="switch"><input type="checkbox" id="stnOn" role="switch"><span class="track"></span><span>Station bug</span></label>
-          <select id="stnCorner" aria-label="Station bug corner"><option value="tr">Top right</option><option value="tl">Top left</option></select>
-          <span class="op">Opacity <input type="range" id="stnOp" min="20" max="100" step="5"><b id="stnOpV"></b></span>
+        <div data-pane="stn" hidden>
+          <div class="pane-h">Station bug</div>
+          <div class="stn-row">
+            <label class="switch"><input type="checkbox" id="stnOn" role="switch"><span class="track"></span><span>Station bug</span></label>
+            <select id="stnCorner" aria-label="Station bug corner"><option value="tr">Top right</option><option value="tl">Top left</option></select>
+            <span class="op">Opacity <input type="range" id="stnOp" min="20" max="100" step="5"><b id="stnOpV"></b></span>
+          </div>
+          <p class="hint" id="stnNote"></p>
         </div>
-        <p class="hint" id="stnNote"></p>
       </div>
 
       <div class="card">
@@ -1162,8 +1170,6 @@
           <button id="btnOpen">Open output window</button>
           <button id="btnOpenKey" hidden>Open key window</button>
         </div>
-        <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
-          <span>Fill + key (alpha channel)<small id="alphaHint"></small></span></label>
         <div class="row-btns" style="margin:0">
           <p class="panel-note" id="panelNote"></p>
           <button id="btnPanelHide" style="flex:0 0 auto">Take down</button>
@@ -1183,12 +1189,17 @@
           <button data-tab="setup" class="active">Setup</button>
           <button data-tab="rules">Rules</button>
           <button data-tab="keys">Keys</button>
+          <button data-tab="storage">Storage</button>
         </div>
 
         <div data-pane="setup">
           <label for="game">Load from schedule</label>
           <select id="game"><option value="">Schedule not loaded. Type teams below.</option></select>
           <div id="teamSetup"></div>
+          <div class="pane-h">Output signal</div>
+          <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
+            <span>Fill + key (alpha channel)<small id="alphaHint"></small></span></label>
+          <p class="hint" style="margin-top:4px">Set this before the broadcast, to match how the ATEM is wired. Changing it asks first, because it changes what goes out to the ATEM.</p>
           <div id="chromaOpts">
             <label for="keyColor">Key color (the background the ATEM keys out)</label>
             <div class="set-row">
@@ -1199,11 +1210,14 @@
             </div>
             <p class="warn" id="keyWarn"></p>
           </div>
-          <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (Output card), so there is no key color.</p>
+          <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (above), so there is no key color.</p>
+          <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, fouls, timeouts, clock)</button></div>
+        </div>
+
+        <div data-pane="storage" hidden>
           <div class="pane-h" id="storeHead">Storage on this computer</div>
           <p class="hint" style="margin-top:0">Everything below stays in this browser on this computer (it's still there after a restart). Clearing something here can't be undone.</p>
           <ul class="l3-list" id="storeList"><li><div class="txt"><span>Open this tab to check.</span></div></li></ul>
-          <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, fouls, timeouts, clock)</button></div>
         </div>
 
         <div data-pane="rules" hidden>
@@ -1741,6 +1755,22 @@
       }
       if (on !== box.classList.contains('on')) box.classList.toggle('on', on);
     };
+    // A team name in its slab: one line if it fits the room left beside the crest and score; else two
+    // balanced lines (for names with spaces); and if a line is still too wide, squeezed (to 60%) toward the score.
+    const fitTeam = span => {
+      const box = span.parentNode;
+      span.classList.remove('two'); span.style.maxWidth = span.style.transform = '';
+      const max = box.clientWidth;
+      if (!max) return;
+      let w = span.offsetWidth;
+      if (w <= max) return;
+      if (max / w < .8 && /\s/.test(span.textContent.trim())) {
+        span.classList.add('two'); span.style.maxWidth = max + 'px';
+        w = span.scrollWidth;
+        if (w <= max + 1) return;
+      }
+      span.style.transform = `scaleX(${Math.max(.6, max / w).toFixed(3)})`;
+    };
     // Team stats: team slabs with their scores, then a row per stat with bars out from the middle.
     // Rows are built once per matchup; the numbers and bars update in place as the sheet changes (the bars glide).
     let stSig = '', stRefs = [];
@@ -1759,7 +1789,7 @@
           // No logo: the initials stand in for one, unless they'd only repeat the name (FBCA FBCA).
           const noCrest = !s[side].logo && initials(s[side].name) === String(s[side].name).toUpperCase().trim();
           node.replaceChildren(...(noCrest ? [] : [at(crestOf(side, cls), .3)]), nm, sc);
-          const fit = () => fitWidth(span, noCrest ? 390 : 300);
+          const fit = () => fitTeam(span);
           requestAnimationFrame(fit); document.fonts.ready.then(fit);
         }
         stRefs = TEAM_ROWS.map(([label], i) => {
@@ -1963,7 +1993,7 @@
       bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:10px 16px;background:#8B1A1A;color:#fff;font:600 14px/1.35 system-ui,sans-serif;text-align:center';
       const go = el('button', 'small', 'Open Storage');
       go.style.marginLeft = '12px';
-      go.onclick = () => { const t = document.querySelector('button[data-tab="setup"]'); if (t) t.click(); $('storeHead').scrollIntoView({ block: 'start' }); };
+      go.onclick = () => { const t = document.querySelector('button[data-tab="storage"]'); if (t) t.click(); $('storeHead').scrollIntoView({ block: 'start' }); };
       bar.append("This browser's storage is full, so changes aren't being saved. They still go to air, but a reload or a new output window will bring back older settings. Free up space in Setup → Storage.", go);
       document.body.append(bar);
     }
@@ -2339,7 +2369,13 @@
   const freshUrl = hash => { const q = new URLSearchParams(location.search); q.set('v', Date.now()); return location.pathname + '?' + q + hash; };
   $('btnOpen').onclick = () => window.open(freshUrl('#bug'), 'eota-bball-bug', 'width=1280,height=720');
   $('btnOpenKey').onclick = () => window.open(freshUrl('#key'), 'eota-bball-key', 'width=1280,height=720');
-  $('alphaKey').addEventListener('change', e => { s.keyMode = e.target.checked ? 'alpha' : 'chroma'; save(); });
+  $('alphaKey').addEventListener('change', e => {
+    // A slip here changes the signal on air, so it asks first.
+    const on = e.target.checked;
+    if (!confirm(on ? 'Switch to fill + key? The output window goes to black with a separate key window, so the ATEM must be set up for fill + key.'
+                    : 'Switch back to one chroma key output? The ATEM must be keying out the key color instead of using fill + key.')) { e.target.checked = !on; return; }
+    s.keyMode = on ? 'alpha' : 'chroma'; save();
+  });
   $('keyColor').addEventListener('input', e => { s.keyColor = e.target.value; save(); });
   document.querySelectorAll('[data-keypreset]').forEach(b => b.onclick = () => { s.keyColor = b.dataset.keypreset; save(); });
   const num = (id, lo, hi, fn) => $(id).addEventListener('change', e => { const v = parseInt(e.target.value, 10); if (v >= lo && v <= hi) { fn(v); save(); } });
@@ -2391,7 +2427,7 @@
     $('stnOn').checked = s.stn.on; $('stnCorner').value = s.stn.corner; setField($('stnOp'), s.stn.opacity); $('stnOpV').textContent = s.stn.opacity + '%';
     // See-through only keys cleanly with fill + key; over a chroma color it would tint.
     $('stnNote').textContent = s.stn.on && s.keyMode !== 'alpha' && s.stn.opacity < 100
-      ? 'See-through needs Fill + key (in the Output panel). On a chroma key it shows tinted, so use 100% there.' : '';
+      ? 'See-through needs Fill + key (Setup → Output signal). On a chroma key it shows tinted, so use 100% there.' : '';
   };
 
   // --- Pregame ---
@@ -2561,7 +2597,7 @@
       if (!storeOk) store(); // space may have been freed: try the save again (this clears the warning)
     } finally { storeBusy = false; }
   };
-  document.querySelectorAll('button[data-tab="setup"]').forEach(b => b.addEventListener('click', renderStorage));
+  document.querySelectorAll('button[data-tab="storage"]').forEach(b => b.addEventListener('click', renderStorage));
   setTimeout(renderStorage, 1500); // once the photo libraries have been read
 
   // --- Player spotlight ---
