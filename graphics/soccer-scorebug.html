@@ -2581,7 +2581,10 @@
   const SK_KEY_LS = 'eota-stats-key'; // same key storage as the stat keeper page on this site
   const skKey = () => { try { return JSON.parse(localStorage.getItem(SK_KEY_LS) || '""'); } catch (e) { return ''; } };
   const STAT_PER = { '1ST': '1H', '2ND': '2H', OT1: 'OT1', OT2: 'OT2' };
-  let shareSig = '', shareAt = 0, shareBusy = false, shareMsg = '';
+  let shareSig = '', shareAt = 0, shareBusy = false, shareMsg = '', shareAnchor = null;
+  // When the stadium scoreboard runs the clock, the page sets the time from each reading (whole seconds) and never
+  // marks the clock as running. It counts as running while the reading keeps moving at clock speed.
+  let boardBase = null, boardChangedAt = 0, boardMovedAt = 0;
   const shareClock = async () => {
     if (!s.clockShare || shareBusy) return;
     const key = skKey(), g = skGame || rosterGame;
@@ -2590,11 +2593,27 @@
       if (msg !== shareMsg) { shareMsg = msg; renderShare(); }
       return;
     }
-    const now = Date.now(), per = STAT_PER[s.period], base = elapsed(s, now), run = !!(per && s.running);
+    const now = Date.now(), per = STAT_PER[s.period], base = elapsed(s, now);
+    if (!s.running) {
+      if (boardBase !== null && base !== boardBase) {
+        // Moved as far as the time since its last move: ticking like a clock. Anything else is a set or a jump.
+        boardMovedAt = boardChangedAt && Math.abs(base - boardBase - (now - boardChangedAt)) < 1500 ? now : 0;
+        boardChangedAt = now;
+      }
+      boardBase = base;
+    } else { boardBase = null; boardChangedAt = 0; boardMovedAt = 0; }
+    // A scoreboard reading steps once a second, so it has stopped once it hasn't moved for 1.5 s.
+    const boardRunning = !s.running && boardMovedAt && now - boardMovedAt < 1500;
+    const run = !!(per && (s.running || boardRunning));
     const meta = { period: per || g.meta.period, halfMin: s.halfMin, otMin: s.otMin, clockSrc: 'scorebug', clock: { run, startedAt: now, base } };
-    // What changed, ignoring the time ticking by: a running clock is pinned by when it started.
-    const sig = JSON.stringify([meta.period, s.halfMin, s.otMin, run, Math.round((run ? now - base : base) / 1000), g.meta.gameId]);
-    if (sig === shareSig && now - shareAt < 60000) return;
+    // Sent at once when the half, length or running state changes, or the time moves by more than 1.5 s against
+    // where the stat pages would have it (a set or a correction); otherwise once a minute so they know it's here.
+    // A running clock is pinned by when it started, so its ticking alone never triggers a send.
+    const anchor = run ? now - base : base;
+    const sig = JSON.stringify([meta.period, s.halfMin, s.otMin, run, g.meta.gameId]);
+    // Between scoreboard ticks the reading stands still, which looks like drift: only judge drift right after a tick.
+    const drifted = shareAnchor !== null && Math.abs(anchor - shareAnchor) > 1500 && (!boardRunning || now - boardMovedAt < 300);
+    if (sig === shareSig && shareAnchor !== null && !drifted && now - shareAt < 60000) return;
     shareBusy = true;
     try {
       const r = await fetch(SK_API + '/meta?game=soccer', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
@@ -2603,12 +2622,12 @@
       if (r.status === 401) shareMsg = 'badkey';
       else if (r.status === 409) { if (d.state) { if (skGame) skGame = { rev: d.state.rev, meta: d.state.meta, events: d.state.events }; else rosterGame = d.state; } shareMsg = 'The stat keeper started a new game; sharing with it now.'; }
       else if (!r.ok) shareMsg = "Couldn't reach the stat keeper. Trying again.";
-      else { shareSig = sig; shareAt = now; shareMsg = 'ok'; }
+      else { shareSig = sig; shareAnchor = anchor; shareAt = now; shareMsg = 'ok'; }
     } catch (e) { shareMsg = "Couldn't reach the stat keeper. Trying again."; }
     shareBusy = false;
     renderShare();
   };
-  setInterval(shareClock, 1000);
+  setInterval(shareClock, 250); // four checks a second, so a start or stop goes out within a quarter second
   const renderShare = () => {
     $('clockShare').checked = s.clockShare;
     const needKey = s.clockShare && (shareMsg === 'key' || shareMsg === 'badkey');
@@ -2621,12 +2640,12 @@
   };
   shareHook = renderShare;
   $('clockShare').addEventListener('change', e => {
-    s.clockShare = e.target.checked; shareSig = '';
+    s.clockShare = e.target.checked; shareSig = ''; shareAnchor = null;
     // Turning it off hands the clock back to the stat keeper (it stays where it is).
     if (!s.clockShare) { const g = skGame || rosterGame, key = skKey(); if (g && key) fetch(SK_API + '/meta?game=soccer', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ gameId: g.meta.gameId, meta: { clockSrc: '' } }) }).catch(() => {}); }
     save(); renderShare();
   });
-  $('skKeySave').onclick = () => { const k = $('skKey').value.trim(); if (!k) return; try { localStorage.setItem(SK_KEY_LS, JSON.stringify(k)); } catch (e) {} $('skKey').value = ''; shareSig = ''; shareMsg = ''; shareClock(); };
+  $('skKeySave').onclick = () => { const k = $('skKey').value.trim(); if (!k) return; try { localStorage.setItem(SK_KEY_LS, JSON.stringify(k)); } catch (e) {} $('skKey').value = ''; shareSig = ''; shareAnchor = null; shareMsg = ''; shareClock(); };
 
   const keeperApply = () => {
     const data = keeperData(skGame), { at, err, ...prev } = s.sheet;
