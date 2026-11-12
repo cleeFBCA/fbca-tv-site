@@ -714,7 +714,8 @@
       <div class="card">
         <h2>Graphic inserts</h2>
         <div class="tabs" id="tabs">
-          <button data-tab="pre">Pregame</button>
+          <button data-tab="pre">Title Card</button>
+          <button data-tab="spot">Player Spotlight</button>
           <button data-tab="l3" class="active">Lower third</button>
           <button data-tab="pop">Pop-up</button>
           <button data-tab="stats">Team stats</button>
@@ -788,12 +789,19 @@
             <div><label for="mSub">Subtitle (optional)</label><input id="mSub" data-match="sub" placeholder="District game"></div>
           </div>
           <div class="two">
+            <div><label for="mHomeFull" id="mHomeFullL">FBCA full name</label><input id="mHomeFull" data-match="homeFull" placeholder="Fort Bend Christian Academy"></div>
+            <div><label for="mAwayFull" id="mAwayFullL">AWAY full name</label><input id="mAwayFull" data-match="awayFull" placeholder="The Village School"></div>
+          </div>
+          <p class="hint" style="margin-top:4px">Shown on the title card. Leave blank to use the short name from Setup. Picking a game in Setup fills these in.</p>
+          <div class="two">
             <div><label for="mWhen">Date and time</label><input id="mWhen" data-match="when" placeholder="Thu, Dec 10 · 6:00 PM"></div>
             <div><label for="mVenue">Venue</label><input id="mVenue" data-match="venue" placeholder="The Nest"></div>
           </div>
           <p class="hint" id="mRecs"></p>
-          <div class="row-btns" style="margin-top:10px"><button class="primary" id="btnPre">Show pregame</button></div>
+          <div class="row-btns" style="margin-top:10px"><button class="primary" id="btnPre">Show title card</button></div>
+        </div>
 
+        <div data-pane="spot" hidden>
           <div class="pane-h">Player spotlight</div>
           <div class="two">
             <div><label for="spTeam">Team</label><select id="spTeam"><option value="home"></option><option value="away"></option></select></div>
@@ -1031,7 +1039,8 @@
     stn: { on: false, corner: 'tr', opacity: 60 },
     // Pop-up above the bar: kind 'text' | 'stat' | 'run'; until = when it comes down (0 = stays up).
     // Pregame matchup (s.panel === 'match'): title, subtitle, date/time and venue. Records come from Setup.
-    match: { title: '', sub: '', when: '', venue: '' },
+    // homeFull / awayFull: full school names for the title card (the bug keeps the short names).
+    match: { title: '', sub: '', homeFull: '', awayFull: '', when: '', venue: '' },
     // Player spotlight (s.panel === 'spot') and the saved spotlights.
     spot: blankSpot(), spotList: [],
     pop: { on: false, kind: 'text', text: '', team: '', stat: 'FG', run: null, until: 0, at: 0 },
@@ -1328,7 +1337,8 @@
           $('pgBar' + pos).style.background = $('pgBar' + pos + '2').style.background = c;
           const mark = t.logo ? Object.assign(el('img'), { src: t.logo, alt: '' }) : el('div', 'ini', initials(t.name));
           // The name is squeezed on an inner span: the slide-in animation owns the outer one's transform.
-          const nm = el('div', 'nm'), nmText = el('span', null, t.name), rc = el('div', 'rc', t.rec);
+          const full = String(s.match[side + 'Full'] || '').trim();
+          const nm = el('div', 'nm'), nmText = el('span', null, full || t.name), rc = el('div', 'rc', t.rec);
           nm.append(nmText);
           [mark, nm, rc].forEach((n, i) => n.style.setProperty('--d', i));
           node.replaceChildren(mark, nm, rc);
@@ -1856,8 +1866,9 @@
   document.querySelectorAll('[data-match]').forEach(inp => inp.addEventListener('input', () => { s.match = { ...s.match, [inp.dataset.match]: inp.value }; save(); }));
   $('btnPre').onclick = () => { s.panel = s.panel === 'match' ? '' : 'match'; save(); };
   preHook = () => {
-    document.querySelectorAll('[data-match]').forEach(inp => setField(inp, s.match[inp.dataset.match]));
-    $('btnPre').textContent = s.panel === 'match' ? 'Take down pregame' : 'Show pregame';
+    document.querySelectorAll('[data-match]').forEach(inp => setField(inp, s.match[inp.dataset.match] || ''));
+    $('mHomeFullL').textContent = s.home.name + ' full name'; $('mAwayFullL').textContent = s.away.name + ' full name';
+    $('btnPre').textContent = s.panel === 'match' ? 'Take down title card' : 'Show title card';
     $('mRecs').textContent = 'Records: ' + SIDES.map(side => s[side].name + ' ' + (s[side].rec || '(none)')).join(', ') + '. Set them in Setup → Record.';
   };
 
@@ -2690,6 +2701,7 @@
       s.squad = /girls/i.test(g.sport) ? 'girls' : /boys/i.test(g.sport) ? 'boys' : '';
       const d = new Date(g.start);
       s.match = { ...s.match, title: g.sport, venue: g.location || '',
+        homeFull: data.school || s.match.homeFull || '', awayFull: g.opponent || '',
         when: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) };
       save(); };
     sel.addEventListener('change', apply);
