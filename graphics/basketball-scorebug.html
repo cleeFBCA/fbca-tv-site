@@ -522,17 +522,6 @@
   .bb .poss.on { display: block; }
 
   .wipe { transition: clip-path .35s ease; clip-path: inset(0 0 0 0); }
-  .pn { position: absolute; }
-  .pn.hidden { clip-path: inset(0 0 100% 0); }
-  .pn .ph {
-    position: relative; height: 76px; display: flex; align-items: center; justify-content: center; gap: 22px;
-    background: linear-gradient(#FBF8EF, #D6D0BE); color: var(--pine);
-    font-size: 44px; font-weight: 800; letter-spacing: .12em; white-space: nowrap;
-    border-bottom: 5px solid var(--gold);
-  }
-  .pn .ph .logo { position: absolute; right: 26px; top: 50%; height: 40px; transform: translateY(-50%); background: var(--field); opacity: .9; }
-  .pn .pb { background: var(--pine); color: var(--chalk); }
-  .pn .pf { height: 8px; background: var(--gold); }
   /* Lower third: name in team colors over a stat line, just above the bar (same spot as the fan vote one) */
   /* Lower third: over the end of the bug for the player's team. Name on the team's main color, the stat
      line on the bug's gray, and a stripe in the team's text color on the outer edge. The right team's
@@ -553,55 +542,147 @@
   .l3.R .lname { background: linear-gradient(270deg, var(--c), color-mix(in srgb, var(--c) 82%, #000)); }
   .l3 .lstat { padding: 8px 30px; background: linear-gradient(#2e2f33, #17181b); color: #fff; font-size: 30px; font-weight: 600; letter-spacing: .05em; white-space: nowrap; }
   .l3 .lstat:empty { display: none; }
-  /* Fan vote: a lower third with the QR code for fbca.tv/vote at its end, just above the bar */
-  .fvl { position: absolute; left: 300px; bottom: 188px; display: flex; height: 176px; }
-  .fvl.hidden { clip-path: inset(0 100% 0 0); }
-  .fvl .accent { width: 14px; background: var(--gold); }
-  .fvl .fbody { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0 44px 0 34px; background: var(--pine); border-bottom: 6px solid var(--gold); }
-  .fvl .kick { font-size: 30px; font-weight: 800; letter-spacing: .2em; color: var(--gold-hi); }
-  .fvl .head { font-size: 74px; font-weight: 800; line-height: 1; color: var(--chalk); white-space: nowrap; }
-  .fvl .sub { font-family: var(--font-body); text-transform: none; font-size: 30px; font-weight: 600; color: var(--chalk-dim); }
-  .fvl .sub b { color: var(--chalk); font-weight: 700; }
-  .fvl .qr { width: 176px; height: 176px; background: #fff; display: grid; place-items: center; }
-  .fvl .qr svg { width: 168px; height: 168px; display: block; }
-  /* Fan vote results: winner (spotlight photo when there is one) beside every nominee's share */
-  #pVote { left: 300px; top: 180px; width: 1320px; }
-  #pVote .pb { display: grid; grid-template-columns: 440px 1fr; }
-  #pVote .win { position: relative; height: 528px; overflow: hidden; }
-  #pVote .win img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  #pVote .info { position: relative; padding: 40px 56px 36px; display: flex; flex-direction: column; min-width: 0; }
-  /* No headshot: the text runs the full width. */
-  #pVote.nophoto .pb { grid-template-columns: 1fr; }
-  #pVote.nophoto .win { display: none; }
-  #pVote.nophoto .info { min-height: 528px; padding: 40px 64px 40px; }
-  #pVote.nophoto .rows { padding-top: 40px; }
-  #pVote.nophoto .wn { font-size: 132px; }
-  #pVote.nophoto .r { grid-template-columns: 380px 1fr 110px; }
-  #pVote .wk { font-size: 28px; font-weight: 800; letter-spacing: .22em; color: var(--gold); }
-  #pVote .wn { font-size: 108px; font-weight: 800; line-height: .95; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #pVote .wm { font-size: 34px; font-weight: 700; letter-spacing: .08em; color: var(--gold-hi); margin-top: 6px; min-height: 1.2em; }
-  #pVote .rows { margin-top: auto; display: grid; gap: 14px; }
-  #pVote .r { display: grid; grid-template-columns: 290px 1fr 100px; align-items: center; gap: 22px; font-size: 34px; font-weight: 700; letter-spacing: .03em; color: var(--chalk-dim); }
-  #pVote .r span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #pVote .r .t { height: 24px; background: var(--field); }
-  #pVote .r .f { height: 100%; background: var(--chalk-dim); }
-  #pVote .r .p { text-align: right; font-variant-numeric: tabular-nums; }
-  #pVote .r.lead { color: var(--chalk); }
-  #pVote .r.lead .f { background: var(--gold); }
+  /* Motion in the title card's style: stripes drifting across the name, a highlight running down the
+     stripe, the photo settling, and the name and stat line arriving from the bug's end (.fx, as the panels). */
+  .l3 .lname { position: relative; isolation: isolate; overflow: hidden; }
+  .l3 .lname::before { content: ''; position: absolute; top: 0; bottom: 0; left: -40px; right: -40px; z-index: -1;
+                       background: repeating-linear-gradient(115deg, rgba(255,255,255,.08) 0 2px, transparent 2px 14px); animation: pgDrift 2.6s linear infinite; }
+  .l3 .accent { position: relative; overflow: hidden; }
+  .l3 .accent::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 22%;
+                       background: linear-gradient(transparent, rgba(255,255,255,.85), transparent); animation: cpRunV 2.6s linear infinite; }
+  .l3 .lph img { transform-origin: 50% 20%; }
+  .l3 .lname > span, .l3 .lstat > span { display: inline-block; }
+  /* Fan vote: a lower third with the QR code for fbca.tv/vote at its end, just above the bar, in the title
+     card's style: charcoal with drifting stripes, a gold edge with a moving highlight, the text arriving in order. */
+  .fvl { position: absolute; left: 300px; bottom: 188px; display: flex; height: 182px; border-radius: 8px; overflow: hidden;
+         box-shadow: inset 0 0 0 1px rgba(255,255,255,.16); }
+  .fvl.hidden { clip-path: inset(0 100% 0 0 round 8px); }
+  .fvl.wipe:not(.hidden) { clip-path: inset(0 0 0 0 round 8px); transition: clip-path .5s cubic-bezier(.6,0,.3,1); }
+  .fvl .accent { width: 18px; --c: var(--field); }
+  .fvl .fbody { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0 46px 5px 34px;
+                background: linear-gradient(#2e2f33, #17181b); overflow: hidden; }
+  .fvl .fbody::before { content: ''; position: absolute; top: 0; bottom: 0; left: -40px; right: -40px;
+                        background: repeating-linear-gradient(115deg, rgba(255,255,255,.03) 0 2px, transparent 2px 14px); animation: pgDrift 2.6s linear infinite; }
+  .fvl .fbody > * { position: relative; }
+  .fvl .fedge { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; overflow: hidden; background: linear-gradient(90deg, var(--field), var(--gold) 55%); }
+  .fvl .fedge::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 22%;
+                       background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent); animation: pgRun 3.8s linear infinite; }
+  .fvl .kick { display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 800; letter-spacing: .22em; color: var(--gold-hi); }
+  .fvl .kick::before { content: ''; width: 13px; height: 13px; border-radius: 50%; background: var(--tally); animation: cpLive 1.4s ease-in-out infinite; }
+  .fvl .head { font-size: 76px; font-weight: 800; line-height: 1; color: #fff; white-space: nowrap; }
+  .fvl .sub { font-family: var(--font-body); text-transform: none; font-size: 30px; font-weight: 600; color: rgba(255,255,255,.7); }
+  .fvl .sub b { color: #fff; font-weight: 700; }
+  .fvl .qr { width: 182px; height: 182px; background: #fff; display: grid; place-items: center; }
+  .fvl .qr svg { width: 170px; height: 170px; display: block; }
+  /* ---------- Panels in the title card's style (team stats, fan vote) ----------
+     Charcoal cards above the bar (centered on the frame when the bug is off): a dark title strip, moving
+     highlights along the edges, team-colored slabs with drifting stripes and the school's logo large and faint,
+     and a light that sweeps across. In: the card opens from the middle, then its parts arrive in order
+     (.a-* classes, delay --t in seconds). After ~3 s it's .live: later changes (a stat, a vote) show without
+     the entrance replaying; it keeps .live while it goes out so nothing vanishes early. */
+  .cp {
+    position: absolute; left: 50%; top: 466px; translate: -50% -50%; color: #fff;
+    background: linear-gradient(#2e2f33, #17181b); border-radius: 8px; overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
+    clip-path: inset(0 50% 0 50% round 8px); transition: clip-path .5s cubic-bezier(.6,0,.3,1);
+  }
+  .cp.nobug { top: 540px; }
+  .cp:not(.hidden) { clip-path: inset(0 0 0 0 round 8px); }
+  .cp::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 5;
+               background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.16) 50%, transparent 60%); }
+  .cp:not(.hidden)::after { animation: pgShine 7s .8s ease-in-out infinite both; }
+  .cp-head { position: relative; height: 74px; display: flex; align-items: center; justify-content: center; gap: 20px; padding: 0 150px;
+             background: rgba(0,0,0,.35); white-space: nowrap; }
+  .cp-head::after { content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: 22%;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent); animation: pgRun 3.8s -1.9s linear infinite; }
+  .cp-head .t { font-size: 42px; font-weight: 800; letter-spacing: .1em; }
+  .cp-head .s { font-size: 30px; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.65); }
+  .cp-head .s:empty { display: none; }
+  .cp-head .logo { position: absolute; right: 30px; top: 50%; width: 92px; margin-top: -26px; background: #fff; }
+  .cp-edge { position: relative; height: 5px; overflow: hidden; display: grid; grid-template-columns: 1fr 1fr;
+             background: linear-gradient(90deg, var(--field), var(--gold) 55%); }
+  .cp-edge > i { display: block; }
+  .cp-edge::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 22%;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent); animation: pgRun 3.8s linear infinite; }
+  .cp-edge.b::after { animation-direction: reverse; animation-delay: -1.9s; }
+  /* A team's color with drifting stripes and its logo large and faint behind (--c, --f, --wm) */
+  .slab { position: relative; overflow: hidden; color: var(--f);
+          background: linear-gradient(160deg, color-mix(in srgb, var(--c) 92%, #fff), color-mix(in srgb, var(--c) 64%, #000)); }
+  .slab::before { content: ''; position: absolute; top: 0; bottom: 0; left: -40px; right: -40px;
+                  background: repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0 2px, transparent 2px 14px); animation: pgDrift 2.6s linear infinite; }
+  .slab::after { content: ''; position: absolute; inset: -10%; background: var(--wm, none) center / 70% no-repeat; opacity: .09;
+                 filter: grayscale(1) brightness(2.4); animation: pgKen 16s ease-in-out infinite alternate; }
+  .slab > * { position: relative; z-index: 1; }
+  .crest { height: 72px; width: auto; max-width: 120px; object-fit: contain; filter: drop-shadow(0 6px 16px rgba(0,0,0,.35)); }
+  .crest.ini { display: flex; align-items: center; font-size: 60px; font-weight: 800; line-height: 1; color: var(--f); filter: none; }
+  .cp-tn { font-size: 50px; font-weight: 800; letter-spacing: .04em; line-height: 1; white-space: nowrap; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
+  .cp-tn span { display: inline-block; transform-origin: left center; }
+  /* Entrances */
+  .fx .a-up, .fx .a-l, .fx .a-r, .fx .a-pop { opacity: 0; }
+  .fx:not(.hidden) .a-up { animation: pgUp .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--t, .3) * 1s); }
+  .fx:not(.hidden) .a-l { animation: pgFromL .6s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--t, .35) * 1s); }
+  .fx:not(.hidden) .a-r { animation: pgFromR .6s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--t, .35) * 1s); }
+  .fx:not(.hidden) .a-pop { animation: pgVs .55s cubic-bezier(.2,.9,.25,1.3) both; animation-delay: calc(var(--t, .55) * 1s); }
+  .fx:not(.hidden) .a-sl { animation: pgPanelL .7s .05s cubic-bezier(.2,.8,.2,1) both; }
+  .fx:not(.hidden) .a-sr { animation: pgPanelR .7s .05s cubic-bezier(.2,.8,.2,1) both; }
+  .fx:not(.hidden) .a-grow { animation: cpGrow .8s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--t, .6) * 1s); }
+  .fx:not(.hidden) .a-settle { animation: cpSettle 1.6s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--t, .3) * 1s); }
+  .fx.live .a-up, .fx.live .a-l, .fx.live .a-r, .fx.live .a-pop, .fx.live .a-sl, .fx.live .a-sr, .fx.live .a-grow,
+  .fx.live .a-settle { animation: none; opacity: 1; }
+  @keyframes cpGrow { from { transform: scaleX(0); } to { transform: none; } }
+  @keyframes cpSettle { from { transform: scale(1.16); filter: brightness(1.6) saturate(.6); } to { transform: none; filter: none; } }
+  @keyframes cpLive { 50% { opacity: .25; } }
+  @keyframes cpRunV { from { transform: translateY(-100%); } to { transform: translateY(560%); } }
 
-  /* Team stats panel (from the stat sheet): team names and scores, then one row per stat */
-  #pStats { left: 460px; top: 110px; width: 1000px; }
-  #pStats .ph small { font-size: 30px; letter-spacing: .1em; color: var(--turf); }
-  #pStats .ph small:empty { display: none; }
-  #pStats .tm { display: grid; grid-template-columns: 1fr 1fr; height: 82px; }
-  /* Scores meet in the middle, names on the outside: the right team's cell is mirrored */
-  #pStats #pstR { flex-direction: row-reverse; }
-  #pStats .tcell { display: flex; align-items: center; justify-content: space-between; padding: 0 30px; font-size: 48px; font-weight: 800; white-space: nowrap; overflow: hidden; }
-  #pStats .stat { display: grid; grid-template-columns: 200px 1fr 200px; align-items: center; height: 64px; border-top: 1px solid rgba(243,239,226,.1); }
-  #pStats .v { text-align: center; font-size: 44px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; }
-  #pStats .v small { font-size: 26px; color: var(--chalk-dim); margin-left: 8px; }
-  #pStats .lbl { text-align: center; font-size: 25px; font-weight: 700; letter-spacing: .14em; color: var(--chalk-dim); }
-  #pStats .bar { display: flex; height: 8px; margin-top: 8px; background: rgba(243,239,226,.12); }
+  /* ---- Team stats (from the stat sheet): team slabs with their scores, then each stat with a bar out from the middle ---- */
+  #pStats { width: 1180px; }
+  .st-teams { display: grid; grid-template-columns: 1fr 1fr; height: 104px; }
+  .st-team { display: flex; align-items: center; gap: 18px; padding: 0 0 0 26px; }
+  .st-team.L { clip-path: polygon(0 0, 100% 0, calc(100% - 36px) 100%, 0 100%); margin-right: -18px; }
+  .st-team.R { flex-direction: row-reverse; padding: 0 26px 0 0; clip-path: polygon(36px 0, 100% 0, 100% 100%, 0 100%); margin-left: -18px; }
+  .st-team .cp-tn { flex: 1; min-width: 0; }
+  .st-team.R .cp-tn { text-align: right; }
+  .st-team.R .cp-tn span { transform-origin: right center; }
+  .st-team .sc { align-self: stretch; display: grid; place-items: center; min-width: 132px; padding: 0 22px; background: rgba(0,0,0,.38);
+                 font-size: 72px; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; }
+  .st-team.L .sc { padding-right: 44px; }
+  .st-team.R .sc { padding-left: 44px; }
+  .st-row { display: grid; grid-template-columns: 220px 1fr 220px; align-items: center; height: 62px; box-shadow: inset 0 1px 0 rgba(255,255,255,.07); }
+  .st-row:nth-child(even) { background: rgba(255,255,255,.025); }
+  .st-row .v { text-align: center; font-size: 46px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; transition: color .4s; }
+  .st-row .v small { font-size: 26px; color: rgba(255,255,255,.6); margin-left: 8px; }
+  .st-row .v.lo { color: rgba(255,255,255,.45); }
+  .st-row .lbl { text-align: center; font-size: 25px; font-weight: 700; letter-spacing: .14em; color: rgba(255,255,255,.72); }
+  .st-row .bar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; height: 10px; margin-top: 9px; }
+  .st-row .bar > div { position: relative; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; }
+  .st-row .bar i { position: absolute; top: 0; bottom: 0; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+  .st-row .bar > div:first-child i { right: 0; transform-origin: right; }
+  .st-row .bar > div:last-child i { left: 0; transform-origin: left; }
+
+  /* ---- Fan vote results: the leader's headshot on their team's slab beside every nominee's share ---- */
+  #pVote { width: 1380px; }
+  .pv-body { display: grid; grid-template-columns: 450px 1fr; height: 520px; }
+  #pVote.nophoto .pv-body { grid-template-columns: 1fr; }
+  #pVote.nophoto .pv-win { display: none; }
+  .pv-win img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; transform-origin: 50% 20%; }
+  .pv-info { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 40px 56px 44px; border-left: 5px solid var(--a); }
+  #pVote.nophoto .pv-info { border-left: 0; padding: 40px 72px 44px; }
+  .pv-k { display: flex; align-items: center; gap: 14px; font-size: 26px; font-weight: 800; letter-spacing: .22em; color: rgba(255,255,255,.65); }
+  .pv-k.open::before { content: ''; width: 14px; height: 14px; border-radius: 50%; background: var(--tally); animation: cpLive 1.4s ease-in-out infinite; }
+  .pv-n { font-size: 104px; font-weight: 800; line-height: .95; margin-top: 12px; white-space: nowrap; }
+  .pv-n span { display: inline-block; transform-origin: left center; }
+  .pv-m { font-size: 32px; font-weight: 700; letter-spacing: .08em; color: rgba(255,255,255,.78); margin-top: 14px; min-height: 1.2em; white-space: nowrap; }
+  .pv-rows { margin-top: auto; display: grid; gap: 16px; }
+  .pv-r { display: grid; grid-template-columns: 300px 1fr 104px; align-items: center; gap: 22px; font-size: 34px; font-weight: 700; letter-spacing: .03em; color: rgba(255,255,255,.62); }
+  #pVote.nophoto .pv-r { grid-template-columns: 400px 1fr 120px; }
+  .pv-r > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pv-r .t { position: relative; height: 26px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .pv-r .f { height: 100%; border-radius: 3px; background: rgba(255,255,255,.4); transform-origin: left; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+  .pv-r .p { text-align: right; font-variant-numeric: tabular-nums; }
+  .pv-r.lead { color: #fff; }
+  .pv-r.lead .f { background: linear-gradient(90deg, var(--gold), var(--gold-hi)); box-shadow: 0 0 18px rgba(242,213,76,.45); }
+  .pv-total { margin-top: 18px; font-size: 22px; font-weight: 700; letter-spacing: .14em; color: rgba(255,255,255,.5); }
+  .pv-total:empty { display: none; }
 
   /* ---------- Control mode ---------- */
   body.ctl { background: var(--pine); color: var(--chalk); font-family: var(--font-body); }
@@ -765,15 +846,15 @@
     <div class="nm R" id="nmR"><span class="rec"></span><span class="t"></span></div>
   </div></div>
 
-  <div class="l3 wipe hidden" id="l3">
+  <div class="l3 wipe fx hidden" id="l3">
     <div class="accent"></div>
     <div class="lph" id="l3Photo"></div>
-    <div class="lbody"><div class="lname" id="l3Name"></div><div class="lstat" id="l3Stat"></div></div>
+    <div class="lbody"><div class="lname" id="l3Name"><span class="a-l" id="l3NameT" style="--t:.22"></span></div><div class="lstat" id="l3Stat"><span class="a-l" id="l3StatT" style="--t:.32"></span></div></div>
   </div>
 
-  <div class="fvl wipe hidden" id="fvl">
-    <div class="accent"></div>
-    <div class="fbody"><div class="kick">Fan vote</div><div class="head">Vote for Player of the Game</div><div class="sub">Scan the code or go to <b>fbca.tv/vote</b></div></div>
+  <div class="fvl wipe fx hidden" id="fvl">
+    <div class="accent slab"></div>
+    <div class="fbody"><div class="kick a-l" style="--t:.3">Fan vote</div><div class="head a-l" style="--t:.38">Vote for Player of the Game</div><div class="sub a-l" style="--t:.46">Scan the code or go to <b>fbca.tv/vote</b></div><i class="fedge"></i></div>
     <div class="qr"><svg viewBox="-2 -2 29 29" shape-rendering="crispEdges" aria-label="QR code for fbca.tv/vote"><path fill="#03260A" d="M0 0h7v1h-7zM8 0h5v1h-5zM14 0h1v1h-1zM18 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM11 1h1v1h-1zM18 1h1v1h-1zM24 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h1v1h-1zM13 2h2v1h-2zM18 2h1v1h-1zM20 2h3v1h-3zM24 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM12 3h2v1h-2zM18 3h1v1h-1zM20 3h3v1h-3zM24 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h4v1h-4zM16 4h1v1h-1zM18 4h1v1h-1zM20 4h3v1h-3zM24 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM11 5h2v1h-2zM14 5h1v1h-1zM18 5h1v1h-1zM24 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h7v1h-7zM10 7h1v1h-1zM13 7h4v1h-4zM0 8h1v1h-1zM3 8h8v1h-8zM12 8h1v1h-1zM14 8h1v1h-1zM16 8h2v1h-2zM20 8h1v1h-1zM22 8h3v1h-3zM1 9h4v1h-4zM7 9h4v1h-4zM12 9h1v1h-1zM14 9h3v1h-3zM19 9h5v1h-5zM0 10h7v1h-7zM11 10h2v1h-2zM15 10h1v1h-1zM17 10h2v1h-2zM21 10h1v1h-1zM24 10h1v1h-1zM0 11h4v1h-4zM5 11h1v1h-1zM8 11h5v1h-5zM14 11h2v1h-2zM17 11h1v1h-1zM19 11h1v1h-1zM21 11h4v1h-4zM0 12h2v1h-2zM3 12h1v1h-1zM5 12h5v1h-5zM11 12h1v1h-1zM13 12h3v1h-3zM18 12h2v1h-2zM24 12h1v1h-1zM0 13h1v1h-1zM5 13h1v1h-1zM8 13h3v1h-3zM12 13h1v1h-1zM14 13h3v1h-3zM20 13h1v1h-1zM23 13h1v1h-1zM0 14h4v1h-4zM6 14h3v1h-3zM10 14h1v1h-1zM14 14h3v1h-3zM18 14h1v1h-1zM20 14h5v1h-5zM0 15h1v1h-1zM3 15h1v1h-1zM7 15h2v1h-2zM10 15h1v1h-1zM12 15h3v1h-3zM17 15h1v1h-1zM19 15h1v1h-1zM21 15h2v1h-2zM24 15h1v1h-1zM0 16h1v1h-1zM3 16h1v1h-1zM5 16h2v1h-2zM9 16h4v1h-4zM15 16h6v1h-6zM22 16h2v1h-2zM8 17h4v1h-4zM15 17h2v1h-2zM20 17h1v1h-1zM22 17h2v1h-2zM0 18h7v1h-7zM8 18h1v1h-1zM12 18h3v1h-3zM16 18h1v1h-1zM18 18h1v1h-1zM20 18h1v1h-1zM24 18h1v1h-1zM0 19h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM11 19h1v1h-1zM13 19h1v1h-1zM15 19h2v1h-2zM20 19h1v1h-1zM24 19h1v1h-1zM0 20h1v1h-1zM2 20h3v1h-3zM6 20h1v1h-1zM8 20h2v1h-2zM11 20h1v1h-1zM13 20h1v1h-1zM15 20h6v1h-6zM23 20h2v1h-2zM0 21h1v1h-1zM2 21h3v1h-3zM6 21h1v1h-1zM8 21h1v1h-1zM12 21h2v1h-2zM17 21h2v1h-2zM23 21h2v1h-2zM0 22h1v1h-1zM2 22h3v1h-3zM6 22h1v1h-1zM11 22h1v1h-1zM13 22h1v1h-1zM16 22h2v1h-2zM20 22h5v1h-5zM0 23h1v1h-1zM6 23h1v1h-1zM9 23h1v1h-1zM11 23h3v1h-3zM17 23h4v1h-4zM22 23h3v1h-3zM0 24h7v1h-7zM8 24h6v1h-6zM15 24h2v1h-2zM18 24h1v1h-1zM21 24h1v1h-1zM24 24h1v1h-1z"/></svg></div>
   </div>
 
@@ -806,20 +887,22 @@
 
   <div class="lul" id="luL3"><div class="lul-team" id="lulTeam"></div><div class="lul-row" id="lulRow"></div><i class="lul-edge"></i><i class="lul-edge b"></i></div>
 
-  <div class="pn wipe hidden" id="pStats">
-    <div class="ph">Team stats <small id="pstTitle"></small><i class="logo"></i></div>
-    <div class="tm"><div class="tcell" id="pstL"></div><div class="tcell" id="pstR"></div></div>
-    <div class="pb" id="pstRows"></div>
-    <div class="pf"></div>
+  <div class="cp fx hidden" id="pStats">
+    <div class="cp-head"><span class="t a-up">Team stats</span><span class="s a-up" id="pstTitle" style="--t:.38"></span><i class="logo a-up" style="--t:.45"></i></div>
+    <div class="cp-edge"><i id="pstEdgeL"></i><i id="pstEdgeR"></i></div>
+    <div class="st-teams"><div class="slab st-team L a-sl" id="pstL"></div><div class="slab st-team R a-sr" id="pstR"></div></div>
+    <div id="pstRows"></div>
+    <div class="cp-edge b"><i id="pstEdgeL2"></i><i id="pstEdgeR2"></i></div>
   </div>
 
-  <div class="pn wipe hidden" id="pVote">
-    <div class="ph">Player of the Game<i class="logo"></i></div>
-    <div class="pb">
-      <div class="win" id="pvWin"></div>
-      <div class="info"><div class="wk" id="pvKick"></div><div class="wn" id="pvName"></div><div class="wm" id="pvMeta"></div><div class="rows" id="pvRows"></div></div>
+  <div class="cp fx hidden" id="pVote">
+    <div class="cp-head"><span class="t a-up">Player of the Game</span><span class="s a-up" style="--t:.38">Fan vote</span><i class="logo a-up" style="--t:.45"></i></div>
+    <div class="cp-edge"></div>
+    <div class="pv-body">
+      <div class="slab pv-win a-sl" id="pvWin"></div>
+      <div class="pv-info" id="pvInfo"><div class="pv-k a-up" id="pvKick" style="--t:.4"></div><div class="pv-n a-up" id="pvName" style="--t:.48"><span></span></div><div class="pv-m a-up" id="pvMeta" style="--t:.56"></div><div class="pv-rows" id="pvRows"></div><div class="pv-total a-up" id="pvTotal" style="--t:1.1"></div></div>
     </div>
-    <div class="pf"></div>
+    <div class="cp-edge b"></div>
   </div>
 </div>
 
@@ -1177,7 +1260,7 @@
   const team = (name, bg, fg) => ({ name, rec: '', bg, fg, logo: '', score: 0, fouls: 0, to: 5 });
   const blankSpot = () => ({ team: 'home', num: '', name: '', pos: '', year: '', stats: [{ v: '', l: '' }, { v: '', l: '' }, { v: '', l: '' }], photo: '' });
   const defaults = () => ({
-    home: team('FBCA', '#063E0C', '#F2D54C'), away: team('AWAY', '#1F3A93', '#FFFFFF'),
+    home: team('FBCA', '#063E0C', '#EAAF0F'), away: team('AWAY', '#1F3A93', '#FFFFFF'), // FBCA: RGB(6,62,12) on RGB(234,175,15)
     swap: false, // false: away on the left, home on the right (the broadcast convention)
     // NFHS: four 8-minute quarters, 4-minute overtimes; 3 sixty-second + 2 thirty-second timeouts
     // (plus one per overtime, unused ones carry); two shots on the 5th team foul of each quarter.
@@ -1289,6 +1372,8 @@
     // The Excel stat sheets are retired: every page moves to the stat keeper once (Excel stays in the menu,
     // marked deprecated). A page that was connected to a sheet is disconnected, so it can connect to the stat keeper.
     if (raw.statsV !== 2) { if (out.statFrom !== 'keeper') { out.statFrom = 'keeper'; out.sheetOn = false; } out.statsV = 2; }
+    // The home text default moved from light gold (#F2D54C) to FBCA gold (#EAAF0F): untouched defaults follow, once.
+    if (raw.homeFgV !== 2) { if (String(out.home.fg).toUpperCase() === '#F2D54C' && String(out.home.bg).toUpperCase() === '#063E0C') out.home.fg = '#EAAF0F'; out.homeFgV = 2; }
     return out;
   };
   const load = () => { try { const r = localStorage.getItem(STORE); if (r) return merge(JSON.parse(r)); } catch (e) {} return defaults(); };
@@ -1390,6 +1475,33 @@
     const fit = () => stage.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`;
     addEventListener('resize', fit); fit();
     const flashSeen = { ...s.flash };
+    // Entrance animations (the .fx graphics) play each time one comes up. After ~3 s it's .live: content that
+    // changes while it's on air (a stat, a vote) appears without the entrance replaying. It stays .live going out.
+    const fxReplay = node => { clearTimeout(node._fx); node.classList.remove('live'); node._fx = setTimeout(() => node.classList.add('live'), 3200); };
+    const fxShow = (node, on) => {
+      const showing = !node.classList.contains('hidden');
+      if (on && !showing) fxReplay(node);
+      else if (!on && showing) { clearTimeout(node._fx); node.classList.add('live'); }
+      node.classList.toggle('hidden', !on);
+    };
+    const at = (node, sec) => { node.style.setProperty('--t', (+sec).toFixed(2)); return node; };
+    // A team's slab: its colors with its logo, large and faint, behind (see .slab).
+    const teamColors = side => ({ bg: hex(s[side].bg, '#063E0C'), fg: hex(s[side].fg, '#FFFFFF') });
+    const paintSlab = (node, side) => {
+      const c = teamColors(side), logo = s[side].logo || '';
+      node.style.setProperty('--c', c.bg); node.style.setProperty('--f', c.fg);
+      node.style.setProperty('--wm', logo ? `url("${logo}")` : 'none');
+      return node;
+    };
+    const lumOf = c => { const n = parseInt(c.slice(1), 16); return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255; };
+    // A team's accent on charcoal: its main color if that shows up, else its text color, else FBCA gold.
+    const accentOf = side => { const c = teamColors(side); return [c.bg, c.fg].find(x => lumOf(x) >= .22 && lumOf(x) < .92) || '#EAAF0F'; };
+    // The school's logo, or its initials in the team's text color.
+    const crestOf = (side, cls) => {
+      const logo = s[side].logo, n = logo ? Object.assign(el('img'), { src: logo, alt: '' }) : el('div', 'ini', initials(s[side].name));
+      n.classList.add('crest'); if (cls) n.classList.add(cls);
+      return n;
+    };
     // Squeeze a long team name into its strip: condense the letters down to 70% width, then shrink them.
     const fitName = pos => {
       const strip = $('nm' + pos), t = strip.querySelector('.t'), rec = strip.querySelector('.rec');
@@ -1499,29 +1611,48 @@
       }
     };
     // Fan vote: the QR lower third (not while the results are up) and the results panel.
+    // Fan vote results: the leader's headshot on their team's slab, then every nominee's share. The bars
+    // glide as new votes come in; the panel is rebuilt only when the nominees or the leader change.
+    let pvSig = '', pvRefs = [];
     const renderVotePanel = () => {
       const v = s.fv, noms = v.nominees || [], leaders = v.leaders || [];
-      const tied = leaders.length > 1, w = noms[leaders[0]], win = $('pvWin');
+      const tied = leaders.length > 1, w = noms[leaders[0]], side = w && s[w.side] ? w.side : 'home';
       // The headshot from the nominee form, matched by name (and number when both have one).
-      const photo = w && (v.form.find(p => p.photo && p.name.trim().toLowerCase() === w.name.toLowerCase()
-        && (!p.num || !w.num || p.num.trim() === w.num)) || {}).photo;
-      $('pVote').classList.toggle('nophoto', !photo);
-      win.style.background = hex(s[w ? w.side : 'home'].bg, '#063E0C');
-      if (photo) win.replaceChildren(Object.assign(el('img'), { src: photo, alt: '' })); else win.replaceChildren();
+      const photo = (w && (v.form.find(p => p.photo && p.name.trim().toLowerCase() === w.name.toLowerCase()
+        && (!p.num || !w.num || p.num.trim() === w.num)) || {}).photo) || '';
+      const sig = JSON.stringify([noms, w ? [w.name, w.num, w.side, w.pos] : null, photo.length, photo.slice(-40), teamColors(side),
+                                  s[side].name, (s[side].logo || '').length]);
+      if (sig !== pvSig) {
+        pvSig = sig;
+        $('pVote').classList.toggle('nophoto', !photo);
+        const win = paintSlab($('pvWin'), side);
+        win.replaceChildren(...(photo ? [at(Object.assign(el('img', 'a-settle'), { src: photo, alt: '' }), .25)] : []));
+        $('pvInfo').style.setProperty('--a', accentOf(side));
+        const span = $('pvName').firstElementChild;
+        span.textContent = w ? w.name : 'No votes yet';
+        $('pvMeta').textContent = w ? [w.num && '#' + w.num, w.pos, s[w.side] && s[w.side].name].filter(Boolean).join(' · ') : '';
+        pvRefs = noms.map((n, i) => {
+          const r = at(el('div', 'pv-r a-up'), .7 + i * .08), tr = el('div', 't'), f = at(el('div', 'f a-grow'), .85 + i * .08), pc = el('span', 'p');
+          tr.append(f); r.append(el('span', null, n.name), tr, pc);
+          return { r, f, pc };
+        });
+        $('pvRows').replaceChildren(...pvRefs.map(x => x.r));
+        const fit = () => fitWidth(span, photo ? 790 : 1220);
+        requestAnimationFrame(fit); document.fonts.ready.then(fit);
+      }
       $('pvKick').textContent = !w ? 'Fan vote' : tied ? 'Tied in the fan vote' : v.open ? 'Leading the fan vote' : 'Fan vote winner';
-      $('pvName').textContent = w ? w.name : 'No votes yet';
-      $('pvMeta').textContent = w ? [w.num && '#' + w.num, w.pos, s[w.side] && s[w.side].name].filter(Boolean).join(' · ') : '';
-      $('pvRows').replaceChildren(...noms.map((n, i) => {
-        const pct = (v.pct || [])[i] || 0, row = el('div', 'r' + (leaders.includes(i) ? ' lead' : ''));
-        const tr = el('div', 't'), f = el('div', 'f'); f.style.width = pct + '%'; tr.append(f);
-        row.append(el('span', null, n.name), tr, el('span', 'p', pct + '%'));
-        return row;
-      }));
+      $('pvKick').classList.toggle('open', !!v.open);
+      pvRefs.forEach((x, i) => {
+        const pct = (v.pct || [])[i] || 0;
+        x.f.style.width = pct + '%'; x.pc.textContent = pct + '%';
+        x.r.classList.toggle('lead', leaders.includes(i));
+      });
+      $('pvTotal').textContent = v.total ? v.total + (v.total === 1 ? ' vote' : ' votes') : '';
     };
     const readableOn = c => { const n = parseInt(c.slice(1), 16); return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255 > .6 ? '#03260A' : '#FFFFFF'; };
     const renderL3 = () => {
       const l = s.l3;
-      $('l3').classList.toggle('hidden', !l.on || !!s.panel);
+      fxShow($('l3'), l.on && !s.panel);
       if (!l.on) return; // the old text stays while it wipes away
       const box = $('l3'), team = l.team === 'none' ? null : s[l.team];
       // Main color behind the name (with white or dark text to suit it), stripe in the team's text color.
@@ -1529,11 +1660,15 @@
       box.style.setProperty('--c', bg);
       box.style.setProperty('--f', team ? readableOn(bg) : '#03260A');
       box.style.setProperty('--s', team ? hex(team.fg, '#F2D54C') : 'var(--gold)');
-      box.classList.toggle('R', !!team && l.team === rightSide());
-      $('l3Name').textContent = l.name;
-      $('l3Stat').textContent = l.stat;
+      const right = !!team && l.team === rightSide();
+      box.classList.toggle('R', right);
+      // The name and stat line come in from the bug's end: from the left on the left, from the right on the right.
+      for (const id of ['l3NameT', 'l3StatT']) { const n = $(id); n.classList.toggle('a-l', !right); n.classList.toggle('a-r', right); }
+      $('l3NameT').textContent = l.name;
+      $('l3StatT').textContent = l.stat;
+      $('l3Stat').hidden = !l.stat;
       const ph = $('l3Photo'), cur = ph.firstChild ? ph.firstChild.src : '';
-      if ((l.photo || '') !== cur) ph.replaceChildren(...(l.photo ? [Object.assign(el('img'), { src: l.photo, alt: '' })] : []));
+      if ((l.photo || '') !== cur) ph.replaceChildren(...(l.photo ? [at(Object.assign(el('img', 'a-settle'), { src: l.photo, alt: '' }), .15)] : []));
     };
     const statsTitle = () => s.statsLabel !== 'auto' ? s.statsLabel
       : s.period === 'HALF' ? 'HALFTIME' : s.period === 'FINAL' ? 'FINAL' : periodLabel(s.period) + (/OT/.test(s.period) ? '' : ' QUARTER');
@@ -1606,29 +1741,50 @@
       }
       if (on !== box.classList.contains('on')) box.classList.toggle('on', on);
     };
+    // Team stats: team slabs with their scores, then a row per stat with bars out from the middle.
+    // Rows are built once per matchup; the numbers and bars update in place as the sheet changes (the bars glide).
+    let stSig = '', stRefs = [];
     const renderStatsPanel = () => {
       if (!sheetLive()) return;
-      $('pstTitle').textContent = statsTitle() ? '· ' + statsTitle() : '';
+      $('pstTitle').textContent = statsTitle() || '';
       const L = leftSide(), R = rightSide();
-      for (const [id, side] of [['pstL', L], ['pstR', R]]) {
-        const c = $(id); c.style.background = hex(s[side].bg, '#063E0C'); c.style.color = hex(s[side].fg, '#FFFFFF');
-        c.replaceChildren(el('span', null, initials(s[side].name)), el('span', null, s[side].score));
-      }
-      const tl = teamTot(L), tr = teamTot(R);
-      $('pstRows').replaceChildren(...TEAM_ROWS.map(([label, fn]) => {
-        const [lv, ln, lp] = fn(tl), [rv, rn, rp] = fn(tr);
-        const val = (v, p) => { const d = el('div', 'v', v); if (p) d.append(el('small', null, p)); return d; };
-        const mid = el('div'), bar = el('div', 'bar');
-        if (ln + rn > 0) {
-          const a = el('div'), b = el('div');
-          a.style.cssText = `width:${100 * ln / (ln + rn)}%;background:${barColor(L)}`;
-          b.style.cssText = `width:${100 * rn / (ln + rn)}%;background:${barColor(R)}`;
-          bar.append(a, b);
+      const sig = JSON.stringify([L, ...[L, R].map(side => [s[side].name, teamColors(side), (s[side].logo || '').length, (s[side].logo || '').slice(-40)])]);
+      if (sig !== stSig) {
+        stSig = sig;
+        for (const [id, side, pos] of [['pstL', L, 'L'], ['pstR', R, 'R']]) {
+          const node = paintSlab($(id), side), cls = pos === 'L' ? 'a-l' : 'a-r';
+          $('pstEdge' + pos).style.background = $('pstEdge' + pos + '2').style.background = teamColors(side).bg;
+          const span = el('span', null, s[side].name), nm = at(el('div', 'cp-tn ' + cls), .4), sc = at(el('div', 'sc a-pop'), .55);
+          nm.append(span); sc.id = 'pstSc' + pos;
+          // No logo: the initials stand in for one, unless they'd only repeat the name (FBCA FBCA).
+          const noCrest = !s[side].logo && initials(s[side].name) === String(s[side].name).toUpperCase().trim();
+          node.replaceChildren(...(noCrest ? [] : [at(crestOf(side, cls), .3)]), nm, sc);
+          const fit = () => fitWidth(span, noCrest ? 390 : 300);
+          requestAnimationFrame(fit); document.fonts.ready.then(fit);
         }
-        mid.append(el('div', 'lbl', label), bar);
-        const row = el('div', 'stat'); row.append(val(lv, lp), mid, val(rv, rp));
-        return row;
-      }));
+        stRefs = TEAM_ROWS.map(([label], i) => {
+          const row = at(el('div', 'st-row a-up'), .55 + i * .06);
+          const lv = el('div', 'v'), rv = el('div', 'v'), mid = el('div'), bar = el('div', 'bar'), lb = el('div'), rb = el('div');
+          const lf = at(el('i', 'a-grow'), .75 + i * .06), rf = at(el('i', 'a-grow'), .75 + i * .06);
+          lb.append(lf); rb.append(rf); bar.append(lb, rb);
+          mid.append(el('div', 'lbl', label), bar);
+          row.append(lv, mid, rv);
+          return { lv, rv, lf, rf };
+        });
+        $('pstRows').replaceChildren(...stRefs.map(r => r.lv.parentNode));
+      }
+      $('pstScL').textContent = s[L].score; $('pstScR').textContent = s[R].score;
+      const tl = teamTot(L), tr = teamTot(R);
+      TEAM_ROWS.forEach(([label, fn], i) => {
+        const [lv, ln, lp] = fn(tl), [rv, rn, rp] = fn(tr), r = stRefs[i], tot = ln + rn;
+        const val = (node, v, pc) => { node.replaceChildren(String(v)); if (pc) node.append(el('small', null, pc)); };
+        val(r.lv, lv, lp); val(r.rv, rv, rp);
+        // The better number stays bright; for turnovers that's the smaller one.
+        const better = label === 'Turnovers' ? (a, b) => a < b : (a, b) => a > b;
+        r.lv.classList.toggle('lo', better(rn, ln)); r.rv.classList.toggle('lo', better(ln, rn));
+        r.lf.style.width = (tot ? 100 * ln / tot : 0) + '%'; r.rf.style.width = (tot ? 100 * rn / tot : 0) + '%';
+        r.lf.style.background = barColor(L); r.rf.style.background = barColor(R);
+      });
     };
     // ----- Starting lineup (full screen and lower third) -----
     // Headshots come from Setup → Player photos, read straight from this browser's photo library.
@@ -1732,12 +1888,14 @@
     };
     const renderFanVote = () => {
       renderLineup();
-      $('fvl').classList.toggle('hidden', !s.fv.l3 || !!s.panel || !!s.lu.l3);
-      // One full-screen panel at a time; the old content stays while a panel wipes away.
-      $('pVote').classList.toggle('hidden', s.panel !== 'vote');
+      fxShow($('fvl'), s.fv.l3 && !s.panel && !s.lu.l3);
+      // One full-screen panel at a time; the old content stays while a panel goes out. Above the bar while
+      // the bug is up, in the middle of the frame when it isn't.
+      for (const id of ['pVote', 'pStats']) $(id).classList.toggle('nobug', !s.visible);
       if (s.panel === 'vote') renderVotePanel();
-      $('pStats').classList.toggle('hidden', s.panel !== 'stats' || !sheetLive());
+      fxShow($('pVote'), s.panel === 'vote');
       if (s.panel === 'stats') renderStatsPanel();
+      fxShow($('pStats'), s.panel === 'stats' && sheetLive());
       renderPregame(); renderSpot();
     };
     const render = () => {
