@@ -1901,10 +1901,11 @@
       if (!b.dataset.label) b.dataset.label = b.textContent;
       b.textContent = on ? 'On air (click to take down)' : b.dataset.label.replace(/FBCA|AWAY/, m => m === 'FBCA' ? s.home : s.away);
     });
-    $('panelNote').replaceChildren(...(s.panel
-      ? [el('b', null, 'ON AIR: '), PANEL_NAMES[s.panel]()]
-      : ['No full-screen graphic on air']));
-    $('btnPanelHide').disabled = !s.panel;
+    // Every graphic insert on air (the bug itself stays): Take down clears them all.
+    const onAir = [s.panel && PANEL_NAMES[s.panel](), s.drop.on && 'Drop-down', s.l3.on && 'Lower third',
+                   s.fv.l3 && 'Fan vote QR', s.shoot.on && 'Shootout'].filter(Boolean);
+    $('panelNote').replaceChildren(...(onAir.length ? [el('b', null, 'ON AIR: '), onAir.join(', ')] : ['No graphic inserts on air']));
+    $('btnPanelHide').disabled = !onAir.length;
     $('btnPkShow').textContent = s.shoot.on ? 'Hide shootout' : 'Show shootout';
     $('btnPkShow').classList.toggle('active', s.shoot.on);
     const seq = side => s.shoot[side].map(k => k === 'g' ? '●' : '✕').join(' ') || '–';
@@ -2102,7 +2103,7 @@
   // --- Full-screen panels (one at a time) ---
   const setPanel = p => { s.panel = p; save(); };
   document.querySelectorAll('[data-panel]').forEach(b => b.onclick = () => setPanel(s.panel === b.dataset.panel ? '' : b.dataset.panel));
-  $('btnPanelHide').onclick = () => setPanel('');
+  $('btnPanelHide').onclick = () => { s.panel = ''; s.drop.on = false; s.l3.on = false; s.fv.l3 = false; s.shoot.on = false; save(); };
 
   // --- Stats ---
   // Columns in the bug's order (rebuilt when the sides swap).

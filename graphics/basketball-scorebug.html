@@ -492,6 +492,8 @@
   .big-clock small { display: block; font-size: 20px; color: var(--gold-hi); letter-spacing: .1em; margin-bottom: 6px; }
   .big-clock .shot-ctl { display: block; font-size: 30px; color: var(--chalk-dim); margin-top: 6px; }
   .row-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .panel-note { flex: 1; font-size: 14px; color: var(--chalk-dim); margin: 0; align-self: center; }
+  .panel-note b { color: var(--tally); }
   .row-btns > * { flex: 1 1 0; }
   button { font: 600 16px var(--font-body); color: var(--chalk); background: var(--turf); border: 1px solid var(--line); border-radius: 8px; padding: 12px 10px; cursor: pointer; min-height: 48px; }
   button:hover { background: var(--line); }
@@ -920,6 +922,10 @@
         </div>
         <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
           <span>Fill + key (alpha channel)<small id="alphaHint"></small></span></label>
+        <div class="row-btns" style="margin:0">
+          <p class="panel-note" id="panelNote"></p>
+          <button id="btnPanelHide" style="flex:0 0 auto">Take down</button>
+        </div>
       </div>
 
       <div class="card">
@@ -2083,7 +2089,15 @@
     }));
   };
   const preHookBase = preHook;
-  preHook = () => { preHookBase(); renderSpotTab(); renderStn(); };
+  preHook = () => { preHookBase(); renderSpotTab(); renderStn(); renderOnAir(); };
+  // Output card: every graphic insert on air (the bug and station bug stay), and one button to take them all down.
+  const PANEL_NAMES = { match: 'Title card', spot: 'Player spotlight', stats: 'Team stats', vote: 'Fan vote results' };
+  function renderOnAir() {
+    const onAir = [s.panel && (PANEL_NAMES[s.panel] || 'Full-screen graphic'), s.l3.on && 'Lower third', s.pop.on && 'Pop-up', s.fv.l3 && 'Fan vote QR'].filter(Boolean);
+    $('panelNote').replaceChildren(...(onAir.length ? [el('b', null, 'ON AIR: '), onAir.join(', ')] : ['No graphic inserts on air']));
+    $('btnPanelHide').disabled = !onAir.length;
+  }
+  $('btnPanelHide').onclick = () => { s.panel = ''; s.l3.on = false; s.pop.on = false; s.fv.l3 = false; save(); };
 
   // --- Pop-up ---
   let popSecs = 8;
