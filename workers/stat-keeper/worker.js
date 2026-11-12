@@ -57,7 +57,7 @@ const withCors = (r, origin) => {
 
 const clean = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 const colorOk = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
-const DEFAULT_COLORS = { home: '#17402B', away: '#1F3A93' };
+const DEFAULT_COLORS = { home: '#063E0C', away: '#1F3A93' };
 const idOk = v => typeof v === 'string' && /^[A-Za-z0-9_-]{6,40}$/.test(v);
 const newId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 16);
 
