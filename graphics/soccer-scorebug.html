@@ -1936,6 +1936,7 @@
     $('nextPreview').replaceChildren(...s.next.map(g => el('li', null,
       fmtGame(g.start, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' · ' + g.sport + (g.homeAway === 'away' ? ' at ' : ' vs ') + g.opponent)));
     renderSpotList();
+    $('btnSpShow').textContent = s.panel === 'spot' ? 'Take down spotlight' : 'Show spotlight';
     $('btnDropShow').textContent = s.drop.on ? 'Update drop-down' : 'Show drop-down';
     $('btnL3Show').textContent = s.l3.on ? 'Update lower third' : 'Show lower third';
 
@@ -2011,7 +2012,13 @@
     }));
   };
 
+  // A saved list is rebuilt only when what it shows changes. The page saves often (the scoreboard feed several
+  // times a second), and a button rebuilt between mouse down and mouse up never gets the click.
+  const listSigs = new Map();
+  const listChanged = (id, sig) => { if (listSigs.get(id) === sig) return false; listSigs.set(id, sig); return true; };
+  const itemSig = item => JSON.stringify({ ...item, photo: (item.photo || '').length });
   const renderSpotList = () => {
+    if (!listChanged('spList', JSON.stringify([s.panel, s.spot.name, s.spot.num, s.home, s.away, s.spotList.map(itemSig)]))) return;
     $('spList').replaceChildren(...s.spotList.map((item, i) => {
       const li = el('li');
       const txt = el('div', 'txt');
@@ -2030,6 +2037,7 @@
   };
 
   const renderL3List = () => {
+    if (!listChanged('l3List', JSON.stringify([s.l3.on, s.l3.name, s.l3.stat, s.l3List.map(itemSig)]))) return;
     $('l3List').replaceChildren(...s.l3List.map((item, i) => {
       const li = el('li');
       const txt = el('div', 'txt');
@@ -2317,6 +2325,7 @@
   $('spFitReset').onclick = () => { resetFit(); refitPhoto(); };
   $('spPhotoClear').onclick = () => { clearPhoto(); $('spPickNote').hidden = true; };
   $('btnSpShow').onclick = () => {
+    if (s.panel === 'spot') { setPanel(''); return; } // on air: the same button takes it down
     const p = spotFromForm();
     if (!p.name) { $('spNameIn').focus(); return; }
     s.spot = p; setPanel('spot');
