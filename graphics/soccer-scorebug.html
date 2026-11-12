@@ -973,6 +973,9 @@
         <!-- Player Spotlight -->
         <div data-pane="spot" hidden>
           <div class="pane-h">Player spotlight</div>
+          <label for="spPick">Player (from the stat keeper roster, or the lineups)</label>
+          <select id="spPick" class="ppick"></select>
+          <p class="hint" id="spPickNote" hidden></p>
           <div class="two">
             <div><label for="spTeam">Team</label><select id="spTeam"><option value="home">FBCA</option><option value="away">AWAY</option></select></div>
             <div><label for="spNum">Number</label><input id="spNum" maxlength="3" inputmode="numeric"></div>
@@ -2312,7 +2315,7 @@
   $('spShift').addEventListener('input', refitPhoto);
   $('spTeam').addEventListener('change', refitPhoto);
   $('spFitReset').onclick = () => { resetFit(); refitPhoto(); };
-  $('spPhotoClear').onclick = clearPhoto;
+  $('spPhotoClear').onclick = () => { clearPhoto(); $('spPickNote').hidden = true; };
   $('btnSpShow').onclick = () => {
     const p = spotFromForm();
     if (!p.name) { $('spNameIn').focus(); return; }
@@ -2549,6 +2552,21 @@
     const line = playerLine(x.side, x.p); if (line) $('lStat').value = line;
     $('lPick').value = '';
   });
+  // Player spotlight: team, number, name, and the headshot from Lineups → Player photos (shown in the
+  // fit preview so Size and Up / down still work). Without a headshot, the jersey number shows.
+  $('spPick').addEventListener('change', () => {
+    const x = picked($('spPick')); if (!x) return;
+    $('spPick').value = '';
+    $('spTeam').value = x.side; $('spNum').value = x.p.num || ''; $('spNameIn').value = x.p.name;
+    clearPhoto();
+    const shot = findPhoto(teamName(x.side), x.p.num, x.p.name), note = $('spPickNote');
+    note.hidden = !!shot;
+    note.textContent = shot ? '' : 'No headshot for ' + playerLabel(x.p) + ' yet. Add one in Lineups → Player photos, or upload a photo below.';
+    if (!shot) return;
+    const img = new Image();
+    img.onload = () => { photoImg = img; photoBox = subjectBox(img); resetFit(); $('spFit').hidden = false; refitPhoto(); };
+    img.src = shot;
+  });
 
   // Lineups: a menu for each starting spot, in the formation's order (keeper, then each line left to right).
   // Picking writes the starters list; everyone else on the roster becomes a substitute.
@@ -2602,6 +2620,7 @@
     $('dPickLabel').textContent = fromStats ? $('dType').selectedOptions[0].text + ' (from the stat keeper: newest first, with the minute)' : 'Player (from the stat keeper roster, or the lineups)';
     fillPick($('dOutPick'), ['home', 'away'], 'Pick the player coming off…');
     fillPick($('lPick'), ['home', 'away'], 'Pick a player…');
+    fillPick($('spPick'), ['home', 'away'], 'Pick a player…');
     renderXiPick('home'); renderXiPick('away');
   };
 
