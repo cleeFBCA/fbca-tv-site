@@ -528,6 +528,7 @@
   /* Shootout controls follow the bug: whichever team is on the left of the bug is on the left here. */
   .shoot-cols.swapped .pk-home { order: 2; }
   .shoot-cols.swapped .pk-away { order: 1; }
+  #control.swapped .sides > :first-child { order: 2; }
   .side-note { text-align: center; font-size: 14px; color: var(--chalk-dim); margin: 0 0 10px; }
   .team-ctl .tname {
     display: inline-block; padding: 2px 12px; border-radius: 4px;
@@ -952,12 +953,12 @@
             <div><label for="mTitle">Title</label><input id="mTitle" data-match="title" placeholder="Girls Soccer"></div>
             <div><label for="mSub">Subtitle</label><input id="mSub" data-match="sub" placeholder="District game"></div>
           </div>
-          <div class="two">
+          <div class="two sides">
             <div><label for="mHomeFull" id="mHomeFullL">FBCA full name</label><input id="mHomeFull" data-match="homeFull" placeholder="Fort Bend Christian Academy"></div>
             <div><label for="mAwayFull" id="mAwayFullL">AWAY full name</label><input id="mAwayFull" data-match="awayFull" placeholder="The Village School"></div>
           </div>
           <p class="hint" style="margin-top:4px">Shown on the pregame card. Leave blank to use the short name from Setup. Picking a game in Setup fills these in.</p>
-          <div class="two">
+          <div class="two sides">
             <div><label for="mHomeRec" id="mHomeRecL">FBCA record</label><input id="mHomeRec" data-match="homeRec" placeholder="8-2-1"></div>
             <div><label for="mAwayRec" id="mAwayRecL">AWAY record</label><input id="mAwayRec" data-match="awayRec" placeholder="6-4-0"></div>
           </div>
@@ -1007,7 +1008,7 @@
 
         <!-- Lineups -->
         <div data-pane="xi" hidden>
-          <div class="lineup-cols">
+          <div class="lineup-cols sides">
             <div>
               <h3 id="xiHomeTitle">FBCA</h3>
               <div class="row-btns" style="margin:8px 0 0"><button class="primary" data-panel="xi-home" id="btnXiHome">Show FBCA lineup</button></div>
@@ -1538,20 +1539,25 @@
       return lum < .22 ? '#F3EFE2' : hexColor;
     };
 
+    // Every two-team graphic puts the teams where they are on the bug: the "Home" elements are the left slot,
+    // so after Swap sides the away team fills them.
+    const slots = () => s.swap ? ['away', 'home'] : ['home', 'away'];
+    const scoreOf = side => side === 'home' ? s.homeScore : s.awayScore;
     const renderScorePanel = () => {
+      const [L, R] = slots();
       $('psLabel').textContent = scoreTitle();
-      teamCell($('psHome'), 'home', s.home); teamCell($('psAway'), 'away', s.away);
-      $('psHomeN').textContent = s.homeScore; $('psAwayN').textContent = s.awayScore;
-      $('psHomeG').textContent = goalsText('home'); $('psAwayG').textContent = goalsText('away');
+      teamCell($('psHome'), L, teamName(L)); teamCell($('psAway'), R, teamName(R));
+      $('psHomeN').textContent = scoreOf(L); $('psAwayN').textContent = scoreOf(R);
+      $('psHomeG').textContent = goalsText(L); $('psAwayG').textContent = goalsText(R);
       $('psGoals').hidden = !goalList().length;
       // Penalties show whenever kicks are recorded, until the shootout is cleared.
       const sh = s.shoot, took = sh.home.length + sh.away.length > 0;
       $('psPens').hidden = $('psPensRes').hidden = !took;
       if (!took) return;
       $('psPens').classList.toggle('many', Math.max(sh.home.length, sh.away.length) > 7);
-      $('psHomeK').replaceChildren(...sh.home.map(kickPip)); $('psAwayK').replaceChildren(...sh.away.map(kickPip));
+      $('psHomeK').replaceChildren(...sh[L].map(kickPip)); $('psAwayK').replaceChildren(...sh[R].map(kickPip));
       const hg = sh.home.filter(k => k === 'g').length, ag = sh.away.filter(k => k === 'g').length;
-      $('psHomeP').textContent = hg; $('psAwayP').textContent = ag;
+      $('psHomeP').textContent = L === 'home' ? hg : ag; $('psAwayP').textContent = L === 'home' ? ag : hg;
       const w = shootWinner();
       $('psPensRes').textContent = w
         ? `${teamName(w).toUpperCase()} WIN ${Math.max(hg, ag)}–${Math.min(hg, ag)} ON PENALTIES`
@@ -1561,22 +1567,25 @@
     const renderStatsPanel = () => {
       $('pstPeriod').textContent = s.period === 'HALF' ? '· Halftime' : s.period === 'FINAL' ? '· Final' : '';
       const nameScore = (side, score) => [el('span', null, teamName(side)), el('span', null, score)];
-      teamCell($('pstHome'), 'home').replaceChildren(...nameScore('home', s.homeScore));
-      teamCell($('pstAway'), 'away').replaceChildren(...nameScore('away', s.awayScore));
+      const [L, R] = slots();
+      teamCell($('pstHome'), L).replaceChildren(...nameScore(L, scoreOf(L)));
+      teamCell($('pstAway'), R).replaceChildren(...nameScore(R, scoreOf(R)));
       const sh = s.sheet;
-      const rows = sheetLive()
+      const rows0 = sheetLive()
         ? STATS.map(([k, label]) => [label, sh.home[k] || 0, sh.away[k] || 0])
             .concat([['Yellow cards', sh.home.yellows || 0, sh.away.yellows || 0], ['Red cards', sh.home.reds || 0, sh.away.reds || 0]])
         : STATS.map(([k, label]) => [label, s.stats.home[k] || 0, s.stats.away[k] || 0])
             .concat([['Yellow cards', s.homeYellows, s.awayYellows], ['Red cards', s.homeReds, s.awayReds]]);
+      const rows = L === 'home' ? rows0 : rows0.map(([label, h, a]) => [label, a, h]);
+      const barOf = side => side === 'home' ? '#F2D54C' : barColor(s.awayBg);
       $('pstRows').replaceChildren(...rows.map(([label, h, a]) => {
         const row = el('div', 'stat');
         const mid = el('div');
         const bar = el('div', 'bar');
         if (h + a > 0) {
           const hb = el('div'), ab = el('div');
-          hb.style.cssText = `width:${100 * h / (h + a)}%;background:#F2D54C`;
-          ab.style.cssText = `width:${100 * a / (h + a)}%;background:${barColor(s.awayBg)}`;
+          hb.style.cssText = `width:${100 * h / (h + a)}%;background:${barOf(L)}`;
+          ab.style.cssText = `width:${100 * a / (h + a)}%;background:${barOf(R)}`;
           bar.append(hb, ab);
         }
         mid.append(el('div', 'lbl', label), bar);
@@ -1585,7 +1594,7 @@
       }));
     };
 
-    // Pregame matchup, in the basketball pregame's style: home on the left, each team's crest, name and record.
+    // Pregame matchup, in the basketball pregame's style: teams on the same sides as the bug, each with its crest, name and record.
     // Rebuilt only when its content changes, so its animations play once each time it comes up.
     let pgSig = '';
     const fitWidth = (node, max) => {
@@ -1611,12 +1620,12 @@
     const fitMatchText = () => { fitHead(); fitFont($('pgWhen'), 680); fitFont($('pgVenue'), 440); /* with the logo and gaps, the drop-down stays narrower than the card */ document.querySelectorAll('#pMatch .pg-team .rc').forEach(n => fitFont(n, 520)); };
     const renderMatchPanel = () => {
       const m = s.match;
-      const sig = JSON.stringify([m, s.home, s.away, s.awayBg, s.awayFg, s.homeLogo.length, s.awayLogo.length, s.homeLogo.slice(-40), s.awayLogo.slice(-40)]);
+      const sig = JSON.stringify([m, s.swap, s.home, s.away, s.awayBg, s.awayFg, s.homeLogo.length, s.awayLogo.length, s.homeLogo.slice(-40), s.awayLogo.slice(-40)]);
       if (sig === pgSig) return;
       pgSig = sig;
       $('pgTitle').textContent = m.title || 'Soccer'; $('pgSub').textContent = m.sub;
       $('pgWhen').textContent = m.when; $('pgVenue').textContent = m.venue;
-      for (const [pos, side] of [['L', 'home'], ['R', 'away']]) {
+      for (const [pos, side] of [['L', slots()[0]], ['R', slots()[1]]]) {
         const c = colorsFor(side), node = $('pg' + pos);
         node.style.setProperty('--c', c.bg); node.style.setProperty('--f', c.fg);
         $('pgBar' + pos).style.background = $('pgBar' + pos + '2').style.background = c.bg;
@@ -1872,13 +1881,16 @@
     $('btnClockShow').classList.toggle('active', !s.clockShow);
     $('cTeams').classList.toggle('swapped', s.swap);
     $('pkCols').classList.toggle('swapped', s.swap);
+    $('control').classList.toggle('swapped', s.swap);
+    if (statOrder !== s.swap) buildStatRows();
     $('sideNote').textContent = (s.swap ? s.away + ' on the left, ' + s.home : s.home + ' on the left, ' + s.away) + ' on the right';
     document.querySelectorAll('#periods button').forEach(b => b.classList.toggle('active', b.dataset.p === s.period));
 
     // Team names in pickers and buttons
     for (const sel of [$('dTeamSel'), $('lTeam'), $('spTeam')]) { sel.options[0].text = s.home; sel.options[1].text = s.away; }
     $('xiHomeTitle').textContent = s.home; $('xiAwayTitle').textContent = s.away;
-    for (const [a, b] of [['stHomeH', 'pkHomeT'], ['stAwayH', 'pkAwayT']]) { $(a).textContent = $(b).textContent = a.includes('Home') ? s.home : s.away; }
+    $('pkHomeT').textContent = s.home; $('pkAwayT').textContent = s.away;
+    $('stHomeH').textContent = s.swap ? s.away : s.home; $('stAwayH').textContent = s.swap ? s.home : s.away;
     $('mHomeRecL').textContent = s.home + ' record'; $('mAwayRecL').textContent = s.away + ' record';
     $('mHomeFullL').textContent = s.home + ' full name'; $('mAwayFullL').textContent = s.away + ' full name';
 
@@ -2093,10 +2105,14 @@
   $('btnPanelHide').onclick = () => setPanel('');
 
   // --- Stats ---
+  // Columns in the bug's order (rebuilt when the sides swap).
+  var statOrder = null; // var: the control render can run before this line
+  function buildStatRows() {
+  statOrder = s.swap;
   $('statRows').replaceChildren(...STATS.concat([['yellows', 'Yellow cards'], ['reds', 'Red cards']]).map(([k, label]) => {
     const tr = el('tr');
     tr.append(el('td', null, label));
-    for (const side of ['home', 'away']) {
+    for (const side of s.swap ? ['away', 'home'] : ['home', 'away']) {
       const td = el('td'), box = el('div', 'counter');
       const minus = el('button', 'small', '−'), plus = el('button', 'small', '+'), val = el('b');
       val.dataset.stat = k; val.dataset.side = side;
@@ -2110,6 +2126,8 @@
     }
     return tr;
   }));
+  }
+  buildStatRows();
   $('psLabelSel').addEventListener('change', e => { s.scoreLabel = e.target.value; save(); });
 
   // --- Pregame ---
