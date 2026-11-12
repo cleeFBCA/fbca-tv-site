@@ -19,9 +19,9 @@
                                   or the fill (graphics on black) when "Fill + key" is on
     soccer-scorebug.html#key   -> 1920x1080 key signal: the graphics as a white silhouette on black
 
-  Fill + key gives the ATEM a real alpha channel: send #bug and #key to two inputs and set a
-  downstream keyer's fill and key sources to them, with Pre Multiplied Key on (the fill is drawn
-  over black, so it is already premultiplied). Soft edges and anti-aliased text then key cleanly.
+  Fill + key gives the ATEM a real alpha channel: send #bug and #key to two inputs and set an
+  upstream key (type Luma) with Fill Source and Key Source on them and Pre Multiplied Key on (the
+  fill is drawn over black, so it is already premultiplied). Soft edges and anti-aliased text then key cleanly.
 
   The output carries the scorebug (with added time and card counts), a
   drop-down under the bug (goals, cards, subs), a lower third, a penalty
@@ -871,8 +871,7 @@
 </div>
 
 <div id="control">
-  <h1>Soccer Graphics</h1>
-  <p class="sub" id="outNote">Open the output window, drag it to the display that feeds the ATEM, and make it full screen. Key out <span id="keyNote">magenta (#FF00FF)</span>.</p>
+  <h1>Soccer Scorebug</h1>
 
   <div class="grid">
     <div class="stack">
@@ -1273,6 +1272,7 @@
           <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
             <span>Fill + key (alpha channel)<small id="alphaHint">Off: one output on a chroma key color.</small></span></label>
           <p class="hint" style="margin-top:4px">Set this before the broadcast, to match how the ATEM is wired. Changing it asks first, because it changes what goes out to the ATEM.</p>
+          <p class="hint" id="atemNote" style="margin-top:4px"></p>
           <div id="chromaOpts">
           <label for="keyColor">Key color (the background the ATEM keys out)</label>
           <div class="set-row">
@@ -1561,8 +1561,8 @@
     };
 
     const renderBug = () => {
-      const panelUp = !!s.panel;
-      $('sb').className = 'sb wipe pos-' + s.pos + (s.visible && !panelUp ? '' : ' hidden') + (s.drop.on ? ' drop-on' : '') + (s.shoot.on ? ' pk-on' : '') + (s.swap ? ' swapped' : '');
+      const panelUp = !!s.panel; // bugOut: held off for a moment while a full-screen graphic goes out (see setPanel)
+      $('sb').className = 'sb wipe pos-' + s.pos + (s.visible && !panelUp && !s.bugOut ? '' : ' hidden') + (s.drop.on ? ' drop-on' : '') + (s.shoot.on ? ' pk-on' : '') + (s.swap ? ' swapped' : '');
       $('sbHome').textContent = s.home;
       $('sbAway').textContent = s.away;
       $('sbHome').style.background = s.homeBg;
@@ -2229,7 +2229,7 @@
     const sbClock = !!sbHandle && s.sbUse.clock;
     run.disabled = clockOff(s) || sbClock;
     document.querySelectorAll('[data-adj], #btnSet, #setClock').forEach(b => b.disabled = sbClock);
-    $('btnShow').textContent = s.visible ? 'Hide bug' : 'Show bug';
+    $('btnShow').textContent = s.visible && !s.panel ? 'Hide bug' : 'Show bug'; // under a full-screen graphic it isn't on screen
     $('btnClockShow').textContent = s.clockShow ? 'Hide clock on bug' : 'Show clock on bug';
     $('btnClockShow').classList.toggle('active', !s.clockShow);
     $('cTeams').classList.toggle('swapped', s.swap);
@@ -2308,7 +2308,6 @@
     for (const [id, v] of Object.entries(fields)) setField(id, v);
     applyKey();
     setField('keyColor', hex(s.keyColor, '#FF00FF'));
-    const keyName = { '#FF00FF': 'magenta', '#00FF00': 'green', '#0000FF': 'blue' }[s.keyColor.toUpperCase()];
     const alpha = s.keyMode === 'alpha';
     $('alphaKey').checked = alpha;
     $('btnOpen').textContent = alpha ? 'Open fill window' : 'Open output window';
@@ -2318,14 +2317,11 @@
     $('alphaHint').textContent = alpha
       ? 'On: fill window and key window go to two ATEM inputs.'
       : 'Off: one output on a chroma key color.';
-    if (alpha) {
-      $('outNote').textContent = 'Open the fill and key windows, drag each to the display that feeds its ATEM input, and make both full screen. '
-        + 'On the ATEM, set a downstream key\'s Fill Source to the fill input and Key Source to the key input, with Pre Multiplied Key on.';
-    } else {
-      $('outNote').replaceChildren('Open the output window, drag it to the display that feeds the ATEM, and make it full screen. Key out ', el('span', '', ''), '.');
-      $('outNote').lastElementChild.id = 'keyNote';
-      $('keyNote').textContent = (keyName ? keyName + ' ' : '') + '(' + s.keyColor.toUpperCase() + ')';
-    }
+    // How the ATEM takes it: an upstream key, Luma with Pre Multiplied Key on for fill + key (the fill is
+    // drawn over black, so it's already premultiplied); a chroma upstream key on the key color otherwise.
+    $('atemNote').textContent = alpha
+      ? 'On the ATEM: Upstream Key, type Luma. Fill Source = the fill window\'s input, Key Source = the key window\'s input, Pre Multiplied Key on. Open both windows below the preview and make each full screen on the display that feeds its input.'
+      : 'On the ATEM: Upstream Key, type Chroma, keying out ' + s.keyColor.toUpperCase() + '. Open the output window and make it full screen on the display that feeds the ATEM.';
     $('homeWarn').textContent = !alpha && (nearKey(s.homeBg) || nearKey(s.homeFg))
       ? 'This color is close to the key color and may go see-through on air. Pick a color further from it.' : '';
     $('btnHomeColors').disabled = s.homeBg.toUpperCase() === HOME_COLORS.bg && s.homeFg.toUpperCase() === HOME_COLORS.fg;
@@ -2465,9 +2461,54 @@
   });
 
   // --- Full-screen panels (one at a time) ---
-  const setPanel = p => { s.panel = p; save(); };
+  // ---- One graphic at a time ----
+  // Nothing overlaps on screen: a new graphic comes in only after whatever it replaces has gone out.
+  // A full-screen graphic never shares the screen: lower thirds and the drop-down go off (and stay off),
+  // the bug steps aside, then it comes in. Showing the bug, a lower third or a drop-down while a full-screen
+  // graphic is up takes that down first. Switching full screens or lower thirds goes out, then in.
+  const OUT_FULL = 650, OUT_SMALL = 450; // a little longer than each graphic's own exit
+  let seqTimer = 0;
+  const after = (ms, fn) => {
+    clearTimeout(seqTimer); seqTimer = 0;
+    if (!ms) { fn(); save(); return; }
+    seqTimer = setTimeout(() => { seqTimer = 0; fn(); save(); }, ms);
+  };
+  const lowersOn = () => s.l3.on || s.fv.l3;
+  const setPanel = next => {
+    clearTimeout(seqTimer); seqTimer = 0;
+    if (!next) {
+      if (!s.panel) { s.bugOut = false; save(); return; }
+      s.panel = ''; s.bugOut = true; save();         // the bug waits until the panel is gone
+      return after(OUT_FULL, () => { s.bugOut = false; });
+    }
+    if (s.panel === next) { save(); return; }        // new content on the same panel (a different spotlight)
+    const wait = s.panel ? OUT_FULL : (lowersOn() || s.drop.on || (s.visible && !s.bugOut)) ? OUT_SMALL : 0;
+    s.l3.on = false; s.fv.l3 = false; s.drop.on = false; s.panel = ''; s.bugOut = true;
+    save();
+    after(wait, () => { s.panel = next; s.bugOut = false; });
+  };
+  // Something that rides on the bug (the bug itself, a drop-down, the shootout strip): any full-screen graphic goes first.
+  const bugThen = fn => {
+    if (!s.panel) { clearTimeout(seqTimer); seqTimer = 0; s.bugOut = false; fn(); save(); return; }
+    clearTimeout(seqTimer); seqTimer = 0;
+    s.panel = ''; s.bugOut = true; save();
+    after(OUT_FULL, () => { s.bugOut = false; fn(); });
+  };
+  // A lower third: any full-screen graphic, and the other lower third, go out first.
+  const showLower = (kind, fn) => {
+    clearTimeout(seqTimer); seqTimer = 0;
+    let wait = 0;
+    if (s.panel) { s.panel = ''; s.bugOut = true; wait = OUT_FULL; }
+    if (kind !== 'l3' && s.l3.on) { s.l3.on = false; wait = Math.max(wait, OUT_SMALL); }
+    if (kind !== 'qr' && s.fv.l3) { s.fv.l3 = false; wait = Math.max(wait, OUT_SMALL); }
+    if (!wait) { fn(); save(); return; }
+    save();
+    after(wait, () => { s.bugOut = false; fn(); });
+  };
+  // A reload in the middle of a change must never leave the bug held off.
+  if (s.bugOut) { s.bugOut = false; try { localStorage.setItem(STORE, JSON.stringify(forStorage(s))); } catch (e) {} }
   document.querySelectorAll('[data-panel]').forEach(b => b.onclick = () => setPanel(s.panel === b.dataset.panel ? '' : b.dataset.panel));
-  $('btnPanelHide').onclick = () => { s.panel = ''; s.drop.on = false; s.l3.on = false; s.fv.l3 = false; s.shoot.on = false; save(); };
+  $('btnPanelHide').onclick = () => { s.drop.on = false; s.l3.on = false; s.fv.l3 = false; s.shoot.on = false; setPanel(''); };
 
   // --- Stats ---
   // Columns in the bug's order (rebuilt when the sides swap).
@@ -2750,7 +2791,7 @@
   // --- Shootout ---
   document.querySelectorAll('[data-pk]').forEach(b => b.onclick = () => { s.shoot[b.dataset.pk].push(b.dataset.r); save(); });
   document.querySelectorAll('[data-pkundo]').forEach(b => b.onclick = () => { s.shoot[b.dataset.pkundo].pop(); save(); });
-  $('btnPkShow').onclick = () => { s.shoot.on = !s.shoot.on; save(); };
+  $('btnPkShow').onclick = () => { if (s.shoot.on) { s.shoot.on = false; save(); } else bugThen(() => { s.shoot.on = true; }); };
   $('btnPkReset').onclick = () => { if (confirm('Clear all shootout kicks?')) { s.shoot = { on: s.shoot.on, home: [], away: [] }; save(); } };
 
   // --- Up next + around the district ---
@@ -3243,7 +3284,11 @@
   const rightSide = () => s.swap ? 'home' : 'away';
 
   // --- Output ---
-  const toggleBug = () => { s.visible = !s.visible; save(); };
+  // Show bug while a full-screen graphic is up: the graphic goes down first, then the bug comes in.
+  const toggleBug = () => {
+    if (s.panel) return bugThen(() => { s.visible = true; });
+    s.visible = !s.visible; save();
+  };
   $('btnShow').onclick = toggleBug;
   $('btnClockShow').onclick = () => { s.clockShow = !s.clockShow; save(); };
   // The preview and output windows load this page fresh (a version stamp in the address), so the browser
@@ -3280,7 +3325,7 @@
   $('dMinIn').addEventListener('input', e => { e.target.dataset.typed = e.target.value.trim() ? '1' : ''; });
   $('dType').addEventListener('change', () => { syncDropForm(); if (rosterHook) rosterHook(); if (DROP_EVENTS[$('dType').value]) rosterRead(); });
   $('dPick').addEventListener('focus', () => { if (DROP_EVENTS[$('dType').value]) rosterRead(); }); // the newest goals and cards when the list opens
-  const showDrop = () => {
+  const showDrop = () => bugThen(() => {
     const type = $('dType').value;
     const label = type === 'CUSTOM' ? ($('dCustom').value.trim().toUpperCase() || 'UPDATE') : type;
     const typedMin = $('dMinIn').value.trim().replace(/'$/, '');
@@ -3292,19 +3337,16 @@
       const g = [...s.goals].reverse().find(x => x.side === team && !x.name);
       if (g) { g.name = text; if (minute) g.min = minute; }
     }
-    save();
-  };
+  });
   const hideDrop = () => { s.drop.on = false; save(); };
   $('btnDropShow').onclick = showDrop;
   $('btnDropHide').onclick = hideDrop;
   $('dTextIn').addEventListener('keydown', e => { if (e.key === 'Enter') showDrop(); });
 
   // --- Lower third ---
-  const showL3 = item => {
+  const showL3 = item => showLower('l3', () => {
     s.l3 = { on: true, name: item.name, stat: item.stat, team: item.team, until: untilFrom('lSecs'), photo: $('lPhoto').checked ? photoForLine(item.team, item.name) : '' };
-    s.fv.l3 = false; // same spot as the fan vote lower third
-    save();
-  };
+  });
   const hideL3 = () => { s.l3.on = false; save(); };
   const l3FromForm = () => ({ name: $('lName').value.trim(), stat: $('lStat').value.trim(), team: $('lTeam').value });
   $('btnL3Show').onclick = () => { const it = l3FromForm(); if (it.name) showL3(it); else $('lName').focus(); };
@@ -3516,11 +3558,10 @@
     if (!confirm('Clear the vote? fbca.tv/vote will show that no vote is running, and this vote\'s results are deleted.')) return;
     if (!await fvAdmin({ action: 'clear' })) return;
     s.fv.l3 = false;
-    if (s.panel === 'vote') s.panel = '';
-    save();
+    if (s.panel === 'vote') setPanel(''); else save();
     fvSay('Vote cleared. fbca.tv/vote shows that no vote is running.');
   };
-  $('fvShowQr').onclick = () => { s.fv.l3 = !s.fv.l3; if (s.fv.l3) s.l3.on = false; save(); };
+  $('fvShowQr').onclick = () => { if (s.fv.l3) { s.fv.l3 = false; save(); } else showLower('qr', () => { s.fv.l3 = true; }); };
   $('fvKeySave').onclick = () => {
     try { localStorage.setItem(FV_KEY, $('fvKey').value.trim()); } catch (e) {}
     $('fvKey').value = '';

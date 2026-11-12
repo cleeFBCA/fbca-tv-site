@@ -24,8 +24,8 @@
   (tenths under a minute) and shot clock, over the EOTA logo. Team fouls and BONUS sit beside
   the logos; a small arrow shows the alternating-possession arrow.
 
-  Fill + key: send #bug and #key to two ATEM inputs and set a downstream keyer's fill and key
-  sources to them, with Pre Multiplied Key on.
+  Fill + key: send #bug and #key to two ATEM inputs and set an upstream key (type Luma) with Fill
+  Source and Key Source on them and Pre Multiplied Key on.
 
   The control page is the only writer. It saves state to localStorage and broadcasts it to the
   output windows, so all must be open in the same browser on the same computer. Clocks are
@@ -234,6 +234,10 @@
   .sp-photo { position: relative; overflow: hidden; display: grid; place-items: center;
               background: linear-gradient(160deg, color-mix(in srgb, var(--c) 92%, #fff), color-mix(in srgb, var(--c) 68%, #000)); }
   .sp-photo::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(255,255,255,.05) 0 2px, transparent 2px 14px); }
+  /* The school's logo, large and faint, behind the player (as on the soccer spotlight and the title card) */
+  .sp-photo::after { content: ''; position: absolute; inset: -10%; background: var(--wm, none) center / 92% no-repeat; opacity: .09;
+                     filter: grayscale(1) brightness(2.4); animation: pgKen 16s ease-in-out infinite alternate; pointer-events: none; }
+  .sp-photo > * { z-index: 1; }
   .sp-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .sp-photo .bignum { position: relative; font-size: 280px; font-weight: 800; line-height: 1; color: var(--f); text-shadow: 0 8px 24px rgba(0,0,0,.35); }
   .sp-info { position: relative; display: flex; flex-direction: column; padding: 46px 56px 44px; border-left: 5px solid var(--a); }
@@ -912,7 +916,6 @@
 
 <div id="control">
   <h1>Basketball Scorebug</h1>
-  <p class="sub" id="outNote"></p>
 
   <div class="grid">
     <div class="stack">
@@ -1200,6 +1203,7 @@
           <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
             <span>Fill + key (alpha channel)<small id="alphaHint"></small></span></label>
           <p class="hint" style="margin-top:4px">Set this before the broadcast, to match how the ATEM is wired. Changing it asks first, because it changes what goes out to the ATEM.</p>
+          <p class="hint" id="atemNote" style="margin-top:4px"></p>
           <div id="chromaOpts">
             <label for="keyColor">Key color (the background the ATEM keys out)</label>
             <div class="set-row">
@@ -1735,10 +1739,11 @@
     let spSig = '';
     const renderSpot = () => {
       const on = s.panel === 'spot', box = $('pSpot'), p = s.spot, t = s[p.team] || s.home;
-      const sig = JSON.stringify([p.team, p.num, p.name, p.pos, p.year, p.stats, p.photo.length, p.photo.slice(-40), t.name, t.bg, t.fg, t.logo.length]);
+      const sig = JSON.stringify([p.team, p.num, p.name, p.pos, p.year, p.stats, p.photo.length, p.photo.slice(-40), t.name, t.bg, t.fg, t.logo.length, t.logo.slice(-40)]);
       if (sig !== spSig) {
         spSig = sig;
         box.style.setProperty('--c', hex(t.bg, '#333333')); box.style.setProperty('--f', hex(t.fg, '#FFFFFF'));
+        box.style.setProperty('--wm', t.logo ? `url("${t.logo}")` : 'none');
         // The rules on the charcoal side use the team color, lightened when it's too dark to see there.
         const bgc = hex(t.bg, '#333333'), n = parseInt(bgc.slice(1), 16), lum = (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255;
         box.style.setProperty('--a', lum < .3 ? `color-mix(in srgb, ${bgc} 55%, #fff)` : bgc);
@@ -2064,7 +2069,47 @@
     save();
   };
   const flipPoss = () => { s.poss = s.poss === 'home' ? 'away' : s.poss === 'away' ? 'home' : leftSide(); save(); };
-  const toggleBug = () => { s.visible = !s.visible; save(); };
+  // ---- One graphic at a time ----
+  // Nothing overlaps on screen: a new graphic comes in only after whatever it replaces has gone out. The bug
+  // stays up beside full-screen graphics (they sit above the bar), but a full-screen graphic never shares the
+  // screen with a lower third, the fan vote QR, the lineup lower third or a pop-up: those go off (and stay off)
+  // first. Showing one of them while a full-screen graphic is up takes that down first, and Show bug while one
+  // is up (with the bug off) does the same. Switching full screens or lower thirds goes out, then in.
+  const OUT_FULL = 650, OUT_SMALL = 600; // a little longer than each graphic's own exit
+  let seqTimer = 0;
+  const after = (ms, fn) => {
+    clearTimeout(seqTimer); seqTimer = 0;
+    if (!ms) { fn(); save(); return; }
+    seqTimer = setTimeout(() => { seqTimer = 0; fn(); save(); }, ms);
+  };
+  const LOWERS = { l3: () => s.l3.on, qr: () => s.fv.l3, lul: () => s.lu.l3, pop: () => s.pop.on };
+  const lowerOff = kind => { if (kind === 'l3') s.l3.on = false; if (kind === 'qr') s.fv.l3 = false; if (kind === 'lul') s.lu.l3 = false; if (kind === 'pop') s.pop = { ...s.pop, on: false }; };
+  const setPanel = (next, prep) => {
+    clearTimeout(seqTimer); seqTimer = 0;
+    if (!next) { s.panel = ''; save(); return; }
+    if (s.panel === next) { if (prep) prep(); save(); return; } // new content on the same panel
+    const anyLower = Object.values(LOWERS).some(on => on());
+    const wait = s.panel ? OUT_FULL : anyLower ? OUT_SMALL : 0;
+    Object.keys(LOWERS).forEach(lowerOff);
+    s.panel = ''; save();
+    after(wait, () => { if (prep) prep(); s.panel = next; });
+  };
+  const togglePanel = (name, prep) => setPanel(s.panel === name ? '' : name, prep);
+  // A lower third (or the QR, lineup lower third, pop-up): any full-screen graphic and the other lower ones go first.
+  const showLower = (kind, fn) => {
+    clearTimeout(seqTimer); seqTimer = 0;
+    let wait = 0;
+    if (s.panel) { s.panel = ''; wait = OUT_FULL; }
+    for (const k of Object.keys(LOWERS)) if (k !== kind && LOWERS[k]()) { lowerOff(k); wait = Math.max(wait, OUT_SMALL); }
+    if (!wait) { fn(); save(); return; }
+    save();
+    after(wait, fn);
+  };
+  // Show bug while a full-screen graphic is up: the graphic goes down first, then the bug comes in.
+  const toggleBug = () => {
+    if (!s.visible && s.panel) { clearTimeout(seqTimer); s.panel = ''; save(); return after(OUT_FULL, () => { s.visible = true; }); }
+    s.visible = !s.visible; save();
+  };
 
   // --- Team score cards (one per side, in screen order) ---
   const teamCards = {};
@@ -2325,9 +2370,11 @@
     $('btnOpenKey').hidden = !alpha;
     $('chromaOpts').hidden = alpha; $('alphaSetupNote').hidden = !alpha;
     $('alphaHint').textContent = alpha ? 'On: fill window and key window go to two ATEM inputs.' : 'Off: one output on a chroma key color.';
-    $('outNote').textContent = alpha
-      ? 'Open the fill and key windows, drag each to the display that feeds its ATEM input, and make both full screen. On the ATEM, set a downstream key\'s Fill Source to the fill input and Key Source to the key input, with Pre Multiplied Key on.'
-      : `Open the output window, drag it to the display that feeds the ATEM, and make it full screen. Key out ${s.keyColor.toUpperCase()}.`;
+    // How the ATEM takes it: an upstream key, Luma with Pre Multiplied Key on for fill + key (the fill is
+    // drawn over black, so it's already premultiplied); a chroma upstream key on the key color otherwise.
+    $('atemNote').textContent = alpha
+      ? 'On the ATEM: Upstream Key, type Luma. Fill Source = the fill window\'s input, Key Source = the key window\'s input, Pre Multiplied Key on. Open both windows below the preview and make each full screen on the display that feeds its input.'
+      : 'On the ATEM: Upstream Key, type Chroma, keying out ' + s.keyColor.toUpperCase() + '. Open the output window and make it full screen on the display that feeds the ATEM.';
     const clash = [['#063E0C', 'green'], ['#F2D54C', 'gold']].filter(([c]) => nearKey(c)).map(([, n]) => n);
     $('keyWarn').textContent = !alpha && clash.length ? `FBCA ${clash.join(' and ')} is close to this key color. Magenta is the safe choice for FBCA's colors.` : '';
   };
@@ -2408,7 +2455,7 @@
       q: () => bump(leftSide(), 1), w: () => bump(leftSide(), 2), e: () => bump(leftSide(), 3), a: () => bump(leftSide(), -1),
       i: () => bump(rightSide(), 1), o: () => bump(rightSide(), 2), p: () => bump(rightSide(), 3), l: () => bump(rightSide(), -1),
       s: () => foul(leftSide(), 1), k: () => foul(rightSide(), 1),
-      v: () => $('fvShowQr').click(), n: () => s.l3.on ? hideL3() : $('btnL3Show').click(), escape: () => { if (s.panel) { s.panel = ''; save(); } },
+      v: () => $('fvShowQr').click(), n: () => s.l3.on ? hideL3() : $('btnL3Show').click(), escape: () => { if (s.panel) setPanel(''); },
       b: () => { s.stn = { ...s.stn, on: !s.stn.on }; save(); },
       u: () => { if (s.pop.on) hidePop(); else if (s.pop.text || s.pop.kind !== 'text') showPop({}); },
       r: () => s.shotOn && resetShot(s.shotFull), t: () => s.shotOn && resetShot(s.shotShort), x: flipPoss, h: toggleBug
@@ -2432,7 +2479,7 @@
 
   // --- Pregame ---
   document.querySelectorAll('[data-match]').forEach(inp => inp.addEventListener('input', () => { s.match = { ...s.match, [inp.dataset.match]: inp.value }; save(); }));
-  $('btnPre').onclick = () => { s.panel = s.panel === 'match' ? '' : 'match'; save(); };
+  $('btnPre').onclick = () => togglePanel('match');
   preHook = () => {
     document.querySelectorAll('[data-match]').forEach(inp => setField(inp, s.match[inp.dataset.match] || ''));
     $('mHomeFullL').textContent = s.home.name + ' full name'; $('mAwayFullL').textContent = s.away.name + ' full name';
@@ -2666,9 +2713,9 @@
   $('spTeam').addEventListener('change', refitPhoto);
   $('spFitReset').onclick = () => { resetFit(); refitPhoto(); };
   $('spPhotoClear').onclick = () => { clearPhoto(); $('spRosterNote').hidden = true; };
-  const showSpot = p => { s.spot = p; s.panel = 'spot'; save(); };
+  const showSpot = p => setPanel('spot', () => { s.spot = p; });
   $('btnSpShow').onclick = () => {
-    if (s.panel === 'spot') { s.panel = ''; save(); return; }
+    if (s.panel === 'spot') { setPanel(''); return; }
     const p = spotFromForm();
     if (!p.name) { $('spNameIn').focus(); return; }
     showSpot(p);
@@ -2750,7 +2797,7 @@
       const live2 = s.panel === 'spot' && s.spot.name === item.name && s.spot.num === item.num;
       if (live2) txt.prepend(el('div', 'on-air', 'ON AIR'));
       const show = el('button', 'small', live2 ? 'Hide' : 'Show');
-      show.onclick = () => { if (live2) { s.panel = ''; save(); } else showSpot(JSON.parse(JSON.stringify(item))); };
+      show.onclick = () => { if (live2) setPanel(''); else showSpot(JSON.parse(JSON.stringify(item))); };
       const edit = el('button', 'small', 'Edit'); edit.onclick = () => spotToForm(item);
       const del = el('button', 'small', '✕'); del.title = 'Remove';
       del.onclick = () => { s.spotList.splice(i, 1); save(); };
@@ -2798,15 +2845,13 @@
   };
   $('btnLuFull').onclick = () => {
     const side = s.lu.edit;
-    if (s.panel === 'lu' && s.lu.show === side) s.panel = '';
-    else { s.lu.show = side; s.lu.l3 = false; s.panel = 'lu'; }
-    save();
+    if (s.panel === 'lu' && s.lu.show === side) setPanel('');
+    else setPanel('lu', () => { s.lu.show = side; });
   };
   $('btnLuL3').onclick = () => {
     const side = s.lu.edit;
-    if (s.lu.l3 && s.lu.show === side) s.lu.l3 = false;
-    else { s.lu.show = side; s.lu.l3 = true; if (s.panel === 'lu') s.panel = ''; s.l3.on = false; s.pop = { ...s.pop, on: false }; s.fv.l3 = false; }
-    save();
+    if (s.lu.l3 && s.lu.show === side) { s.lu.l3 = false; save(); }
+    else showLower('lul', () => { s.lu.show = side; s.lu.l3 = true; });
   };
   // Output card: every graphic insert on air (the bug and station bug stay), and one button to take them all down.
   const PANEL_NAMES = { match: 'Title card', spot: 'Player spotlight', stats: 'Team stats', vote: 'Fan vote results', lu: 'Starting lineup' };
@@ -2820,12 +2865,10 @@
   // --- Pop-up ---
   let popSecs = 8;
   try { popSecs = Math.max(0, parseInt(localStorage.getItem('eota-bb-pop-secs') ?? '8', 10) || 0); } catch (e) {}
-  const showPop = patch => {
+  const showPop = patch => showLower('pop', () => {
     const now = Date.now();
-    s.pop = { ...s.pop, ...patch, on: true, at: now, until: popSecs ? now + popSecs * 1000 : 0 }; s.lu.l3 = false;
-    s.l3.on = false; s.fv.l3 = false; // the same space
-    save();
-  };
+    s.pop = { ...s.pop, ...patch, on: true, at: now, until: popSecs ? now + popSecs * 1000 : 0 };
+  });
   const hidePop = () => { if (s.pop.on) { s.pop = { ...s.pop, on: false }; save(); } };
   $('popSecs').value = popSecs;
   $('popSecs').addEventListener('input', e => { popSecs = Math.max(0, Math.min(120, parseInt(e.target.value, 10) || 0)); try { localStorage.setItem('eota-bb-pop-secs', popSecs); } catch (err) {} });
@@ -2864,11 +2907,9 @@
 
   // --- Lower third ---
   const untilFrom = id => { const sec = Math.max(0, parseInt($(id).value, 10) || 0); return sec ? Date.now() + sec * 1000 : 0; };
-  const showL3 = item => {
-    s.l3 = { on: true, name: item.name, stat: item.stat, team: item.team, until: untilFrom('lSecs'), photo: $('lPhoto').checked ? photoForLine(item.team, item.name) : '' }; s.lu.l3 = false;
-    s.fv.l3 = false; s.pop.on = false; // same spot as the fan vote lower third and the pop-up
-    save();
-  };
+  const showL3 = item => showLower('l3', () => {
+    s.l3 = { on: true, name: item.name, stat: item.stat, team: item.team, until: untilFrom('lSecs'), photo: $('lPhoto').checked ? photoForLine(item.team, item.name) : '' };
+  });
   const hideL3 = () => { s.l3.on = false; save(); };
   const l3FromForm = () => ({ name: $('lName').value.trim(), stat: $('lStat').value.trim(), team: $('lTeam').value });
   $('btnL3Show').onclick = () => { const it = l3FromForm(); if (it.name) showL3(it); else $('lName').focus(); };
@@ -3105,12 +3146,11 @@
     if (!confirm('Clear the vote? fbca.tv/vote will show that no vote is running, and this vote\'s results are deleted.')) return;
     if (!await fvAdmin({ action: 'clear' })) return;
     s.fv.l3 = false;
-    if (s.panel === 'vote') s.panel = '';
-    save();
+    if (s.panel === 'vote') setPanel(''); else save();
     fvSay('Vote cleared. fbca.tv/vote shows that no vote is running.');
   };
-  $('fvShowQr').onclick = () => { s.fv.l3 = !s.fv.l3; if (s.fv.l3) { s.l3.on = false; s.pop.on = false; s.lu.l3 = false; } save(); };
-  $('fvShowRes').onclick = () => { s.panel = s.panel === 'vote' ? '' : 'vote'; save(); };
+  $('fvShowQr').onclick = () => { if (s.fv.l3) { s.fv.l3 = false; save(); } else showLower('qr', () => { s.fv.l3 = true; }); };
+  $('fvShowRes').onclick = () => togglePanel('vote');
   $('fvKeySave').onclick = () => {
     try { localStorage.setItem(FV_KEY, $('fvKey').value.trim()); } catch (e) {}
     $('fvKey').value = '';
@@ -3383,7 +3423,7 @@
 
   // --- Team stats tab ---
   $('statsLabel').addEventListener('change', e => { s.statsLabel = e.target.value; save(); });
-  $('btnStats').onclick = () => { s.panel = s.panel === 'stats' ? '' : 'stats'; save(); };
+  $('btnStats').onclick = () => togglePanel('stats');
   const renderStatsTab = () => {
     const ok = s.src.team === 'sheet' && sheetLive();
     setField($('statsLabel'), s.statsLabel);
