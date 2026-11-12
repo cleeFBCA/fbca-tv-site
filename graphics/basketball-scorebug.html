@@ -225,7 +225,8 @@
      The photo (or big jersey number) on the team's color, then a charcoal info side: kicker, name, details,
      and up to three stats over team-colored rules, with the team's logo in the corner. */
   .sp {
-    position: absolute; left: 50%; top: 190px; width: 1360px; margin-left: -680px; height: 528px; color: #fff;
+    /* Centered on the 1920x1080 frame: (1080 - 528) / 2 = 276. It still clears the bar (which starts at 916). */
+    position: absolute; left: 50%; top: 276px; width: 1360px; margin-left: -680px; height: 528px; color: #fff;
     display: grid; grid-template-columns: 440px 1fr; border-radius: 8px; overflow: hidden;
     background: linear-gradient(#2e2f33, #17181b); box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
     clip-path: inset(0 100% 0 0 round 8px); transition: clip-path .55s cubic-bezier(.6,0,.3,1);
