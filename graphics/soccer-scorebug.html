@@ -525,6 +525,9 @@
   .team-ctl { text-align: center; }
   .teams.swapped .home-ctl { order: 2; }
   .teams.swapped .away-ctl { order: 1; }
+  /* Shootout controls follow the bug: whichever team is on the left of the bug is on the left here. */
+  .shoot-cols.swapped .pk-home { order: 2; }
+  .shoot-cols.swapped .pk-away { order: 1; }
   .side-note { text-align: center; font-size: 14px; color: var(--chalk-dim); margin: 0 0 10px; }
   .team-ctl .tname {
     display: inline-block; padding: 2px 12px; border-radius: 4px;
@@ -1057,14 +1060,14 @@
 
         <!-- Shootout -->
         <div data-pane="pk" hidden>
-          <div class="shoot-cols">
-            <div>
+          <div class="shoot-cols" id="pkCols">
+            <div class="pk-home">
               <h3 id="pkHomeT">FBCA</h3>
               <div class="shoot-seq" id="pkHomeSeq"></div>
               <div class="row-btns"><button data-pk="home" data-r="g">Scored</button><button data-pk="home" data-r="m">Missed</button></div>
               <button class="small" data-pkundo="home">Undo last</button>
             </div>
-            <div>
+            <div class="pk-away">
               <h3 id="pkAwayT">AWAY</h3>
               <div class="shoot-seq" id="pkAwaySeq"></div>
               <div class="row-btns"><button data-pk="away" data-r="g">Scored</button><button data-pk="away" data-r="m">Missed</button></div>
@@ -1868,6 +1871,7 @@
     $('btnClockShow').textContent = s.clockShow ? 'Hide clock on bug' : 'Show clock on bug';
     $('btnClockShow').classList.toggle('active', !s.clockShow);
     $('cTeams').classList.toggle('swapped', s.swap);
+    $('pkCols').classList.toggle('swapped', s.swap);
     $('sideNote').textContent = (s.swap ? s.away + ' on the left, ' + s.home : s.home + ' on the left, ' + s.away) + ' on the right';
     document.querySelectorAll('#periods button').forEach(b => b.classList.toggle('active', b.dataset.p === s.period));
 
