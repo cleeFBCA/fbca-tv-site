@@ -86,13 +86,8 @@
   /* Negative top leaves room for red cards that rise above the bug. */
   .sb.wipe { clip-path: inset(-60px 0 0 0); }
   .sb.hidden { clip-path: inset(-60px 100% 0 0); }
-  /* At the bottom, the shootout strip hangs below the bug: leave room for it in the wipe. */
-  .sb.wipe.pos-bl, .sb.wipe.pos-br { clip-path: inset(-60px 0 -50px 0); }
-  .sb.hidden.pos-bl, .sb.hidden.pos-br { clip-path: inset(-60px 100% -50px 0); }
   .sb.pos-tl { left: 96px; top: 84px; }
   .sb.pos-tr { right: 96px; top: 84px; align-items: flex-end; }
-  .sb.pos-bl { left: 96px; bottom: 54px; flex-direction: column-reverse; }
-  .sb.pos-br { right: 96px; bottom: 54px; flex-direction: column-reverse; align-items: flex-end; }
   .sb .row { display: flex; height: 76px; border-bottom: 6px solid var(--gold); }
   .sb .team { display: flex; position: relative; }
   /* Sides swap at halftime so the bug matches the field. */
@@ -118,8 +113,6 @@
     display: grid; place-items: center; font-size: 19px; font-weight: 800;
   }
   .sb .cards > .up { transform: translateY(0); }
-  /* With the bug at the bottom, the drop-down pops up in the same spot, so cards duck while it's on. */
-  .sb.pos-bl.drop-on .cards > *, .sb.pos-br.drop-on .cards > * { transform: translateY(110%); }
   .sb .name {
     display: flex; align-items: center; justify-content: center;
     min-width: 132px; padding: 0 22px;
@@ -156,14 +149,13 @@
   }
   .sb .added[hidden] { display: none; }
 
-  /* Drop-down under the bug (pops up instead when the bug sits at the bottom) */
+  /* Drop-down under the bug (the soccer bug is always at the top) */
   .drop {
     display: flex; align-self: stretch; height: 54px;
     background: var(--pine); color: var(--chalk);
     font-size: 30px; font-weight: 700; white-space: nowrap;
   }
   .drop.hidden { clip-path: inset(0 0 100% 0); }
-  .sb.pos-bl .drop.hidden, .sb.pos-br .drop.hidden { clip-path: inset(100% 0 0 0); }
   .drop > div { display: flex; align-items: center; }
   .drop > div[hidden] { display: none; }
   .drop .dteam { padding: 0 18px; font-weight: 800; }
@@ -178,8 +170,6 @@
      bug like the drop-down (sitting between the two), and folds away when off so the drop-down stays snug. */
   .pk { position: relative; align-self: stretch; height: 44px; background: var(--pine); }
   .pk.hidden { clip-path: inset(0 0 100% 0); margin-bottom: -44px; }
-  /* With the bug at the bottom the strip still drops below it, laid over the space under the bug so the bug doesn't move. */
-  .sb.pos-bl .pk, .sb.pos-br .pk { position: absolute; top: 100%; left: 0; right: 0; margin: 0; }
   .pk .pkt { position: absolute; top: 0; bottom: 0; display: flex; }
   .pk .pips { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; background: var(--pine); }
   .pk .pip { width: 20px; height: 20px; border: 2px solid rgba(243,239,226,.35); display: grid; place-items: center; }
@@ -1185,7 +1175,7 @@
             <div><label for="dir">Clock counts</label>
               <select id="dir"><option value="down">Down (40:00 to 0:00)</option><option value="up">Up (0:00, runs until stopped)</option></select></div>
             <div><label for="pos">Bug position</label>
-              <select id="pos"><option value="tl">Top left</option><option value="tr">Top right</option><option value="bl">Bottom left</option><option value="br">Bottom right</option></select></div>
+              <select id="pos"><option value="tl">Top left</option><option value="tr">Top right</option></select></div>
           </div>
           <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, cards and clock)</button></div>
         </div>
@@ -1256,6 +1246,8 @@
     delete out.lineupShow; // replaced by `panel`
     // The Excel stat sheets are retired: every page moves to the stat keeper once (Excel stays in the menu,
     // marked deprecated). A page that was connected to a sheet is disconnected, so it can connect to the stat keeper.
+    // The soccer bug only sits at the top now: a saved bottom position moves to the top on the same side.
+    if (out.pos === 'bl' || out.pos === 'br') out.pos = out.pos === 'bl' ? 'tl' : 'tr';
     if (raw.statsV !== 2) { if (out.statFrom !== 'keeper') { out.statFrom = 'keeper'; out.sheetOn = false; } out.statsV = 2; }
     return out;
   };
