@@ -86,6 +86,9 @@
   /* Negative top leaves room for red cards that rise above the bug. */
   .sb.wipe { clip-path: inset(-60px 0 0 0); }
   .sb.hidden { clip-path: inset(-60px 100% 0 0); }
+  /* At the bottom, the shootout strip hangs below the bug: leave room for it in the wipe. */
+  .sb.wipe.pos-bl, .sb.wipe.pos-br { clip-path: inset(-60px 0 -50px 0); }
+  .sb.hidden.pos-bl, .sb.hidden.pos-br { clip-path: inset(-60px 100% -50px 0); }
   .sb.pos-tl { left: 96px; top: 84px; }
   .sb.pos-tr { right: 96px; top: 84px; align-items: flex-end; }
   .sb.pos-bl { left: 96px; bottom: 54px; flex-direction: column-reverse; }
@@ -173,20 +176,22 @@
   .drop .dtext .subp + .subp { margin-left: 22px; }
   /* Penalty shootout strip: kicks under each team name, total under its score. It drops out of the
      bug like the drop-down (sitting between the two), and folds away when off so the drop-down stays snug. */
-  .pk { position: relative; align-self: stretch; height: 44px; }
+  .pk { position: relative; align-self: stretch; height: 44px; background: var(--pine); }
   .pk.hidden { clip-path: inset(0 0 100% 0); margin-bottom: -44px; }
-  .sb.pos-bl .pk.hidden, .sb.pos-br .pk.hidden { clip-path: inset(100% 0 0 0); margin: -44px 0 0; }
+  /* With the bug at the bottom the strip still drops below it, laid over the space under the bug so the bug doesn't move. */
+  .sb.pos-bl .pk, .sb.pos-br .pk { position: absolute; top: 100%; left: 0; right: 0; margin: 0; }
   .pk .pkt { position: absolute; top: 0; bottom: 0; display: flex; }
-  .pk .pips { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; background: var(--pine); }
-  .pk .pip { width: 24px; height: 24px; border: 2px solid rgba(243,239,226,.35); display: grid; place-items: center; }
+  .pk .pips { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; background: var(--pine); }
+  .pk .pip { width: 20px; height: 20px; border: 2px solid rgba(243,239,226,.35); display: grid; place-items: center; }
   .pk .pip.g { background: #2FA866; border-color: #2FA866; }
   .pk .pip.m { background: var(--tally); border-color: var(--tally); }
-  .pk .pip svg { width: 16px; height: 16px; }
+  .pk .pip svg { width: 14px; height: 14px; }
   .pk .tot { width: 76px; display: grid; place-items: center; background: var(--chalk); color: var(--pine); font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; }
-  /* Names widen a little during a shootout so five kicks fit under them. */
-  .sb.pk-on .name { min-width: 172px; }
-  /* With the bug at the bottom the strip rises above it, where red cards sit, so they duck. */
-  .sb.pos-bl.pk-on .cards > *, .sb.pos-br.pk-on .cards > * { transform: translateY(110%); }
+  /* Five kicks fit under a team name at its normal width, so the bug never resizes when the strip opens.
+     The second team's strip is mirrored like its half of the bug: total under the score, kicks under the name. */
+  .pk .pkt.flip { flex-direction: row-reverse; }
+  .pk .pkt.flip .tot { box-shadow: inset 4px 0 0 var(--pine); }
+  .pk .pkl { position: absolute; top: 0; bottom: 0; left: 0; display: grid; place-items: center; color: var(--gold-hi); font-size: 22px; font-weight: 800; letter-spacing: .06em; }
   .arr { display: block; width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; }
   .arr.in { border-bottom: 16px solid #3CC47C; }
   .arr.out { border-top: 16px solid var(--tally); }
@@ -644,7 +649,7 @@
       <div class="team away"><div class="cards" id="sbAwayReds"></div><div class="name" id="sbAway">AWAY</div><div class="score" id="sbAwayScore">0</div></div>
       <div class="status"><div class="period" id="sbPeriod">1ST</div><div class="clock" id="sbClock">40:00</div><div class="added" id="sbAdded" hidden></div></div>
     </div>
-    <div class="pk wipe hidden" id="pk"><div class="pkt" id="pkHome"></div><div class="pkt" id="pkAway"></div></div>
+    <div class="pk wipe hidden" id="pk"><div class="pkl" id="pkLabel">PKs</div><div class="pkt" id="pkHome"></div><div class="pkt" id="pkAway"></div></div>
     <div class="drop wipe hidden" id="drop">
       <div class="dteam" id="dTeam"></div>
       <div class="dlabel" id="dLabel"></div>
@@ -1709,7 +1714,10 @@
         // Line up under this team's name and score (the sides swap at halftime).
         box.style.left = team.offsetLeft + 'px';
         box.style.width = team.offsetWidth + 'px';
+        box.classList.toggle('flip', getComputedStyle(team).flexDirection === 'row-reverse');
       }
+      // "PKs" under the EOTA logo, so the strip reads as part of the bug from edge to edge.
+      $('pkLabel').style.width = Math.min(...['home', 'away'].map(side => document.querySelector('.sb .' + side).offsetLeft)) + 'px';
     };
 
     // The headshot added in the Fan vote tab, or else a spotlight photo saved for this player
