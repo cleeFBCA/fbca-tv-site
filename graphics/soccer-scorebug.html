@@ -271,7 +271,15 @@
   .xi .xsubs[hidden] { display: none; }
   .xi .xsubs .lbl { flex: 0 0 auto; align-self: stretch; display: grid; place-items: center; padding: 0 26px; background: linear-gradient(var(--gold-hi), var(--gold));
                     color: #17181b; font-size: 24px; font-weight: 800; letter-spacing: .18em; }
-  .xi .xsubs .list { flex: 1; min-width: 0; font-size: 27px; font-weight: 700; letter-spacing: .05em; color: rgba(255,255,255,.82); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .xi .xsubs .list { flex: 1; min-width: 0; font-size: 27px; font-weight: 700; letter-spacing: .05em; color: rgba(255,255,255,.82); white-space: nowrap; overflow: hidden; }
+  /* Too many subs for the bar: the line scrolls right to left at a steady pace, looping seamlessly (a second
+     copy follows the first). It waits a moment after the lineup comes up, and the ends fade so names don't clip. */
+  .xi .xsubs .track { display: inline-flex; }
+  .xi .xsubs .one { padding-right: 96px; }
+  .xi .xsubs .track.run { animation: xsScroll var(--dur, 20s) linear 2.6s infinite; }
+  .xi .xsubs .list:has(.run) { -webkit-mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+                               mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent); padding-left: 14px; }
+  @keyframes xsScroll { to { transform: translateX(calc(-1 * var(--w))); } }
   .xi .xsubs .list b { color: var(--gold-hi); margin-right: 6px; }
   .xi .xsubs .logo { width: 84px; flex: none; background: #fff; }
   .xi .xlogo { position: absolute; right: 96px; bottom: 64px; width: 92px; background: #fff; opacity: .85; }
@@ -1651,10 +1659,11 @@
       return svg;
     };
 
-    let xiSig = '';
+    let xiSig = '', xiScroll = null;
     const renderXI = () => {
-      const side = xiSide();
+      const side = xiSide(), coming = !!side && $('xi').classList.contains('hidden');
       fxShow($('xi'), !!side);
+      if (coming && xiScroll) xiScroll(); // the subs start from the top of the list each time it comes up
       if (!side) return;
       const c = colorsFor(side), kit = kitFor(side), cfg = s.xi[side], name = teamName(side), logo = logoOf(side);
       const sig = JSON.stringify([side, name, c, kit, cfg, s.match.title, logo.length, logo.slice(-40)]);
@@ -1686,12 +1695,28 @@
       const subs = parseXI(cfg.subs || '');
       $('xSubs').hidden = !subs.length;
       $('xLogoMark').hidden = !!subs.length;
-      $('xSubsList').replaceChildren(...subs.flatMap((p, i) => {
-        const out = i ? ['   ·   '] : [];
-        if (p.num) out.push(el('b', null, p.num));
-        out.push(p.name);
-        return out;
-      }));
+      const subsLine = () => {
+        const line = el('span', 'one');
+        subs.forEach((p, i) => { if (i) line.append('   ·   '); if (p.num) line.append(el('b', null, p.num)); line.append(p.name); });
+        return line;
+      };
+      const track = el('span', 'track');
+      track.append(subsLine());
+      $('xSubsList').replaceChildren(track);
+      // Scroll only when the names don't fit: about 85 px a second, whatever the length.
+      xiScroll = () => {
+        const list = $('xSubsList'), one = track.firstChild;
+        track.classList.remove('run');
+        while (track.childNodes.length > 1) track.lastChild.remove();
+        const w = one.offsetWidth, gap = parseFloat(getComputedStyle(one).paddingRight) || 0;
+        if (w - gap <= list.clientWidth) return;
+        track.append(subsLine());
+        track.style.setProperty('--w', w + 'px');
+        track.style.setProperty('--dur', (w / 85).toFixed(1) + 's');
+        void track.offsetWidth; // restart from the beginning
+        track.classList.add('run');
+      };
+      requestAnimationFrame(xiScroll); document.fonts.ready.then(() => xiScroll && xiScroll());
     };
 
     // ----- Full-screen panels and the shootout tracker -----
