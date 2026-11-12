@@ -287,10 +287,9 @@
   .lu-tm .ini { font-size: 76px; font-weight: 800; line-height: 1; }
   .lu-tm .tn { font-size: 58px; font-weight: 800; letter-spacing: .04em; line-height: 1; white-space: nowrap; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
   .lu-tm .tn span { display: inline-block; transform-origin: left center; }
-  .lu-title { flex: 1; min-width: 0; white-space: nowrap; display: flex; flex-direction: column; justify-content: center; padding-left: 34px; }
+  .lu-title { flex: 1; min-width: 0; white-space: nowrap; padding-right: 40px; display: flex; flex-direction: column; justify-content: center; padding-left: 34px; }
   .lu-title .k { font-size: 24px; font-weight: 800; letter-spacing: .3em; color: var(--gold-hi); }
   .lu-title .t { font-size: 66px; font-weight: 800; letter-spacing: .08em; line-height: .92; }
-  .lu-head .logo { width: 150px; align-self: center; margin-right: 40px; flex: none; }
   .lu-rule { position: relative; height: 5px; flex: none; overflow: hidden; background: linear-gradient(90deg, var(--a), var(--gold) 60%); }
   .lu-rule::after { content: ''; position: absolute; top: 0; bottom: 0; width: 22%; left: 0;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent); animation: pgRun 3.8s linear infinite; }
@@ -357,6 +356,9 @@
               clip-path: polygon(0 0, 100% 0, calc(100% - 40px) 100%, 0 100%); }
   .lul-team::before { content: ''; position: absolute; top: 0; bottom: 0; left: -40px; right: -40px;
                       background: repeating-linear-gradient(115deg, rgba(255,255,255,.07) 0 2px, transparent 2px 14px); animation: pgDrift 2.6s linear infinite; }
+  /* The team's logo floating large and faint behind the slab, like the title card. */
+  .lul-team::after { content: ''; position: absolute; inset: -30%; background: var(--wm, none) center / 85% no-repeat; opacity: .12;
+                     filter: grayscale(1) brightness(2.4); animation: pgKen 16s ease-in-out infinite alternate; }
   .lul-team > * { position: relative; }
   .lul-team img { height: 66px; max-width: 200px; object-fit: contain; }
   .lul-team .ini { font-size: 58px; font-weight: 800; line-height: 1; }
@@ -1615,7 +1617,7 @@
       const m1 = mark(); tn.append(tnText); m1.style.setProperty('--d', 0); tn.style.setProperty('--d', 1); tm.append(m1, tn);
       const title = el('div', 'lu-title'); const k = el('div', 'k', s.match.title || 'Basketball'), tt = el('div', 't', 'Starting Lineup');
       k.style.setProperty('--d', 0); tt.style.setProperty('--d', 1); title.append(k, tt);
-      $('luHead').replaceChildren(tm, title, el('i', 'logo'));
+      $('luHead').replaceChildren(tm, title);
       $('luCards').replaceChildren(...players.map((p, i) => {
         const card = el('div', 'lu-card'); card.style.setProperty('--i', i);
         const ph = el('div', 'lu-ph'), photo = luPhotoFor(luLib, t.name, p);
@@ -2076,8 +2078,11 @@
   document.querySelectorAll('[data-p]').forEach(b => b.onclick = () => setPeriod(b.dataset.p));
   $('btnShow').onclick = toggleBug;
   $('btnSwap').onclick = () => { s.swap = !s.swap; save(); };
-  $('btnOpen').onclick = () => window.open(location.pathname + '#bug', 'eota-bball-bug', 'width=1280,height=720');
-  $('btnOpenKey').onclick = () => window.open(location.pathname + '#key', 'eota-bball-key', 'width=1280,height=720');
+  // The preview and output windows load this page fresh (a version stamp in the address), so the browser
+  // can't hand them an older cached copy than the control page itself.
+  const freshUrl = hash => { const q = new URLSearchParams(location.search); q.set('v', Date.now()); return location.pathname + '?' + q + hash; };
+  $('btnOpen').onclick = () => window.open(freshUrl('#bug'), 'eota-bball-bug', 'width=1280,height=720');
+  $('btnOpenKey').onclick = () => window.open(freshUrl('#key'), 'eota-bball-key', 'width=1280,height=720');
   $('alphaKey').addEventListener('change', e => { s.keyMode = e.target.checked ? 'alpha' : 'chroma'; save(); });
   $('keyColor').addEventListener('input', e => { s.keyColor = e.target.value; save(); });
   document.querySelectorAll('[data-keypreset]').forEach(b => b.onclick = () => { s.keyColor = b.dataset.keypreset; save(); });
@@ -3255,7 +3260,7 @@
     else sbStatus('Scoreboard: click Connect scoreboard to allow ' + h.name + ' again.');
   }).catch(() => {});
 
-  $('preview').src = location.pathname + '#bug';
+  $('preview').src = freshUrl('#bug');
   // Set up last: it draws the data sources table, which is built in the scoreboard section above.
   sheetHook = () => { renderSrc(); renderSheetStatus(); renderSheetPlayers(); renderStatsTab(); };
   startSheet(); // picks the sync back up after a reload

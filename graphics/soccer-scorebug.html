@@ -2808,8 +2808,11 @@
   const toggleBug = () => { s.visible = !s.visible; save(); };
   $('btnShow').onclick = toggleBug;
   $('btnClockShow').onclick = () => { s.clockShow = !s.clockShow; save(); };
-  $('btnOpen').onclick = () => window.open(location.pathname + '#bug', 'eota-soccer-bug', 'width=1280,height=720');
-  $('btnOpenKey').onclick = () => window.open(location.pathname + '#key', 'eota-soccer-key', 'width=1280,height=720');
+  // The preview and output windows load this page fresh (a version stamp in the address), so the browser
+  // can't hand them an older cached copy than the control page itself.
+  const freshUrl = hash => { const q = new URLSearchParams(location.search); q.set('v', Date.now()); return location.pathname + '?' + q + hash; };
+  $('btnOpen').onclick = () => window.open(freshUrl('#bug'), 'eota-soccer-bug', 'width=1280,height=720');
+  $('btnOpenKey').onclick = () => window.open(freshUrl('#key'), 'eota-soccer-key', 'width=1280,height=720');
   $('alphaKey').addEventListener('change', e => { s.keyMode = e.target.checked ? 'alpha' : 'chroma'; save(); });
 
   // --- Tabs ---
@@ -3495,7 +3498,7 @@
     if (next) { sel.value = next; if (s.away === 'AWAY') apply(); }
   }).catch(() => {});
 
-  $('preview').src = location.pathname + '#bug';
+  $('preview').src = freshUrl('#bug');
   startSheet(); // picks the sync back up after a reload
   addEventListener('storage', e => { if (e.key === STORE && e.newValue) { s = merge(JSON.parse(e.newValue)); renderCtl(); } });
   renderCtl();
