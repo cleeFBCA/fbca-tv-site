@@ -949,6 +949,9 @@
 
         <div data-pane="spot" hidden>
           <div class="pane-h">Player spotlight</div>
+          <label for="spRoster">Player (from the stats roster, or Setup → Player photos)</label>
+          <select id="spRoster"></select>
+          <p class="hint" id="spRosterNote" hidden></p>
           <div class="two">
             <div><label for="spTeam">Team</label><select id="spTeam"><option value="home"></option><option value="away"></option></select></div>
             <div><label for="spNum">Number</label><input id="spNum" maxlength="3" inputmode="numeric"></div>
@@ -2182,6 +2185,16 @@
     }
     return '';
   };
+  // A team's players with headshots: the stats roster, plus anyone in Player photos for this team and roster.
+  // (Player spotlight menu and the fan vote nominee picker.)
+  const rosterFor = side => {
+    const team = phTeam(s[side].name), out = [], seen = new Set();
+    const add = (num, name) => { num = String(num || '').trim(); name = String(name || '').trim(); if (!name) return;
+      const k = num ? '#' + num : 'n:' + name.toLowerCase(); if (seen.has(k)) return; seen.add(k); out.push({ num, name, photo: findPhoto(s[side].name, num, name) }); };
+    if (sheetLive() && s.sheet[side]) s.sheet[side].players.forEach(pl => add(pl.num, pl.name));
+    for (const r of photoLib.values()) if (r.team === team && (r.squad || '') === (s.squad || '')) add(r.num, r.name);
+    return out.sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
+  };
   // For a lower third: its name line reads like "#3 Jordan Lee".
   const photoForLine = (side, line) => {
     if (side !== 'home' && side !== 'away') return '';
@@ -2301,7 +2314,7 @@
   $('spShift').addEventListener('input', refitPhoto);
   $('spTeam').addEventListener('change', refitPhoto);
   $('spFitReset').onclick = () => { resetFit(); refitPhoto(); };
-  $('spPhotoClear').onclick = clearPhoto;
+  $('spPhotoClear').onclick = () => { clearPhoto(); $('spRosterNote').hidden = true; };
   const showSpot = p => { s.spot = p; s.panel = 'spot'; save(); };
   $('btnSpShow').onclick = () => {
     if (s.panel === 'spot') { s.panel = ''; save(); return; }
@@ -2324,9 +2337,44 @@
     [[d.pts, 'Points'], [d.reb, 'Rebounds'], [d.ast, 'Assists']].forEach(([v, l], k) => { $('spV' + (k + 1)).value = v; $('spL' + (k + 1)).value = l; });
     refitPhoto();
   };
-  let spPickSig = '';
+  // Picking from the roster fills team, number and name, and loads the headshot from Player photos into the
+  // fit preview (so Size and Up / down still work). Without a headshot, the jersey number shows.
+  $('spRoster').addEventListener('change', () => {
+    const [side, i] = ($('spRoster').value || '').split(':'), pl = side && (spRosterList[side] || [])[+i];
+    $('spRoster').value = '';
+    if (!pl) return;
+    $('spTeam').value = side; $('spNum').value = pl.num; $('spNameIn').value = pl.name;
+    // Line up the stats menu on the same player, so Fill PTS · REB · AST is one click.
+    if (sheetLive() && s.sheet[side]) {
+      const k = s.sheet[side].players.findIndex(x => pl.num ? String(x.num || '').trim() === pl.num : String(x.name || '').trim().toLowerCase() === pl.name.toLowerCase());
+      if (k >= 0) $('spPick').value = side + ':' + k;
+    }
+    clearPhoto();
+    const note = $('spRosterNote');
+    note.hidden = !!pl.photo;
+    note.textContent = pl.photo ? '' : 'No headshot for ' + (pl.num ? '#' + pl.num + ' ' : '') + pl.name + ' yet. Add one in Setup → Player photos, or upload a photo below.';
+    if (!pl.photo) return;
+    const img = new Image();
+    img.onload = () => { photoImg = img; photoBox = subjectBox(img); resetFit(); $('spFit').hidden = false; refitPhoto(); };
+    img.src = pl.photo;
+  });
+  let spPickSig = '', spRosterSig = '', spRosterList = {};
   const renderSpotTab = () => {
     for (const side of SIDES) $('spTeam').querySelector(`[value="${side}"]`).textContent = s[side].name;
+    const lists = SIDES.map(side => [side, rosterFor(side)]);
+    const rsig = JSON.stringify(lists.map(([side, l]) => [s[side].name, l.map(p => p.num + p.name + p.photo.length)]));
+    if (rsig !== spRosterSig) {
+      spRosterSig = rsig; spRosterList = Object.fromEntries(lists);
+      const sel = $('spRoster');
+      sel.replaceChildren(new Option('Pick a player…', ''));
+      for (const [side, l] of lists) {
+        if (!l.length) continue;
+        const g = document.createElement('optgroup'); g.label = s[side].name;
+        l.forEach((p, i) => g.append(new Option((p.num ? '#' + p.num + ' ' : '') + p.name, side + ':' + i)));
+        sel.append(g);
+      }
+      if (!lists.some(([, l]) => l.length)) sel.append(new Option('No players yet: connect the stats (Data sources) or add them in Setup → Player photos', ''));
+    }
     const live = sheetLive();
     $('spFromStats').hidden = !live;
     if (live) {
@@ -2615,14 +2663,6 @@
   const leftSideFv = () => leftSide();
   const teamNameFv = side => s[side].name;
   const colorsFv = side => ({ bg: hex(s[side].bg, '#063E0C'), fg: hex(s[side].fg, '#FFFFFF') });
-  const rosterFor = side => {
-    const team = phTeam(s[side].name), out = [], seen = new Set();
-    const add = (num, name) => { num = String(num || '').trim(); name = String(name || '').trim(); if (!name) return;
-      const k = num ? '#' + num : 'n:' + name.toLowerCase(); if (seen.has(k)) return; seen.add(k); out.push({ num, name, photo: findPhoto(s[side].name, num, name) }); };
-    if (sheetLive() && s.sheet[side]) s.sheet[side].players.forEach(pl => add(pl.num, pl.name));
-    for (const r of photoLib.values()) if (r.team === team && (r.squad || '') === (s.squad || '')) add(r.num, r.name);
-    return out.sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
-  };
   // --- Fan vote: pick nominees from the rosters ---
   // Tapping a player fills the next open nominee row (team, number, name, headshot); tapping again clears it.
   const fvNominated = (side, p) => s.fv.form.findIndex(n => n.side === side && n.name.trim() &&
