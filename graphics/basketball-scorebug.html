@@ -320,7 +320,7 @@
   .lu-coach .k { font-size: 22px; font-weight: 800; letter-spacing: .24em; color: rgba(255,255,255,.6); }
   .lu-coach .v { font-size: 38px; font-weight: 800; letter-spacing: .05em; }
   .lu-coach:has(.v:empty) { display: none; }
-  .lu-foot .pg-pill { font-size: 26px; padding: 6px 20px; }
+  .lu-foot .logo { width: 110px; margin-left: auto; }
   .lu-tm, .lu-title > *, .lu-card, .lu-np > *, .lu-num, .lu-foot > * { opacity: 0; }
   .lu.on .lu-tm { opacity: 1; animation: pgPanelL .7s .05s cubic-bezier(.2,.8,.2,1) both; }
   .lu.on .lu-tm > * { animation: pgFromL .6s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(.35s + var(--d, 0) * .08s); }
@@ -1633,9 +1633,9 @@
         return card;
       }));
       const coach = el('div', 'lu-coach'); coach.append(el('span', 'k', 'Head coach'), el('span', 'v', cfg.coach.trim()));
-      const pill = el('div', 'pg-pill', s.match.when || '');
-      [coach, pill].forEach((x, i) => x.style.setProperty('--d', i));
-      $('luFoot').replaceChildren(coach, pill);
+      const logo = el('i', 'logo');
+      [coach, logo].forEach((x, i) => x.style.setProperty('--d', i));
+      $('luFoot').replaceChildren(coach, logo);
       const fitTn = () => fitWidth(tnText, 500);
       requestAnimationFrame(fitTn); document.fonts.ready.then(fitTn);
       // Lower third
