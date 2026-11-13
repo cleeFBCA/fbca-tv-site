@@ -609,8 +609,6 @@
   .pv-r .p { text-align: right; font-variant-numeric: tabular-nums; }
   .pv-r.lead { color: #fff; }
   .pv-r.lead .f { background: linear-gradient(90deg, var(--gold), var(--gold-hi)); box-shadow: 0 0 18px rgba(242,213,76,.45); }
-  .pv-total { margin-top: 18px; font-size: 22px; font-weight: 700; letter-spacing: .14em; color: rgba(255,255,255,.5); }
-  .pv-total:empty { display: none; }
   /* Co-Players of the Game: when two or more players share the most votes, each gets a tile (photo, else the
      team logo, else the number, on their team's slab) with their number and name; the shares sit beside them. */
   .pv-co { display: none; }
@@ -924,7 +922,7 @@
     <div class="pv-body">
       <div class="slab pv-win a-sl" id="pvWin"></div>
       <div class="pv-co" id="pvCo"></div>
-      <div class="pv-info" id="pvInfo"><div class="pv-k a-up" id="pvKick" style="--t:.4"></div><div class="pv-n a-up" id="pvName" style="--t:.48"><span></span></div><div class="pv-m a-up" id="pvMeta" style="--t:.56"></div><div class="pv-rows" id="pvRows"></div><div class="pv-total a-up" id="pvTotal" style="--t:1.1"></div></div>
+      <div class="pv-info" id="pvInfo"><div class="pv-k a-up" id="pvKick" style="--t:.4"></div><div class="pv-n a-up" id="pvName" style="--t:.48"><span></span></div><div class="pv-m a-up" id="pvMeta" style="--t:.56"></div><div class="pv-rows" id="pvRows"></div></div>
     </div>
     <div class="cp-edge b"></div>
   </div>
@@ -2172,7 +2170,7 @@
         x.f.style.width = pct + '%'; x.pc.textContent = pct + '%';
         x.r.classList.toggle('lead', leaders.includes(i));
       });
-      $('pvTotal').textContent = v.total ? v.total + (v.total === 1 ? ' vote' : ' votes') : '';
+      // Only each player's share goes on air, never the number of votes.
     };
 
     const PANELS = { score: ['pScore', renderScorePanel], stats: ['pStats', renderStatsPanel], match: ['pMatch', renderMatchPanel],

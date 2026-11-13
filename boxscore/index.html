@@ -47,75 +47,9 @@
   .edge::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 22%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent); animation: run 3.8s linear infinite; }
   @keyframes run { from { transform: translateX(-100%); } to { transform: translateX(560%); } }
 
-  /* A team's color as a slab, like the graphics: lighter at the top, drifting stripes */
-  .slab { position: relative; overflow: hidden; isolation: isolate; color: #fff;
-          background: linear-gradient(165deg, color-mix(in srgb, var(--c, #333) 88%, #fff), var(--c, #333) 50%, color-mix(in srgb, var(--c, #333) 62%, #000)); }
-  .slab::before { content: ''; position: absolute; top: 0; bottom: 0; left: -40px; right: -40px; z-index: -1;
-                  background: repeating-linear-gradient(115deg, rgba(255,255,255,.07) 0 2px, transparent 2px 12px); animation: drift 5s linear var(--dd, 0s) infinite; }
-  @keyframes drift { to { transform: translateX(13.24px); } }
-
   main { flex: 1; }
-  main .in { padding-block: 18px 32px; display: flex; flex-direction: column; gap: 16px; }
+  main .in { padding-block: 18px 32px; }
   .msg { margin: 0; padding: 14px 16px; border-radius: 8px; background: linear-gradient(var(--char-hi), var(--char-lo)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); color: rgba(255,255,255,.8); }
-  .card { border-radius: 8px; overflow: hidden; background: linear-gradient(var(--char-hi), var(--char-lo)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
-
-  /* Scoreboard: each team's slab, its score, and the clock in the middle */
-  .board { display: grid; grid-template-columns: 1fr auto auto auto 1fr; align-items: stretch; min-height: 92px; }
-  .board .tm { display: flex; align-items: center; padding: 10px 8px; min-width: 0; font: 800 22px/1 var(--font-display); text-transform: uppercase; text-shadow: 0 2px 6px rgba(0,0,0,.35); }
-  .board .tm.R { justify-content: flex-end; text-align: right; }
-  .board .tm span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .board .sc { display: grid; place-items: center; min-width: 54px; padding: 0 8px; background: linear-gradient(#ffffff, #dcdde0); color: #17181b;
-               font: 800 40px/1 var(--font-display); font-variant-numeric: tabular-nums; }
-  .board .sc + .mid + .sc { box-shadow: none; }
-  .board .mid { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 70px; padding: 6px 8px; background: #111214; }
-  .board .clk { font: 800 26px/1 var(--font-display); font-variant-numeric: tabular-nums; }
-  .board .per { font: 800 13px var(--font-display); letter-spacing: .14em; color: var(--gold-on); text-transform: uppercase; }
-
-  /* The latest play */
-  .play { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
-  .play .tag { flex: none; padding: 4px 10px 3px; border-radius: 4px; background: var(--gold-on); color: #17181b; font: 800 13px var(--font-display); letter-spacing: .16em; }
-  .play .txt { min-width: 0; font: 800 20px/1.15 var(--font-display); text-transform: uppercase; letter-spacing: .02em; }
-  .play .txt small { display: block; font: 700 13px var(--font-body); letter-spacing: .04em; text-transform: none; color: rgba(255,255,255,.62); margin-bottom: 2px; }
-  .play .txt b { color: var(--gold-lt); }
-  .play .txt .what { white-space: nowrap; }
-  .play.big .tag { background: var(--tally); color: #fff; }
-  .play.flash { animation: flash 1.2s ease-out; }
-  @keyframes flash { from { background: rgba(234,175,15,.28); } to { background: transparent; } }
-
-  /* Team stats: values on the outside, bars out from the middle */
-  .h { margin: 0 0 8px; font: 800 18px var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.75); }
-  .cmp { padding: 6px 14px 10px; }
-  .cmp .row { display: grid; grid-template-columns: 74px 1fr 74px; align-items: center; gap: 6px; padding: 7px 0; box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
-  .cmp .row:first-child { box-shadow: none; }
-  .cmp .v { font: 800 20px/1 var(--font-display); font-variant-numeric: tabular-nums; }
-  .cmp .v.R { text-align: right; }
-  .cmp .v small { font: 600 12px var(--font-body); color: rgba(255,255,255,.55); margin-left: 4px; }
-  .cmp .v.lo { color: rgba(255,255,255,.45); }
-  .cmp .lbl { text-align: center; font: 800 12px var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.7); }
-  .cmp .bar2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; height: 7px; margin-top: 5px; }
-  .cmp .bar2 > div { position: relative; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; }
-  .cmp .bar2 i { position: absolute; top: 0; bottom: 0; transition: width .6s cubic-bezier(.2,.8,.2,1); }
-  .cmp .bar2 > div:first-child i { right: 0; }
-
-  /* Player stats: one table per team; the name column stays put while the numbers scroll on a phone */
-  .team-h { display: flex; align-items: center; gap: 10px; padding: 10px 14px; font: 800 20px var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
-  .team-h small { margin-left: auto; font: 800 22px var(--font-display); font-variant-numeric: tabular-nums; }
-  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-  th, td { padding: 8px 10px; text-align: center; white-space: nowrap; }
-  th { font: 800 12px var(--font-display); letter-spacing: .12em; color: rgba(255,255,255,.6); text-transform: uppercase; background: rgba(0,0,0,.25); }
-  td { font: 700 16px var(--font-body); box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
-  th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: #1d1e21; z-index: 1; }
-  th:first-child { background: #151618; }
-  td:first-child { font: 800 16px var(--font-display); letter-spacing: .03em; text-transform: uppercase; }
-  td:first-child b { color: var(--gold-on); margin-right: 6px; }
-  td.pts { color: #fff; font-weight: 800; }
-  td.zero { color: rgba(255,255,255,.35); }
-  tr.tot td { font-weight: 800; background: rgba(255,255,255,.04); }
-  tr.tot td:first-child { background: #232427; color: rgba(255,255,255,.75); }
-  .none { padding: 12px 14px; color: rgba(255,255,255,.6); font-size: 15px; }
-  .note { margin: 0; color: rgba(255,255,255,.55); font-size: 14px; }
-  .grid2 { display: grid; gap: 16px; }
 
   footer { background: var(--char-lo); padding-bottom: env(safe-area-inset-bottom, 0px); }
   footer .in { padding-block: 14px 18px; font-size: 14px; color: rgba(255,255,255,.6); text-align: center; }
@@ -126,22 +60,11 @@
     header .in { padding-block: 20px 26px; }
     .kick { font-size: 18px; }
     h1 { font-size: 72px; }
-    main .in { padding-block: 28px 48px; gap: 22px; }
-    .board { min-height: 120px; }
-    .board .tm { padding: 14px 22px; font-size: 38px; }
-    .board .sc { padding: 0 10px; }
-    .board .sc { min-width: 110px; font-size: 72px; }
-    .board .mid { min-width: 130px; }
-    .board .clk { font-size: 40px; }
-    .board .per { font-size: 16px; }
-    .play { padding: 14px 18px; }
-    .play .txt { font-size: 26px; }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
-    .cmp .row { grid-template-columns: 100px 1fr 100px; }
-    .cmp .v { font-size: 24px; }
+    main .in { padding-block: 28px 48px; }
   }
-  @media (prefers-reduced-motion: reduce) { .edge::after, .slab::before, .live.on b, .play.flash { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .edge::after, .live.on b { animation: none; } }
 </style>
+<link rel="stylesheet" href="box.css">
 </head>
 <body>
 <header>
@@ -152,130 +75,38 @@
   </div>
   <div class="edge"></div>
 </header>
-<main><div class="in" id="body"><p class="msg">Loading the game…</p></div></main>
+<main><div class="in"><p class="msg" id="msg">Loading the game…</p><div class="ebx" id="box" hidden></div></div></main>
 <footer><div class="in">Stats by the EOTA stat crew, live as they're recorded · The official score is on the scoreboard · Watch live at <a href="/">fbca.tv</a></div></footer>
 
 <script src="live.js"></script>
 <script>
 (() => {
-  const $ = id => document.getElementById(id);
-  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const L = window.EotaLive;
-  let game = null, lastPlayId = '', waitingNow = false;
-  const paint = (node, color) => { node.style.setProperty('--c', color); node.style.setProperty('--dd', -(Date.now() % 5000) / 1000 + 's'); return node; };
-  const lum = c => { const n = parseInt(String(c).slice(1), 16) || 0; return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255; };
-  // Bars: FBCA (home) in gold; the other team in its color unless that's too dark to see.
-  const barOf = (side, g) => side === 'home' ? '#EAAF0F' : (lum(g.sides.away.color) < .22 ? '#B9C6B4' : g.sides.away.color);
-  const pct = (m, a) => a ? Math.round(100 * m / a) + '%' : '–';
-
-  // What each sport shows: team comparison rows and player columns.
-  const SPORT = {
-    basketball: {
-      cmp: t => [
-        ['FG', t.m2 + t.m3, t.m2 + t.m3 + t.x2 + t.x3, true], ['3PT', t.m3, t.m3 + t.x3, true], ['FT', t.mft, t.mft + t.xft, true],
-        ['Rebounds', t.oreb + t.dreb], ['Assists', t.ast], ['Steals', t.stl], ['Blocks', t.blk], ['Turnovers', t.to, null, false, true], ['Fouls', t.pf, null, false, true]],
-      cols: ['PTS', 'FG', '3PT', 'FT', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF'],
-      row: p => [2 * p.m2 + 3 * p.m3 + p.mft, (p.m2 + p.m3) + '-' + (p.m2 + p.m3 + p.x2 + p.x3), p.m3 + '-' + (p.m3 + p.x3), p.mft + '-' + (p.mft + p.xft),
-                 p.oreb + p.dreb, p.ast, p.stl, p.blk, p.to, p.pf]
-    },
-    soccer: {
-      cmp: t => [['Shots', t.goal + t.sog + t.shot], ['On target', t.goal + t.sog], ['Corners', t.corner], ['Saves', t.save], ['Fouls', t.foul, null, false, true],
-                 ['Offsides', t.offside, null, false, true], ['Yellow cards', t.yc, null, false, true], ['Red cards', t.rc, null, false, true]],
-      cols: ['G', 'A', 'SH', 'SOG', 'SV', 'YC', 'RC'],
-      row: p => [p.goal, p.ast, p.goal + p.sog + p.shot, p.goal + p.sog, p.save, p.yc, p.rc]
-    }
-  };
-
+  const $ = id => document.getElementById(id), L = window.EotaLive;
+  let game = null, waitingNow = false;
   const tick = () => {
     const live = $('live'), on = L.isLive(game) && game.status !== 'half';
     live.className = 'live' + (on ? ' on' : ''); live.lastChild.textContent = !game ? (waitingNow ? 'On now' : 'No game') : L.statusTag(game);
-    if (!game) return;
-    // At halftime and after the final, the middle of the scoreboard says so instead of showing a clock.
-    const clk = $('clk'), done = game.status === 'final' ? 'Final' : game.status === 'half' ? 'Half' : '';
-    if (clk) { const t = done || L.clockText(game); clk.textContent = t || '–'; clk.hidden = !t; }
-    const per = $('per'); if (per) per.hidden = !!done;
+    if (game) L.tickBox($('box'), game);
   };
-
+  const say = text => { $('msg').hidden = false; $('msg').textContent = text; $('box').hidden = true; };
   const render = () => {
-    const body = $('body');
-    if (game && game.waiting) {
-      const w = game.waiting, vs = (w.homeAway === 'away' ? 'at ' : 'vs ') + w.opponent;
-      $('kick').textContent = w.sport || ''; game = null; waitingNow = true; tick();
-      body.replaceChildren(el('p', 'msg', 'FBCA ' + vs + ' is on now. The box score shows here once the stat crew records the first play.'));
-      return;
-    }
     waitingNow = false;
-    if (!game) { $('kick').textContent = ''; body.replaceChildren(el('p', 'msg', 'No game right now. During EOTA broadcasts, the box score for the game shows here, live as the stat crew records each play.')); tick(); return; }
-    const g = game, S = SPORT[g.sport], H = g.sides.home, A = g.sides.away;
-    $('kick').textContent = (g.sport === 'soccer' ? 'Soccer' : 'Basketball') + ' · ' + H.name + ' vs ' + A.name;
-    document.title = 'Box Score: ' + H.name + ' ' + H.score + ', ' + A.name + ' ' + A.score + ' · Eagles on the Air';
-
-    // Scoreboard
-    const board = el('div', 'card board');
-    const tm = (t, cls) => { const d = paint(el('div', 'tm slab ' + cls), t.color); d.append(el('span', null, t.name)); return d; };
-    const mid = el('div', 'mid'), clk = el('div', 'clk', '–'); clk.id = 'clk';
-    const per = el('div', 'per', L.PERIOD[g.meta.period] || g.meta.period || ''); per.id = 'per';
-    mid.append(clk, per);
-    board.append(tm(H, 'L'), el('div', 'sc', H.score), mid, el('div', 'sc', A.score), tm(A, 'R'));
-    const parts = [board];
-
-    // Latest play (it flashes when a new one arrives)
-    const lp = L.latestText(g);
-    if (lp) {
-      const play = el('div', 'card play' + (lp.big ? ' big' : '')), txt = el('div', 'txt');
-      txt.append(el('small', null, [lp.when, lp.team].filter(Boolean).join(' · ')));
-      const line = el('span'); line.append(el('b', null, lp.who), ' · ', el('span', 'what', lp.what)); txt.append(line);
-      play.append(el('span', 'tag', 'Latest'), txt);
-      if (lastPlayId && g.latest.id !== lastPlayId) play.classList.add('flash');
-      lastPlayId = g.latest.id;
-      parts.push(play);
-    } else parts.push(el('p', 'note', 'No plays recorded yet.'));
-
-    // Team stats
-    const cmpCard = el('div', 'card cmp');
-    const rowsH = S.cmp(H.tot), rowsA = S.cmp(A.tot);
-    rowsH.forEach(([label, hv, ha, isPct, lowGood], i) => {
-      const [, av, aa] = rowsA[i];
-      const r = el('div', 'row'), mid2 = el('div'), bar = el('div', 'bar2'), lb = el('div'), rb = el('div'), lf = el('i'), rf = el('i');
-      const val = (v, a, cls) => { const d = el('div', 'v ' + cls); d.append(isPct ? v + '-' + a : String(v)); if (isPct) d.append(el('small', null, pct(v, a))); return d; };
-      const hs = isPct ? (ha ? hv / ha : 0) : hv, as = isPct ? (aa ? av / aa : 0) : av, tot = hs + as;
-      lf.style.cssText = `width:${tot ? 100 * hs / tot : 0}%;background:${barOf('home', g)}`; rf.style.cssText = `width:${tot ? 100 * as / tot : 0}%;background:${barOf('away', g)}`;
-      lb.append(lf); rb.append(rf); bar.append(lb, rb); mid2.append(el('div', 'lbl', label), bar);
-      const hv2 = val(hv, ha, 'L'), av2 = val(av, aa, 'R');
-      const better = lowGood ? (a, b) => a < b : (a, b) => a > b;
-      if (better(as, hs)) hv2.classList.add('lo'); if (better(hs, as)) av2.classList.add('lo');
-      r.append(hv2, mid2, av2); cmpCard.append(r);
-    });
-    const cmpWrap = el('section'); cmpWrap.append(el('h2', 'h', 'Team stats'), cmpCard);
-
-    // Players
-    const table = t => {
-      const card = el('div', 'card'), head = paint(el('div', 'team-h slab'), t.color);
-      head.append(el('span', null, t.name), el('small', null, t.score));
-      card.append(head);
-      if (!t.players.length) { card.append(el('div', 'none', 'No player stats yet.')); return card; }
-      const tbl = el('table'), thead = el('tr');
-      thead.append(el('th', null, 'Player'), ...S.cols.map(c => el('th', null, c)));
-      tbl.append(thead);
-      for (const p of t.players) {
-        const tr = el('tr'), name = el('td');
-        if (p.num) name.append(el('b', null, '#' + p.num));
-        name.append(p.name);
-        tr.append(name, ...S.row(p).map((v, i) => el('td', (i === 0 ? 'pts' : '') + (v === 0 || v === '0-0' ? ' zero' : ''), v)));
-        tbl.append(tr);
-      }
-      const tot = el('tr', 'tot'); tot.append(el('td', null, 'Team'), ...S.row(t.tot).map(v => el('td', null, v)));
-      tbl.append(tot);
-      const sc = el('div', 'scroll'); sc.append(tbl); card.append(sc);
-      return card;
-    };
-    const players = el('section'); players.append(el('h2', 'h', 'Players'));
-    const grid = el('div', 'grid2'); grid.append(table(H), table(A)); players.append(grid);
-    parts.push(cmpWrap, players);
-    body.replaceChildren(...parts);
+    if (game && game.waiting) {
+      const w = game.waiting; game = null; waitingNow = true;
+      $('kick').textContent = w.sport || '';
+      say('FBCA ' + (w.homeAway === 'away' ? 'at ' : 'vs ') + w.opponent + ' is on now. The box score shows here once the stat crew records the first play.');
+    } else if (!game) {
+      $('kick').textContent = '';
+      say('No game right now. During EOTA broadcasts, the box score for the game shows here, live as the stat crew records each play.');
+    } else {
+      const H = game.sides.home, A = game.sides.away;
+      $('kick').textContent = (game.sport === 'soccer' ? 'Soccer' : 'Basketball') + ' · ' + H.name + ' vs ' + A.name;
+      document.title = 'Box Score: ' + H.name + ' ' + H.score + ', ' + A.name + ' ' + A.score + ' · Eagles on the Air';
+      $('msg').hidden = true; $('box').hidden = false;
+      L.renderBox($('box'), game);
+    }
     tick();
   };
-
   L.watch(g => { game = g; render(); });
   setInterval(tick, 500);
 })();

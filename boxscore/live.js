@@ -205,9 +205,121 @@
     return { stop: () => { stopped = true; clearTimeout(retry); clearInterval(poll); clearInterval(ping); if (ws) ws.close(); } };
   };
 
+  // ---------- Drawing the box score (boxscore/box.css) ----------
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const lum = c => { const n = parseInt(String(c).slice(1), 16) || 0; return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255; };
+  const paint = (node, color) => { node.style.setProperty('--c', color); node.style.setProperty('--dd', -(Date.now() % 5000) / 1000 + 's'); return node; };
+  // Bars: FBCA (home) in gold; the other team in its color unless that's too dark to see.
+  const barOf = (side, g) => side === 'home' ? '#EAAF0F' : (lum(g.sides.away.color) < .22 ? '#B9C6B4' : g.sides.away.color);
+  const pct = (m, a) => a ? Math.round(100 * m / a) + '%' : '–';
+  // What each sport shows: team comparison rows [label, value, attempts (shooting), is a %, lower is better] and player columns.
+  const SPORT = {
+    basketball: {
+      cmp: t => [['FG', t.m2 + t.m3, t.m2 + t.m3 + t.x2 + t.x3, true], ['3PT', t.m3, t.m3 + t.x3, true], ['FT', t.mft, t.mft + t.xft, true],
+                 ['Rebounds', t.oreb + t.dreb], ['Assists', t.ast], ['Steals', t.stl], ['Blocks', t.blk], ['Turnovers', t.to, null, false, true], ['Fouls', t.pf, null, false, true]],
+      cols: ['PTS', 'FG', '3PT', 'FT', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF'],
+      row: p => [2 * p.m2 + 3 * p.m3 + p.mft, (p.m2 + p.m3) + '-' + (p.m2 + p.m3 + p.x2 + p.x3), p.m3 + '-' + (p.m3 + p.x3), p.mft + '-' + (p.mft + p.xft),
+                 p.oreb + p.dreb, p.ast, p.stl, p.blk, p.to, p.pf]
+    },
+    soccer: {
+      cmp: t => [['Shots', t.goal + t.sog + t.shot], ['On target', t.goal + t.sog], ['Corners', t.corner], ['Saves', t.save], ['Fouls', t.foul, null, false, true],
+                 ['Offsides', t.offside, null, false, true], ['Yellow cards', t.yc, null, false, true], ['Red cards', t.rc, null, false, true]],
+      cols: ['G', 'A', 'SH', 'SOG', 'SV', 'YC', 'RC'],
+      row: p => [p.goal, p.ast, p.goal + p.sog + p.shot, p.goal + p.sog, p.save, p.yc, p.rc]
+    }
+  };
+  // renderBox(root, game, { head, collapseTeamStats }): draws the whole box score into root (a .ebx element).
+  //   head: a title row with the LIVE tag and a link to fbca.tv/boxscore (the home page).
+  //   collapseTeamStats: team stats behind a toggle (closed at first; stays as the viewer left it).
+  const renderBox = (root, g, { head = false, collapseTeamStats = false } = {}) => {
+    const S = SPORT[g.sport], H = g.sides.home, A = g.sides.away, parts = [];
+    const top = el('div', 'card head-card');
+    if (head) {
+      const h = el('div', 'ehead'), link = el('a', null, 'Full box score ›'); link.href = '/boxscore/';
+      h.append(el('span', 'tag', 'Live'), el('span', 'what', (g.sport === 'soccer' ? 'Soccer' : 'Basketball') + ' box score'), link);
+      top.append(h);
+    }
+    const board = el('div', 'board');
+    const tm = (t, cls) => { const d = paint(el('div', 'tm slab ' + cls), t.color); d.append(el('span', null, t.name)); return d; };
+    const mid = el('div', 'mid'), clk = el('div', 'clk', '–'), per = el('div', 'per', PERIOD[g.meta.period] || g.meta.period || '');
+    mid.append(clk, per);
+    board.append(tm(H, 'L'), el('div', 'sc', H.score), mid, el('div', 'sc', A.score), tm(A, 'R'));
+    top.append(board);
+    parts.push(top);
+
+    // Latest play (it flashes when a new one arrives)
+    const lp = latestText(g);
+    if (lp) {
+      const play = el('div', 'card play' + (lp.big ? ' big' : '')), txt = el('div', 'txt');
+      txt.append(el('small', null, [lp.when, lp.team].filter(Boolean).join(' · ')));
+      const line = el('span'); line.append(el('b', null, lp.who), ' · ', el('span', 'verb', lp.what)); txt.append(line);
+      play.append(el('span', 'ptag', 'Latest'), txt);
+      if (root._lastPlay && g.latest.id !== root._lastPlay) play.classList.add('flash');
+      root._lastPlay = g.latest.id;
+      parts.push(play);
+    } else parts.push(el('p', 'note', 'No plays recorded yet.'));
+
+    // Team stats
+    const cmp = el('div', 'card cmp'), rowsA = S.cmp(A.tot);
+    S.cmp(H.tot).forEach(([label, hv, ha, isPct, lowGood], i) => {
+      const [, av, aa] = rowsA[i];
+      const r = el('div', 'row'), mid2 = el('div'), bar = el('div', 'bar2'), lb = el('div'), rb = el('div'), lf = el('i'), rf = el('i');
+      const val = (v, a, cls) => { const d = el('div', 'v ' + cls); d.append(isPct ? v + '-' + a : String(v)); if (isPct) d.append(el('small', null, pct(v, a))); return d; };
+      const hs = isPct ? (ha ? hv / ha : 0) : hv, as = isPct ? (aa ? av / aa : 0) : av, tot = hs + as;
+      lf.style.cssText = `width:${tot ? 100 * hs / tot : 0}%;background:${barOf('home', g)}`; rf.style.cssText = `width:${tot ? 100 * as / tot : 0}%;background:${barOf('away', g)}`;
+      lb.append(lf); rb.append(rf); bar.append(lb, rb); mid2.append(el('div', 'lbl', label), bar);
+      const hv2 = val(hv, ha, 'L'), av2 = val(av, aa, 'R'), better = lowGood ? (a, b) => a < b : (a, b) => a > b;
+      if (better(as, hs)) hv2.classList.add('lo'); if (better(hs, as)) av2.classList.add('lo');
+      r.append(hv2, mid2, av2); cmp.append(r);
+    });
+    if (collapseTeamStats) {
+      const d = el('details', 'sect'), sum = el('summary', null, 'Team stats');
+      const prev = root.querySelector('details.sect'); d.open = prev ? prev.open : false;
+      d.append(sum, cmp); parts.push(d);
+    } else { const s = el('section'); s.append(el('h2', 'h', 'Team stats'), cmp); parts.push(s); }
+
+    // Players
+    const table = t => {
+      const card = el('div', 'card'), th = paint(el('div', 'team-h slab'), t.color);
+      th.append(el('span', null, t.name), el('small', null, t.score));
+      card.append(th);
+      if (!t.players.length) { card.append(el('div', 'none', 'No player stats yet.')); return card; }
+      const tbl = el('table'), hr = el('tr');
+      hr.append(el('th', null, 'Player'), ...S.cols.map(c => el('th', null, c)));
+      tbl.append(hr);
+      for (const p of t.players) {
+        const tr = el('tr'), name = el('td');
+        if (p.num) name.append(el('b', null, '#' + p.num));
+        name.append(p.name);
+        tr.append(name, ...S.row(p).map((v, i) => el('td', (i === 0 ? 'pts' : '') + (v === 0 || v === '0-0' ? ' zero' : ''), v)));
+        tbl.append(tr);
+      }
+      const tot = el('tr', 'tot'); tot.append(el('td', null, 'Team'), ...S.row(t.tot).map(v => el('td', null, v)));
+      tbl.append(tot);
+      const sc = el('div', 'scroll'); sc.append(tbl); card.append(sc);
+      return card;
+    };
+    const players = el('section'), grid = el('div', 'grid2');
+    grid.append(table(H), table(A));
+    players.append(el('h2', 'h', 'Players'), grid);
+    parts.push(players);
+    root.replaceChildren(...parts);
+    tickBox(root, g);
+  };
+  // tickBox: the parts that change with time (clock, status tag), every half second or so.
+  const tickBox = (root, g) => {
+    const tag = root.querySelector('.tag');
+    if (tag) { tag.classList.toggle('on', isLive(g) && g.status !== 'half'); tag.textContent = statusTag(g); }
+    // At halftime and after the final, the middle of the scoreboard says so instead of a clock.
+    const clk = root.querySelector('.board .clk'), per = root.querySelector('.board .per');
+    const done = g.status === 'final' ? 'Final' : g.status === 'half' ? 'Half' : '';
+    if (clk) { const t = done || clockText(g); clk.textContent = t || '–'; clk.hidden = !t; }
+    if (per) per.hidden = !!done;
+  };
+
   // LIVE: the scheduled game, in its live window, and not marked final by the scorebug.
   const isLive = g => !!g && g.scheduled && g.status !== 'final';
   // The tag beside the box score: LIVE, HALFTIME, FINAL, or LAST GAME (a game outside its scheduled window).
   const statusTag = g => !g ? '' : g.status === 'final' ? 'Final' : g.status === 'half' && g.scheduled ? 'Halftime' : g.scheduled ? 'Live' : 'Last game';
-  window.EotaLive = { watch, latestText, clockText, isLive, statusTag, playerName, PERIOD, PER_SHORT };
+  window.EotaLive = { watch, renderBox, tickBox, latestText, clockText, isLive, statusTag, playerName, PERIOD, PER_SHORT };
 })();
