@@ -231,12 +231,19 @@
   .l3.hidden { clip-path: inset(0 100% 0 0); }
   .l3 .accent { width: 14px; background: var(--gold); }
   /* Headshot from Lineups → Player photos, on the team color, between the stripe and the name */
-  .l3 .lph { position: relative; width: 124px; flex: none; overflow: hidden; background: var(--c, var(--field)); }
+  /* ...as a slab, like the bug's team cells: the color lighter at the top, the same slow-drifting stripes,
+     and the school's logo large and faint behind the player, slowly breathing. */
+  .l3 .lph { position: relative; width: 124px; flex: none; overflow: hidden; isolation: isolate;
+             background: linear-gradient(172deg, color-mix(in srgb, var(--c, var(--field)) 84%, #fff) 0%, var(--c, var(--field)) 48%, color-mix(in srgb, var(--c, var(--field)) 72%, #000) 100%); }
   .l3 .lph:empty { display: none; }
-  .l3 .lph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .l3 .lph::before { content: ''; position: absolute; top: 0; bottom: 0; left: -40px; right: -40px; z-index: -1;
+                     background: repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0 2px, transparent 2px 12px); animation: sbDrift 5s linear infinite; }
+  .l3 .lph::after { content: ''; position: absolute; inset: -20%; z-index: -1; background: var(--wm, none) center / contain no-repeat;
+                    opacity: .15; filter: grayscale(1) brightness(2.2); animation: sbKen 24s ease-in-out infinite alternate; }
+  .l3 .lph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; z-index: 1; }
   .l3 .lbody { display: flex; flex-direction: column; }
   .l3 .lname { padding: 8px 30px 4px; font-size: 54px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
-  .l3 .lstat { padding: 8px 30px; background: var(--pine); color: var(--chalk); font-size: 30px; font-weight: 600; letter-spacing: .05em; white-space: nowrap; }
+  .l3 .lstat { padding: 8px 30px; background: linear-gradient(#2e2f33, #17181b); color: #fff; /* the scorebug's charcoal */ font-size: 30px; font-weight: 600; letter-spacing: .05em; white-space: nowrap; }
   .l3 .lstat:empty { display: none; }
 
   /* Fan vote: a lower third with the QR code for fbca.tv/vote at its end, in the title card's style:
@@ -1656,6 +1663,8 @@
       $('l3Stat').textContent = l.stat;
       const ph = $('l3Photo'), cur = ph.firstChild ? ph.firstChild.src : '';
       ph.style.setProperty('--c', c.bg);
+      const logo = l.team === 'home' ? s.homeLogo : l.team === 'away' ? s.awayLogo : '';
+      ph.style.setProperty('--wm', logo ? `url("${logo}")` : 'none');
       if ((l.photo || '') !== cur) ph.replaceChildren(...(l.photo ? [Object.assign(el('img'), { src: l.photo, alt: '' })] : []));
     };
 
