@@ -6,10 +6,15 @@
 //
 //   GET  /poll?voter=ID        current vote, percentages, and this device's pick
 //                              (vote counts too, with the admin key)
+//   GET  /media?poll=ID        that vote's player photos and team logos (small images, sent once and
+//                              cached, so /poll stays small for phones refreshing every 15 seconds)
 //   POST /vote                 { poll, choice, voter }
-//   POST /admin                { action: 'create', match, nominees } | { action: 'open' | 'close', poll }
+//   POST /admin                { action: 'create', match, teams, nominees } | { action: 'open' | 'close', poll }
+//                              | { action: 'stats', poll, stats } (each nominee's stat line, during the game)
 //                              | { action: 'clear' } (no vote until the next one is created)
 //                              with Authorization: Bearer <ADMIN_KEY>
+//   Nominees: { num, name, pos, side, stat, photo }; teams: { home: { name, bg, fg, logo }, away: {...} }.
+//   Photos and logos are small data: URLs the control page makes; anything else is dropped.
 
 const SITE_ORIGINS = ['https://fbca.tv', 'https://www.fbca.tv'];
 // Votes allowed from one internet connection per vote. Loose on purpose: a whole
@@ -30,6 +35,10 @@ let schemaReady = false;
 const ensureSchema = async db => {
   if (schemaReady) return;
   await db.batch(SCHEMA.map(sql => db.prepare(sql)));
+  // Added later: the teams (names and colors) and the vote's pictures. Older databases get the columns once.
+  const { results } = await db.prepare('PRAGMA table_info(polls)').all();
+  const have = new Set(results.map(r => r.name));
+  for (const col of ['teams', 'media']) if (!have.has(col)) await db.prepare(`ALTER TABLE polls ADD COLUMN ${col} TEXT`).run();
   schemaReady = true;
 };
 
@@ -50,6 +59,11 @@ const json = (body, status, origin) => new Response(JSON.stringify(body), {
 });
 
 const clean = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+// A small picture from the control page: an image data: URL, or nothing.
+const MAX_PIC = 80000;
+const pic = v => typeof v === 'string' && v.length <= MAX_PIC && /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(v) ? v : '';
+const color = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
+const team = t => ({ name: clean(t?.name, 30), bg: color(t?.bg), fg: color(t?.fg) });
 const voterOk = v => typeof v === 'string' && /^[A-Za-z0-9_-]{16,64}$/.test(v);
 
 const sha256 = async text => {
@@ -82,8 +96,13 @@ const state = async (db, voter, counts = false) => {
     if (row) mine = row.choice;
   }
   const total = totals.reduce((a, b) => a + b, 0), top = Math.max(...totals);
+  // Which pictures exist (the pictures themselves come from /media, once per vote).
+  const media = p.media ? JSON.parse(p.media) : { photos: [], logos: {} };
   return {
-    poll: { id: p.id, match: p.match, nominees, open: !!p.open },
+    poll: { id: p.id, match: p.match, open: !!p.open,
+            teams: p.teams ? JSON.parse(p.teams) : null,
+            nominees: nominees.map((n, i) => ({ ...n, photo: !!(media.photos || [])[i] })),
+            logos: { home: !!(media.logos || {}).home, away: !!(media.logos || {}).away } },
     pct: totals.map(t => total ? Math.round(t / total * 100) : 0),
     leaders: total ? totals.flatMap((t, i) => t === top ? [i] : []) : [],
     mine,
@@ -122,14 +141,26 @@ const admin = async (request, env, origin) => {
   const { action } = body || {};
 
   if (action === 'create') {
-    const nominees = (Array.isArray(body.nominees) ? body.nominees : [])
-      .map(n => ({ num: clean(n?.num, 3), name: clean(n?.name, 30), pos: clean(n?.pos, 20), side: n?.side === 'away' ? 'away' : 'home' }))
-      .filter(n => n.name)
-      .slice(0, MAX_NOMINEES);
+    const given = (Array.isArray(body.nominees) ? body.nominees : []).filter(n => clean(n?.name, 30)).slice(0, MAX_NOMINEES);
+    const nominees = given.map(n => ({ num: clean(n?.num, 3), name: clean(n?.name, 30), pos: clean(n?.pos, 20),
+                                       side: n?.side === 'away' ? 'away' : 'home', stat: clean(n?.stat, 60) }));
     if (nominees.length < 2) return json({ error: 'Add at least two players.' }, 400, origin);
+    const t = body.teams || {};
+    const teams = { home: team(t.home), away: team(t.away) };
+    const media = { photos: given.map(n => pic(n?.photo)), logos: { home: pic(t.home?.logo), away: pic(t.away?.logo) } };
     const id = crypto.randomUUID();
-    await env.DB.prepare('INSERT INTO polls (id, match, nominees, open, created_at) VALUES (?, ?, ?, 0, ?)')
-      .bind(id, clean(body.match, 60), JSON.stringify(nominees), Date.now()).run();
+    await env.DB.prepare('INSERT INTO polls (id, match, nominees, open, created_at, teams, media) VALUES (?, ?, ?, 0, ?, ?, ?)')
+      .bind(id, clean(body.match, 60), JSON.stringify(nominees), Date.now(), JSON.stringify(teams), JSON.stringify(media)).run();
+    return json(await state(env.DB, null, true), 200, origin);
+  }
+
+  // During the game: each nominee's current stat line ("2 GOALS · 1 ASSIST").
+  if (action === 'stats') {
+    const p = await currentPoll(env.DB);
+    if (!p || p.id !== body.poll) return json({ error: 'That vote is no longer the current one.' }, 409, origin);
+    const stats = Array.isArray(body.stats) ? body.stats : [];
+    const nominees = JSON.parse(p.nominees).map((n, i) => ({ ...n, stat: clean(stats[i], 60) }));
+    await env.DB.prepare('UPDATE polls SET nominees = ? WHERE id = ?').bind(JSON.stringify(nominees), p.id).run();
     return json(await state(env.DB, null, true), 200, origin);
   }
 
@@ -161,6 +192,13 @@ export default {
     await ensureSchema(env.DB);
     if (request.method === 'GET' && url.pathname === '/poll')
       return json(await state(env.DB, url.searchParams.get('voter'), hasKey(request, env)), 200, origin);
+    if (request.method === 'GET' && url.pathname === '/media') {
+      const p = await env.DB.prepare('SELECT media FROM polls WHERE id = ?').bind(url.searchParams.get('poll') || '').first();
+      const media = p && p.media ? JSON.parse(p.media) : { photos: [], logos: {} };
+      // A vote's pictures never change, so phones keep them for the day.
+      return new Response(JSON.stringify(media), { status: p ? 200 : 404, headers: { 'Content-Type': 'application/json',
+        'Cache-Control': p ? 'public, max-age=86400, immutable' : 'no-store', ...cors(origin) } });
+    }
     if (request.method === 'POST' && url.pathname === '/vote') return vote(request, env, origin);
     if (request.method === 'POST' && isAdmin) return admin(request, env, origin);
     return json({ error: 'Not found.' }, 404, origin);

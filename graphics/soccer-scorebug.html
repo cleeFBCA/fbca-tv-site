@@ -3449,7 +3449,7 @@
     // A vote started elsewhere (or before a reload) fills an empty nominee form, so Open
     // reopens that vote instead of starting a new one.
     if (next.nominees.length && s.fv.form.every(n => !n.name.trim()))
-      s.fv.form = [0, 1, 2, 3].map(i => ({ side: 'home', num: '', name: '', pos: '', ...(next.nominees[i] || {}) }));
+      s.fv.form = [0, 1, 2, 3].map(i => { const n = next.nominees[i] || {}; return { side: n.side || 'home', num: n.num || '', name: n.name || '', pos: n.pos || '' }; });
     save();
   };
   const fvAdmin = async body => {
@@ -3479,6 +3479,48 @@
 
   const formNominees = () => s.fv.form.filter(n => n.name.trim())
     .map(n => ({ num: n.num.trim(), name: n.name.trim(), pos: n.pos.trim(), side: n.side }));
+  const FV_TEAM = side => teamName(side), FV_COLORS = side => colorsFor(side), FV_LOGO = side => (side === 'home' ? s.homeLogo : s.awayLogo) || '';
+  // From the stat keeper: "2 GOALS · 1 ASSIST", "5 SAVES".
+  const fvStat = n => { const p = teamRoster(n.side).find(x => fvSame(x, n)); return p ? playerLine(n.side, p) : ''; };
+  // ---- What fbca.tv/vote shows for each nominee: a photo (or the team's logo), the number, and their stats ----
+  // A small copy of a picture, so phones download little (once per vote). Photos keep the top (the head).
+  const fvThumb = (src, w, h, contain) => new Promise(ok => {
+    if (!src) return ok('');
+    const img = new Image();
+    img.onload = () => {
+      const k = contain ? Math.min(w / img.width, h / img.height, 1) : Math.max(w / img.width, h / img.height);
+      const c = document.createElement('canvas');
+      c.width = contain ? Math.max(1, Math.round(img.width * k)) : w; c.height = contain ? Math.max(1, Math.round(img.height * k)) : h;
+      c.getContext('2d').drawImage(img, contain ? 0 : (w - img.width * k) / 2, 0, img.width * k, img.height * k);
+      let out = c.toDataURL('image/webp', .8);
+      if (out.length > 76000) out = c.toDataURL('image/webp', .55);
+      ok(out.length > 76000 ? '' : out);
+    };
+    img.onerror = () => ok('');
+    img.src = src;
+  });
+  const fvSame = (a, b) => a.name.trim().toLowerCase() === b.name.trim().toLowerCase() && (!a.num || !b.num || String(a.num).trim() === String(b.num).trim());
+  // The nominee's headshot: added in this tab, or else from Player photos.
+  const fvPhotoOf = n => ((s.fv.form.find(f => f.photo && typeof f.photo === 'string' && f.side === n.side && fvSame(f, n)) || {}).photo) || findPhoto(FV_TEAM(n.side), n.num, n.name) || '';
+  // Sent with Open voting: the teams (names, colors, logos) and each nominee with a photo and stat line.
+  const fvPayload = async noms => ({
+    teams: Object.fromEntries(await Promise.all(['home', 'away'].map(async side => [side, { ...FV_COLORS(side), name: FV_TEAM(side), logo: await fvThumb(FV_LOGO(side), 240, 240, true) }]))),
+    nominees: await Promise.all(noms.map(async n => ({ ...n, stat: fvStat(n), photo: await fvThumb(fvPhotoOf(n), 220, 264) })))
+  });
+  // While voting is open, keep the stat lines on fbca.tv/vote current (checked every 20 seconds, sent when they change).
+  let fvStatsSent = '';
+  const fvPushStats = async () => {
+    const key = fvKey();
+    if (!key || !s.fv.poll || !s.fv.open || !(s.fv.nominees || []).length) return;
+    const stats = s.fv.nominees.map(fvStat), sig = s.fv.poll + JSON.stringify(stats);
+    if (sig === fvStatsSent || JSON.stringify(stats) === JSON.stringify(s.fv.nominees.map(n => n.stat || ''))) { fvStatsSent = sig; return; }
+    try {
+      const r = await fetch(FV_API + '/admin', { method: 'POST', body: JSON.stringify({ action: 'stats', poll: s.fv.poll, stats }),
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key } });
+      if (r.ok) { fvStatsSent = sig; fvApply(await r.json()); }
+    } catch (e) { /* try again next time */ }
+  };
+  setInterval(fvPushStats, 20000);
   const sameNominees = (a, b) => JSON.stringify(a.map(n => [n.num, n.name, n.pos, n.side])) === JSON.stringify(b.map(n => [n.num, n.name, n.pos, n.side]));
 
   // Nominee rows: team, number, name (suggests players from the lineups and spotlights), position.
@@ -3603,9 +3645,11 @@
     // Same nominees: reopen that vote. Different ones: start a new vote with a fresh tally.
     if (!s.fv.poll || !sameNominees(noms, s.fv.nominees)) {
       if (s.fv.poll && s.fv.total && !confirm('Start a new vote with these nominees? The current tally will be replaced.')) return;
-      if (!await fvAdmin({ action: 'create', match: s.home + ' vs ' + s.away, nominees: noms })) return;
+      fvSay('Getting the photos and logos ready…');
+      if (!await fvAdmin({ action: 'create', match: s.home + ' vs ' + s.away, ...(await fvPayload(noms)) })) return;
     }
     await fvAdmin({ action: 'open', poll: s.fv.poll });
+    fvStatsSent = ''; fvPushStats();
   };
   $('fvClose').onclick = () => fvAdmin({ action: 'close', poll: s.fv.poll });
   // Between games: fbca.tv/vote goes back to "no vote right now". The nominee names stay in the form.

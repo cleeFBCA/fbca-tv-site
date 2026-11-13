@@ -21,7 +21,12 @@ Address: `https://eota-fan-vote.clee-625.workers.dev`
 1. Control page → **Fan vote** tab → paste the admin key → **Save key** (once
    per computer).
 2. Fill in 2–4 nominees (typing in Name suggests players from the Lineups tab)
-   and press **Open voting**.
+   and press **Open voting**. fbca.tv/vote then shows each player's headshot
+   (from the Fan vote tab or Player photos; the team's logo if there's none),
+   number, name and current stat line from the stat keeper, which the control
+   page keeps up to date every 20 seconds while voting is open. The photos and
+   logos are sent once as small images and phones fetch them once per vote
+   (`GET /media`), so the every-15-seconds results stay small.
 3. **Show QR lower third** two or three times in the second half.
 4. **Close voting**, then **Show results**. A spotlight photo saved for the
    winner shows on the results panel.
