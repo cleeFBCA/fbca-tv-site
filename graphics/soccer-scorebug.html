@@ -93,7 +93,7 @@
   /* Sides swap at halftime so the bug matches the field. */
   .sb .status { order: 3; }
   .sb .brand { order: -1; display: grid; place-items: center; padding: 0 16px; background: var(--pine); border-right: 2px solid var(--field); }
-  .sb .brand .logo { height: 34px; }
+  .sb .brand .logo { height: 42px; }
   .sb.swapped .home { order: 2; }
   .sb.swapped .away { order: 1; }
   /* Red cards slide up from behind the team name, like a referee raising one. */
@@ -118,7 +118,6 @@
     min-width: 132px; padding: 0 22px;
     font-size: 42px; font-weight: 800; letter-spacing: .03em; white-space: nowrap;
   }
-  .sb .home .name { background: var(--field); color: var(--gold-hi); }
   /* Scores in the middle, names on the outside (like the score panel): the second team reads score, then name,
      with a dark line between the two scores. Whichever team is second (they swap at halftime) is flipped. */
   .sb:not(.swapped) .away, .sb.swapped .home { flex-direction: row-reverse; }
@@ -130,7 +129,7 @@
     font-size: 52px; font-weight: 800; font-variant-numeric: tabular-nums;
   }
   .sb .score.flash { animation: flash .5s step-end 4; }
-  @keyframes flash { 0% { background: var(--gold-hi); } 50% { background: var(--chalk); } }
+  @keyframes flash { 0% { background: var(--gold); } 50% { background: var(--chalk); } }
   .sb .status { display: flex; background: var(--pine); color: var(--chalk); }
   .sb .period {
     display: flex; align-items: center; padding: 0 18px;
@@ -160,7 +159,7 @@
   .drop > div[hidden] { display: none; }
   .drop .dteam { padding: 0 18px; font-weight: 800; }
   .drop .dlabel { gap: 10px; padding: 0 18px; background: var(--gold); color: var(--pine); font-weight: 800; letter-spacing: .08em; }
-  .drop .dmin { padding-left: 18px; color: var(--gold-hi); font-weight: 800; }
+  .drop .dmin { padding-left: 18px; color: var(--gold); font-weight: 800; }
   .drop .dtext { padding: 0 24px 0 14px; gap: 12px; }
   .drop .dtext .off { color: var(--chalk-dim); }
   /* Substitution: each arrow sits right against its player; the two pairs are well apart */
@@ -181,11 +180,49 @@
      The second team's strip is mirrored like its half of the bug: total under the score, kicks under the name. */
   .pk .pkt.flip { flex-direction: row-reverse; }
   .pk .pkt.flip .tot { box-shadow: inset 4px 0 0 var(--pine); }
-  .pk .pkl { position: absolute; top: 0; bottom: 0; left: 0; display: grid; place-items: center; color: var(--gold-hi); font-size: 22px; font-weight: 800; letter-spacing: .06em; }
+  .pk .pkl { position: absolute; top: 0; bottom: 0; left: 0; display: grid; place-items: center; color: var(--gold); font-size: 22px; font-weight: 800; letter-spacing: .06em; }
   .arr { display: block; width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; }
   .arr.in { border-bottom: 16px solid #3CC47C; }
   .arr.out { border-top: 16px solid var(--tally); }
   .cardicon { display: block; width: 16px; height: 23px; }
+
+  /* ---- Scorebug finish, in the title card's style, all still (nothing moves while the score is up) ----
+     Team names on their color as a slab (lighter at the top, fine diagonal stripes, the school's logo large
+     and faint at the outer end), scores on the title card's white pill gradient, the EOTA logo and clock on
+     its charcoal, a soft highlight along the top of every cell, and the gold edge running in from FBCA green. */
+  .sb .row { border-bottom: 6px solid var(--gold); } /* FBCA gold, #EAAF0F */
+  /* Both team slabs are the size of a four-letter abbreviation (FBCA), the name centered; anything longer is
+     squeezed to fit (see renderBug), so the bug never changes size. */
+  .sb .name { width: 176px; min-width: 0; padding: 0 12px; }
+  .sb .name > span { display: inline-block; transform-origin: center; }
+  .sb .brand { background: linear-gradient(#2e2f33, #17181b); border-right: 0; border-radius: 6px 0 0 0;
+               box-shadow: inset 0 1px 0 rgba(255,255,255,.16), inset -1px 0 0 rgba(255,255,255,.08); }
+  .sb .name { position: relative; overflow: hidden; isolation: isolate; color: var(--f, #fff); text-shadow: 0 2px 6px rgba(0,0,0,.3);
+              background: linear-gradient(172deg, color-mix(in srgb, var(--c, #333) 84%, #fff) 0%, var(--c, #333) 48%, color-mix(in srgb, var(--c, #333) 72%, #000) 100%);
+              box-shadow: inset 0 1px 0 rgba(255,255,255,.22); }
+  /* The only movement on the bug, kept slow enough to read as texture: the stripes drift sideways about
+     2.6 px a second (a sixth of the title card's pace), and the school's logo, large and faint behind the
+     abbreviation as on the title card, slowly breathes and tilts a couple of degrees over 24 s. */
+  .sb .name::before { content: ''; position: absolute; top: 0; bottom: 0; left: -40px; right: -40px; z-index: -1;
+                      background: repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0 2px, transparent 2px 12px);
+                      animation: sbDrift 5s linear infinite; }
+  .sb .name::after { content: ''; position: absolute; top: -45%; bottom: -45%; left: 8%; right: 8%; z-index: -1;
+                     background: var(--wm, none) center / contain no-repeat; opacity: .15; filter: grayscale(1) brightness(2.2);
+                     animation: sbKen 24s ease-in-out infinite alternate; }
+  .sb.swapped .name::after { animation-direction: alternate-reverse; }
+  @keyframes sbDrift { to { transform: translateX(13.24px); } } /* one stripe period (12px at 115deg), so the loop never jumps */
+  @keyframes sbKen { from { transform: scale(1.02) translateX(-3%) rotate(-2deg); } to { transform: scale(1.1) translateX(3%) rotate(2deg); } }
+  .sb .score { background: linear-gradient(#ffffff, #dcdde0); box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0,0,0,.08); }
+  .sb:not(.swapped) .away .score, .sb.swapped .home .score { box-shadow: inset 4px 0 0 #17181b, inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0,0,0,.08); }
+  .sb .status { background: linear-gradient(#2e2f33, #17181b); border-radius: 0 6px 0 0; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.16); }
+  /* The period on a lighter charcoal than the clock, so it never runs into a green team cell beside it */
+  .sb .period { color: var(--gold); background: linear-gradient(#3d3e43, #26272b);
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.2), inset -1px 0 0 rgba(0,0,0,.35); }
+  .sb .added { background: var(--gold); color: #17181b; box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
+  .drop, .pk, .pk .pips { background: linear-gradient(#26272b, #17181b); }
+  .drop .dteam { box-shadow: inset 0 1px 0 rgba(255,255,255,.18); background: linear-gradient(172deg, color-mix(in srgb, var(--c, #333) 84%, #fff), var(--c, #333) 50%, color-mix(in srgb, var(--c, #333) 72%, #000)); color: var(--f, #fff); }
+  .drop .dlabel { background: var(--gold); color: #17181b; }
+  .pk .tot { background: linear-gradient(#ffffff, #dcdde0); }
   .cardicon.y { background: var(--card-y); }
   .cardicon.r { background: var(--tally); }
 
@@ -1562,12 +1599,18 @@
     const renderBug = () => {
       const panelUp = !!s.panel; // bugOut: held off for a moment while a full-screen graphic goes out (see setPanel)
       $('sb').className = 'sb wipe pos-' + s.pos + (s.visible && !panelUp && !s.bugOut ? '' : ' hidden') + (s.drop.on ? ' drop-on' : '') + (s.shoot.on ? ' pk-on' : '') + (s.swap ? ' swapped' : '');
-      $('sbHome').textContent = s.home;
-      $('sbAway').textContent = s.away;
-      $('sbHome').style.background = s.homeBg;
-      $('sbHome').style.color = s.homeFg;
-      $('sbAway').style.background = s.awayBg;
-      $('sbAway').style.color = s.awayFg;
+      // Each name centered in its slab, squeezed if it's longer than four letters.
+      for (const [id, name] of [['sbHome', s.home], ['sbAway', s.away]]) {
+        const n = $(id);
+        let span = n.firstElementChild;
+        if (!span || span.tagName !== 'SPAN') { span = el('span'); n.replaceChildren(span); }
+        if (span.textContent !== name) { span.textContent = name; const fit = () => fitWidth(span, 152); requestAnimationFrame(fit); document.fonts.ready.then(fit); }
+      }
+      for (const [id, side] of [['sbHome', 'home'], ['sbAway', 'away']]) {
+        const c = colorsFor(side), logo = side === 'home' ? s.homeLogo : s.awayLogo, n = $(id);
+        n.style.setProperty('--c', c.bg); n.style.setProperty('--f', c.fg);
+        n.style.setProperty('--wm', logo ? `url("${logo}")` : 'none');
+      }
       cards($('sbHomeReds'), s.homeReds, s.homeYellows);
       cards($('sbAwayReds'), s.awayReds, s.awayYellows);
       $('sbAdded').hidden = !s.added || clockOff(s) || !s.clockShow;
@@ -1588,7 +1631,7 @@
       const c = colorsFor(d.team), dt = $('dTeam');
       dt.hidden = d.team === 'none';
       dt.textContent = teamName(d.team);
-      dt.style.background = c.bg; dt.style.color = c.fg;
+      dt.style.setProperty('--c', c.bg); dt.style.setProperty('--f', c.fg);
       const icon = cardIcon(d.label);
       $('dLabel').replaceChildren(...(icon ? [icon] : []), d.label);
       $('dMin').textContent = d.minute ? d.minute.replace(/'?$/, "'") : '';
@@ -3960,11 +4003,12 @@
   document.addEventListener('click', e => { const b = e.target.closest('button'); if (b) b.blur(); });
 
   // Schedule: list soccer games so the opponent fills in with one pick.
+  // The bug's team abbreviation: the first letter of every word ("The Kinkaid School" → TKS, "St. John's School"
+  // → SJS, "The Woodlands Christian Academy" → TWCA). A one-word name stays as it is. Type over it in Setup if needed.
   const shortName = name => {
-    const drop = new Set(['THE', 'SCHOOL', 'HIGH', 'ACADEMY', 'CATHOLIC', 'CHRISTIAN', 'OF', 'PREP']);
-    const words = name.toUpperCase().split(/\s+/).filter(w => !drop.has(w));
-    if (!words.length) return name.toUpperCase().slice(0, 10);
-    return (words[0].endsWith('.') && words[1] ? words[0] + ' ' + words[1] : words[0]).slice(0, 10);
+    const words = String(name).toUpperCase().replace(/[^A-Z0-9 ]/g, '').split(/\s+/).filter(Boolean);
+    if (words.length < 2) return (words[0] || String(name).toUpperCase()).slice(0, 10);
+    return words.map(w => w[0]).join('').slice(0, 10);
   };
   fetch('../schedule.json', { cache: 'no-store' }).then(r => r.json()).then(data => {
     allGames = (data.games || []).slice().sort((a, b) => a.start.localeCompare(b.start));
