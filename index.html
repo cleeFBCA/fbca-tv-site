@@ -393,22 +393,24 @@
   @media (max-width:720px){
     .lowerthird{min-height:146px}
     .bar{height:60px;gap:10px}
-    .brand-name{font-size:1.1rem;white-space:nowrap}
-    .brand-name small{display:none}
-    .brand-name .bn-full{display:none}
-    .brand-name .bn-short{display:inline}
+    /* Small screens: the EOTA logo stands alone; the words beside it give the menu room */
+    .brand-name{display:none}
     nav{gap:0}
     nav a{padding:8px 6px;font-size:.85rem;white-space:nowrap}
     .tally{display:none}
     .btnrow{display:none}
   }
+  /* Up to 960px the menu (with Box Score) and the ON AIR light need the room: the EOTA logo stands alone */
+  @media (max-width:960px){
+    .brand-name{display:none}
+    nav a{white-space:nowrap}
+  }
   /* The smallest phones (320px): a little tighter so the logo keeps its shape */
   @media (max-width:360px){
     nav a{padding:8px 4px;font-size:.78rem}
   }
-  /* Narrow phones: the logo already says EOTA, so the words beside it give way to the menu (Watch, Box Score, …) */
+  /* Narrow phones: the logo keeps its shape beside the menu (Watch, Box Score, …) */
   @media (max-width:430px){
-    .brand-name{display:none}
     .brand img{flex:none}
     .lowerthird .when{margin-left:0;width:100%}
     .game{grid-template-columns:82px 1fr;grid-template-rows:auto auto}
