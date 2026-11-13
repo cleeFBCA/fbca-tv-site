@@ -54,6 +54,11 @@
   .matchup .tm.R { flex-direction: row-reverse; text-align: right; }
   .matchup .tm img { height: 38px; width: auto; max-width: 64px; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
   .matchup .tm span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* The big faint logos behind the matchup drift like the title card's, bolder: zoom, slide and tilt, the
+     two schools moving opposite ways. */
+  .matchup .tm::after { animation: ken 12s ease-in-out infinite alternate; }
+  .matchup .tm.R::after { animation-direction: alternate-reverse; }
+  @keyframes ken { from { transform: scale(1.05) translateX(-6%) rotate(-5deg); } to { transform: scale(1.35) translateX(6%) rotate(5deg); } }
   .matchup .vs { display: grid; place-items: center; padding: 0 14px; background: rgba(0,0,0,.35); font: 800 22px var(--font-display); }
   .edge { position: relative; height: 5px; overflow: hidden; background: linear-gradient(90deg, var(--fbca), var(--gold-on) 55%); }
   .edge::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 22%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent); animation: run 3.8s linear infinite; }
@@ -139,7 +144,7 @@
     .row .top { font-size: 26px; }
     .row .track { height: 16px; }
   }
-  @media (prefers-reduced-motion: reduce) { .edge::after, .slab::before, .live.on b { animation: none; } .row .fill { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .edge::after, .slab::before, .live.on b, .matchup .tm::after { animation: none; } .row .fill { transition: none; } }
 </style>
 </head>
 <body>
