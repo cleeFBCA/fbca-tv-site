@@ -257,7 +257,7 @@
       const res = el('div', 'res');
       const won = (data.leaders || []).map(i => p.nominees[i].name);
       res.append(el('p', 'thanks', p.open ? 'Thanks for voting!'
-        : won.length === 1 ? 'Winner: ' + won[0] : won.length ? 'Tie: ' + won.join(' and ') : 'Voting is closed'));
+        : won.length === 1 ? 'Winner: ' + won[0] : won.length ? 'Co-Players of the Game: ' + won.join(' & ') : 'Voting is closed'));
       p.nominees.forEach((n, i) => {
         const r = el('div', 'row' + (leads(i) ? ' lead' : '')), b = el('div', 'body');
         const name = nameLine('nm', n); name.className = '';

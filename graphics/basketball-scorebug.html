@@ -692,6 +692,29 @@
   .pv-r.lead .f { background: linear-gradient(90deg, var(--gold), var(--gold-hi)); box-shadow: 0 0 18px rgba(242,213,76,.45); }
   .pv-total { margin-top: 18px; font-size: 22px; font-weight: 700; letter-spacing: .14em; color: rgba(255,255,255,.5); }
   .pv-total:empty { display: none; }
+  /* Co-Players of the Game: when two or more players share the most votes, each gets a tile (photo, else the
+     team logo, else the number, on their team's slab) with their number and name; the shares sit beside them. */
+  .pv-co { display: none; }
+  #pVote.co .pv-body { grid-template-columns: auto 1fr; }
+  #pVote.co .pv-win, #pVote.co .pv-m { display: none; }
+  #pVote.co .pv-co { display: flex; }
+  #pVote.co .pv-info { border-left: 0; padding: 40px 48px 44px; }
+  #pVote.co .pv-r { grid-template-columns: 210px 1fr 96px; gap: 18px; font-size: 30px; }
+  .pv-co .tile { width: 300px; display: flex; flex-direction: column; box-shadow: inset -3px 0 0 #17181b; }
+  .pv-co.n3 .tile, .pv-co.n4 .tile { width: 220px; }
+  .pv-co .tp { flex: 1; display: grid; place-items: center; }
+  .pv-co .tp img.ph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .pv-co .tp img.lg { width: 66%; height: 66%; object-fit: contain; filter: drop-shadow(0 6px 14px rgba(0,0,0,.35)); }
+  .pv-co .tp .no { font-size: 150px; font-weight: 800; line-height: 1; color: var(--f); text-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .pv-co.n3 .tp .no, .pv-co.n4 .tp .no { font-size: 110px; }
+  /* Every name plate the same height (room for a name on two lines), so the tiles line up */
+  .pv-co .tn { height: 136px; flex: none; overflow: hidden; display: flex; flex-direction: column; justify-content: center;
+               padding: 10px 18px 12px; background: linear-gradient(#26272b, #17181b); box-shadow: inset 0 5px 0 var(--a); }
+  .pv-co.n3 .tn, .pv-co.n4 .tn { height: 122px; }
+  .pv-co .tn .nm { font-size: 40px; font-weight: 800; line-height: 1; }
+  .pv-co.n3 .tn .nm, .pv-co.n4 .tn .nm { font-size: 32px; }
+  .pv-co .tn .nm b { color: var(--gold); margin-right: 8px; }
+  .pv-co .tn .tm { margin-top: 6px; font-size: 20px; font-weight: 700; letter-spacing: .12em; color: rgba(255,255,255,.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* ---------- Control mode ---------- */
   body.ctl { background: var(--pine); color: var(--chalk); font-family: var(--font-body); }
@@ -905,10 +928,11 @@
   </div>
 
   <div class="cp fx hidden" id="pVote">
-    <div class="cp-head"><span class="t a-up">Player of the Game</span><span class="s a-up" style="--t:.38">Fan vote</span><i class="logo a-up" style="--t:.45"></i></div>
+    <div class="cp-head"><span class="t a-up" id="pvHead">Player of the Game</span><span class="s a-up" style="--t:.38">Fan vote</span><i class="logo a-up" style="--t:.45"></i></div>
     <div class="cp-edge"></div>
     <div class="pv-body">
       <div class="slab pv-win a-sl" id="pvWin"></div>
+      <div class="pv-co" id="pvCo"></div>
       <div class="pv-info" id="pvInfo"><div class="pv-k a-up" id="pvKick" style="--t:.4"></div><div class="pv-n a-up" id="pvName" style="--t:.48"><span></span></div><div class="pv-m a-up" id="pvMeta" style="--t:.56"></div><div class="pv-rows" id="pvRows"></div><div class="pv-total a-up" id="pvTotal" style="--t:1.1"></div></div>
     </div>
     <div class="cp-edge b"></div>
@@ -1640,7 +1664,7 @@
       const photo = (w && (v.form.find(p => p.photo && p.name.trim().toLowerCase() === w.name.toLowerCase()
         && (!p.num || !w.num || p.num.trim() === w.num)) || {}).photo) || '';
       const sig = JSON.stringify([noms, w ? [w.name, w.num, w.side, w.pos] : null, photo.length, photo.slice(-40), teamColors(side),
-                                  s[side].name, (s[side].logo || '').length]);
+                                  s[side].name, (s[side].logo || '').length, tied ? leaders : 0, teamColors('home'), teamColors('away')]);
       if (sig !== pvSig) {
         pvSig = sig;
         $('pVote').classList.toggle('nophoto', !photo);
@@ -1656,10 +1680,37 @@
           return { r, f, pc };
         });
         $('pvRows').replaceChildren(...pvRefs.map(x => x.r));
+        // A tie for the most votes: Co-Players of the Game, a tile for each.
+        const co = tied && !!w;
+        $('pVote').classList.toggle('co', co);
+        if (co) {
+          const box = $('pvCo'); box.className = 'pv-co n' + Math.min(leaders.length, 4);
+          box.replaceChildren(...leaders.slice(0, 4).map((li, k) => {
+            const n = noms[li], tile = at(el('div', 'tile a-up'), .3 + k * .12), tp = paintSlab(el('div', 'tp slab'), n.side);
+            const ph = ((v.form.find(p => p.photo && typeof p.photo === 'string' && p.name.trim().toLowerCase() === n.name.toLowerCase() && (!p.num || !n.num || p.num.trim() === n.num)) || {}).photo) || '', lg = (s[n.side] && s[n.side].logo) || '';
+            if (ph) tp.append(at(Object.assign(el('img', 'ph a-settle'), { src: ph, alt: '' }), .35 + k * .12));
+            else if (lg) tp.append(Object.assign(el('img', 'lg'), { src: lg, alt: '' }));
+            else tp.append(el('div', 'no', n.num ? '#' + n.num : ''));
+            const tn = el('div', 'tn'), nm = el('div', 'nm');
+            tn.style.setProperty('--a', accentOf(n.side));
+            if (n.num) nm.append(el('b', null, '#' + n.num));
+            nm.append(n.name);
+            tn.append(nm, el('div', 'tm', [n.pos, s[n.side] && s[n.side].name].filter(Boolean).join(' · ')));
+            tile.append(tp, tn);
+            return tile;
+          }));
+          // Their last names, large, where a single winner's name goes: SMITH & DIAZ.
+          const last = leaders.slice(0, 4).map(i => noms[i].name.trim().split(/\s+/).slice(-1)[0]);
+          const span = $('pvName').firstElementChild;
+          span.textContent = last.length > 2 ? last.slice(0, -1).join(', ') + ' & ' + last[last.length - 1] : last.join(' & ');
+          const fitCo = () => fitWidth(span, $('pvInfo').clientWidth - 96);
+          requestAnimationFrame(fitCo); document.fonts.ready.then(fitCo);
+        }
         const fit = () => fitWidth(span, photo ? 790 : 1220);
-        requestAnimationFrame(fit); document.fonts.ready.then(fit);
+        if (!co) { requestAnimationFrame(fit); document.fonts.ready.then(fit); } // a tie fits the last names beside the tiles (above)
       }
-      $('pvKick').textContent = !w ? 'Fan vote' : tied ? 'Tied in the fan vote' : v.open ? 'Leading the fan vote' : 'Fan vote winner';
+      $('pvKick').textContent = !w ? 'Fan vote' : tied ? (v.open ? 'Tied for the lead' : 'A tie in the fan vote') : v.open ? 'Leading the fan vote' : 'Fan vote winner';
+      $('pvHead').textContent = tied && w && !v.open ? 'Co-Players of the Game' : 'Player of the Game';
       $('pvKick').classList.toggle('open', !!v.open);
       pvRefs.forEach((x, i) => {
         const pct = (v.pct || [])[i] || 0;
