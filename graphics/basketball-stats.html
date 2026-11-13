@@ -114,7 +114,10 @@
   .log h3 button { min-height: 38px; padding: 4px 14px; font-family: var(--font-body); letter-spacing: 0; text-transform: none; font-size: 15px; }
   .log ol { list-style: none; margin: 0; padding: 0; }
   .log li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid rgba(243,239,226,.1); font-size: 15px; }
-  .log li .per { font-size: 12px; color: var(--chalk-dim); width: 30px; flex: 0 0 auto; }
+  .log li .per { font-size: 12px; color: var(--chalk-dim); min-width: 30px; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  /* The game clock, shared by the basketball scorebug while it's sharing (else hidden) */
+  .gclk { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: .03em; color: var(--gold-hi); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .gclk[hidden] { display: none; }
   .log li .what { flex: 1; min-width: 0; }
   .log li .unsent { font-size: 12px; color: var(--gold-hi); }
   .log li button { min-height: 36px; padding: 2px 12px; font-size: 14px; background: transparent; }
@@ -151,6 +154,7 @@
   <div class="top-row">
     <h1>Stat keeper</h1>
     <span class="conn wait" id="conn" role="status">Connecting…</span>
+    <span class="gclk" id="gclk" hidden title="Game clock, shared by the scorebug"></span>
     <div class="score" id="score"></div>
   </div>
   <div class="periods" id="periods" role="group" aria-label="Period"></div>
@@ -401,9 +405,22 @@
   const keepAwake = () => { if (!wake && navigator.wakeLock) navigator.wakeLock.request('screen').then(w => { wake = w; w.onrelease = () => wake = null; }).catch(() => {}); };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && wake === null && server) keepAwake(); });
 
+  // ---- Game clock, shared by the basketball scorebug (time left in the quarter, counting down) ----
+  // Shown while the scorebug keeps checking in (about once a minute); each play is stamped with it.
+  const clockSynced = m => m && m.clockSrc === 'scorebug' && m.clock && Date.now() - (m.clockAt || 0) < 150000;
+  const clockLeft = m => { const c = m.clock || {}; return Math.max(0, (c.base || 0) - (c.run ? Date.now() - (c.startedAt || Date.now()) : 0)); };
+  const clockText = ms => { const sec = Math.ceil(ms / 1000); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
+  const gameTime = m => clockSynced(m) ? clockText(clockLeft(m)) : '';
+  setInterval(() => {
+    const v = view(), g = $('gclk'), text = v ? gameTime(v.meta) : '';
+    g.hidden = !text;
+    if (text && g.textContent !== v.meta.period + ' · ' + text) g.textContent = v.meta.period + ' · ' + text;
+  }, 250);
+
   const logPlay = (side, player, type) => {
     const v = view(); if (!v) return;
     const ev = { id: rid(), side, player, type, period: v.meta.period, at: Date.now() };
+    const time = gameTime(v.meta); if (time) ev.min = time; // "3:42" left in the quarter
     enqueue('events', { events: [ev] });
     if (navigator.vibrate) navigator.vibrate(15);
     keepAwake();
@@ -534,7 +551,7 @@
     $('btnUndo').disabled = !mine.length;
     $('log').replaceChildren(...mine.slice(-12).reverse().map(e => {
       const li = el('li');
-      li.append(el('span', 'per', e.period), el('span', 'what', who(v, e.side, e.player) + ' · ' + TYPES[e.type]));
+      li.append(el('span', 'per', e.period + (e.min ? ' ' + e.min : '')), el('span', 'what', who(v, e.side, e.player) + ' · ' + TYPES[e.type]));
       if (e.unsent) li.append(el('span', 'unsent', 'not sent'));
       const b = el('button', null, 'Undo'); b.onclick = () => undo(e.id); li.append(b);
       return li;

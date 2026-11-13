@@ -150,6 +150,34 @@
   .offair p strong{color:var(--gold-hi)}
   .hidden{display:none!important}
 
+  /* Live box score card under the player: shown during a game (and a few hours after), from the stat keeper.
+     Self-contained colors: it's a small on-air graphic (charcoal, team colors, FBCA gold). */
+  .livebox{display:block;margin:14px 0 0;border-radius:8px;overflow:hidden;text-decoration:none;color:#fff;
+    background:linear-gradient(#2e2f33,#17181b);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+  .livebox[hidden]{display:none}
+  .livebox:hover,.livebox:focus-visible{box-shadow:inset 0 0 0 2px #EAAF0F}
+  .lb-head{display:flex;align-items:center;gap:10px;padding:8px 12px;font:800 13px var(--display,'Big Shoulders Display'),sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+  .lb-head .lb-live{display:inline-flex;align-items:center;gap:6px;padding:2px 9px 1px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff}
+  .lb-head .lb-live.on{background:#E5352B}
+  .lb-head .lb-live.on::before{content:'';width:7px;height:7px;border-radius:50%;background:#fff;animation:lbBlink 1.4s ease-in-out infinite}
+  @keyframes lbBlink{50%{opacity:.25}}
+  .lb-head .lb-more{margin-left:auto;color:#F2D54C;letter-spacing:.1em}
+  .lb-board{display:grid;grid-template-columns:1fr auto auto auto 1fr;min-height:64px}
+  .lb-tm{position:relative;overflow:hidden;display:flex;align-items:center;padding:8px 12px;min-width:0;font:800 22px/1 'Big Shoulders Display',Impact,sans-serif;text-transform:uppercase;
+    background:linear-gradient(165deg,color-mix(in srgb,var(--c,#333) 88%,#fff),var(--c,#333) 50%,color-mix(in srgb,var(--c,#333) 62%,#000));text-shadow:0 2px 6px rgba(0,0,0,.35)}
+  .lb-tm.R{justify-content:flex-end}
+  .lb-tm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lb-sc{display:grid;place-items:center;min-width:52px;padding:0 8px;background:linear-gradient(#fff,#dcdde0);color:#17181b;font:800 36px/1 'Big Shoulders Display',Impact,sans-serif;font-variant-numeric:tabular-nums}
+  .lb-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:68px;padding:4px 8px;background:#111214}
+  .lb-clk{font:800 22px/1 'Big Shoulders Display',Impact,sans-serif;font-variant-numeric:tabular-nums}
+  .lb-per{font:800 11px 'Big Shoulders Display',Impact,sans-serif;letter-spacing:.12em;color:#EAAF0F;text-transform:uppercase}
+  .lb-play{display:flex;align-items:baseline;gap:8px;padding:9px 12px;font:800 17px/1.2 'Big Shoulders Display',Impact,sans-serif;text-transform:uppercase;letter-spacing:.02em;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+  .lb-play small{flex:none;font:700 12px 'Barlow',system-ui,sans-serif;letter-spacing:.04em;text-transform:none;color:rgba(255,255,255,.6)}
+  .lb-play b{color:#F2D54C}
+  .lb-play .what{white-space:nowrap}
+  @media (min-width:720px){.lb-tm{font-size:30px;padding:10px 18px}.lb-sc{min-width:76px;font-size:50px}.lb-mid{min-width:96px}.lb-clk{font-size:30px}.lb-board{min-height:82px}.lb-play{font-size:20px}}
+  @media (prefers-reduced-motion:reduce){.lb-head .lb-live.on::before{animation:none}}
+
   /* Lower-third strip under the player */
   .lowerthird{
     /* The matchup text is swapped in after the schedule fetch and rewraps,
@@ -415,6 +443,8 @@
       <span class="matchup" id="ltMatchup">Student-produced live sports from Fort Bend Christian Academy</span>
       <span class="when" id="ltWhen"></span>
     </div>
+
+    <a class="livebox" id="livebox" href="/boxscore/" hidden aria-label="Live box score"></a>
 
     <div class="countdown is-idle" id="countdown" role="timer" aria-live="polite">
       <span class="cd-label">Next broadcast in</span>
@@ -1329,6 +1359,47 @@ document.getElementById("btnWatch").addEventListener("click", () => {
   // Keep LIVE / STARTING SOON / REPLAY accurate for anyone who leaves the
   // tab open across a state change (e.g. a game starting).
   setInterval(renderBroadcastStatus, 30000);
+})();
+</script>
+
+<!-- Live box score card (stats from the stat keeper; see boxscore/live.js) -->
+<script src="/boxscore/live.js"></script>
+<script>
+(() => {
+  const L = window.EotaLive, box = document.getElementById('livebox');
+  if (!L || !box) return;
+  const SHOW_MS = 3 * 3600000; // on the home page: during a game and for 3 hours after its last play
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  let game = null;
+  const tick = () => {
+    if (!game) return;
+    const pill = box.querySelector('.lb-live'), clk = box.querySelector('.lb-clk'), on = L.isLive(game);
+    if (pill) { pill.classList.toggle('on', on); pill.textContent = on ? 'Live' : 'Latest'; }
+    if (clk) { const t = L.clockText(game); clk.textContent = t || '–'; }
+    box.hidden = Date.now() - game.at > SHOW_MS;
+  };
+  const render = () => {
+    if (!game) { box.hidden = true; return; }
+    const H = game.sides.home, A = game.sides.away;
+    const head = el('div', 'lb-head');
+    head.append(el('span', 'lb-live', 'Live'), el('span', null, (game.sport === 'soccer' ? 'Soccer' : 'Basketball') + ' box score'), el('span', 'lb-more', 'Full box score ›'));
+    const board = el('div', 'lb-board');
+    const tm = (t, cls) => { const d = el('div', 'lb-tm ' + cls); d.style.setProperty('--c', t.color); d.append(el('span', null, t.name)); return d; };
+    const mid = el('div', 'lb-mid'); mid.append(el('div', 'lb-clk', '–'), el('div', 'lb-per', L.PER_SHORT[game.meta.period] || game.meta.period || ''));
+    board.append(tm(H, 'L'), el('div', 'lb-sc', H.score), mid, el('div', 'lb-sc', A.score), tm(A, 'R'));
+    const parts = [head, board], lp = L.latestText(game);
+    if (lp) {
+      const play = el('div', 'lb-play');
+      play.append(el('small', null, [lp.when, lp.team].filter(Boolean).join(' · ')));
+      const line = el('span'); line.append(el('b', null, lp.who), ' · ', el('span', 'what', lp.what)); play.append(line);
+      parts.push(play);
+    }
+    box.setAttribute('aria-label', 'Live box score: ' + H.name + ' ' + H.score + ', ' + A.name + ' ' + A.score);
+    box.replaceChildren(...parts);
+    tick();
+  };
+  L.watch(g => { game = g; render(); }, { showMs: SHOW_MS });
+  setInterval(tick, 1000);
 })();
 </script>
 

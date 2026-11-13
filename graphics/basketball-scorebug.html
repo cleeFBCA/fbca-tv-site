@@ -1173,6 +1173,9 @@
           <option value="sheet">Excel stat sheet on OneDrive (deprecated)</option>
         </select>
         <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
+        <label class="check"><input type="checkbox" id="clockShare"> Share this clock with the stat keeper (the stat page and fbca.tv box score show it; plays get the game time)</label>
+        <div class="set-row" id="skKeyRow" hidden><input id="skKey" type="password" autocomplete="off" placeholder="Stat keeper key (the same one the stat crew uses)"><button id="skKeySave">Save key</button></div>
+        <p class="hint" id="clockShareStatus"></p>
         <div id="sheetBox">
         <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
         <div class="set-row"><input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…"><button id="btnSheet">Connect</button></div>
@@ -1315,7 +1318,7 @@
     // Where each item comes from: 'board' (scoreboard file), 'sheet' (stat sheet) or '' (buttons on the page).
     src: { clock: 'board', shot: 'board', period: '', score: '', fouls: '', tos: '', players: 'sheet', team: 'sheet' },
     // Stat sheet: the share link, whether it's connected, and the last read (players and totals per side).
-    statFrom: 'keeper', statsV: 2, sheetUrl: '', sheetOn: false, sheetEvery: 1, sheet: { at: 0, err: '', home: null, away: null },
+    statFrom: 'keeper', statsV: 2, clockShare: true, sheetUrl: '', sheetOn: false, sheetEvery: 1, sheet: { at: 0, err: '', home: null, away: null },
     // The sheet counts fouls for the whole game; the bug shows them since the quarter started.
     foulBase: { home: 0, away: 0 }, statsLabel: 'auto',
     flash: { home: 0, away: 0 },
@@ -3378,6 +3381,83 @@
       sheetToBug(); save();
     } else renderSheetStatus();
   };
+  // ---- Share the bug's clock with the basketball stat keeper ----
+  // Whenever the clock starts, stops, is set, or the quarter changes (and once a minute so the stat pages know
+  // it's still here), send the quarter and the time left into it, as the soccer bug does. The stat page then shows
+  // the game clock and stamps each play with it, and fbca.tv's box score shows it.
+  const SK_KEY_LS = 'eota-stats-key'; // same key storage as the stat keeper page on this site
+  const skKey = () => { try { return JSON.parse(localStorage.getItem(SK_KEY_LS) || '""'); } catch (e) { return ''; } };
+  const STAT_PER = { '1Q': '1Q', '2Q': '2Q', '3Q': '3Q', '4Q': '4Q', OT: 'OT', '2OT': 'OT2', '3OT': 'OT3' };
+  let shareSig = '', shareAt = 0, shareBusy = false, shareMsg = '', shareAnchor = null, shareGame = null, shareGameAt = 0;
+  // When the gym scoreboard runs the clock, the page sets the time from each reading (whole seconds) and never marks
+  // it as running. It counts as running while the reading keeps falling at clock speed.
+  let boardLeft = null, boardChangedAt = 0, boardMovedAt = 0;
+  // The stat keeper's current game (for its id): from the live stats connection, or read once a minute without it.
+  const shareTarget = async () => {
+    if (skGame) return skGame;
+    if (!shareGame || Date.now() - shareGameAt > 60000) {
+      shareGameAt = Date.now();
+      try { const r = await fetch(SK_API + '/state?game=basketball', { cache: 'no-store' }); if (r.ok) shareGame = await r.json(); } catch (e) { /* try again */ }
+    }
+    return shareGame;
+  };
+  const shareClock = async () => {
+    if (!s.clockShare || shareBusy) return;
+    shareBusy = true;
+    try {
+      const key = skKey(), g = key ? await shareTarget() : null;
+      if (!key || !g) { const msg = !key ? 'key' : 'Waiting for the stat keeper…'; if (msg !== shareMsg) { shareMsg = msg; } return; }
+      const now = Date.now(), per = STAT_PER[s.period], left = remaining(now);
+      if (!s.running) {
+        if (boardLeft !== null && left !== boardLeft) {
+          // Fell as far as the time since its last change: ticking like a clock. Anything else is a set or a jump.
+          boardMovedAt = boardChangedAt && Math.abs(boardLeft - left - (now - boardChangedAt)) < 1500 ? now : 0;
+          boardChangedAt = now;
+        }
+        boardLeft = left;
+      } else { boardLeft = null; boardChangedAt = 0; boardMovedAt = 0; }
+      const boardRunning = !s.running && boardMovedAt && now - boardMovedAt < 1500;
+      const run = !!(per && left > 0 && (s.running || boardRunning));
+      const meta = { period: per || g.meta.period, qMin: s.qMin, otMin: s.otMin, clockSrc: 'scorebug', clock: { run, startedAt: now, base: left, len: s.len } };
+      // Sent at once when the quarter, lengths or running state change, or the time is off by more than 1.5 s from where
+      // the stat pages would have it; otherwise once a minute. A running clock is pinned by when it would hit 0:00.
+      const anchor = run ? now + left : left;
+      const sig = JSON.stringify([meta.period, s.qMin, s.otMin, s.len, run, g.meta.gameId]);
+      const drifted = shareAnchor !== null && Math.abs(anchor - shareAnchor) > 1500 && (!boardRunning || now - boardMovedAt < 300);
+      if (sig === shareSig && shareAnchor !== null && !drifted && now - shareAt < 60000) return;
+      const r = await fetch(SK_API + '/meta?game=basketball', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        body: JSON.stringify({ gameId: g.meta.gameId, meta }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 401) shareMsg = 'badkey';
+      else if (r.status === 409) { if (d.state) { if (skGame) skGame = { rev: d.state.rev, meta: d.state.meta, events: d.state.events }; else shareGame = d.state; } shareSig = ''; shareMsg = 'The stat keeper started a new game; sharing with it now.'; }
+      else if (!r.ok) shareMsg = "Couldn't reach the stat keeper. Trying again.";
+      else { shareSig = sig; shareAnchor = anchor; shareAt = now; shareMsg = 'ok'; }
+    } catch (e) { shareMsg = "Couldn't reach the stat keeper. Trying again."; }
+    finally { shareBusy = false; renderShare(); }
+  };
+  setInterval(shareClock, 250); // four checks a second, so a start or stop goes out within a quarter second
+  let shareShown = '';
+  const renderShare = () => {
+    const text = !s.clockShare ? 'The stat keeper and box score show no game clock.'
+      : shareMsg === 'ok' ? 'Clock shared: the stat page and fbca.tv box score show the game clock.'
+      : shareMsg === 'key' ? 'Enter the stat keeper key once on this computer to share the clock.'
+      : shareMsg === 'badkey' ? 'That stat keeper key was turned down. Check it with Mr. Lee.'
+      : shareMsg;
+    const sig = s.clockShare + text;
+    if (sig === shareShown) return;
+    shareShown = sig;
+    $('clockShare').checked = !!s.clockShare;
+    $('skKeyRow').hidden = !(s.clockShare && (shareMsg === 'key' || shareMsg === 'badkey'));
+    $('clockShareStatus').textContent = text;
+  };
+  $('clockShare').addEventListener('change', e => {
+    s.clockShare = e.target.checked; shareSig = ''; shareAnchor = null;
+    // Turning it off stops sharing: the stat pages stop showing a clock once it stops checking in.
+    if (!s.clockShare) { const g = skGame || shareGame, key = skKey(); if (g && key) fetch(SK_API + '/meta?game=basketball', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ gameId: g.meta.gameId, meta: { clockSrc: '' } }) }).catch(() => {}); }
+    save(); renderShare();
+  });
+  $('skKeySave').onclick = () => { const k = $('skKey').value.trim(); if (!k) return; try { localStorage.setItem(SK_KEY_LS, JSON.stringify(k)); } catch (e) {} $('skKey').value = ''; shareSig = ''; shareAnchor = null; shareMsg = ''; shareClock(); };
+  renderShare();
   $('btnKeeper').onclick = () => {
     if (s.sheetOn) { stopSheet(); save(); return; }
     s.sheetOn = true; s.sheet = { at: 0, err: '', home: null, away: null }; skGame = null;

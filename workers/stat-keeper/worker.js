@@ -12,6 +12,9 @@
 //   POST /events  { gameId, events: [{ id, side, player, type, period, at }] }
 //   POST /undo    { gameId, ids: [...] }
 //   POST /meta    { gameId, meta: { keepers, period, names, colors, rosters } }   (any subset)
+//                 Soccer also: halfMin, otMin, clock { run, startedAt, base } (time played), clockSrc.
+//                 Basketball also: qMin, otMin, clock { run, startedAt, base, len } (time LEFT in the quarter,
+//                 counting down), clockSrc: the basketball scorebug shares its clock the way the soccer one does.
 //   POST /reset   { keepRosters }      starts a new game
 //   GET  /library                      saved teams: { teams: [{ name, roster, savedAt }] }
 //   POST /library { action: 'save', teams: [{ name, color, roster }] } | { action: 'delete', name }
@@ -188,15 +191,20 @@ export class Game extends DurableObject {
       const m = body.meta || {}, next = { ...meta };
       if (m.keepers === 1 || m.keepers === 2) next.keepers = m.keepers;
       if (m.period != null) next.period = clean(m.period, 4) || meta.period;
+      const n = v => Math.max(0, Math.min(1e13, Number(v) || 0));
       if (this.sport === 'soccer') {
-        const n = v => Math.max(0, Math.min(1e13, Number(v) || 0));
         if (m.halfMin != null) next.halfMin = Math.max(1, Math.min(90, Math.round(Number(m.halfMin)) || 40));
         if (m.clock) next.clock = { run: !!m.clock.run, startedAt: n(m.clock.startedAt), base: n(m.clock.base) };
         if (m.otMin != null) next.otMin = Math.max(1, Math.min(30, Math.round(Number(m.otMin)) || 10));
-        // The soccer scorebug shares its clock: who set it, and when (the stat pages follow it while it keeps checking in).
-        if (m.clockSrc != null) next.clockSrc = m.clockSrc === 'scorebug' ? 'scorebug' : '';
-        if (m.clock) next.clockAt = Date.now();
+      } else {
+        // Basketball counts down: base is the time left when it was sent (startedAt), len the quarter's length.
+        if (m.qMin != null) next.qMin = Math.max(1, Math.min(20, Math.round(Number(m.qMin)) || 8));
+        if (m.otMin != null) next.otMin = Math.max(1, Math.min(10, Math.round(Number(m.otMin)) || 4));
+        if (m.clock) next.clock = { run: !!m.clock.run, startedAt: n(m.clock.startedAt), base: Math.min(n(m.clock.base), 3600000), len: Math.min(n(m.clock.len), 3600000) };
       }
+      // The scorebug shares its clock: who set it, and when (the stat pages follow it while it keeps checking in).
+      if (m.clockSrc != null) next.clockSrc = m.clockSrc === 'scorebug' ? 'scorebug' : '';
+      if (m.clock) next.clockAt = Date.now();
       if (m.names) next.names = Object.fromEntries(SIDES.map(s => [s, clean(m.names[s], 30) || meta.names[s]]));
       if (m.colors) next.colors = Object.fromEntries(SIDES.map(s => [s, colorOk(m.colors[s]) ? m.colors[s].toUpperCase() : meta.colors[s]]));
       if (m.rosters) next.rosters = Object.fromEntries(SIDES.map(s => [s, m.rosters[s] ? cleanRoster(m.rosters[s]) : meta.rosters[s]]));
