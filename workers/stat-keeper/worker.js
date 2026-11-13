@@ -15,6 +15,7 @@
 //                 Soccer also: halfMin, otMin, clock { run, startedAt, base } (time played), clockSrc.
 //                 Basketball also: qMin, otMin, clock { run, startedAt, base, len } (time LEFT in the quarter,
 //                 counting down), clockSrc: the basketball scorebug shares its clock the way the soccer one does.
+//                 Both: status '' | 'half' | 'final', set from the scorebug's period (for the live box score).
 //   POST /reset   { keepRosters }      starts a new game
 //   GET  /library                      saved teams: { teams: [{ name, roster, savedAt }] }
 //   POST /library { action: 'save', teams: [{ name, color, roster }] } | { action: 'delete', name }
@@ -202,6 +203,8 @@ export class Game extends DurableObject {
         if (m.otMin != null) next.otMin = Math.max(1, Math.min(10, Math.round(Number(m.otMin)) || 4));
         if (m.clock) next.clock = { run: !!m.clock.run, startedAt: n(m.clock.startedAt), base: Math.min(n(m.clock.base), 3600000), len: Math.min(n(m.clock.len), 3600000) };
       }
+      // Halftime or final, as set on the scorebug (fbca.tv's box score turns LIVE off at the final).
+      if (m.status != null) next.status = m.status === 'half' || m.status === 'final' ? m.status : '';
       // The scorebug shares its clock: who set it, and when (the stat pages follow it while it keeps checking in).
       if (m.clockSrc != null) next.clockSrc = m.clockSrc === 'scorebug' ? 'scorebug' : '';
       if (m.clock) next.clockAt = Date.now();

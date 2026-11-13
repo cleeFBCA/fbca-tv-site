@@ -161,7 +161,7 @@
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const L = window.EotaLive;
-  let game = null, lastPlayId = '';
+  let game = null, lastPlayId = '', waitingNow = false;
   const paint = (node, color) => { node.style.setProperty('--c', color); node.style.setProperty('--dd', -(Date.now() % 5000) / 1000 + 's'); return node; };
   const lum = c => { const n = parseInt(String(c).slice(1), 16) || 0; return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255; };
   // Bars: FBCA (home) in gold; the other team in its color unless that's too dark to see.
@@ -187,14 +187,24 @@
   };
 
   const tick = () => {
-    const live = $('live'), on = L.isLive(game);
-    live.className = 'live' + (on ? ' on' : ''); live.lastChild.textContent = !game ? 'No game' : on ? 'Live' : 'Last game';
+    const live = $('live'), on = L.isLive(game) && game.status !== 'half';
+    live.className = 'live' + (on ? ' on' : ''); live.lastChild.textContent = !game ? (waitingNow ? 'On now' : 'No game') : L.statusTag(game);
     if (!game) return;
-    const clk = $('clk'); if (clk) { const t = L.clockText(game); clk.textContent = t || '–'; clk.hidden = !t; }
+    // At halftime and after the final, the middle of the scoreboard says so instead of showing a clock.
+    const clk = $('clk'), done = game.status === 'final' ? 'Final' : game.status === 'half' ? 'Half' : '';
+    if (clk) { const t = done || L.clockText(game); clk.textContent = t || '–'; clk.hidden = !t; }
+    const per = $('per'); if (per) per.hidden = !!done;
   };
 
   const render = () => {
     const body = $('body');
+    if (game && game.waiting) {
+      const w = game.waiting, vs = (w.homeAway === 'away' ? 'at ' : 'vs ') + w.opponent;
+      $('kick').textContent = w.sport || ''; game = null; waitingNow = true; tick();
+      body.replaceChildren(el('p', 'msg', 'FBCA ' + vs + ' is on now. The box score shows here once the stat crew records the first play.'));
+      return;
+    }
+    waitingNow = false;
     if (!game) { $('kick').textContent = ''; body.replaceChildren(el('p', 'msg', 'No game right now. During EOTA broadcasts, the box score for the game shows here, live as the stat crew records each play.')); tick(); return; }
     const g = game, S = SPORT[g.sport], H = g.sides.home, A = g.sides.away;
     $('kick').textContent = (g.sport === 'soccer' ? 'Soccer' : 'Basketball') + ' · ' + H.name + ' vs ' + A.name;
@@ -204,7 +214,8 @@
     const board = el('div', 'card board');
     const tm = (t, cls) => { const d = paint(el('div', 'tm slab ' + cls), t.color); d.append(el('span', null, t.name)); return d; };
     const mid = el('div', 'mid'), clk = el('div', 'clk', '–'); clk.id = 'clk';
-    mid.append(clk, el('div', 'per', L.PERIOD[g.meta.period] || g.meta.period || ''));
+    const per = el('div', 'per', L.PERIOD[g.meta.period] || g.meta.period || ''); per.id = 'per';
+    mid.append(clk, per);
     board.append(tm(H, 'L'), el('div', 'sc', H.score), mid, el('div', 'sc', A.score), tm(A, 'R'));
     const parts = [board];
 

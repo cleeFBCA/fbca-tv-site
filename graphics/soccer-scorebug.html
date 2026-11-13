@@ -3219,12 +3219,14 @@
     // A scoreboard reading steps once a second, so it has stopped once it hasn't moved for 1.5 s.
     const boardRunning = !s.running && boardMovedAt && now - boardMovedAt < 1500;
     const run = !!(per && (s.running || boardRunning));
-    const meta = { period: per || g.meta.period, halfMin: s.halfMin, otMin: s.otMin, clockSrc: 'scorebug', clock: { run, startedAt: now, base } };
+    // Halftime and full time go to the stat keeper too, so fbca.tv's box score shows them and turns LIVE off at the final.
+    const status = s.period === 'HALF' ? 'half' : s.period === 'FINAL' ? 'final' : '';
+    const meta = { period: per || g.meta.period, halfMin: s.halfMin, otMin: s.otMin, status, clockSrc: 'scorebug', clock: { run, startedAt: now, base } };
     // Sent at once when the half, length or running state changes, or the time moves by more than 1.5 s against
     // where the stat pages would have it (a set or a correction); otherwise once a minute so they know it's here.
     // A running clock is pinned by when it started, so its ticking alone never triggers a send.
     const anchor = run ? now - base : base;
-    const sig = JSON.stringify([meta.period, s.halfMin, s.otMin, run, g.meta.gameId]);
+    const sig = JSON.stringify([meta.period, s.halfMin, s.otMin, status, run, g.meta.gameId]);
     // Between scoreboard ticks the reading stands still, which looks like drift: only judge drift right after a tick.
     const drifted = shareAnchor !== null && Math.abs(anchor - shareAnchor) > 1500 && (!boardRunning || now - boardMovedAt < 300);
     if (sig === shareSig && shareAnchor !== null && !drifted && now - shareAt < 60000) return;

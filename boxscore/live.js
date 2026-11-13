@@ -9,6 +9,10 @@
    closes its connection after 30 seconds and reconnects when it's visible again. Only if the WebSocket keeps
    failing does the page fall back to reading the game once a minute.
 
+   LIVE comes from the schedule, as on the home page: a soccer or basketball game counts as live from 5 minutes before
+   its start to 3 hours after (cancelled and postponed games never do), and only with stats recorded for it. The
+   scorebug tells the stat keeper when the game is at halftime or final (meta.status), and the LIVE tag follows.
+
    ?skapi=http://localhost:PORT points at a local stat keeper for testing; ?game=soccer|basketball picks one. */
 (() => {
   const params = new URLSearchParams(location.search);
@@ -16,8 +20,21 @@
   const API = local && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(local) ? local : 'https://eota-stat-keeper.clee-625.workers.dev';
   const WS = API.replace(/^http/, 'ws');
   const GAMES = ['basketball', 'soccer'];
-  const LIVE_MS = 20 * 60000;    // activity this recent: LIVE
-  const SHOW_MS = 12 * 3600000;  // the last game stays up this long
+  const SHOW_MS = 12 * 3600000;  // fbca.tv/boxscore keeps the last game up this long
+  const LIVE_LEAD_MIN = 5, LIVE_DURATION_HRS = 3; // the home page's live window
+  const STATS_LEAD_MS = 2 * 3600000; // stats recorded from 2 hours before the start count as this game's
+
+  // ---------- The schedule ----------
+  const sportOfScheduled = g => /soccer/i.test(g.sport || '') ? 'soccer' : /basketball/i.test(g.sport || '') ? 'basketball' : '';
+  const isOff = g => /^(cancell?ed|postponed)$/i.test(g.status || '');
+  // The scheduled soccer or basketball game in its live window now, if any: { sport, start, game }.
+  const liveScheduled = (games, now = Date.now()) => {
+    const on = (games || []).map(g => ({ g, start: Date.parse(g.start), sport: sportOfScheduled(g) }))
+      .filter(x => x.sport && !isOff(x.g) && now >= x.start - LIVE_LEAD_MIN * 60000 && now <= x.start + LIVE_DURATION_HRS * 3600000)
+      .sort((a, b) => b.start - a.start);
+    return on[0] ? { sport: on[0].sport, start: on[0].start, game: on[0].g } : null;
+  };
+  const loadSchedule = () => fetch('/schedule.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(d => (d && d.games) || []).catch(() => null);
 
   // ---------- Reading a game ----------
   const latestAt = st => {
@@ -88,22 +105,33 @@
     const left = Math.max(0, (c.base || 0) - (c.run ? Date.now() - (c.startedAt || Date.now()) : 0)), sec = Math.ceil(left / 1000);
     return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
   };
-  const clockRunning = g => !!(g.meta.clock && g.meta.clock.run && (g.sport === 'soccer' || clockText(g)));
 
   // ---------- Staying connected ----------
   // watch(onUpdate): onUpdate(game | null) on load and every change. game = { sport, live, at, ...compute() }.
-  // showMs: how long after its last activity a game still counts (the home page uses less, so it doesn't connect
-  // for a game it isn't showing).
-  const watch = (onUpdate, { only, showMs = SHOW_MS } = {}) => {
+  // scheduledOnly (the home page): nothing (and no connection) unless a scheduled soccer or basketball game is live.
+  // game.scheduled: these stats are the live scheduled game's. game.status: '', 'half' or 'final' (from the scorebug).
+  const watch = (onUpdate, { only, scheduledOnly = false } = {}) => {
     let sport = null, st = null, ws = null, ping = 0, retry = 0, fails = 0, poll = 0, hiddenTimer = 0, stopped = false;
+    let schedule = [], sched = null, schedKey = '';
+    // This game's stats: a new game started on the stat keeper, or plays recorded, from 2 hours before the scheduled
+    // start (the scorebug's clock checking in doesn't count). Plays from before that are an earlier game's, left
+    // behind if the stat crew didn't start a new game, and are left out.
+    const since = () => sched.start - STATS_LEAD_MS;
+    const recorded = s => Math.max((s.meta && s.meta.startedAt) || 0, ...(s.events || []).map(e => e.at || 0));
+    const isScheduled = () => !!(sched && st && sched.sport === sport && recorded(st) >= since());
+    const thisGame = () => isScheduled() ? { ...st, events: (st.events || []).filter(e => (e.at || 0) >= since()) } : st;
+    // A scheduled game that's on but has no stats yet: { waiting: <schedule entry> } for fbca.tv/boxscore to say so.
+    const waiting = () => sched && (!st || sport !== sched.sport || !isScheduled()) ? { waiting: sched.game } : null;
     const emit = () => {
-      if (!st) return onUpdate(null);
-      const at = latestAt(st);
-      if (Date.now() - at > showMs && !only) return onUpdate(null);
-      onUpdate({ ...compute(sport, st), at });
+      if (!st) return onUpdate(scheduledOnly ? null : waiting());
+      const at = latestAt(st), scheduled = isScheduled();
+      if (scheduledOnly && !scheduled) return onUpdate(null);
+      if (!scheduledOnly && sched && !scheduled) return onUpdate(waiting());
+      if (!scheduledOnly && Date.now() - at > SHOW_MS && !only && !scheduled) return onUpdate(null);
+      onUpdate({ ...compute(sport, thisGame()), at, scheduled, status: (st.meta && st.meta.status) || '' });
     };
     const pickGame = async () => {
-      const want = only || params.get('game');
+      const want = only || params.get('game') || (sched && sched.sport);
       const list = GAMES.includes(want) ? [want] : GAMES;
       const read = await Promise.all(list.map(g => fetch(API + '/state?game=' + g, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null)));
       let best = -1;
@@ -150,15 +178,36 @@
       if (document.visibilityState === 'hidden') hiddenTimer = setTimeout(() => { if (ws) { const w = ws; ws = null; w.onclose = null; clearInterval(ping); w.close(); } }, 30000);
       else if (sport && !ws) { fails = 0; connect(); }
     });
-    (async () => {
-      if (!await pickGame()) return onUpdate(null);
+    const disconnect = () => { clearTimeout(retry); clearInterval(poll); poll = 0; clearInterval(ping); if (ws) { const w = ws; ws = null; w.onclose = null; w.close(); } };
+    // (Re)start from the schedule: which game, and whether it needs a live connection at all.
+    const start = async () => {
+      const games = await loadSchedule();
+      if (games) schedule = games;
+      sched = liveScheduled(schedule);
+      schedKey = sched ? sched.sport + sched.start : '';
+      if (scheduledOnly && !sched) { disconnect(); st = null; return onUpdate(null); }
+      if (!await pickGame()) { disconnect(); return emit(); }
       emit();
-      if (only || Date.now() - latestAt(st) < showMs) connect(); // an old game needs no live connection
-    })();
+      // Connected for the scheduled game even before its first play (the first play then shows at once), or for a
+      // recent game on fbca.tv/boxscore; an old game needs no live connection.
+      if (sched || (!scheduledOnly && (only || Date.now() - latestAt(st) < SHOW_MS))) connect(); else disconnect();
+    };
+    // Every minute: has a scheduled game come into (or gone out of) its live window? The schedule file is re-read
+    // every 10 minutes in case it changed.
+    let checks = 0;
+    setInterval(async () => {
+      if (++checks % 10 === 0) { const games = await loadSchedule(); if (games) schedule = games; }
+      const next = liveScheduled(schedule), key = next ? next.sport + next.start : '';
+      if (key !== schedKey) { disconnect(); fails = 0; start(); }
+      else if (st) emit();
+    }, 60000);
+    start();
     return { stop: () => { stopped = true; clearTimeout(retry); clearInterval(poll); clearInterval(ping); if (ws) ws.close(); } };
   };
 
-  // LIVE while plays are coming in (or a clock is running); pages check this on their own clock tick.
-  const isLive = g => !!g && (Date.now() - g.at < LIVE_MS || clockRunning(g));
-  window.EotaLive = { watch, latestText, clockText, isLive, playerName, PERIOD, PER_SHORT };
+  // LIVE: the scheduled game, in its live window, and not marked final by the scorebug.
+  const isLive = g => !!g && g.scheduled && g.status !== 'final';
+  // The tag beside the box score: LIVE, HALFTIME, FINAL, or LAST GAME (a game outside its scheduled window).
+  const statusTag = g => !g ? '' : g.status === 'final' ? 'Final' : g.status === 'half' && g.scheduled ? 'Halftime' : g.scheduled ? 'Live' : 'Last game';
+  window.EotaLive = { watch, latestText, clockText, isLive, statusTag, playerName, PERIOD, PER_SHORT };
 })();

@@ -1368,15 +1368,16 @@ document.getElementById("btnWatch").addEventListener("click", () => {
 (() => {
   const L = window.EotaLive, box = document.getElementById('livebox');
   if (!L || !box) return;
-  const SHOW_MS = 3 * 3600000; // on the home page: during a game and for 3 hours after its last play
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   let game = null;
   const tick = () => {
     if (!game) return;
-    const pill = box.querySelector('.lb-live'), clk = box.querySelector('.lb-clk'), on = L.isLive(game);
-    if (pill) { pill.classList.toggle('on', on); pill.textContent = on ? 'Live' : 'Latest'; }
-    if (clk) { const t = L.clockText(game); clk.textContent = t || '–'; }
-    box.hidden = Date.now() - game.at > SHOW_MS;
+    // LIVE (red) during the scheduled game; HALFTIME or FINAL once the scorebug says so.
+    const pill = box.querySelector('.lb-live'), clk = box.querySelector('.lb-clk'), per = box.querySelector('.lb-per');
+    const on = L.isLive(game) && game.status !== 'half', done = game.status === 'final' ? 'Final' : game.status === 'half' ? 'Half' : '';
+    if (pill) { pill.classList.toggle('on', on); pill.textContent = L.statusTag(game); }
+    if (clk) { const t = done || L.clockText(game); clk.textContent = t || '–'; }
+    if (per) per.hidden = !!done;
   };
   const render = () => {
     if (!game) { box.hidden = true; return; }
@@ -1396,9 +1397,11 @@ document.getElementById("btnWatch").addEventListener("click", () => {
     }
     box.setAttribute('aria-label', 'Live box score: ' + H.name + ' ' + H.score + ', ' + A.name + ' ' + A.score);
     box.replaceChildren(...parts);
+    box.hidden = false;
     tick();
   };
-  L.watch(g => { game = g; render(); }, { showMs: SHOW_MS });
+  // Only while a scheduled soccer or basketball game is in its live window (no connection otherwise).
+  L.watch(g => { game = g; render(); }, { scheduledOnly: true });
   setInterval(tick, 1000);
 })();
 </script>

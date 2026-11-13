@@ -3418,11 +3418,13 @@
       } else { boardLeft = null; boardChangedAt = 0; boardMovedAt = 0; }
       const boardRunning = !s.running && boardMovedAt && now - boardMovedAt < 1500;
       const run = !!(per && left > 0 && (s.running || boardRunning));
-      const meta = { period: per || g.meta.period, qMin: s.qMin, otMin: s.otMin, clockSrc: 'scorebug', clock: { run, startedAt: now, base: left, len: s.len } };
+      // Halftime and the final go to the stat keeper too, so fbca.tv's box score shows them and turns LIVE off at the final.
+      const status = s.period === 'HALF' ? 'half' : s.period === 'FINAL' ? 'final' : '';
+      const meta = { period: per || g.meta.period, qMin: s.qMin, otMin: s.otMin, status, clockSrc: 'scorebug', clock: { run, startedAt: now, base: left, len: s.len } };
       // Sent at once when the quarter, lengths or running state change, or the time is off by more than 1.5 s from where
       // the stat pages would have it; otherwise once a minute. A running clock is pinned by when it would hit 0:00.
       const anchor = run ? now + left : left;
-      const sig = JSON.stringify([meta.period, s.qMin, s.otMin, s.len, run, g.meta.gameId]);
+      const sig = JSON.stringify([meta.period, s.qMin, s.otMin, s.len, status, run, g.meta.gameId]);
       const drifted = shareAnchor !== null && Math.abs(anchor - shareAnchor) > 1500 && (!boardRunning || now - boardMovedAt < 300);
       if (sig === shareSig && shareAnchor !== null && !drifted && now - shareAt < 60000) return;
       const r = await fetch(SK_API + '/meta?game=basketball', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
