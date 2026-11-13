@@ -1017,7 +1017,6 @@
           <label class="check"><input type="checkbox" id="lPhoto" checked> Show the player's headshot (from Lineups → Player photos)</label>
           <div class="row-btns" style="margin-top:14px">
             <button class="primary" id="btnL3Show">Show lower third</button>
-            <button id="btnL3Hide">Hide</button>
             <button id="btnL3Save">Save to list</button>
           </div>
           <p class="hint">Save lower thirds before the game (announcers, key players), then show them from the list with one click.</p>
@@ -2288,7 +2287,9 @@
     renderSpotList();
     $('btnSpShow').textContent = s.panel === 'spot' ? 'Take down spotlight' : 'Show spotlight';
     $('btnDropShow').textContent = s.drop.on ? 'Update drop-down' : 'Show drop-down';
-    $('btnL3Show').textContent = s.l3.on ? 'Update lower third' : 'Show lower third';
+    // One button: Show lower third, then Hide lower third while it's on air (also after it auto-hides).
+    $('btnL3Show').textContent = s.l3.on ? 'Hide lower third' : 'Show lower third';
+    $('btnL3Show').classList.toggle('active', s.l3.on);
 
     for (const side of ['home', 'away']) {
       const cap = side === 'home' ? 'Home' : 'Away', cfg = s.xi[side];
@@ -3349,8 +3350,10 @@
   });
   const hideL3 = () => { s.l3.on = false; save(); };
   const l3FromForm = () => ({ name: $('lName').value.trim(), stat: $('lStat').value.trim(), team: $('lTeam').value });
-  $('btnL3Show').onclick = () => { const it = l3FromForm(); if (it.name) showL3(it); else $('lName').focus(); };
-  $('btnL3Hide').onclick = hideL3;
+  $('btnL3Show').onclick = () => {
+    if (s.l3.on) return hideL3();
+    const it = l3FromForm(); if (it.name) showL3(it); else $('lName').focus();
+  };
   $('btnL3Save').onclick = () => {
     const it = l3FromForm();
     if (!it.name) { $('lName').focus(); return; }
