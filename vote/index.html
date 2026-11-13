@@ -56,7 +56,7 @@
   .matchup .tm span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* The big faint logos behind the matchup drift like the title card's, bolder: zoom, slide and tilt, the
      two schools moving opposite ways. */
-  .matchup .tm::after { animation: ken 12s ease-in-out infinite alternate; }
+  .matchup .tm::after { animation: ken 12s ease-in-out var(--kd, 0s) infinite alternate; }
   .matchup .tm.R::after { animation-direction: alternate-reverse; }
   @keyframes ken { from { transform: scale(1.05) translateX(-6%) rotate(-5deg); } to { transform: scale(1.35) translateX(6%) rotate(5deg); } }
   .matchup .vs { display: grid; place-items: center; padding: 0 14px; background: rgba(0,0,0,.35); font: 800 22px var(--font-display); }
@@ -68,7 +68,7 @@
   .slab { position: relative; overflow: hidden; isolation: isolate; color: var(--f, #fff);
           background: linear-gradient(165deg, color-mix(in srgb, var(--c, #333) 88%, #fff), var(--c, #333) 50%, color-mix(in srgb, var(--c, #333) 66%, #000)); }
   .slab::before { content: ''; position: absolute; top: 0; bottom: 0; left: -40px; right: -40px; z-index: -1;
-                  background: repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0 2px, transparent 2px 12px); animation: drift 5s linear infinite; }
+                  background: repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0 2px, transparent 2px 12px); animation: drift 5s linear var(--dd, 0s) infinite; }
   .slab::after { content: ''; position: absolute; inset: -12%; z-index: -1; background: var(--wm, none) center / 80% no-repeat; opacity: .12; filter: grayscale(1) brightness(2.2); }
   @keyframes drift { to { transform: translateX(13.24px); } }
 
@@ -207,6 +207,11 @@
     const logo = media.logos[side];
     node.style.setProperty('--wm', logo ? `url("${logo}")` : 'none');
     node.style.setProperty('--a', [bg, fg].find(x => lum(x) >= .22 && lum(x) < .92) || '#EAAF0F');
+    // Animations keep time with the clock, so a slab rebuilt by a refresh carries on where the old one was
+    // (stripes: a 5 s loop; logo drift: 12 s out and 12 s back).
+    const now = Date.now();
+    node.style.setProperty('--dd', -(now % 5000) / 1000 + 's');
+    node.style.setProperty('--kd', -(now % 24000) / 1000 + 's');
     return node;
   };
   // The picture for a nominee: their photo, else their team's logo, else their number.
@@ -220,10 +225,15 @@
   // "#10 SARAH SMITH": the number before the name.
   const nameLine = (cls, n) => { const d = el('div', cls); if (n.num) d.append(el('b', null, '#' + n.num)); d.append(n.name); return d; };
 
+  // Rebuilt only when the teams or their logos change (a refresh every 15 s would otherwise restart its motion).
+  let matchupSig = '';
   const renderMatchup = () => {
     const box = $('matchup'), t = data && data.poll && data.poll.teams;
     box.hidden = !(t && t.home && t.home.name && t.away && t.away.name);
-    if (box.hidden) return;
+    if (box.hidden) { matchupSig = ''; return; }
+    const sig = JSON.stringify([t, (media.logos.home || '').length, (media.logos.away || '').length]);
+    if (sig === matchupSig) return;
+    matchupSig = sig;
     const side = (s, cls) => {
       const d = paint(el('div', 'tm slab ' + cls), s), logo = media.logos[s];
       if (logo) d.append(Object.assign(el('img'), { src: logo, alt: '' }));
