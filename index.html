@@ -398,9 +398,18 @@
     .brand-name .bn-full{display:none}
     .brand-name .bn-short{display:inline}
     nav{gap:0}
-    nav a{padding:8px 8px;font-size:.85rem}
+    nav a{padding:8px 6px;font-size:.85rem;white-space:nowrap}
     .tally{display:none}
     .btnrow{display:none}
+  }
+  /* The smallest phones (320px): a little tighter so the logo keeps its shape */
+  @media (max-width:360px){
+    nav a{padding:8px 4px;font-size:.78rem}
+  }
+  /* Narrow phones: the logo already says EOTA, so the words beside it give way to the menu (Watch, Box Score, …) */
+  @media (max-width:430px){
+    .brand-name{display:none}
+    .brand img{flex:none}
     .lowerthird .when{margin-left:0;width:100%}
     .game{grid-template-columns:82px 1fr;grid-template-rows:auto auto}
     .game .time{grid-column:2;text-align:left}
@@ -419,6 +428,7 @@
     </a>
     <nav aria-label="Main">
       <a href="#watch">Watch</a>
+      <a href="/boxscore/">Box Score</a>
       <a href="#schedule">Schedule</a>
       <a href="https://www.youtube.com/@eaglesontheair" target="_blank" rel="noopener">Archives</a>
     </nav>
@@ -453,6 +463,7 @@
 
     <div class="btnrow">
       <a class="btn btn-gold" href="#watch" id="btnWatch">▶&nbsp; Watch Live</a>
+      <a class="btn btn-ghost" href="/boxscore/">Box Score</a>
       <a class="btn btn-ghost" href="#schedule">Broadcast Schedule</a>
       <a class="btn btn-ghost" href="https://www.youtube.com/@eaglesontheair" target="_blank" rel="noopener">Game Archives ↗</a>
     </div>
