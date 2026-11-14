@@ -12,6 +12,9 @@
 .ebx .slab::before { content: ''; position: absolute; top: 0; bottom: 0; left: -40px; right: -40px; z-index: -1;
                      background: repeating-linear-gradient(115deg, rgba(255,255,255,.07) 0 2px, transparent 2px 12px); animation: ebx-drift 5s linear var(--dd, 0s) infinite; }
 @keyframes ebx-drift { to { transform: translateX(13.24px); } }
+/* A light team color (a white jersey, yellow): dark text, no light shadow, darker stripes so the texture still shows */
+.ebx .slab.light, .ebx .board .tm.light { color: #17181b; text-shadow: none; }
+.ebx .slab.light::before { background: repeating-linear-gradient(115deg, rgba(0,0,0,.06) 0 2px, transparent 2px 12px); }
 
 /* Optional title row (home page): status tag, what's on, link to the full page */
 .ebx .ehead { display: flex; align-items: center; gap: 10px; padding: 9px 12px; font: 800 13px var(--font-display); letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.72); }

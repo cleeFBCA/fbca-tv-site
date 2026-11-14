@@ -58,7 +58,8 @@
         const p = players.get(e.player);
         if (p) { p[e.type]++; p.any = true; }
       }
-      const list = [...players.values()].filter(p => p.any).sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999) || a.name.localeCompare(b.name));
+      // The whole roster, by number: players with nothing recorded yet show zeros (dimmed).
+      const list = [...players.values()].sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999) || a.name.localeCompare(b.name));
       out.sides[side] = { name: (m.names && m.names[side]) || (side === 'home' ? 'FBCA' : 'Opponent'), color: (m.colors && m.colors[side]) || '#333333', players: list, tot,
                           score: sport === 'soccer' ? tot.goal : 2 * tot.m2 + 3 * tot.m3 + tot.mft };
     }
@@ -215,7 +216,12 @@
   // ---------- Drawing the box score (boxscore/box.css) ----------
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const lum = c => { const n = parseInt(String(c).slice(1), 16) || 0; return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255; };
-  const paint = (node, color) => { node.style.setProperty('--c', color); node.style.setProperty('--dd', -(Date.now() % 5000) / 1000 + 's'); return node; };
+  // A light team color (a white jersey, yellow) gets dark text and dark stripes; a dark one keeps white text.
+  const paint = (node, color) => {
+    node.style.setProperty('--c', color); node.style.setProperty('--dd', -(Date.now() % 5000) / 1000 + 's');
+    node.classList.toggle('light', lum(color) > .55);
+    return node;
+  };
   // Bars: FBCA (home) in gold; the other team in its color unless that's too dark to see.
   const barOf = (side, g) => side === 'home' ? '#EAAF0F' : (lum(g.sides.away.color) < .22 ? '#B9C6B4' : g.sides.away.color);
   const pct = (m, a) => a ? Math.round(100 * m / a) + '%' : '–';
@@ -290,7 +296,7 @@
       const card = el('div', 'card'), th = paint(el('div', 'team-h slab'), t.color);
       th.append(el('span', null, t.name), el('small', null, t.score));
       card.append(th);
-      if (!t.players.length) { card.append(el('div', 'none', 'No player stats yet.')); return card; }
+      if (!t.players.length) { card.append(el('div', 'none', 'No roster entered for this team yet.')); return card; }
       const tbl = el('table'), hr = el('tr');
       hr.append(el('th', null, 'Player'), ...S.cols.map(c => el('th', null, c)));
       tbl.append(hr);
