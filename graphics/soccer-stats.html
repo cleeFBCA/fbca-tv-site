@@ -260,11 +260,11 @@
   const PERIODS = ['1H', '2H', 'OT1', 'OT2'];
   const PER_LABEL = { '1H': '1st half', '2H': '2nd half', OT1: 'OT 1', OT2: 'OT 2' };
   const TYPES = { goal: 'Goal', ast: 'Assist', sog: 'Shot on target', shot: 'Shot off target', save: 'Save', corner: 'Corner kick',
-                  foul: 'Foul', offside: 'Offside', yc: 'Yellow card', rc: 'Red card' };
+                  foul: 'Foul', offside: 'Offside', yc: 'Yellow card', rc: 'Red card', og: 'Own goal' };
   // The play buttons, in pad order: [type, label, style]
   const PAD = [['goal', 'Goal', 'made'], ['sog', 'On target', ''], ['shot', 'Off target', 'miss'], ['save', 'Save', ''],
                ['corner', 'Corner', ''], ['foul', 'Foul', 'foul'], ['offside', 'Offside', ''], ['ast', 'Assist', ''],
-               ['yc', 'Yellow', 'yc'], ['rc', 'Red', 'rc']];
+               ['yc', 'Yellow', 'yc'], ['rc', 'Red', 'rc'], ['og', 'Own goal', 'miss']];
   // Same stat keeper key as the basketball page; everything else kept separately.
   const LS = { key: 'eota-stats-key', side: 'eota-soccer-stats-side', pending: 'eota-soccer-stats-pending', cache: 'eota-soccer-stats-cache' };
   const store = {
@@ -299,7 +299,9 @@
     return { meta, events };
   };
   const blank = () => Object.fromEntries(Object.keys(TYPES).map(k => [k, 0]));
-  const pts = t => t.goal;                          // goals
+  const pts = t => t.goal;                          // goals the team scored itself
+  // The score: a team's goals plus the other team's own goals (an own goal is recorded on the defender who put it in).
+  const score = (t, side) => t[side].tot.goal + t[side === 'home' ? 'away' : 'home'].tot.og;
   const shots = t => t.goal + t.sog + t.shot;       // a goal is also a shot on target
   const onTarget = t => t.goal + t.sog;
   const tally = v => {
@@ -454,7 +456,7 @@
   const logPlay = (side, player, type) => {
     const v = view(); if (!v) return;
     const ev = { id: rid(), side, player, type, period: v.meta.period, at: Date.now() };
-    if (type === 'goal' || type === 'yc' || type === 'rc') ev.min = minuteNow(v.meta); // for the goal list and cards
+    if (type === 'goal' || type === 'og' || type === 'yc' || type === 'rc') ev.min = minuteNow(v.meta); // for the goal list and cards
     enqueue('events', { events: [ev] });
     if (navigator.vibrate) navigator.vibrate(15);
     keepAwake();
@@ -511,7 +513,7 @@
     if (!v) return;
     const t = tally(v), names = v.meta.names, two = v.meta.keepers === 2, sides = sidesShown(v);
 
-    $('score').replaceChildren(document.createTextNode(names.home + ' ' + pts(t.home.tot) + ' – ' + pts(t.away.tot) + ' ' + names.away),
+    $('score').replaceChildren(document.createTextNode(names.home + ' ' + score(t, 'home') + ' – ' + score(t, 'away') + ' ' + names.away),
       el('small', null, 'Shots ' + shots(t.home.tot) + ' – ' + shots(t.away.tot) + ' · Corners ' + t.home.tot.corner + ' – ' + t.away.tot.corner));
     $('clk').textContent = clockLabel(v.meta);
     const run = !!(v.meta.clock && v.meta.clock.run);
@@ -543,7 +545,7 @@
     teams.replaceChildren(...sides.map(side => {
       const box = paint(el('div', 'team' + (side === shown || sides.length === 1 ? ' on' : '')), v, side);
       const h = el('h2', null, v.meta.names[side]);
-      h.append(el('small', null, pts(t[side].tot) + (pts(t[side].tot) === 1 ? ' goal · ' : ' goals · ') + shots(t[side].tot) + ' shots'));
+      h.append(el('small', null, score(t, side) + (score(t, side) === 1 ? ' goal · ' : ' goals · ') + shots(t[side].tot) + ' shots'));
       const grid = el('div', 'players');
       for (const p of t[side].players) {
         // Sent off: a red card, or two yellows.
@@ -614,7 +616,7 @@
   const renderBox = (v, t) => {
     $('boxes').replaceChildren(...SIDES.map(side => {
       const card = el('div', 'card'), tbl = el('table', 'box'), head = el('tr');
-      card.append(paint(el('h3', 'tc', v.meta.names[side] + ' · ' + pts(t[side].tot)), v, side));
+      card.append(paint(el('h3', 'tc', v.meta.names[side] + ' · ' + score(t, side)), v, side));
       ['#', 'Player', ...COLS.map(c => c[0])].forEach(h => head.append(el('th', null, h)));
       tbl.append(head);
       const row = (cls, num, name, p) => { const tr = el('tr', cls); tr.append(el('td', null, num), el('td', null, name), ...COLS.map(c => el('td', null, String(c[1](p))))); tbl.append(tr); };

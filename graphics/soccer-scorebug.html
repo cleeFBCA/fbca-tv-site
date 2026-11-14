@@ -3017,6 +3017,13 @@
         }
         out.goals.push({ side: e.side, min: e.min || '', name: nameOf(e.side, e.player) || 'Own goal / team', assist });
       }
+      // An own goal (recorded on the defender) counts for the other team; listed with the defender's name and (OG),
+      // the way broadcasts show it. Not a shot or goal for any player.
+      else if (e.type === 'og') {
+        const other = e.side === 'home' ? 'away' : 'home';
+        out[other].goals++;
+        out.goals.push({ side: other, min: e.min || '', name: (nameOf(e.side, e.player) || teamName(e.side)) + ' (OG)', assist: '' });
+      }
       else if (e.type === 'sog') { t.shots++; t.sog++; }
       else if (e.type === 'shot') t.shots++;
       else if (e.type === 'save') t.saves++;
@@ -3082,8 +3089,14 @@
   const fillEventPick = (sel, dropType) => {
     const [type, one, many, nobody] = DROP_EVENTS[dropType];
     const g = skGame || rosterGame, evs = (g && g.events) || [];
-    const goals = evs.filter(e => e.type === type && (e.side === 'home' || e.side === 'away')).map(e => {
+    // Goals include own goals: for the other team, with "Own goal: #5 Jane Doe" as the drop-down's text.
+    const goals = evs.filter(e => (e.type === type || (type === 'goal' && e.type === 'og')) && (e.side === 'home' || e.side === 'away')).map(e => {
       const p = ((g.meta.rosters[e.side] || []).find(x => x.id === e.player)) || null;
+      if (e.type === 'og') {
+        const by = p ? playerLabel({ num: p.num || '', name: p.name }) : teamName(e.side) + ' defender';
+        return { side: e.side === 'home' ? 'away' : 'home', min: e.min || '', p: { num: '', name: 'Own goal: ' + by }, text: 'Own goal: ' + by,
+                 label: 'OWN GOAL by ' + by + ' (' + teamName(e.side) + ')' };
+      }
       return { side: e.side, min: e.min || '', p: p ? { num: p.num || '', name: p.name, id: p.id } : { num: '', name: teamName(e.side) + ' (' + nobody + ')' } };
     }).reverse();
     const sig = type + ':' + JSON.stringify([goals.map(x => [x.side, x.min, playerLabel(x.p)]), teamName('home'), teamName('away')]);
@@ -3092,7 +3105,7 @@
     sel._players = [];
     sel.replaceChildren(new Option(goals.length ? 'Pick a ' + one + '…' : 'No ' + many + ' on the stat keeper yet', ''));
     for (const x of goals) {
-      sel.append(new Option(`${x.min ? x.min + "' " : ''}${playerLabel(x.p)} (${teamName(x.side)})`, String(sel._players.length)));
+      sel.append(new Option(`${x.min ? x.min + "' " : ''}${x.label || playerLabel(x.p) + ' (' + teamName(x.side) + ')'}`, String(sel._players.length)));
       sel._players.push(x);
     }
   };
@@ -3100,7 +3113,7 @@
   // Drop-down: the player (and the player off for a sub) fill the text and team.
   $('dPick').addEventListener('change', () => {
     const x = picked($('dPick')); if (!x) return;
-    $('dTeamSel').value = x.side; $('dTextIn').value = x.p.id || x.p.num ? playerLabel(x.p) : ''; $('dPick').value = '';
+    $('dTeamSel').value = x.side; $('dTextIn').value = x.text || (x.p.id || x.p.num ? playerLabel(x.p) : ''); $('dPick').value = '';
     if (x.min) { $('dMinIn').value = x.min; $('dMinIn').dataset.typed = '1'; } // a goal or card from the stat keeper: its own minute
     $('dTeamSel').dispatchEvent(new Event('change'));
   });

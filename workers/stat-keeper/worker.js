@@ -34,7 +34,8 @@ const SITE_ORIGINS = ['https://fbca.tv', 'https://www.fbca.tv'];
 // Plays each sport records. A game named "soccer…" is soccer; anything else is basketball.
 const TYPES_BY_SPORT = {
   basketball: ['m2', 'x2', 'm3', 'x3', 'mft', 'xft', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf'],
-  soccer: ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc']
+  // og: an own goal, recorded on the defender who put it in (their side); it counts for the other team.
+  soccer: ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc', 'og']
 };
 const sportOf = game => /^soccer/.test(game || '') ? 'soccer' : 'basketball';
 const SIDES = ['home', 'away'];
