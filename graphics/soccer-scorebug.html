@@ -3899,9 +3899,9 @@
     sbLastMs = ms;
     if (s.dir === 'down' && ms > s.len) s.len = Math.ceil(ms / 60000) * 60000;
     s.running = false;
-    // Whole seconds only: "0:45.3" -> "0:45", "45.3" -> "0:45".
-    const whole = raw.replace(/\.\d*$/, '');
-    s.sbText = whole.includes(':') ? whole.replace(/^:/, '0:') : '0:' + whole.padStart(2, '0');
+    // Shown in whole seconds, always as minutes:seconds with two-digit seconds (0:59, 0:09, 0:00), built from the time
+    // itself, however the scoreboard writes it (":59", " :9", "59", "0:45.3" all come out right).
+    s.sbText = fmt(Math.floor(ms / 1000));
     if (displayedMs() !== ms) setDisplayed(ms);
   };
   const applyPeriod = raw => {
