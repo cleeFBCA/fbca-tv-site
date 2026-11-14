@@ -317,10 +317,22 @@
     players.append(el('h2', 'h', 'Players'), grid);
     parts.push(players);
     root.replaceChildren(...parts);
-    tickBox(root, g);
+    root._fitW = 0; tickBox(root, g);
+    if (document.fonts) document.fonts.ready.then(() => fitNames(root));
+  };
+  // A scoreboard team name that doesn't fit on one line goes to two (smaller); checked again as fonts load or the
+  // screen resizes, so a name that fits again goes back to one line.
+  const fitNames = root => {
+    for (const tm of root.querySelectorAll('.board .tm')) {
+      const s = tm.querySelector('span'); if (!s) continue;
+      tm.classList.remove('long', 'longer');
+      if (s.scrollWidth > s.clientWidth + 1) tm.classList.add('long');
+      if (tm.classList.contains('long') && s.scrollHeight > s.clientHeight + 1) tm.classList.add('longer');
+    }
   };
   // tickBox: the parts that change with time (clock, status tag), every half second or so.
   const tickBox = (root, g) => {
+    if (root._fitW !== root.clientWidth) { root._fitW = root.clientWidth; fitNames(root); }
     const tag = root.querySelector('.tag');
     if (tag) { tag.classList.toggle('on', isLive(g) && g.status !== 'half'); tag.textContent = statusTag(g); }
     // At halftime and after the final, the middle of the scoreboard says so instead of a clock.

@@ -50,7 +50,8 @@
   .top h1 { font-family: var(--font-display); font-weight: 800; font-size: 24px; letter-spacing: .04em; color: var(--gold-hi); margin: 0; text-transform: uppercase; }
   .conn { font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
   .conn.ok { color: var(--ok); } .conn.wait { color: var(--gold-hi); } .conn.bad { color: var(--tally); }
-  .score { margin-left: auto; font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: .03em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  /* Long team names ("Fort Bend Christian Academy Lady Eagles") wrap rather than pushing the page sideways */
+  .score { margin-left: auto; min-width: 0; max-width: 100%; font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.1; letter-spacing: .03em; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
   .score small { font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--chalk-dim); letter-spacing: 0; display: block; text-align: right; }
   .periods { max-width: 1100px; margin: 8px auto 0; display: flex; gap: 6px; overflow-x: auto; }
   .periods button { min-height: 38px; padding: 6px 12px; flex: 1 0 auto; font-size: 15px; }
@@ -213,14 +214,14 @@
         <div>
           <label for="libHome">Saved teams</label>
           <div class="set-row"><select id="libHome"></select><button id="forgetHome" class="ghost">Forget</button></div>
-          <label for="nameHome">Our team and its color</label><div class="set-row"><input id="nameHome" maxlength="30"><input type="color" id="colorHome" class="swatch" aria-label="Our team's color"></div>
+          <label for="nameHome">Our team and its color</label><div class="set-row"><input id="nameHome" maxlength="60"><input type="color" id="colorHome" class="swatch" aria-label="Our team's color"></div>
           <label for="rosterHome">Roster: one player per line, number then name</label>
           <textarea id="rosterHome" placeholder="2 Luke Tran&#10;3 Jordan Lee&#10;5 Noah Kim"></textarea>
         </div>
         <div>
           <label for="libAway">Saved teams</label>
           <div class="set-row"><select id="libAway"></select><button id="forgetAway" class="ghost">Forget</button></div>
-          <label for="nameAway">Opponent and its color</label><div class="set-row"><input id="nameAway" maxlength="30"><input type="color" id="colorAway" class="swatch" aria-label="Opponent's color"></div>
+          <label for="nameAway">Opponent and its color</label><div class="set-row"><input id="nameAway" maxlength="60"><input type="color" id="colorAway" class="swatch" aria-label="Opponent's color"></div>
           <label for="rosterAway">Roster: one player per line, number then name</label>
           <textarea id="rosterAway" placeholder="1 Sam Ortiz&#10;4 Eli Brooks"></textarea>
         </div>

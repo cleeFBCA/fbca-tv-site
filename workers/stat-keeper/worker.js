@@ -172,10 +172,10 @@ export class Game extends DurableObject {
     }
 
     if (url.pathname === '/library') {
-      const lib = this.get('library', {}), keyOf = n => clean(n, 30).toLowerCase();
+      const lib = this.get('library', {}), keyOf = n => clean(n, 60).toLowerCase(); // team names up to 60 ("Fort Bend Christian Academy Lady Eagles")
       if (body.action === 'save') {
         for (const t of (Array.isArray(body.teams) ? body.teams : []).slice(0, 4)) {
-          const name = clean(t && t.name, 30), roster = cleanRoster(t && t.roster);
+          const name = clean(t && t.name, 60), roster = cleanRoster(t && t.roster);
           if (!name || !roster.length) continue;
           lib[keyOf(name)] = { name, roster, savedAt: Date.now(), ...(colorOk(t.color) ? { color: t.color.toUpperCase() } : {}) };
         }
@@ -209,7 +209,7 @@ export class Game extends DurableObject {
       // The scorebug shares its clock: who set it, and when (the stat pages follow it while it keeps checking in).
       if (m.clockSrc != null) next.clockSrc = m.clockSrc === 'scorebug' ? 'scorebug' : '';
       if (m.clock) next.clockAt = Date.now();
-      if (m.names) next.names = Object.fromEntries(SIDES.map(s => [s, clean(m.names[s], 30) || meta.names[s]]));
+      if (m.names) next.names = Object.fromEntries(SIDES.map(s => [s, clean(m.names[s], 60) || meta.names[s]]));
       if (m.colors) next.colors = Object.fromEntries(SIDES.map(s => [s, colorOk(m.colors[s]) ? m.colors[s].toUpperCase() : meta.colors[s]]));
       if (m.rosters) next.rosters = Object.fromEntries(SIDES.map(s => [s, m.rosters[s] ? cleanRoster(m.rosters[s]) : meta.rosters[s]]));
       this.put('meta', next);
