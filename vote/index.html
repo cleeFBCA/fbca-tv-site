@@ -128,21 +128,38 @@
     .matchup .tm img { height: 56px; max-width: 96px; }
     .matchup .vs { font-size: 30px; padding: 0 22px; }
     main .in { padding-block: 30px 48px; gap: 20px; }
-    .noms { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; }
-    /* Picture, then name and stats, then Vote along the bottom, so every card lines up. The picture box gets
-       an explicit full width: Safari otherwise sizes a ratio-only box inside a button from its content. */
-    .nom { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; align-items: start; padding: 0 0 16px; text-align: center; gap: 12px; }
-    .nom .pic { width: 100%; aspect-ratio: 5 / 6; min-height: 0; align-self: start; }
-    .nom .pic .no { font-size: 110px; }
-    .nom .who { padding: 0 14px; }
-    .nom .nm { font-size: 32px; }
-    .nom .go { margin: 0 16px; align-self: end; }
     .res { max-width: 860px; gap: 16px; }
     .thanks { font-size: 44px; }
     .row { grid-template-columns: 72px 1fr; gap: 16px; }
     .row .pic { min-height: 86px; }
     .row .top { font-size: 26px; }
     .row .track { height: 16px; }
+  }
+  /* Nominee cards side by side only when every one fits on a single row (210px each, 20px gaps, 16px margins):
+     up to three from 720px wide, four from 952px (4 x 210 + 3 x 20 + 32 = 932, plus room for a Windows scrollbar,
+     which these widths count). Narrower than that, or five or more,
+     they stay stacked as on a phone, so a fourth card never wraps alone onto a second line. */
+  @media (min-width: 720px) and (max-width: 951.98px) {
+    .noms:not(:has(> .nom:nth-child(4))) { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; }
+    /* Picture, then name and stats, then Vote along the bottom, so every card lines up. The picture box gets
+       an explicit full width: Safari otherwise sizes a ratio-only box inside a button from its content. */
+    .noms:not(:has(> .nom:nth-child(4))) .nom { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; align-items: start; padding: 0 0 16px; text-align: center; gap: 12px; }
+    .noms:not(:has(> .nom:nth-child(4))) .nom .pic { width: 100%; aspect-ratio: 5 / 6; min-height: 0; align-self: start; }
+    .noms:not(:has(> .nom:nth-child(4))) .nom .pic .no { font-size: 110px; }
+    .noms:not(:has(> .nom:nth-child(4))) .nom .who { padding: 0 14px; }
+    .noms:not(:has(> .nom:nth-child(4))) .nom .nm { font-size: 32px; }
+    .noms:not(:has(> .nom:nth-child(4))) .nom .go { margin: 0 16px; align-self: end; }
+  }
+  @media (min-width: 952px) {
+    .noms:not(:has(> .nom:nth-child(5))) { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; }
+    /* Picture, then name and stats, then Vote along the bottom, so every card lines up. The picture box gets
+       an explicit full width: Safari otherwise sizes a ratio-only box inside a button from its content. */
+    .noms:not(:has(> .nom:nth-child(5))) .nom { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; align-items: start; padding: 0 0 16px; text-align: center; gap: 12px; }
+    .noms:not(:has(> .nom:nth-child(5))) .nom .pic { width: 100%; aspect-ratio: 5 / 6; min-height: 0; align-self: start; }
+    .noms:not(:has(> .nom:nth-child(5))) .nom .pic .no { font-size: 110px; }
+    .noms:not(:has(> .nom:nth-child(5))) .nom .who { padding: 0 14px; }
+    .noms:not(:has(> .nom:nth-child(5))) .nom .nm { font-size: 32px; }
+    .noms:not(:has(> .nom:nth-child(5))) .nom .go { margin: 0 16px; align-self: end; }
   }
   @media (prefers-reduced-motion: reduce) { .edge::after, .slab::before, .live.on b, .matchup .tm::after { animation: none; } .row .fill { transition: none; } }
 </style>
