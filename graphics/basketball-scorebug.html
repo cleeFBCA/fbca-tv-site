@@ -1577,6 +1577,12 @@
     const fit = () => stage.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`;
     addEventListener('resize', fit); fit();
     const flashSeen = { ...s.flash };
+    // The bug retracts while a full-screen graphic is up (title card, spotlight, lineup, team stats, fan vote) and
+    // comes back once it has gone out. Show/Hide bug stays the operator's choice; this only holds it down meanwhile.
+    // The hold outlasts a switch from one graphic to the next (setPanel takes the old one down for OUT_FULL first).
+    const BUG_HOLD = 900;
+    let bugHoldUntil = 0, hadPanel = false;
+    const bugUp = () => s.visible && !s.panel && Date.now() >= bugHoldUntil;
     // Entrance animations (the .fx graphics) play each time one comes up. After ~3 s it's .live: content that
     // changes while it's on air (a stat, a vote) appears without the entrance replaying. It stays .live going out.
     const fxReplay = node => { clearTimeout(node._fx); node.classList.remove('live'); node._fx = setTimeout(() => node.classList.add('live'), 3200); };
@@ -1653,7 +1659,7 @@
       return tag;
     };
     const renderPop = () => {
-      const p = s.pop, on = p.on && s.visible && (!p.until || Date.now() < p.until);
+      const p = s.pop, on = p.on && bugUp() && (!p.until || Date.now() < p.until);
       $('pop').classList.toggle('on', on);
       const sig = JSON.stringify([p.kind, p.text, p.team, p.stat, p.run, p.at, leftSide(), s.home.name, s.away.name, s.home.bg, s.away.bg,
         p.kind === 'stat' ? SIDES.map(side => { const r = POP_STATS.find(x => x[0] === p.stat); return r && (!r[2] || sheetLive()) ? r[1](side) : ''; }) : '']);
@@ -2040,7 +2046,7 @@
       const full = s.panel === 'lu', l3 = !!s.lu.l3 && !s.panel, on = full || l3;
       const side = s.lu.show === 'away' ? 'away' : 'home', t = s[side];
       const sig = JSON.stringify([side, s.lu[side], t.name, t.bg, t.fg, t.logo.length, t.logo.slice(-40), s.match.title, s.match.when, s.match.homeFull, s.match.awayFull, s.squad]);
-      $('pLu').classList.toggle('nobug', !s.visible); $('luL3').classList.toggle('nobug', !s.visible);
+      $('pLu').classList.toggle('nobug', !bugUp()); $('luL3').classList.toggle('nobug', !bugUp());
       const show = () => { $('pLu').classList.toggle('on', full); $('luL3').classList.toggle('on', l3); };
       // Coming on air: re-read the photo library first (photos may have been added since), then build and show.
       if (on && !luWasOn) {
@@ -2056,9 +2062,9 @@
     const renderFanVote = () => {
       renderLineup();
       fxShow($('fvl'), s.fv.l3 && !s.panel && !s.lu.l3);
-      // One full-screen panel at a time; the old content stays while a panel goes out. Above the bar while
-      // the bug is up, in the middle of the frame when it isn't.
-      for (const id of ['pVote', 'pStats']) $(id).classList.toggle('nobug', !s.visible);
+      // One full-screen panel at a time; the old content stays while a panel goes out. The bug retracts while one
+      // is up, so the panels sit in the middle of the frame.
+      for (const id of ['pVote', 'pStats']) $(id).classList.toggle('nobug', !bugUp());
       if (s.panel === 'vote') renderVotePanel();
       fxShow($('pVote'), s.panel === 'vote');
       if (s.panel === 'stats') renderStatsPanel();
@@ -2066,11 +2072,13 @@
       renderPregame(); renderSpot();
     };
     const render = () => {
+      if (hadPanel && !s.panel) { bugHoldUntil = Date.now() + BUG_HOLD; setTimeout(render, BUG_HOLD + 20); }
+      hadPanel = !!s.panel;
       applyKey(); renderL3(); renderFanVote(); renderPop();
       const stn = $('stn');
       stn.classList.toggle('on', s.stn.on); stn.classList.toggle('tr', s.stn.corner !== 'tl'); stn.classList.toggle('tl', s.stn.corner === 'tl');
       stn.style.setProperty('--o', Math.min(100, Math.max(10, s.stn.opacity)) / 100);
-      $('bb').classList.toggle('hidden', !s.visible);
+      $('bb').classList.toggle('hidden', !bugUp());
       paintSide('L', leftSide()); paintSide('R', rightSide());
       paintTimeout('L', leftSide()); paintTimeout('R', rightSide());
       pillSig = '';
