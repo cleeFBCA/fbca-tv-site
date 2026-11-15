@@ -1580,9 +1580,12 @@
     // The bug retracts while a full-screen graphic is up (title card, spotlight, lineup, team stats, fan vote) and
     // comes back once it has gone out. Show/Hide bug stays the operator's choice; this only holds it down meanwhile.
     // The hold outlasts a switch from one graphic to the next (setPanel takes the old one down for OUT_FULL first).
-    const BUG_HOLD = 900;
+    // s.bugOutAt: the control asked for the bug to go out first, just before a graphic comes in. It lapses on its own
+    // (BUG_OUT_MAX), so a sequence cut short never leaves the bug stuck down.
+    const BUG_HOLD = 900, BUG_OUT_MAX = 1500;
     let bugHoldUntil = 0, hadPanel = false;
-    const bugUp = () => s.visible && !s.panel && Date.now() >= bugHoldUntil;
+    const bugOutLeft = () => Math.max(0, (s.bugOutAt || 0) + BUG_OUT_MAX - Date.now());
+    const bugUp = () => s.visible && !s.panel && Date.now() >= bugHoldUntil && !bugOutLeft();
     // Entrance animations (the .fx graphics) play each time one comes up. After ~3 s it's .live: content that
     // changes while it's on air (a stat, a vote) appears without the entrance replaying. It stays .live going out.
     const fxReplay = node => { clearTimeout(node._fx); node.classList.remove('live'); node._fx = setTimeout(() => node.classList.add('live'), 3200); };
@@ -2074,6 +2077,7 @@
     const render = () => {
       if (hadPanel && !s.panel) { bugHoldUntil = Date.now() + BUG_HOLD; setTimeout(render, BUG_HOLD + 20); }
       hadPanel = !!s.panel;
+      if (bugOutLeft()) { clearTimeout(render._out); render._out = setTimeout(render, bugOutLeft() + 20); }
       applyKey(); renderL3(); renderFanVote(); renderPop();
       const stn = $('stn');
       stn.classList.toggle('on', s.stn.on); stn.classList.toggle('tr', s.stn.corner !== 'tl'); stn.classList.toggle('tl', s.stn.corner === 'tl');
@@ -2216,6 +2220,7 @@
   // first. Showing one of them while a full-screen graphic is up takes that down first, and Show bug while one
   // is up (with the bug off) does the same. Switching full screens or lower thirds goes out, then in.
   const OUT_FULL = 650, OUT_SMALL = 600; // a little longer than each graphic's own exit
+  const BUG_OUT = 450; // the bug's own exit (.bb.hidden, .4 s), before a full-screen graphic comes in
   let seqTimer = 0;
   const after = (ms, fn) => {
     clearTimeout(seqTimer); seqTimer = 0;
@@ -2229,7 +2234,10 @@
     if (!next) { s.panel = ''; save(); return; }
     if (s.panel === next) { if (prep) prep(); save(); return; } // new content on the same panel
     const anyLower = Object.values(LOWERS).some(on => on());
-    const wait = s.panel ? OUT_FULL : anyLower ? OUT_SMALL : 0;
+    // The bug goes out before a full-screen graphic comes in (s.bugOutAt asks the output to take it down; see bugUp).
+    const bugShowing = s.visible && !s.panel;
+    const wait = Math.max(s.panel ? OUT_FULL : anyLower ? OUT_SMALL : 0, bugShowing ? BUG_OUT : 0);
+    s.bugOutAt = Date.now();
     Object.keys(LOWERS).forEach(lowerOff);
     s.panel = ''; save();
     after(wait, () => { if (prep) prep(); s.panel = next; });
