@@ -1746,11 +1746,27 @@
     };
     const statsTitle = () => s.statsLabel !== 'auto' ? s.statsLabel
       : s.period === 'HALF' ? 'HALFTIME' : s.period === 'FINAL' ? 'FINAL' : periodLabel(s.period) + (/OT/.test(s.period) ? '' : ' QUARTER');
-    // Bars: FBCA in gold, the opponent in its color unless that's too dark to see on the panel.
-    const barColor = side => {
-      if (side === 'home') return '#F2D54C';
-      const c = hex(s[side].bg, '#B9C6B4'), n = parseInt(c.slice(1), 16);
-      return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255 < .3 ? '#B9C6B4' : c;
+    // Team stats bar colors. The same rule is in boxscore/live.js, graphics/basketball-scorebug.html and graphics/soccer-scorebug.html.
+    // FBCA is gold. Any other team gets the first of its main color, then its text color, that shows on the charcoal panel
+    // (brightness at least 22%) and can't be mistaken for the other bar (color difference, CIE ΔE, at least 35: gold vs
+    // yellow, old gold or orange is under that). If neither works: cream, or sage when cream is too close.
+    const BAR = { gold: '#EAAF0F', fallbacks: ['#F3EFE2', '#B9C6B4'], minLum: .22, minGap: 35 };
+    const barLum = c => { const n = parseInt(c.slice(1), 16); return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255; };
+    const barLab = c => {
+      const n = parseInt(c.slice(1), 16), lin = v => (v /= 255) <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4;
+      const [r, g, b] = [lin(n >> 16), lin(n >> 8 & 255), lin(n & 255)], f = t => t > .008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+      const x = f((.4124 * r + .3576 * g + .1805 * b) / .95047), y = f(.2126 * r + .7152 * g + .0722 * b), z = f((.0193 * r + .1192 * g + .9505 * b) / 1.08883);
+      return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+    };
+    const barGap = (a, b) => { const p = barLab(a), q = barLab(b); return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]); };
+    // colors: the team's [main, text] colors (the box score only has a main color); other: the bar it sits beside, if already chosen.
+    const barPick = (colors, other) => [...colors.filter(c => /^#[0-9a-f]{6}$/i.test(c || '') && barLum(c) >= BAR.minLum), ...BAR.fallbacks]
+      .find(c => !other || barGap(c, other) >= BAR.minGap) || BAR.fallbacks[1];
+    // Home is FBCA (gold) while it has FBCA's green and gold from Setup; changed home colors make it like any other team.
+    const barColors = () => {
+      const tc = side => { const c = teamColors(side); return [c.bg, c.fg]; }, h = tc('home');
+      const home = h[0].toUpperCase() === '#063E0C' && h[1].toUpperCase() === '#EAAF0F' ? BAR.gold : barPick(h);
+      return { home, away: barPick(tc('away'), home) };
     };
     // Pregame: rebuilt when its content changes; opening it replays the animation.
     let pgSig = '';
@@ -1865,7 +1881,7 @@
         $('pstRows').replaceChildren(...stRefs.map(r => r.lv.parentNode));
       }
       $('pstScL').textContent = s[L].score; $('pstScR').textContent = s[R].score;
-      const tl = teamTot(L), tr = teamTot(R);
+      const tl = teamTot(L), tr = teamTot(R), bars = barColors();
       TEAM_ROWS.forEach(([label, fn], i) => {
         const [lv, ln, lp] = fn(tl), [rv, rn, rp] = fn(tr), r = stRefs[i], tot = ln + rn;
         const val = (node, v, pc) => { node.replaceChildren(String(v)); if (pc) node.append(el('small', null, pc)); };
@@ -1874,7 +1890,7 @@
         const better = label === 'Turnovers' ? (a, b) => a < b : (a, b) => a > b;
         r.lv.classList.toggle('lo', better(rn, ln)); r.rv.classList.toggle('lo', better(ln, rn));
         const lw = tot ? 100 * ln / tot : 50; r.lf.style.width = lw + '%'; r.rf.style.width = (100 - lw) + '%'; r.bar.classList.toggle('none', !tot);
-        r.lf.style.background = barColor(L); r.rf.style.background = barColor(R);
+        r.lf.style.background = bars[L]; r.rf.style.background = bars[R];
       });
     };
     // ----- Starting lineup (full screen and lower third) -----

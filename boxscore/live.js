@@ -222,8 +222,24 @@
     node.classList.toggle('light', lum(color) > .55);
     return node;
   };
-  // Bars: FBCA (home) in gold; the other team in its color unless that's too dark to see.
-  const barOf = (side, g) => side === 'home' ? '#EAAF0F' : (lum(g.sides.away.color) < .22 ? '#B9C6B4' : g.sides.away.color);
+  // Team stats bar colors. The same rule is in boxscore/live.js, graphics/basketball-scorebug.html and graphics/soccer-scorebug.html.
+  // FBCA is gold. Any other team gets the first of its main color, then its text color, that shows on the charcoal panel
+  // (brightness at least 22%) and can't be mistaken for the other bar (color difference, CIE ΔE, at least 35: gold vs
+  // yellow, old gold or orange is under that). If neither works: cream, or sage when cream is too close.
+  const BAR = { gold: '#EAAF0F', fallbacks: ['#F3EFE2', '#B9C6B4'], minLum: .22, minGap: 35 };
+  const barLum = c => { const n = parseInt(c.slice(1), 16); return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255; };
+  const barLab = c => {
+    const n = parseInt(c.slice(1), 16), lin = v => (v /= 255) <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4;
+    const [r, g, b] = [lin(n >> 16), lin(n >> 8 & 255), lin(n & 255)], f = t => t > .008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+    const x = f((.4124 * r + .3576 * g + .1805 * b) / .95047), y = f(.2126 * r + .7152 * g + .0722 * b), z = f((.0193 * r + .1192 * g + .9505 * b) / 1.08883);
+    return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+  };
+  const barGap = (a, b) => { const p = barLab(a), q = barLab(b); return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]); };
+  // colors: the team's [main, text] colors (the box score only has a main color); other: the bar it sits beside, if already chosen.
+  const barPick = (colors, other) => [...colors.filter(c => /^#[0-9a-f]{6}$/i.test(c || '') && barLum(c) >= BAR.minLum), ...BAR.fallbacks]
+    .find(c => !other || barGap(c, other) >= BAR.minGap) || BAR.fallbacks[1];
+  // The box score's home side is always FBCA.
+  const barsOf = g => { const home = BAR.gold; return { home, away: barPick([g.sides.away.color], home) }; };
   const pct = (m, a) => a ? Math.round(100 * m / a) + '%' : '–';
   // What each sport shows: team comparison rows [label, value, attempts (shooting), is a %, lower is better] and player columns.
   const SPORT = {
@@ -273,14 +289,14 @@
     } else parts.push(el('p', 'note', 'No plays recorded yet.'));
 
     // Team stats
-    const cmp = el('div', 'card cmp'), rowsA = S.cmp(A.tot);
+    const cmp = el('div', 'card cmp'), rowsA = S.cmp(A.tot), bars = barsOf(g);
     S.cmp(H.tot).forEach(([label, hv, ha, isPct, lowGood], i) => {
       const [, av, aa] = rowsA[i];
       const r = el('div', 'row'), mid2 = el('div'), bar = el('div', 'bar2'), lf = el('i'), rf = el('i');
       const val = (v, a, cls) => { const d = el('div', 'v ' + cls); d.append(isPct ? v + '-' + a : String(v)); if (isPct) d.append(el('small', null, pct(v, a))); return d; };
       const hs = isPct ? (ha ? hv / ha : 0) : hv, as = isPct ? (aa ? av / aa : 0) : av, tot = hs + as;
       // Home's share fills from the left, away fills the rest; nothing yet on either side shows an even, dimmed split.
-      lf.style.cssText = `width:${tot ? 100 * hs / tot : 50}%;background:${barOf('home', g)}`; rf.style.background = barOf('away', g);
+      lf.style.cssText = `width:${tot ? 100 * hs / tot : 50}%;background:${bars.home}`; rf.style.background = bars.away;
       if (!tot) bar.classList.add('none');
       bar.append(lf, rf); mid2.append(el('div', 'lbl', label), bar);
       const hv2 = val(hv, ha, 'L'), av2 = val(av, aa, 'R'), better = lowGood ? (a, b) => a < b : (a, b) => a > b;

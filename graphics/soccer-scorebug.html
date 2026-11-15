@@ -1834,12 +1834,22 @@
       svg.append(t);
       return svg;
     };
-    // Dark opponent colors vanish on the dark stats panel, so their bar falls back to chalk.
-    const barColor = hexColor => {
-      const n = parseInt(hexColor.slice(1), 16);
-      const lum = (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255;
-      return lum < .22 ? '#F3EFE2' : hexColor;
+    // Team stats bar colors. The same rule is in boxscore/live.js, graphics/basketball-scorebug.html and graphics/soccer-scorebug.html.
+    // FBCA is gold. Any other team gets the first of its main color, then its text color, that shows on the charcoal panel
+    // (brightness at least 22%) and can't be mistaken for the other bar (color difference, CIE ΔE, at least 35: gold vs
+    // yellow, old gold or orange is under that). If neither works: cream, or sage when cream is too close.
+    const BAR = { gold: '#EAAF0F', fallbacks: ['#F3EFE2', '#B9C6B4'], minLum: .22, minGap: 35 };
+    const barLum = c => { const n = parseInt(c.slice(1), 16); return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255; };
+    const barLab = c => {
+      const n = parseInt(c.slice(1), 16), lin = v => (v /= 255) <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4;
+      const [r, g, b] = [lin(n >> 16), lin(n >> 8 & 255), lin(n & 255)], f = t => t > .008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+      const x = f((.4124 * r + .3576 * g + .1805 * b) / .95047), y = f(.2126 * r + .7152 * g + .0722 * b), z = f((.0193 * r + .1192 * g + .9505 * b) / 1.08883);
+      return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
     };
+    const barGap = (a, b) => { const p = barLab(a), q = barLab(b); return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]); };
+    // colors: the team's [main, text] colors (the box score only has a main color); other: the bar it sits beside, if already chosen.
+    const barPick = (colors, other) => [...colors.filter(c => /^#[0-9a-f]{6}$/i.test(c || '') && barLum(c) >= BAR.minLum), ...BAR.fallbacks]
+      .find(c => !other || barGap(c, other) >= BAR.minGap) || BAR.fallbacks[1];
 
     // Every two-team graphic puts the teams where they are on the bug: the "Home" elements are the left slot,
     // so after Swap sides the away team fills them.
@@ -1916,7 +1926,9 @@
       const rows = L === 'home' ? rows0 : rows0.map(([label, h, a]) => [label, a, h]);
       // FBCA's bar is its gold; changed home colors get the same treatment as the away team's.
       const homeDefault = s.homeBg.toUpperCase() === HOME_COLORS.bg && s.homeFg.toUpperCase() === HOME_COLORS.fg;
-      const barOf = side => side === 'home' ? (homeDefault ? HOME_COLORS.fg : barColor(s.homeBg)) : barColor(s.awayBg);
+      // Home is FBCA (gold) while it has FBCA's green and gold from Setup; changed home colors make it like any other team.
+      const homeBar = homeDefault ? BAR.gold : barPick([s.homeBg, s.homeFg]);
+      const bars = { home: homeBar, away: barPick([s.awayBg, s.awayFg], homeBar) }, barOf = side => bars[side];
       const sig = JSON.stringify([L, teamName(L), teamName(R), colorsFor(L), colorsFor(R), logoOf(L).length, logoOf(R).length,
                                   logoOf(L).slice(-40), logoOf(R).slice(-40), rows.map(r => r[0])]);
       if (sig !== stSig) {
