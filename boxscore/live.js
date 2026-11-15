@@ -160,6 +160,7 @@
       }
     }
     out.plays = evs.length;
+    out.events = evs;
     return out;
   };
 
@@ -475,5 +476,73 @@
   const isLive = g => !!g && g.scheduled && g.status !== 'final';
   // The tag beside the box score: LIVE, HALFTIME, FINAL, or LAST GAME (a game outside its scheduled window).
   const statusTag = g => !g ? '' : g.status === 'final' ? 'Final' : g.status === 'half' && g.scheduled ? 'Halftime' : g.scheduled ? 'Live' : 'Last game';
-  window.EotaLive = { watch, compute, renderBox, tickBox, latestText, clockText, isLive, statusTag, playerName, PERIOD, PER_SHORT };
+  // ---------- A game as a spreadsheet (CSV), for the Download buttons ----------
+  // Used by fbca.tv/boxscore and the stat keeper pages (graphics/*-stats.html). Made and attempted shots get their own
+  // columns, and each play's time is written with its period ("2Q 3:42"): Excel would open "2-5" as a date and
+  // "3:42" as a time of day.
+  const CSV_COLS = {
+    basketball: [['PTS', p => 2 * p.m2 + 3 * p.m3 + p.mft], ['FGM', p => p.m2 + p.m3], ['FGA', p => p.m2 + p.m3 + p.x2 + p.x3], ['3PM', p => p.m3],
+                 ['3PA', p => p.m3 + p.x3], ['FTM', p => p.mft], ['FTA', p => p.mft + p.xft], ['OREB', p => p.oreb], ['DREB', p => p.dreb],
+                 ['REB', p => p.oreb + p.dreb], ['AST', p => p.ast], ['STL', p => p.stl], ['BLK', p => p.blk], ['TO', p => p.to], ['PF', p => p.pf]],
+    soccer: [['G', p => p.goal], ['A', p => p.ast], ['SH', p => p.goal + p.sog + p.shot], ['SOG', p => p.goal + p.sog], ['SV', p => p.save],
+             ['YC', p => p.yc], ['RC', p => p.rc]]
+  };
+  const gameDate = g => new Date((g.meta && g.meta.startedAt) || Date.now());
+  const csv = g => {
+    const S = SPORT[g.sport], H = g.sides.home, A = g.sides.away, soccer = g.sport === 'soccer', rows = [];
+    const date = gameDate(g).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    rows.push([(soccer ? 'Soccer' : 'Basketball') + ' box score', date], [H.name, H.score], [A.name, A.score], []);
+    // Team stats, as on the page
+    rows.push(['Team stats', H.name, A.name]);
+    const cA = S.cmp(A.tot);
+    S.cmp(H.tot).forEach(([label, hv, ha, kind], i) => {
+      const [, av, aa] = cA[i], f = (v, a) => kind === true ? v + ' of ' + a + ' (' + pct(v, a) + ')' : kind === 'share' ? (v == null ? '' : Math.round(100 * v) + '%') : v;
+      rows.push([label, f(hv, ha), f(av, aa)]);
+    });
+    rows.push([]);
+    // Every player (starters first when they were set), then each team's total
+    const cols = CSV_COLS[g.sport], mins = !soccer;
+    rows.push(['Team', '#', 'Player', ...(mins ? ['Starter', 'MIN'] : []), ...cols.map(c => c[0])]);
+    for (const t of [H, A]) {
+      const st = t.starters || [];
+      const order = st.length ? [...st.map(id => t.players.find(p => p.id === id)).filter(Boolean), ...t.players.filter(p => !st.includes(p.id))] : t.players;
+      for (const p of order) rows.push([t.name, p.num, p.name, ...(mins ? [st.includes(p.id) ? 'Yes' : '', p.sec == null ? '' : Math.round(p.sec / 60)] : []), ...cols.map(c => c[1](p))]);
+      rows.push([t.name, '', 'Team total', ...(mins ? ['', ''] : []), ...cols.map(c => c[1](t.tot))]);
+    }
+    rows.push([], ['Play-by-play'], ['When', 'Team', 'Player', 'Play']);
+    const WORDS = { ...(soccer ? S_PLAY : B_PLAY), in: 'checked in', out: 'checked out' };
+    for (const e of g.events || []) {
+      if (!g.sides[e.side]) continue;
+      rows.push([(PER_SHORT[e.period] || e.period) + (e.min ? ' ' + playTime(g, e) : ''), g.sides[e.side].name,
+                 e.player === 'team' ? 'Team' : playerName(g, e.side, e.player), WORDS[e.type] || e.type]);
+    }
+    const q = v => { const t = v == null ? '' : String(v); return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    // The byte-order mark tells Excel the file is UTF-8 (names with accents, the dash).
+    return '\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n') + '\r\n';
+  };
+  // "2026-11-15 FBCA vs Visitors basketball box score.csv"
+  const csvName = g => {
+    const d = gameDate(g), ymd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return (ymd + ' ' + g.sides.home.name + ' vs ' + g.sides.away.name + ' ' + g.sport + ' box score').replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim() + '.csv';
+  };
+  const downloadCsv = g => {
+    const url = URL.createObjectURL(new Blob([csv(g)], { type: 'text/csv;charset=utf-8' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: csvName(g) });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
+  // Past games, kept by the stat keeper when a new game starts (newest first), and one past game ready to draw.
+  const pastGames = async () => {
+    const lists = await Promise.all(GAMES.map(sport => fetch(API + '/archive?game=' + sport, { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : { games: [] }).then(d => (d.games || []).map(x => ({ ...x, sport }))).catch(() => [])));
+    return lists.flat().sort((a, b) => (b.lastAt || b.savedAt) - (a.lastAt || a.savedAt));
+  };
+  const pastGame = async (sport, id) => {
+    if (!GAMES.includes(sport)) return null;
+    const r = await fetch(API + '/archive?game=' + sport + '&id=' + encodeURIComponent(id), { cache: 'no-store' });
+    if (!r.ok) return null;
+    const d = await r.json(), meta = { ...d.meta, status: 'final' };
+    return { ...compute(sport, { meta, events: d.events || [] }), at: d.savedAt, scheduled: false, status: 'final', past: true };
+  };
+  window.EotaLive = { watch, compute, csv, csvName, downloadCsv, pastGames, pastGame, gameDate, renderBox, tickBox, latestText, clockText, isLive, statusTag, playerName, PERIOD, PER_SHORT };
 })();

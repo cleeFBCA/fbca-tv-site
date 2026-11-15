@@ -118,3 +118,32 @@
   .ebx .cmp .v { font-size: 24px; }
 }
 @media (prefers-reduced-motion: reduce) { .ebx .slab::before, .ebx .tag.on::before, .ebx .play.flash { animation: none; } }
+
+/* Print / Save as PDF (fbca.tv/boxscore's Print button): black on white cards, so the page reads on paper and the
+   browser's "no background graphics" default loses nothing. Team slabs, the score boxes and the stat bars keep
+   their colors (print-color-adjust), small enough to cost little ink. Wide tables print whole, not scrolled. */
+@media print {
+  .ebx { color: #000; gap: 12px; }
+  .ebx .card { background: #fff; box-shadow: inset 0 0 0 1px #c9cacd; break-inside: avoid; }
+  .ebx .slab, .ebx .board .sc, .ebx .cmp .bar2, .ebx .cmp .bar2 i { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .ebx .slab::before, .ebx .tag.on::before { animation: none; }
+  .ebx .board .mid { background: #fff; color: #000; }
+  .ebx .board .per, .ebx .play .txt b, .ebx td:first-child b { color: #6b5208; }
+  .ebx .play, .ebx .play.flash { animation: none; }
+  .ebx .play .ptag { background: none; color: #000; box-shadow: inset 0 0 0 1px #000; }
+  .ebx .play .txt small, .ebx .note, .ebx .h, .ebx .cmp .lbl, .ebx .cmp .v small { color: #444; }
+  .ebx .cmp .v.lo, .ebx td.zero { color: #888; }
+  .ebx .cmp .row { box-shadow: inset 0 1px 0 #e3e4e6; }
+  .ebx .cmp .row.zero .v, .ebx .cmp .row.zero .lbl { color: #888; }
+  .ebx details.sect > summary { background: #fff; color: #000; box-shadow: inset 0 0 0 1px #c9cacd; }
+  .ebx details.sect > summary::after { display: none; }
+  .ebx th, .ebx th:first-child { background: #eeeff1; color: #333; }
+  .ebx td, .ebx td:first-child, .ebx tr.tot td, .ebx tr.tot td:first-child { background: #fff; color: #000; box-shadow: inset 0 1px 0 #e3e4e6; }
+  .ebx tr.tot td { font-weight: 800; box-shadow: inset 0 2px 0 #999; }
+  .ebx tr.sub-h th { box-shadow: inset 0 2px 0 #999; }
+  .ebx .scroll { overflow: visible; }
+  .ebx th, .ebx td { padding: 5px 7px; }
+  .ebx .grid2 { grid-template-columns: 1fr; }
+  .ebx .h { break-after: avoid; }
+  .ebx section { break-inside: auto; }
+}

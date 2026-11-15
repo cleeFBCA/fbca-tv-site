@@ -156,6 +156,11 @@
   .set-row select { flex: 1; min-width: 0; }
   button.ghost { background: transparent; min-height: 0; padding: 8px 12px; font-size: 14px; }
   [hidden] { display: none !important; }
+  .past-list { list-style: none; margin: 10px 0 0; padding: 0; }
+  .past-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid rgba(243,239,226,.1); font-size: 15px; }
+  .past-list li .what { flex: 1 1 220px; min-width: 0; }
+  .past-list li .what small { display: block; color: var(--chalk-dim); font-size: 13px; }
+  .past-list li button { min-height: 38px; padding: 4px 12px; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -189,6 +194,7 @@
   </section>
 
   <section data-pane="box" hidden>
+    <div class="set-row" style="margin-bottom:12px;flex-wrap:wrap"><button class="primary" id="btnCsv">Download spreadsheet</button><a class="ghost" href="/boxscore/" target="_blank" rel="noopener" style="align-self:center;color:var(--gold-hi)">fbca.tv/boxscore (print or PDF there)</a></div>
     <div id="boxes"></div>
   </section>
 
@@ -245,14 +251,21 @@
     <div class="card">
       <h3>New game</h3>
       <label style="display:flex;gap:8px;align-items:center;color:var(--chalk);font-size:15px"><input type="checkbox" id="keepRosters" checked style="width:auto"> Keep the teams and rosters</label>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--chalk);font-size:15px"><input type="checkbox" id="saveGame" checked style="width:auto"> Save this game to Past games (untick for a test game)</label>
       <div class="set-row" style="margin-top:10px"><button class="danger" id="btnReset">Start a new game</button></div>
       <p class="hint">Clears every play for both keepers and the scorebug. Do this before kickoff, not at halftime.</p>
+    </div>
+    <div class="card">
+      <h3>Past games <button id="pastRefresh" class="ghost" style="min-height:36px">Refresh</button></h3>
+      <p class="hint" style="margin-top:0">Starting a new game saves the one before here, and on fbca.tv/boxscore under Past games. Download one as a spreadsheet, or delete a test game.</p>
+      <ol class="past-list" id="pastList"></ol>
     </div>
   </section>
 </main>
 
 <div class="toast" id="toast" hidden><span id="toastText"></span><button id="toastUndo">Undo</button></div>
 
+<script src="/boxscore/live.js"></script>
 <script>
 (() => {
   const qs = new URLSearchParams(location.search);
@@ -737,16 +750,17 @@
       .catch(() => { $('rosterNote').textContent += " (Couldn't add them to Saved teams right now.)"; });
   };
   $('btnReset').onclick = async () => {
-    if (!confirm('Start a new game? Every play is cleared for both stat keepers and the scorebug.')) return;
+    if (!confirm('Start a new game? Every play is cleared for both stat keepers and the scorebug.'
+      + ($('saveGame').checked ? ' This game is saved to Past games first.' : ' This game is NOT saved (Save this game is unticked).'))) return;
     if (!key) { tab = 'setup'; showTab(); toast('Add the stat keeper key first.'); return; }
     try {
-      const r = await fetch(API + '/reset?game=' + GAME, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ keepRosters: $('keepRosters').checked }) });
+      const r = await fetch(API + '/reset?game=' + GAME, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ keepRosters: $('keepRosters').checked, archive: $('saveGame').checked }) });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || 'Error ' + r.status);
       pending = []; savePending();
       server = { rev: data.rev, meta: data.meta, events: data.events }; store.set(LS.cache, server);
       for (const id of ['nameHome', 'nameAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway']) $(id).dataset.dirty = '';
-      pick = {}; assist = null; toast('New game started.'); render();
+      pick = {}; assist = null; toast('New game started.'); loadPast(); render();
     } catch (e) { toast("Couldn't start a new game: " + e.message); }
   };
 
@@ -765,10 +779,58 @@
     document.querySelectorAll('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== tab);
     render();
   };
-  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; showTab(); if (tab === 'setup') loadLibrary(); });
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; showTab(); if (tab === 'setup') { loadLibrary(); loadPast(); } });
+
+  // ---- Saving games: this game as a spreadsheet, and past games (kept when a new game starts) to download or delete ----
+  // The spreadsheet comes from the box score's code (boxscore/live.js), so it matches fbca.tv/boxscore.
+  const asGame = (meta, events, final) => window.EotaLive && EotaLive.compute(GAME, { meta: final ? { ...meta, status: 'final' } : meta, events });
+  $('btnCsv').onclick = () => {
+    const v = view(), g = v && asGame(v.meta, v.events.map(({ unsent, ...e }) => e));
+    if (g) EotaLive.downloadCsv(g); else toast("Couldn't make the spreadsheet. Reload the page and try again.");
+  };
+  let pastList = null, pastNote = '';
+  const loadPast = async () => {
+    try {
+      const r = await fetch(API + '/archive?game=' + GAME, { cache: 'no-store' }), d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'error ' + r.status);
+      pastList = d.games || []; pastNote = '';
+    } catch (e) { pastList = null; pastNote = "Couldn't load past games right now (" + e.message + ').'; }
+    renderPast();
+  };
+  const renderPast = () => {
+    const ol = $('pastList');
+    if (!pastList) { ol.replaceChildren(el('li', 'hint', pastNote || 'Loading past games…')); return; }
+    if (!pastList.length) { ol.replaceChildren(el('li', 'hint', 'No past games yet. Starting a new game saves the current one here.')); return; }
+    ol.replaceChildren(...pastList.map(g => {
+      const li = el('li'), what = el('span', 'what'), n = g.names || {}, sc = g.score || { home: 0, away: 0 };
+      what.append((n.home || 'Home') + ' ' + sc.home + ' – ' + sc.away + ' ' + (n.away || 'Away'),
+        el('small', null, new Date(g.lastAt || g.savedAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + ' · ' + g.plays + ' plays'));
+      const dl = el('button', null, 'Download'), del = el('button', 'danger', 'Delete');
+      dl.onclick = async () => {
+        try {
+          const r = await fetch(API + '/archive?game=' + GAME + '&id=' + encodeURIComponent(g.id), { cache: 'no-store' }), d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'error ' + r.status);
+          const game = asGame(d.meta, d.events || [], true); if (!game) throw new Error('reload the page');
+          EotaLive.downloadCsv(game);
+        } catch (e) { toast("Couldn't download that game: " + e.message); }
+      };
+      del.onclick = async () => {
+        if (!confirm('Delete this saved game for good? ' + (n.home || 'Home') + ' vs ' + (n.away || 'Away') + '. It leaves Past games here and on fbca.tv/boxscore.')) return;
+        if (!key) { toast('Add the stat keeper key first.'); return; }
+        try {
+          const r = await fetch(API + '/archive?game=' + GAME, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ action: 'delete', id: g.id }) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(r.status === 401 ? 'wrong key' : d.error || 'error ' + r.status);
+          toast('Deleted that game.'); loadPast();
+        } catch (e) { toast("Couldn't delete it: " + e.message); }
+      };
+      li.append(what, dl, del); return li;
+    }));
+  };
+  $('pastRefresh').onclick = loadPast;
 
   if (!key) tab = 'setup';
-  showTab(); connect(); loadLibrary();
+  showTab(); connect(); loadLibrary(); loadPast();
 })();
 </script>
 </body>

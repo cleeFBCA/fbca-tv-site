@@ -17,7 +17,11 @@
 //                 Basketball also: qMin, otMin, clock { run, startedAt, base, len } (time LEFT in the quarter,
 //                 counting down), clockSrc: the basketball scorebug shares its clock the way the soccer one does.
 //                 Both: status '' | 'half' | 'final', set from the scorebug's period (for the live box score).
-//   POST /reset   { keepRosters }      starts a new game
+//   POST /reset   { keepRosters, archive }   starts a new game; the finished one is kept in the archive first
+//                 unless archive is false (a test game)
+//   GET  /archive?game=basketball      past games, newest first: { games: [{ id, startedAt, savedAt, names, score, plays }] }
+//   GET  /archive?game=basketball&id=X one past game: { id, savedAt, meta, events }
+//   POST /archive { action: 'delete', id }   forgets a past game
 //   GET  /library                      saved teams: { teams: [{ name, roster, savedAt }] }
 //   POST /library { action: 'save', teams: [{ name, color, roster }] } | { action: 'delete', name }
 //   POSTs and /library need Authorization: Bearer <STAT_KEY>.
@@ -41,7 +45,7 @@ const TYPES_BY_SPORT = {
 };
 const sportOf = game => /^soccer/.test(game || '') ? 'soccer' : 'basketball';
 const SIDES = ['home', 'away'];
-const MAX_EVENTS = 3000, MAX_ROSTER = 30, MAX_SAVED = 150;
+const MAX_EVENTS = 3000, MAX_ROSTER = 30, MAX_SAVED = 150, MAX_ARCHIVE = 400; // ~two seasons of games per sport
 
 const allowedOrigin = origin => SITE_ORIGINS.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 const cors = origin => ({
@@ -95,6 +99,8 @@ export class Game extends DurableObject {
       id TEXT PRIMARY KEY, seq INTEGER NOT NULL, side TEXT NOT NULL, player TEXT NOT NULL,
       type TEXT NOT NULL, period TEXT NOT NULL, at INTEGER NOT NULL, deleted INTEGER NOT NULL DEFAULT 0)`);
     this.sql.exec('CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)');
+    // Finished games, saved when a new game starts: a summary for the list and the whole game (meta and plays).
+    this.sql.exec('CREATE TABLE IF NOT EXISTS archive (id TEXT PRIMARY KEY, savedAt INTEGER NOT NULL, summary TEXT NOT NULL, data TEXT NOT NULL)');
     // The minute of a play (soccer goals), added after the first games were stored.
     try { this.sql.exec('ALTER TABLE events ADD COLUMN min TEXT'); } catch (e) { /* already there */ }
     this.sport = 'basketball';
@@ -117,6 +123,22 @@ export class Game extends DurableObject {
       .map(e => { if (!e.min) delete e.min; return e; });
   }
   state() { return { rev: this.rev(), meta: this.meta(), events: this.events() }; }
+  // Keeps the current game in the archive (if it has any plays): its score worked out the way the pages do.
+  archiveCurrent() {
+    const meta = this.meta(), events = this.events();
+    if (!events.length) return;
+    const score = { home: 0, away: 0 }, PTS = { m2: 2, m3: 3, mft: 1 };
+    for (const e of events) {
+      if (this.sport === 'soccer') { if (e.type === 'goal') score[e.side]++; if (e.type === 'og') score[e.side === 'home' ? 'away' : 'home']++; }
+      else score[e.side] += PTS[e.type] || 0;
+    }
+    const savedAt = Date.now(), lastAt = Math.max(...events.map(e => e.at || 0));
+    const summary = { id: meta.gameId, startedAt: meta.startedAt, lastAt, savedAt, names: meta.names, score, plays: events.length };
+    this.sql.exec(`INSERT INTO archive (id, savedAt, summary, data) VALUES (?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET savedAt = excluded.savedAt, summary = excluded.summary, data = excluded.data`,
+      meta.gameId, savedAt, JSON.stringify(summary), JSON.stringify({ meta, events }));
+    this.sql.exec('DELETE FROM archive WHERE id NOT IN (SELECT id FROM archive ORDER BY savedAt DESC LIMIT ?)', MAX_ARCHIVE);
+  }
   send(msg) {
     const text = JSON.stringify(msg);
     for (const ws of this.ctx.getWebSockets()) { try { ws.send(text); } catch (e) { /* closing */ } }
@@ -132,6 +154,14 @@ export class Game extends DurableObject {
       return new Response(null, { status: 101, webSocket: client });
     }
     if (request.method === 'GET' && url.pathname === '/state') return json(this.state());
+    if (request.method === 'GET' && url.pathname === '/archive') {
+      const id = url.searchParams.get('id');
+      if (id) {
+        const r = this.sql.exec('SELECT savedAt, data FROM archive WHERE id = ?', id).toArray()[0];
+        return r ? json({ id, savedAt: r.savedAt, ...JSON.parse(r.data) }) : json({ error: 'No saved game with that id' }, 404);
+      }
+      return json({ games: this.sql.exec('SELECT summary FROM archive ORDER BY savedAt DESC').toArray().map(r => JSON.parse(r.summary)) });
+    }
     const library = () => Object.values(this.get('library', {})).sort((a, b) => a.name.localeCompare(b.name));
     if (request.method === 'GET' && url.pathname === '/library') return json({ teams: library() });
 
@@ -225,7 +255,14 @@ export class Game extends DurableObject {
       return json({ ok: true, rev: this.rev(), meta: next });
     }
 
+    if (url.pathname === '/archive') {
+      if (body.action !== 'delete' || typeof body.id !== 'string') return json({ error: 'Unknown action' }, 400);
+      this.sql.exec('DELETE FROM archive WHERE id = ?', body.id);
+      return json({ ok: true });
+    }
+
     if (url.pathname === '/reset') {
+      if (body.archive !== false) this.archiveCurrent();
       const next = defaultMeta(this.sport);
       if (body.keepRosters) { next.rosters = meta.rosters; next.names = meta.names; next.colors = meta.colors; next.keepers = meta.keepers; if (meta.halfMin) next.halfMin = meta.halfMin; }
       this.sql.exec('DELETE FROM events');
@@ -258,11 +295,11 @@ export default {
       if (request.headers.get('Upgrade') !== 'websocket') return json({ error: 'WebSocket only' }, 426, origin);
       return stub.fetch(request);
     }
-    if (request.method === 'GET' && url.pathname === '/state') {
+    if (request.method === 'GET' && (url.pathname === '/state' || url.pathname === '/archive')) {
       const r = await stub.fetch(request);
       return withCors(r, origin);
     }
-    if (['/events', '/undo', '/meta', '/reset', '/library'].includes(url.pathname) && (request.method === 'POST' || url.pathname === '/library')) {
+    if (['/events', '/undo', '/meta', '/reset', '/library', '/archive'].includes(url.pathname) && (request.method === 'POST' || url.pathname === '/library')) {
       const given = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
       if (!await keyMatches(given, env.STAT_KEY)) return json({ error: 'Wrong stat keeper key' }, 401, origin);
       const r = await stub.fetch(request);

@@ -63,6 +63,42 @@
     main .in { padding-block: 28px 48px; }
   }
   @media (prefers-reduced-motion: reduce) { .edge::after, .live.on b { animation: none; } }
+
+  /* Save this game (download / print), and past games kept by the stat keeper */
+  .tools { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .tools[hidden], .past[hidden], .btn[hidden] { display: none; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 16px 9px; border: 0; border-radius: 6px; cursor: pointer; text-decoration: none;
+         background: linear-gradient(var(--char-hi), var(--char-lo)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.16); color: #fff;
+         font: 800 15px var(--font-display); letter-spacing: .14em; text-transform: uppercase; }
+  .btn:hover { box-shadow: inset 0 0 0 2px var(--gold-on); }
+  .btn:focus-visible { outline: 3px solid var(--gold-lt); outline-offset: 2px; }
+  .btn.gold { background: var(--gold-on); color: #17181b; box-shadow: none; }
+  .past { margin-top: 28px; }
+  .past h2 { margin: 0 0 10px; font: 800 18px var(--font-display); letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.75); }
+  .past ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .past a { display: grid; grid-template-columns: 110px 1fr auto; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 8px; text-decoration: none; color: #fff;
+            background: linear-gradient(var(--char-hi), var(--char-lo)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+  .past a:hover { box-shadow: inset 0 0 0 2px var(--gold-on); }
+  .past a:focus-visible { outline: 3px solid var(--gold-lt); outline-offset: 2px; }
+  .past a[aria-current] { box-shadow: inset 0 0 0 2px var(--gold-on); }
+  .past .d { font: 700 14px var(--font-body); color: rgba(255,255,255,.65); }
+  .past .d b { display: block; font: 800 13px var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: var(--gold-lt); }
+  .past .m { min-width: 0; font: 800 19px/1.15 var(--font-display); letter-spacing: .03em; text-transform: uppercase; overflow-wrap: anywhere; }
+  .past .s { font: 800 22px var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .past .more { margin-top: 10px; }
+  @media (max-width: 520px) { .past a { grid-template-columns: 1fr auto; } .past .d { grid-column: 1 / -1; } }
+
+  /* Print / Save as PDF: black on white (browsers drop dark backgrounds when printing), the page chrome left out */
+  @media print {
+    :root { color-scheme: light; }
+    body { background: #fff; color: #000; display: block; min-height: 0; }
+    header { background: none; padding: 0; }
+    header .in { padding: 0 0 8px; }
+    .bar, .edge, footer, .tools, .past, .msg { display: none !important; }
+    .kick { margin: 0; color: #000; letter-spacing: .2em; }
+    h1 { font-size: 28px; color: #000; }
+    main .in { padding: 0; max-width: none; }
+  }
 </style>
 <link rel="stylesheet" href="box.css">
 </head>
@@ -75,7 +111,15 @@
   </div>
   <div class="edge"></div>
 </header>
-<main><div class="in"><p class="msg" id="msg">Loading the game…</p><div class="ebx" id="box" hidden></div></div></main>
+<main><div class="in">
+  <p class="msg" id="msg">Loading the game…</p><div class="ebx" id="box" hidden></div>
+  <div class="tools" id="tools" hidden>
+    <button class="btn gold" id="btnCsv" type="button">Download spreadsheet</button>
+    <button class="btn" id="btnPrint" type="button">Print or save as PDF</button>
+    <a class="btn" id="btnLive" href="/boxscore/" hidden>Back to the live box score</a>
+  </div>
+  <section class="past" id="past" hidden><h2>Past games</h2><ol id="pastList"></ol><button class="btn more" id="pastMore" type="button" hidden>Show all</button></section>
+</div></main>
 <footer><div class="in">Stats by the EOTA stat crew, live as they're recorded · The official score is on the scoreboard · Watch live at <a href="/">fbca.tv</a></div></footer>
 
 <script src="live.js"></script>
@@ -105,9 +149,47 @@
       $('msg').hidden = true; $('box').hidden = false;
       L.renderBox($('box'), game);
     }
+    $('tools').hidden = !(game && game.sides) && !past[1];
     tick();
   };
-  L.watch(g => { game = g; render(); });
+  // Save this game: a spreadsheet, or the browser's print dialog (Save as PDF there).
+  $('btnCsv').onclick = () => { if (game && game.sides) L.downloadCsv(game); };
+  $('btnPrint').onclick = () => window.print();
+
+  // Past games kept by the stat keeper (each new game saves the one before). ?past=basketball:<id> shows one.
+  const past = (new URLSearchParams(location.search).get('past') || '').split(':');
+  const when = g => new Date(g.lastAt || g.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  let pastAll = [], pastOpen = false;
+  const renderPast = () => {
+    const shown = pastOpen ? pastAll : pastAll.slice(0, 10);
+    $('past').hidden = !pastAll.length;
+    $('pastMore').hidden = pastOpen || pastAll.length <= 10;
+    $('pastList').replaceChildren(...shown.map(g => {
+      const li = document.createElement('li'), a = document.createElement('a');
+      a.href = '/boxscore/?past=' + g.sport + ':' + encodeURIComponent(g.id);
+      if (past[1] === g.id) a.setAttribute('aria-current', 'page');
+      const d = document.createElement('span'), m = document.createElement('span'), sc = document.createElement('span'), k = document.createElement('b');
+      d.className = 'd'; m.className = 'm'; sc.className = 's';
+      k.textContent = g.sport === 'soccer' ? 'Soccer' : 'Basketball'; d.append(k, when(g));
+      m.textContent = (g.names && g.names.home || 'Home') + ' vs ' + (g.names && g.names.away || 'Away');
+      sc.textContent = (g.score ? g.score.home : 0) + '–' + (g.score ? g.score.away : 0);
+      a.append(d, m, sc); li.append(a); return li;
+    }));
+  };
+  $('pastMore').onclick = () => { pastOpen = true; renderPast(); };
+  L.pastGames().then(list => { pastAll = list; renderPast(); });
+
+  if (past[0] && past[1]) {
+    // One past game: final, not live, and no live connection.
+    $('btnLive').hidden = false;
+    L.pastGame(past[0], past[1]).then(g => {
+      if (!g) { say('That game isn\'t saved anymore. Pick another from Past games below.'); $('tools').hidden = false; $('btnCsv').hidden = $('btnPrint').hidden = true; return; }
+      game = g; render();
+      $('kick').textContent += ' · ' + L.gameDate(g).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    });
+  } else {
+    L.watch(g => { game = g; render(); });
+  }
   setInterval(tick, 500);
 })();
 </script>
