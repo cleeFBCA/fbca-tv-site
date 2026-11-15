@@ -645,13 +645,14 @@
   .st-team { display: flex; align-items: center; gap: 18px; padding: 0 0 0 26px; }
   .st-team.L { clip-path: polygon(0 0, 100% 0, calc(100% - 36px) 100%, 0 100%); margin-right: -18px; }
   .st-team.R { flex-direction: row-reverse; padding: 0 26px 0 0; clip-path: polygon(36px 0, 100% 0, 100% 100%, 0 100%); margin-left: -18px; }
-  /* The name gets whatever room the crest and score leave. A long name goes to two balanced lines, and
-     anything still too wide is squeezed toward the score, never over the logo (see fitTeam). */
+  /* The name gets whatever room the crest and score leave. A long name goes to two lines, never three (fitTeam
+     picks the word break that makes the wider line narrowest), and anything still too wide is squeezed toward
+     the score, never over the logo. */
   .st-team .cp-tn { flex: 1; min-width: 0; display: flex; align-items: center; }
   .st-team.R .cp-tn { justify-content: flex-end; text-align: right; }
   .st-team .cp-tn span { flex: none; }
   .st-team.R .cp-tn span { transform-origin: right center; }
-  .st-team .cp-tn span.two { white-space: normal; text-wrap: balance; font-size: 38px; line-height: .98; }
+  .st-team .cp-tn span.two { font-size: 38px; line-height: .98; }
   .st-team .sc { align-self: stretch; display: grid; place-items: center; min-width: 132px; padding: 0 22px; background: rgba(0,0,0,.38);
                  font-size: 72px; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; }
   .st-team.L .sc { padding-right: 44px; }
@@ -1832,19 +1833,24 @@
       }
       if (on !== box.classList.contains('on')) box.classList.toggle('on', on);
     };
-    // A team name in its slab: one line if it fits the room left beside the crest and score; else two
-    // balanced lines (for names with spaces); and if a line is still too wide, squeezed (to 60%) toward the score.
+    // A team name in its slab: one line if it fits the room left beside the crest and score; else exactly two
+    // lines (for names with spaces), broken between the words where the wider line comes out narrowest
+    // (FORT BEND / CHRISTIAN ACADEMY); and if a line is still too wide, squeezed (to 60%) toward the score.
     const fitTeam = span => {
-      const box = span.parentNode;
-      span.classList.remove('two'); span.style.maxWidth = span.style.transform = '';
+      const box = span.parentNode, name = span.dataset.name ??= span.textContent.trim();
+      span.classList.remove('two'); span.textContent = name; span.style.transform = '';
       const max = box.clientWidth;
       if (!max) return;
       let w = span.offsetWidth;
       if (w <= max) return;
-      if (max / w < .8 && /\s/.test(span.textContent.trim())) {
-        span.classList.add('two'); span.style.maxWidth = max + 'px';
-        w = span.scrollWidth;
-        if (w <= max + 1) return;
+      const words = name.split(/\s+/);
+      if (max / w < .8 && words.length > 1) {
+        span.classList.add('two');
+        const breakAt = i => span.replaceChildren(words.slice(0, i).join(' '), el('br'), words.slice(i).join(' '));
+        let best = 1, bestW = Infinity;
+        for (let i = 1; i < words.length; i++) { breakAt(i); const bw = span.offsetWidth; if (bw < bestW) { best = i; bestW = bw; } }
+        breakAt(best); w = bestW;
+        if (w <= max) return;
       }
       span.style.transform = `scaleX(${Math.max(.6, max / w).toFixed(3)})`;
     };
