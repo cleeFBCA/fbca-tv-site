@@ -2282,6 +2282,8 @@
   };
 
   const setupFor = {}, setupRedraw = {};
+  const FBCA_COLORS = { bg: '#063E0C', fg: '#EAAF0F' }; // green and gold, as on a fresh setup: what "Restore FBCA colors" puts back
+  const isFbcaColors = t => hex(t.bg, '').toUpperCase() === FBCA_COLORS.bg && hex(t.fg, '').toUpperCase() === FBCA_COLORS.fg;
   for (const side of SIDES) {
     const d = el('div');
     d.innerHTML = `<div class="pane-h">${side === 'home' ? 'Home' : 'Away'}</div>
@@ -2289,6 +2291,7 @@
         <div><label>Record (optional, e.g. 8-2)</label><input data-k="rec" maxlength="8"></div></div>
       <div class="two"><div><label>Team color</label><input data-k="bg" type="color"></div>
         <div><label>Text color on the logo end</label><input data-k="fg" type="color"></div></div>
+      ${side === 'home' ? '<div class="row-btns" style="margin:8px 0 0"><button class="fbca-colors">Restore FBCA colors</button></div>' : ''}
       <label>Logo (any PNG or JPG; adjust it below. Remembered for this team on this computer)</label>
       <div class="logo-row"><img alt="" hidden><input type="file" accept="image/*"><button hidden>Remove</button></div>
       <div class="row-btns" style="margin:10px 0 0"><button class="pph-btn">Player photos</button></div>
@@ -2356,6 +2359,8 @@
     d.querySelector('.logo-row button').onclick = () => { rememberLogo(s[side].name, ''); s[side].logo = ''; ed = null; fit.hidden = true; save(); };
     setupRedraw[side] = () => drawFit(false); // the preview follows the team color
     setupFor[side] = d;
+    const fbcaBtn = d.querySelector('.fbca-colors');
+    if (fbcaBtn) fbcaBtn.onclick = () => { s[side].bg = FBCA_COLORS.bg; s[side].fg = FBCA_COLORS.fg; save(); };
     const pph = d.querySelector('.pph');
     d.querySelector('.pph-squad').addEventListener('change', e => { s.squad = e.target.value; pphSig.home = pphSig.away = ''; save(); });
     d.querySelector('.pph-btn').onclick = () => { pph.hidden = !pph.hidden; pphSig[side] = ''; renderPhotos(side); };
@@ -2435,6 +2440,7 @@
       const d = setupFor[side];
       d.querySelectorAll('[data-k]').forEach(inp => setField(inp, t[inp.dataset.k]));
       d.querySelector('.fitnote').textContent = nameFitNote(t);
+      const fbcaBtn = d.querySelector('.fbca-colors'); if (fbcaBtn) fbcaBtn.disabled = isFbcaColors(t);
       setupRedraw[side]();
       renderPhotos(side);
       const img = d.querySelector('img'), rm = d.querySelector('.logo-row button');
