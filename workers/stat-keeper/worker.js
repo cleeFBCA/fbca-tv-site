@@ -17,8 +17,10 @@
 //                 Basketball also: qMin, otMin, clock { run, startedAt, base, len } (time LEFT in the quarter,
 //                 counting down), clockSrc: the basketball scorebug shares its clock the way the soccer one does.
 //                 Both: status '' | 'half' | 'final', set from the scorebug's period (for the live box score).
-//   POST /reset   { keepRosters, archive }   starts a new game; the finished one is kept in the archive first
-//                 unless archive is false (a test game)
+//   POST /reset   { keepRosters, archive }   starts a new game; the finished one is kept in the archive first,
+//                 or, with archive false (a test game), taken out of it
+//   A game is also kept in the archive when the scorebug marks it final (meta.status), and kept up to date if a play
+//   is added or undone after that, so it's in Past games without waiting for the next new game.
 //   GET  /archive?game=basketball      past games, newest first: { games: [{ id, startedAt, savedAt, names, score, plays }] }
 //   GET  /archive?game=basketball&id=X one past game: { id, savedAt, meta, events }
 //   POST /archive { action: 'delete', id }   forgets a past game
@@ -186,7 +188,7 @@ export class Game extends DurableObject {
         if (r.rowsWritten > 0) { seq++; count++; added.push(ev); }
       }
       this.put('seq', seq);
-      if (added.length) this.send({ t: 'add', rev: this.bump(), events: added });
+      if (added.length) { this.send({ t: 'add', rev: this.bump(), events: added }); if (meta.status === 'final') this.archiveCurrent(); }
       return json({ ok: true, rev: this.rev(), stored: list.filter(e => e && idOk(e.id)).map(e => e.id) });
     }
 
@@ -199,7 +201,7 @@ export class Game extends DurableObject {
           ON CONFLICT(id) DO UPDATE SET deleted = 1 WHERE deleted = 0`, id);
         if (r.rowsWritten > 0) gone.push(id);
       }
-      if (gone.length) this.send({ t: 'del', rev: this.bump(), ids: gone });
+      if (gone.length) { this.send({ t: 'del', rev: this.bump(), ids: gone }); if (meta.status === 'final') this.archiveCurrent(); }
       return json({ ok: true, rev: this.rev() });
     }
 
@@ -252,6 +254,7 @@ export class Game extends DurableObject {
       }
       this.put('meta', next);
       this.send({ t: 'meta', rev: this.bump(), meta: next });
+      if (next.status === 'final' && meta.status !== 'final') this.archiveCurrent(); // marked final: into Past games now
       return json({ ok: true, rev: this.rev(), meta: next });
     }
 
@@ -263,6 +266,7 @@ export class Game extends DurableObject {
 
     if (url.pathname === '/reset') {
       if (body.archive !== false) this.archiveCurrent();
+      else this.sql.exec('DELETE FROM archive WHERE id = ?', meta.gameId); // a test game, saved when it was marked final
       const next = defaultMeta(this.sport);
       if (body.keepRosters) { next.rosters = meta.rosters; next.names = meta.names; next.colors = meta.colors; next.keepers = meta.keepers; if (meta.halfMin) next.halfMin = meta.halfMin; }
       this.sql.exec('DELETE FROM events');

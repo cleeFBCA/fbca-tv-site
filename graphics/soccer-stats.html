@@ -257,7 +257,7 @@
     </div>
     <div class="card">
       <h3>Past games <button id="pastRefresh" class="ghost" style="min-height:36px">Refresh</button></h3>
-      <p class="hint" style="margin-top:0">Starting a new game saves the one before here, and on fbca.tv/boxscore under Past games. Download one as a spreadsheet, or delete a test game.</p>
+      <p class="hint" style="margin-top:0">A game is saved here, and on fbca.tv/boxscore under Past games, when the scorebug marks it final, and again when a new game starts. Download one as a spreadsheet, or delete a test game.</p>
       <ol class="past-list" id="pastList"></ol>
     </div>
   </section>
@@ -751,7 +751,7 @@
   };
   $('btnReset').onclick = async () => {
     if (!confirm('Start a new game? Every play is cleared for both stat keepers and the scorebug.'
-      + ($('saveGame').checked ? ' This game is saved to Past games first.' : ' This game is NOT saved (Save this game is unticked).'))) return;
+      + ($('saveGame').checked ? ' This game is saved to Past games first.' : ' This game is NOT saved (Save this game is unticked), and it comes out of Past games if it went in at the final.'))) return;
     if (!key) { tab = 'setup'; showTab(); toast('Add the stat keeper key first.'); return; }
     try {
       const r = await fetch(API + '/reset?game=' + GAME, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ keepRosters: $('keepRosters').checked, archive: $('saveGame').checked }) });
