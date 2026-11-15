@@ -1572,6 +1572,9 @@
 
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  // Roster order by jersey number: #0 first, then #00, then #1...; no number goes last.
+  const jerseyOrder = (a, b) => { const n = p => { const v = parseInt(p.num, 10); return Number.isNaN(v) ? 999 : v; };
+    return n(a) - n(b) || String(a.num ?? '').length - String(b.num ?? '').length; };
   const cardIcon = label => label === 'YELLOW CARD' ? el('i', 'cardicon y') : label === 'RED CARD' ? el('i', 'cardicon r') : null;
   // The key color fills everything around the graphics; the control preview uses it too.
   // With fill + key, the fill goes out on black (premultiplied) and the key window carries the alpha.
@@ -3068,7 +3071,7 @@
     ((g && g.meta && g.meta.rosters && g.meta.rosters[side]) || []).forEach(p => add({ num: p.num || '', name: p.name, id: p.id }));
     const cfg = s.xi[side] || {};
     [...parseXI(cfg.raw || ''), ...parseXI(cfg.subs || '')].forEach(add);
-    return out.sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
+    return out.sort((a, b) => jerseyOrder(a, b));
   };
   const playerLabel = p => (p.num ? '#' + p.num + ' ' : '') + p.name;
   // A player's game so far from the stat keeper, as a lower-third line ("2 GOALS · 1 ASSIST", "5 SAVES").

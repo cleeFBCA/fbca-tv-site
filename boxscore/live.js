@@ -58,8 +58,9 @@
         const p = players.get(e.player);
         if (p) { p[e.type]++; p.any = true; }
       }
-      // The whole roster, by number: players with nothing recorded yet show zeros (dimmed).
-      const list = [...players.values()].sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999) || a.name.localeCompare(b.name));
+      // The whole roster, by number (#0 first, then #00, then #1...; no number goes last): players with nothing recorded yet show zeros (dimmed).
+      const numOf = p => { const n = parseInt(p.num, 10); return Number.isNaN(n) ? 999 : n; };
+      const list = [...players.values()].sort((a, b) => numOf(a) - numOf(b) || String(a.num).length - String(b.num).length || a.name.localeCompare(b.name));
       out.sides[side] = { name: (m.names && m.names[side]) || (side === 'home' ? 'FBCA' : 'Opponent'), color: (m.colors && m.colors[side]) || '#333333', players: list, tot,
                           score: sport === 'soccer' ? tot.goal : 2 * tot.m2 + 3 * tot.m3 + tot.mft };
     }
