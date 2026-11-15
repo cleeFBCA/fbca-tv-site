@@ -1959,7 +1959,9 @@
       rows.forEach(([, h, a], i) => {
         const r = stRefs[i], tot = h + a;
         r.hv.textContent = h; r.av.textContent = a;
-        r.hv.classList.toggle('lo', h < a); r.av.classList.toggle('lo', a < h);
+        // The better number stays bright; for fouls, offsides and cards that's the smaller one (as on the box score).
+        const better = /^(Fouls|Offsides|Yellow cards|Red cards)$/.test(rows[i][0]) ? (x, y) => x < y : (x, y) => x > y;
+        r.hv.classList.toggle('lo', better(a, h)); r.av.classList.toggle('lo', better(h, a));
         const hw = tot ? 100 * h / tot : 50; r.hf.style.width = hw + '%'; r.af.style.width = (100 - hw) + '%'; r.bar.classList.toggle('none', !tot);
         r.hf.style.background = barOf(L); r.af.style.background = barOf(R);
       });

@@ -46,6 +46,42 @@
   const S_KEYS = ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc', 'og'];
   const zero = keys => Object.fromEntries(keys.map(k => [k, 0]));
 
+  // Largest lead and percent led, for basketball team stats. The same code is in boxscore/live.js and
+  // graphics/basketball-scorebug.html. The scoring plays, in the order entered, give the running score: a team's largest
+  // lead is the most it was ahead by at any point. Percent led is the share of the game time played that a team was
+  // ahead, timed by the game clock each play is stamped with (the stat page stamps plays while the scorebug shares its
+  // clock). If any scoring play has no stamp, percent led stays blank rather than guess.
+  const LEAD_PTS = { m2: 2, m3: 3, mft: 1 }, LEAD_PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3'];
+  // Game time in seconds from the opening tip to `left` seconds left in period p (the stat keeper's period names).
+  const leadClock = (qMin, otMin) => {
+    const q = (qMin || 8) * 60, ot = (otMin || 4) * 60, len = i => i < 4 ? q : ot;
+    const at = (p, left) => { const i = LEAD_PERIODS.indexOf(p); return i < 0 || !(left >= 0) ? null : (i < 4 ? i * q : 4 * q + (i - 4) * ot) + Math.max(0, len(i) - left); };
+    return { at, end: p => at(p, 0) };
+  };
+  // → { big: {home, away}, led: {home, away} (seconds, up to the last scoring play), last (its game time),
+  //     diff (home minus away after it), timed (every scoring play had a clock stamp), endPer (latest period played) }
+  const leadTrack = (events, clock) => {
+    let h = 0, a = 0, last = 0, timed = true, endI = 0;
+    const big = { home: 0, away: 0 }, led = { home: 0, away: 0 };
+    for (const e of events) {
+      endI = Math.max(endI, LEAD_PERIODS.indexOf(e.period));
+      const pts = LEAD_PTS[e.type]; if (!pts || (e.side !== 'home' && e.side !== 'away')) continue;
+      const m = /^(\d+):(\d\d)$/.exec(e.min || ''), t = m ? clock.at(e.period, +m[1] * 60 + +m[2]) : null;
+      if (t == null) timed = false;
+      else if (timed) { if (t > last) { if (h > a) led.home += t - last; else if (a > h) led.away += t - last; } last = Math.max(last, t); }
+      if (e.side === 'home') h += pts; else a += pts;
+      big.home = Math.max(big.home, h - a); big.away = Math.max(big.away, a - h);
+    }
+    return { big, led, last, diff: h - a, timed, endPer: LEAD_PERIODS[endI] };
+  };
+  // Percent led for each side (0 to 1) at game time `now` in seconds (the last scoring play when unknown); null when untimed.
+  const leadPct = (L, now) => {
+    if (!L || !L.timed) return null;
+    const end = Math.max(L.last, now || 0), led = { ...L.led };
+    if (L.diff > 0) led.home += end - L.last; else if (L.diff < 0) led.away += end - L.last;
+    return end > 0 ? { home: led.home / end, away: led.away / end } : { home: 0, away: 0 };
+  };
+
   // Players and team totals for both sides, the score, and the latest play.
   const compute = (sport, st) => {
     const m = st.meta, keys = sport === 'soccer' ? S_KEYS : B_KEYS, out = { sport, meta: m, sides: {} };
@@ -68,6 +104,15 @@
     if (sport === 'soccer') { out.sides.home.score += out.sides.away.tot.og; out.sides.away.score += out.sides.home.tot.og; }
     const evs = st.events || [];
     out.latest = evs.length ? evs[evs.length - 1] : null;
+    // Basketball: largest lead and percent led (to now: the shared clock, or the end of the period at halftime / the final).
+    if (sport === 'basketball') {
+      const clock = leadClock(m.qMin, m.otMin), L = leadTrack(evs, clock), c = m.clock;
+      const now = m.status === 'final' || m.status === 'half' ? clock.end(m.period)
+        : c && m.clockSrc === 'scorebug' && Date.now() - (m.clockAt || 0) < 150000
+          ? clock.at(m.period, Math.max(0, (c.base || 0) - (c.run ? Date.now() - (c.startedAt || Date.now()) : 0)) / 1000) : null;
+      const pct = leadPct(L, now);
+      for (const side of ['home', 'away']) Object.assign(out.sides[side].tot, { lead: L.big[side], ledPct: pct ? pct[side] : null });
+    }
     out.plays = evs.length;
     return out;
   };
@@ -242,18 +287,22 @@
   // The box score's home side is always FBCA.
   const barsOf = g => { const home = BAR.gold; return { home, away: barPick([g.sides.away.color], home) }; };
   const pct = (m, a) => a ? Math.round(100 * m / a) + '%' : '–';
-  // What each sport shows: team comparison rows [label, value, attempts (shooting), is a %, lower is better] and player columns.
+  // What each sport shows: team comparison rows [label, value, attempts (shooting), kind, lower is better] and player columns.
+  // kind: true = shooting (made-attempts and a %), 'share' = a 0-1 share shown as a % (blank when unknown).
+  // The team rows match the scorebugs' team stats / match stats panels (graphics/*-scorebug.html): same stats, order and
+  // labels, and the same rule for which number dims (fewer is better for turnovers, fouls, offsides and cards).
   const SPORT = {
     basketball: {
       cmp: t => [['FG', t.m2 + t.m3, t.m2 + t.m3 + t.x2 + t.x3, true], ['3PT', t.m3, t.m3 + t.x3, true], ['FT', t.mft, t.mft + t.xft, true],
-                 ['Rebounds', t.oreb + t.dreb], ['Assists', t.ast], ['Steals', t.stl], ['Blocks', t.blk], ['Turnovers', t.to, null, false, true], ['Fouls', t.pf, null, false, true]],
+                 ['Rebounds', t.oreb + t.dreb], ['Off. rebounds', t.oreb], ['Assists', t.ast], ['Steals', t.stl], ['Blocks', t.blk], ['Turnovers', t.to, null, false, true],
+                 ['Fouls', t.pf, null, false, true], ['Largest lead', t.lead], ['Percent led', t.ledPct, null, 'share']],
       cols: ['PTS', 'FG', '3PT', 'FT', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF'],
       row: p => [2 * p.m2 + 3 * p.m3 + p.mft, (p.m2 + p.m3) + '-' + (p.m2 + p.m3 + p.x2 + p.x3), p.m3 + '-' + (p.m3 + p.x3), p.mft + '-' + (p.mft + p.xft),
                  p.oreb + p.dreb, p.ast, p.stl, p.blk, p.to, p.pf]
     },
     soccer: {
-      cmp: t => [['Shots', t.goal + t.sog + t.shot], ['On target', t.goal + t.sog], ['Corners', t.corner], ['Saves', t.save], ['Fouls', t.foul, null, false, true],
-                 ['Offsides', t.offside, null, false, true], ['Yellow cards', t.yc, null, false, true], ['Red cards', t.rc, null, false, true]],
+      cmp: t => [['Shots', t.goal + t.sog + t.shot], ['Shots on goal', t.goal + t.sog], ['Corners', t.corner], ['Fouls', t.foul, null, false, true],
+                 ['Offsides', t.offside, null, false, true], ['Saves', t.save], ['Yellow cards', t.yc, null, false, true], ['Red cards', t.rc, null, false, true]],
       cols: ['G', 'A', 'SH', 'SOG', 'SV', 'YC', 'RC'],
       row: p => [p.goal, p.ast, p.goal + p.sog + p.shot, p.goal + p.sog, p.save, p.yc, p.rc]
     }
@@ -294,8 +343,14 @@
     S.cmp(H.tot).forEach(([label, hv, ha, isPct, lowGood], i) => {
       const [, av, aa] = rowsA[i];
       const r = el('div', 'row'), mid2 = el('div'), bar = el('div', 'bar2'), lf = el('i'), rf = el('i');
-      const val = (v, a, cls) => { const d = el('div', 'v ' + cls); d.append(isPct ? v + '-' + a : String(v)); if (isPct) d.append(el('small', null, pct(v, a))); return d; };
-      const hs = isPct ? (ha ? hv / ha : 0) : hv, as = isPct ? (aa ? av / aa : 0) : av, tot = hs + as;
+      const shoot = isPct === true, share = isPct === 'share';
+      const val = (v, a, cls) => {
+        const d = el('div', 'v ' + cls);
+        d.append(shoot ? v + '-' + a : share ? (v == null ? '–' : Math.round(100 * v) + '%') : String(v));
+        if (shoot) d.append(el('small', null, pct(v, a)));
+        return d;
+      };
+      const hs = shoot ? (ha ? hv / ha : 0) : hv || 0, as = shoot ? (aa ? av / aa : 0) : av || 0, tot = hs + as;
       // Home's share fills from the left, away fills the rest; nothing yet on either side shows an even, dimmed split.
       lf.style.cssText = `width:${tot ? 100 * hs / tot : 50}%;background:${bars.home}`; rf.style.background = bars.away;
       if (!tot) bar.classList.add('none');

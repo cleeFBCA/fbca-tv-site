@@ -657,15 +657,16 @@
                  font-size: 72px; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; }
   .st-team.L .sc { padding-right: 44px; }
   .st-team.R .sc { padding-left: 44px; }
-  .st-row { display: grid; grid-template-columns: 220px 1fr 220px; align-items: center; height: 62px; box-shadow: inset 0 1px 0 rgba(255,255,255,.07); }
+  /* 12 rows at 54px keep the panel above the bug (it's centered at 466px; the bug starts at 916px) */
+  .st-row { display: grid; grid-template-columns: 220px 1fr 220px; align-items: center; height: 54px; box-shadow: inset 0 1px 0 rgba(255,255,255,.07); }
   .st-row:nth-child(even) { background: rgba(255,255,255,.025); }
   .st-row .v { text-align: center; font-size: 46px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; transition: color .4s; }
   .st-row .v small { font-size: 26px; color: rgba(255,255,255,.6); margin-left: 8px; }
   .st-row .v.lo { color: rgba(255,255,255,.45); }
-  .st-row .lbl { text-align: center; font-size: 25px; font-weight: 700; letter-spacing: .14em; color: rgba(255,255,255,.72); }
+  .st-row .lbl { text-align: center; font-size: 23px; font-weight: 700; letter-spacing: .14em; color: rgba(255,255,255,.72); }
   /* One full bar split by share: each team fills from its own end and they meet at the split (tied = the
      center tick). A dark seam marks the meeting point; with nothing yet on either side it's an even, dimmed split. */
-  .st-row .bar { position: relative; height: 10px; margin-top: 9px; border-radius: 2px; overflow: hidden; transition: opacity .4s; }
+  .st-row .bar { position: relative; height: 10px; margin-top: 7px; border-radius: 2px; overflow: hidden; transition: opacity .4s; }
   .st-row .bar i { position: absolute; top: 0; bottom: 0; transition: width .6s cubic-bezier(.2,.8,.2,1); }
   .st-row .bar i:first-child { left: 0; transform-origin: left; }
   .st-row .bar i:last-child { right: 0; transform-origin: right; box-shadow: inset 3px 0 0 rgba(0,0,0,.6); }
@@ -1476,7 +1477,55 @@
                          fga: p.m2 + p.x2 + p.m3 + p.x3, tpa: p.m3 + p.x3, fta: p.mft + p.xft });
   const pct = (m, a) => a ? Math.round(100 * m / a) + '%' : '–';
   const sheetLive = () => s.sheetOn && s.sheet.at > 0 && !!s.sheet.home;
-  const teamTot = side => derive(s.sheet[side].tot);
+  // Largest lead and percent led, for basketball team stats. The same code is in boxscore/live.js and
+  // graphics/basketball-scorebug.html. The scoring plays, in the order entered, give the running score: a team's largest
+  // lead is the most it was ahead by at any point. Percent led is the share of the game time played that a team was
+  // ahead, timed by the game clock each play is stamped with (the stat page stamps plays while the scorebug shares its
+  // clock). If any scoring play has no stamp, percent led stays blank rather than guess.
+  const LEAD_PTS = { m2: 2, m3: 3, mft: 1 }, LEAD_PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3'];
+  // Game time in seconds from the opening tip to `left` seconds left in period p (the stat keeper's period names).
+  const leadClock = (qMin, otMin) => {
+    const q = (qMin || 8) * 60, ot = (otMin || 4) * 60, len = i => i < 4 ? q : ot;
+    const at = (p, left) => { const i = LEAD_PERIODS.indexOf(p); return i < 0 || !(left >= 0) ? null : (i < 4 ? i * q : 4 * q + (i - 4) * ot) + Math.max(0, len(i) - left); };
+    return { at, end: p => at(p, 0) };
+  };
+  // → { big: {home, away}, led: {home, away} (seconds, up to the last scoring play), last (its game time),
+  //     diff (home minus away after it), timed (every scoring play had a clock stamp), endPer (latest period played) }
+  const leadTrack = (events, clock) => {
+    let h = 0, a = 0, last = 0, timed = true, endI = 0;
+    const big = { home: 0, away: 0 }, led = { home: 0, away: 0 };
+    for (const e of events) {
+      endI = Math.max(endI, LEAD_PERIODS.indexOf(e.period));
+      const pts = LEAD_PTS[e.type]; if (!pts || (e.side !== 'home' && e.side !== 'away')) continue;
+      const m = /^(\d+):(\d\d)$/.exec(e.min || ''), t = m ? clock.at(e.period, +m[1] * 60 + +m[2]) : null;
+      if (t == null) timed = false;
+      else if (timed) { if (t > last) { if (h > a) led.home += t - last; else if (a > h) led.away += t - last; } last = Math.max(last, t); }
+      if (e.side === 'home') h += pts; else a += pts;
+      big.home = Math.max(big.home, h - a); big.away = Math.max(big.away, a - h);
+    }
+    return { big, led, last, diff: h - a, timed, endPer: LEAD_PERIODS[endI] };
+  };
+  // Percent led for each side (0 to 1) at game time `now` in seconds (the last scoring play when unknown); null when untimed.
+  const leadPct = (L, now) => {
+    if (!L || !L.timed) return null;
+    const end = Math.max(L.last, now || 0), led = { ...L.led };
+    if (L.diff > 0) led.home += end - L.last; else if (L.diff < 0) led.away += end - L.last;
+    return end > 0 ? { home: led.home / end, away: led.away / end } : { home: 0, away: 0 };
+  };
+  // Lead stats to now on the bug's own clock (end of the half at halftime, end of the last period at the final).
+  const LEAD_PER = { '1Q': '1Q', '2Q': '2Q', '3Q': '3Q', '4Q': '4Q', OT: 'OT', '2OT': 'OT2', '3OT': 'OT3' };
+  const leadNow = () => {
+    const L = s.sheet.lead; if (!L) return null;
+    const c = leadClock(s.qMin, s.otMin), per = LEAD_PER[s.period];
+    const now = per ? c.at(per, remaining(Date.now()) / 1000) : s.period === 'HALF' ? c.end('2Q')
+      : s.period === 'FINAL' ? c.end(LEAD_PERIODS.indexOf(L.endPer) > 3 ? L.endPer : '4Q') : null;
+    return leadPct(L, now);
+  };
+  // A team's totals for the team stats, with its largest lead and percent led (from the stat keeper's plays; blank from a sheet).
+  const teamTot = side => {
+    const L = s.sheet.lead, pctLed = leadNow();
+    return { ...derive(s.sheet[side].tot), lead: L ? L.big[side] : null, ledPct: pctLed ? pctLed[side] : null };
+  };
   // Rows for the team stats panel: [label, left value, right value, number for the bar, small text].
   // "FORT BEND CHRISTIAN ACADEMY" → FBCA, "EMERY WEINER SCHOOL" → EWS; a one-word name stays as it is.
   const initials = name => {
@@ -1517,7 +1566,9 @@
     ['3PT', t => [t.m3 + '-' + t.tpa, t.tpa ? t.m3 / t.tpa : 0, pct(t.m3, t.tpa)]],
     ['FT', t => [t.mft + '-' + t.fta, t.fta ? t.mft / t.fta : 0, pct(t.mft, t.fta)]],
     ['Rebounds', t => [t.reb, t.reb]], ['Off. rebounds', t => [t.oreb, t.oreb]], ['Assists', t => [t.ast, t.ast]],
-    ['Steals', t => [t.stl, t.stl]], ['Blocks', t => [t.blk, t.blk]], ['Turnovers', t => [t.to, t.to]]
+    ['Steals', t => [t.stl, t.stl]], ['Blocks', t => [t.blk, t.blk]], ['Turnovers', t => [t.to, t.to]], ['Fouls', t => [t.pf, t.pf]],
+    ['Largest lead', t => [t.lead == null ? '–' : t.lead, t.lead || 0]],
+    ['Percent led', t => [t.ledPct == null ? '–' : Math.round(100 * t.ledPct) + '%', t.ledPct || 0]]
   ];
 
   // ---------- Output mode ----------
@@ -1895,8 +1946,8 @@
         const [lv, ln, lp] = fn(tl), [rv, rn, rp] = fn(tr), r = stRefs[i], tot = ln + rn;
         const val = (node, v, pc) => { node.replaceChildren(String(v)); if (pc) node.append(el('small', null, pc)); };
         val(r.lv, lv, lp); val(r.rv, rv, rp);
-        // The better number stays bright; for turnovers that's the smaller one.
-        const better = label === 'Turnovers' ? (a, b) => a < b : (a, b) => a > b;
+        // The better number stays bright; for turnovers and fouls that's the smaller one.
+        const better = label === 'Turnovers' || label === 'Fouls' ? (a, b) => a < b : (a, b) => a > b;
         r.lv.classList.toggle('lo', better(rn, ln)); r.rv.classList.toggle('lo', better(ln, rn));
         const lw = tot ? 100 * ln / tot : 50; r.lf.style.width = lw + '%'; r.rf.style.width = (100 - lw) + '%'; r.bar.classList.toggle('none', !tot);
         r.lf.style.background = bars[L]; r.rf.style.background = bars[R];
@@ -3405,6 +3456,7 @@
       }
       data[side] = { players, tot };
     }
+    data.lead = leadTrack(skGame.events, leadClock(s.qMin, s.otMin));
     skLastPlay = skGame.events.reduce((a, ev) => Math.max(a, ev.at || 0), 0);
     const first = !sheetLive(), { at, err, ...prev } = s.sheet;
     if (first || err || JSON.stringify(data) !== JSON.stringify(prev)) {
