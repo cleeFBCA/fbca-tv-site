@@ -973,6 +973,58 @@
       </div>
 
       <div class="card">
+        <h2>Score</h2>
+        <div class="teams" id="teams"></div>
+        <div class="row-btns" style="margin-top:12px"><button id="btnSwap">Swap sides &#8644;</button></div>
+        <p class="hint" id="sideNote"></p>
+      </div>
+
+      <div class="card">
+        <h2>Data sources</h2>
+        <div class="row-btns"><button id="btnSb">Connect scoreboard</button></div>
+        <p class="hint" id="sbStatus">Run the clock, score and fouls from the gym scoreboard. Pick the file Scorebridge writes.</p>
+        <p class="hint" id="sbRate" hidden></p>
+        <label for="statFrom">Stats come from</label>
+        <select id="statFrom">
+          <option value="keeper">Stat keeper page (live, fbca.tv/graphics/basketball-stats.html)</option>
+          <option value="sheet">Excel stat sheet on OneDrive (deprecated)</option>
+        </select>
+        <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
+        <label class="check"><input type="checkbox" id="clockShare"> Share this clock with the stat keeper (the stat page and fbca.tv box score show it; plays get the game time)</label>
+        <div class="set-row" id="skKeyRow" hidden><input id="skKey" type="password" autocomplete="off" placeholder="Stat keeper key (the same one the stat crew uses)"><button id="skKeySave">Save key</button></div>
+        <p class="hint" id="clockShareStatus"></p>
+        <div id="sheetBox">
+        <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
+        <div class="set-row"><input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…"><button id="btnSheet">Connect</button></div>
+        <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
+        </div>
+        <p class="hint" id="sheetStatus">Not connected.</p>
+        <table class="src">
+          <thead><tr><th>Item</th><th>Scoreboard</th><th>Stats</th></tr></thead>
+          <tbody id="srcRows"></tbody>
+        </table>
+        <p class="hint">Tick where each item comes from. Unticked items run from the buttons on this page. Pairs show left–right as on screen. Stats arrive as the stat crew enters them, a moment after the play, so the clock and score are best from the scoreboard.</p>
+        <p class="hint" id="sbKeys" hidden></p>
+      </div>
+
+    </div>
+
+    <div class="stack">
+      <div class="card">
+        <h2>Output</h2>
+        <div class="preview"><iframe id="preview" title="Graphics preview" tabindex="-1"></iframe></div>
+        <div class="row-btns" style="margin-top:10px">
+          <button id="btnShow">Hide bug</button>
+          <button id="btnOpen">Open output window</button>
+          <button id="btnOpenKey" hidden>Open key window</button>
+        </div>
+        <div class="row-btns" style="margin:0">
+          <p class="panel-note" id="panelNote"></p>
+          <button id="btnPanelHide" style="flex:0 0 auto">Take down</button>
+        </div>
+      </div>
+
+      <div class="card">
         <h2>Graphic inserts</h2>
         <div class="tabs" id="tabs">
           <button data-tab="pre">Title Card</button>
@@ -1161,58 +1213,6 @@
           </div>
           <p class="hint" id="stnNote"></p>
         </div>
-      </div>
-
-      <div class="card">
-        <h2>Data sources</h2>
-        <div class="row-btns"><button id="btnSb">Connect scoreboard</button></div>
-        <p class="hint" id="sbStatus">Run the clock, score and fouls from the gym scoreboard. Pick the file Scorebridge writes.</p>
-        <p class="hint" id="sbRate" hidden></p>
-        <label for="statFrom">Stats come from</label>
-        <select id="statFrom">
-          <option value="keeper">Stat keeper page (live, fbca.tv/graphics/basketball-stats.html)</option>
-          <option value="sheet">Excel stat sheet on OneDrive (deprecated)</option>
-        </select>
-        <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
-        <label class="check"><input type="checkbox" id="clockShare"> Share this clock with the stat keeper (the stat page and fbca.tv box score show it; plays get the game time)</label>
-        <div class="set-row" id="skKeyRow" hidden><input id="skKey" type="password" autocomplete="off" placeholder="Stat keeper key (the same one the stat crew uses)"><button id="skKeySave">Save key</button></div>
-        <p class="hint" id="clockShareStatus"></p>
-        <div id="sheetBox">
-        <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
-        <div class="set-row"><input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…"><button id="btnSheet">Connect</button></div>
-        <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
-        </div>
-        <p class="hint" id="sheetStatus">Not connected.</p>
-        <table class="src">
-          <thead><tr><th>Item</th><th>Scoreboard</th><th>Stats</th></tr></thead>
-          <tbody id="srcRows"></tbody>
-        </table>
-        <p class="hint">Tick where each item comes from. Unticked items run from the buttons on this page. Pairs show left–right as on screen. Stats arrive as the stat crew enters them, a moment after the play, so the clock and score are best from the scoreboard.</p>
-        <p class="hint" id="sbKeys" hidden></p>
-      </div>
-
-    </div>
-
-    <div class="stack">
-      <div class="card">
-        <h2>Output</h2>
-        <div class="preview"><iframe id="preview" title="Graphics preview" tabindex="-1"></iframe></div>
-        <div class="row-btns" style="margin-top:10px">
-          <button id="btnShow">Hide bug</button>
-          <button id="btnOpen">Open output window</button>
-          <button id="btnOpenKey" hidden>Open key window</button>
-        </div>
-        <div class="row-btns" style="margin:0">
-          <p class="panel-note" id="panelNote"></p>
-          <button id="btnPanelHide" style="flex:0 0 auto">Take down</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Score</h2>
-        <div class="teams" id="teams"></div>
-        <div class="row-btns" style="margin-top:12px"><button id="btnSwap">Swap sides &#8644;</button></div>
-        <p class="hint" id="sideNote"></p>
       </div>
 
 
