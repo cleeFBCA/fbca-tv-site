@@ -418,7 +418,7 @@
   .ps-pens.many .pip svg { width: 17px; height: 17px; }
   .ps-res { padding: 14px 20px 16px; text-align: center; font-size: 30px; font-weight: 800; letter-spacing: .14em; color: var(--gold-hi); background: rgba(0,0,0,.35); }
 
-  /* ---- Match stats: team slabs with their scores, then each stat with a bar out from the middle ---- */
+  /* ---- Match stats: team slabs with their scores, then each stat with a bar split by share ---- */
   #pStats { width: 1180px; }
   .st-teams { display: grid; grid-template-columns: 1fr 1fr; height: 104px; }
   .st-team { display: flex; align-items: center; gap: 18px; padding: 0 0 0 26px; }
@@ -436,11 +436,14 @@
   .st-row .v { text-align: center; font-size: 50px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; transition: color .4s; }
   .st-row .v.lo { color: rgba(255,255,255,.45); }
   .st-row .lbl { text-align: center; font-size: 25px; font-weight: 700; letter-spacing: .14em; color: rgba(255,255,255,.72); }
-  .st-row .bar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; height: 10px; margin-top: 9px; }
-  .st-row .bar > div { position: relative; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; }
+  /* One full bar split by share: each team fills from its own end and they meet at the split (tied = the
+     center tick). A dark seam marks the meeting point; with nothing yet on either side it's an even, dimmed split. */
+  .st-row .bar { position: relative; height: 10px; margin-top: 9px; border-radius: 2px; overflow: hidden; transition: opacity .4s; }
   .st-row .bar i { position: absolute; top: 0; bottom: 0; transition: width .6s cubic-bezier(.2,.8,.2,1); }
-  .st-row .bar > div:first-child i { right: 0; transform-origin: right; }
-  .st-row .bar > div:last-child i { left: 0; transform-origin: left; }
+  .st-row .bar i:first-child { left: 0; transform-origin: left; }
+  .st-row .bar i:last-child { right: 0; transform-origin: right; box-shadow: inset 3px 0 0 rgba(0,0,0,.6); }
+  .st-row .bar::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: rgba(0,0,0,.45); }
+  .st-row .bar.none { opacity: .3; }
 
   /* Matchup */
   /* ---------- Pregame matchup, in the bug's style ----------
@@ -1898,7 +1901,7 @@
         : 'PENALTY SHOOTOUT';
     };
 
-    // Match stats: team slabs with their scores, then a row per stat with bars out from the middle.
+    // Match stats: team slabs with their scores, then a row per stat with a bar split by share.
     // Rows are built once per set of stats; the numbers and bars update in place (the bars glide).
     let stSig = '', stRefs = [];
     const renderStatsPanel = () => {
@@ -1928,12 +1931,12 @@
         }
         stRefs = rows.map(([label], i) => {
           const row = at(el('div', 'st-row a-up'), .55 + i * .06);
-          const hv = el('div', 'v'), av = el('div', 'v'), mid = el('div'), bar = el('div', 'bar'), hb = el('div'), ab = el('div');
+          const hv = el('div', 'v'), av = el('div', 'v'), mid = el('div'), bar = el('div', 'bar');
           const hf = at(el('i', 'a-grow'), .75 + i * .06), af = at(el('i', 'a-grow'), .75 + i * .06);
-          hb.append(hf); ab.append(af); bar.append(hb, ab);
+          bar.append(hf, af);
           mid.append(el('div', 'lbl', label), bar);
           row.append(hv, mid, av);
-          return { row, hv, av, hf, af };
+          return { row, hv, av, hf, af, bar };
         });
         $('pstRows').replaceChildren(...stRefs.map(r => r.row));
       }
@@ -1942,7 +1945,7 @@
         const r = stRefs[i], tot = h + a;
         r.hv.textContent = h; r.av.textContent = a;
         r.hv.classList.toggle('lo', h < a); r.av.classList.toggle('lo', a < h);
-        r.hf.style.width = (tot ? 100 * h / tot : 0) + '%'; r.af.style.width = (tot ? 100 * a / tot : 0) + '%';
+        const hw = tot ? 100 * h / tot : 50; r.hf.style.width = hw + '%'; r.af.style.width = (100 - hw) + '%'; r.bar.classList.toggle('none', !tot);
         r.hf.style.background = barOf(L); r.af.style.background = barOf(R);
       });
     };

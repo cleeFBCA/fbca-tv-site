@@ -66,7 +66,7 @@
 .ebx details.sect[open] > summary::after { transform: rotate(180deg); }
 .ebx details.sect > summary:focus-visible { outline: 3px solid var(--gold-lt); outline-offset: 2px; }
 
-/* Team stats: values on the outside, bars out from the middle */
+/* Team stats: values on the outside, a split bar in the middle */
 .ebx .cmp { padding: 6px 14px 10px; }
 .ebx .cmp .row { display: grid; grid-template-columns: 74px 1fr 74px; align-items: center; gap: 6px; padding: 7px 0; box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
 .ebx .cmp .row:first-child { box-shadow: none; }
@@ -75,10 +75,12 @@
 .ebx .cmp .v small { font: 600 12px var(--font-body); color: rgba(255,255,255,.55); margin-left: 4px; }
 .ebx .cmp .v.lo { color: rgba(255,255,255,.45); }
 .ebx .cmp .lbl { text-align: center; font: 800 12px var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.7); }
-.ebx .cmp .bar2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; height: 7px; margin-top: 5px; }
-.ebx .cmp .bar2 > div { position: relative; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; }
-.ebx .cmp .bar2 i { position: absolute; top: 0; bottom: 0; }
-.ebx .cmp .bar2 > div:first-child i { right: 0; }
+/* One full bar split by share: tied stats meet in the middle, a lead pushes the split toward the other team */
+.ebx .cmp .bar2 { position: relative; display: flex; height: 7px; margin-top: 5px; border-radius: 2px; overflow: hidden; }
+.ebx .cmp .bar2 i { display: block; height: 100%; }
+.ebx .cmp .bar2 i + i { flex: 1; box-shadow: inset 2px 0 0 #17181b; }
+.ebx .cmp .bar2::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; margin-left: -.5px; background: rgba(23,24,27,.55); }
+.ebx .cmp .bar2.none { opacity: .3; }
 
 /* Player stats: one table per team; the name column stays put while the numbers scroll on a phone */
 .ebx .team-h { display: flex; align-items: center; gap: 10px; padding: 10px 14px; font: 800 20px var(--font-display); letter-spacing: .06em; text-transform: uppercase; }

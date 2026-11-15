@@ -639,7 +639,7 @@
   @keyframes cpLive { 50% { opacity: .25; } }
   @keyframes cpRunV { from { transform: translateY(-100%); } to { transform: translateY(560%); } }
 
-  /* ---- Team stats (from the stat sheet): team slabs with their scores, then each stat with a bar out from the middle ---- */
+  /* ---- Team stats (from the stat sheet): team slabs with their scores, then each stat with a bar split by share ---- */
   #pStats { width: 1180px; }
   .st-teams { display: grid; grid-template-columns: 1fr 1fr; height: 104px; }
   .st-team { display: flex; align-items: center; gap: 18px; padding: 0 0 0 26px; }
@@ -662,11 +662,14 @@
   .st-row .v small { font-size: 26px; color: rgba(255,255,255,.6); margin-left: 8px; }
   .st-row .v.lo { color: rgba(255,255,255,.45); }
   .st-row .lbl { text-align: center; font-size: 25px; font-weight: 700; letter-spacing: .14em; color: rgba(255,255,255,.72); }
-  .st-row .bar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; height: 10px; margin-top: 9px; }
-  .st-row .bar > div { position: relative; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; }
+  /* One full bar split by share: each team fills from its own end and they meet at the split (tied = the
+     center tick). A dark seam marks the meeting point; with nothing yet on either side it's an even, dimmed split. */
+  .st-row .bar { position: relative; height: 10px; margin-top: 9px; border-radius: 2px; overflow: hidden; transition: opacity .4s; }
   .st-row .bar i { position: absolute; top: 0; bottom: 0; transition: width .6s cubic-bezier(.2,.8,.2,1); }
-  .st-row .bar > div:first-child i { right: 0; transform-origin: right; }
-  .st-row .bar > div:last-child i { left: 0; transform-origin: left; }
+  .st-row .bar i:first-child { left: 0; transform-origin: left; }
+  .st-row .bar i:last-child { right: 0; transform-origin: right; box-shadow: inset 3px 0 0 rgba(0,0,0,.6); }
+  .st-row .bar::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: rgba(0,0,0,.45); }
+  .st-row .bar.none { opacity: .3; }
 
   /* ---- Fan vote results: the leader's headshot on their team's slab beside every nominee's share ---- */
   #pVote { width: 1380px; }
@@ -1829,7 +1832,7 @@
       }
       span.style.transform = `scaleX(${Math.max(.6, max / w).toFixed(3)})`;
     };
-    // Team stats: team slabs with their scores, then a row per stat with bars out from the middle.
+    // Team stats: team slabs with their scores, then a row per stat with a bar split by share.
     // Rows are built once per matchup; the numbers and bars update in place as the sheet changes (the bars glide).
     let stSig = '', stRefs = [];
     const renderStatsPanel = () => {
@@ -1852,12 +1855,12 @@
         }
         stRefs = TEAM_ROWS.map(([label], i) => {
           const row = at(el('div', 'st-row a-up'), .55 + i * .06);
-          const lv = el('div', 'v'), rv = el('div', 'v'), mid = el('div'), bar = el('div', 'bar'), lb = el('div'), rb = el('div');
+          const lv = el('div', 'v'), rv = el('div', 'v'), mid = el('div'), bar = el('div', 'bar');
           const lf = at(el('i', 'a-grow'), .75 + i * .06), rf = at(el('i', 'a-grow'), .75 + i * .06);
-          lb.append(lf); rb.append(rf); bar.append(lb, rb);
+          bar.append(lf, rf);
           mid.append(el('div', 'lbl', label), bar);
           row.append(lv, mid, rv);
-          return { lv, rv, lf, rf };
+          return { lv, rv, lf, rf, bar };
         });
         $('pstRows').replaceChildren(...stRefs.map(r => r.lv.parentNode));
       }
@@ -1870,7 +1873,7 @@
         // The better number stays bright; for turnovers that's the smaller one.
         const better = label === 'Turnovers' ? (a, b) => a < b : (a, b) => a > b;
         r.lv.classList.toggle('lo', better(rn, ln)); r.rv.classList.toggle('lo', better(ln, rn));
-        r.lf.style.width = (tot ? 100 * ln / tot : 0) + '%'; r.rf.style.width = (tot ? 100 * rn / tot : 0) + '%';
+        const lw = tot ? 100 * ln / tot : 50; r.lf.style.width = lw + '%'; r.rf.style.width = (100 - lw) + '%'; r.bar.classList.toggle('none', !tot);
         r.lf.style.background = barColor(L); r.rf.style.background = barColor(R);
       });
     };

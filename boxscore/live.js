@@ -276,11 +276,13 @@
     const cmp = el('div', 'card cmp'), rowsA = S.cmp(A.tot);
     S.cmp(H.tot).forEach(([label, hv, ha, isPct, lowGood], i) => {
       const [, av, aa] = rowsA[i];
-      const r = el('div', 'row'), mid2 = el('div'), bar = el('div', 'bar2'), lb = el('div'), rb = el('div'), lf = el('i'), rf = el('i');
+      const r = el('div', 'row'), mid2 = el('div'), bar = el('div', 'bar2'), lf = el('i'), rf = el('i');
       const val = (v, a, cls) => { const d = el('div', 'v ' + cls); d.append(isPct ? v + '-' + a : String(v)); if (isPct) d.append(el('small', null, pct(v, a))); return d; };
       const hs = isPct ? (ha ? hv / ha : 0) : hv, as = isPct ? (aa ? av / aa : 0) : av, tot = hs + as;
-      lf.style.cssText = `width:${tot ? 100 * hs / tot : 0}%;background:${barOf('home', g)}`; rf.style.cssText = `width:${tot ? 100 * as / tot : 0}%;background:${barOf('away', g)}`;
-      lb.append(lf); rb.append(rf); bar.append(lb, rb); mid2.append(el('div', 'lbl', label), bar);
+      // Home's share fills from the left, away fills the rest; nothing yet on either side shows an even, dimmed split.
+      lf.style.cssText = `width:${tot ? 100 * hs / tot : 50}%;background:${barOf('home', g)}`; rf.style.background = barOf('away', g);
+      if (!tot) bar.classList.add('none');
+      bar.append(lf, rf); mid2.append(el('div', 'lbl', label), bar);
       const hv2 = val(hv, ha, 'L'), av2 = val(av, aa, 'R'), better = lowGood ? (a, b) => a < b : (a, b) => a > b;
       if (better(as, hs)) hv2.classList.add('lo'); if (better(hs, as)) av2.classList.add('lo');
       r.append(hv2, mid2, av2); cmp.append(r);
