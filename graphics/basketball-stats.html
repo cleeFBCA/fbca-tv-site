@@ -95,6 +95,19 @@
   .act.sel { background: var(--gold); color: var(--pine); border-color: var(--gold-hi); }
   .pl.out { opacity: .55; }
   .empty { font-size: 14px; color: var(--chalk-dim); padding: 10px; border: 1px dashed var(--line); border-radius: 8px; }
+  /* On the floor (five slots) above the bench; Starters / Sub set who's out there */
+  .grp { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; font-family: var(--font-display); font-weight: 800; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-dim); }
+  .grp:first-of-type { margin-top: 4px; }
+  .grp .tools { margin-left: auto; display: flex; gap: 6px; }
+  .grp .tools button { min-height: 36px; padding: 4px 12px; font-family: var(--font-body); font-size: 14px; letter-spacing: 0; text-transform: none; }
+  .grp .tools button.on { background: var(--gold); color: var(--pine); border-color: var(--gold); }
+  .floor { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .slot { min-height: 64px; border: 1px dashed var(--line); border-radius: 8px; display: grid; place-items: center; font-size: 13px; color: var(--chalk-dim); }
+  .lu-hint { font-size: 14px; color: var(--chalk); background: var(--field); border: 1px solid var(--gold); border-radius: 8px; padding: 8px 10px; margin: 0 0 8px; line-height: 1.4; }
+  .lu-hint.warn { border-color: var(--tally); }
+  .pl.going { outline: 3px solid var(--tally); outline-offset: 2px; }
+  .pl.coming { outline: 3px solid var(--ok); outline-offset: 2px; }
+  .pad.locked .act { opacity: .35; pointer-events: none; }
 
   /* Play buttons, pinned to the bottom on phones so they're always under the thumb */
   .pad { margin-top: 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -269,6 +282,7 @@
   let shown = 'home';                       // team on screen on a phone with one keeper
   let pick = {};                            // { side, player } or { type }, waiting for the other half
   let assist = null;                        // { side, scorer, until } after a made basket
+  let lineup = null;                        // setting the floor: { side, kind: 'starters', draft: [ids] } or { side, kind: 'sub', out, in }
   let ws = null, wsOpen = false, lastPong = 0, sending = false, sendErr = '', tab = 'plays';
 
   // ---- The game as this device sees it: the worker's copy plus plays not sent yet ----
@@ -281,7 +295,7 @@
       if (p.body.gameId !== server.meta.gameId) continue;
       if (p.kind === 'events') for (const e of p.body.events) if (!have.has(e.id)) { events.push({ ...e, unsent: true }); have.add(e.id); }
       if (p.kind === 'undo') events = events.filter(e => !p.body.ids.includes(e.id));
-      if (p.kind === 'meta') Object.assign(meta, p.body.meta);
+      if (p.kind === 'meta') { const { starters, ...rest } = p.body.meta; Object.assign(meta, rest); if (starters) meta.starters = { ...(meta.starters || {}), ...starters }; }
     }
     return { meta, events };
   };
@@ -298,7 +312,7 @@
       let fouls = 0;
       const counted = foulPeriods(v.meta.period);
       for (const e of v.events) {
-        if (e.side !== side) continue;
+        if (e.side !== side || !(e.type in TYPES)) continue; // subs (in / out) aren't stats
         tot[e.type]++;
         (byId.get(e.player) || team)[e.type]++;
         if (e.type === 'pf' && counted.includes(e.period)) fouls++;
@@ -324,6 +338,71 @@
     return p ? (p.num ? '#' + p.num + ' ' : '') + p.name : 'Removed player';
   };
 
+  // Game time for minutes: the same clock math as the box score's lead stats (boxscore/live.js).
+  const LEAD_PTS = { m2: 2, m3: 3, mft: 1 }, LEAD_PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3'];
+  // Game time in seconds from the opening tip to `left` seconds left in period p (the stat keeper's period names).
+  const leadClock = (qMin, otMin) => {
+    const q = (qMin || 8) * 60, ot = (otMin || 4) * 60, len = i => i < 4 ? q : ot;
+    const at = (p, left) => { const i = LEAD_PERIODS.indexOf(p); return i < 0 || !(left >= 0) ? null : (i < 4 ? i * q : 4 * q + (i - 4) * ot) + Math.max(0, len(i) - left); };
+    return { at, end: p => at(p, 0) };
+  };
+
+  // Who's on the floor and minutes played (basketball). The same code is in boxscore/live.js and
+  // graphics/basketball-stats.html. The stat keeper sets each team's five starters (meta.starters) and records each
+  // substitution as an "out" and an "in" play, stamped with the game clock like every play. Starters go in at the
+  // opening tip. A player's minutes are the game time between going in and coming out (or now, while still on the
+  // floor): game clock, so timeouts and halftime don't count. If any of a team's subs has no clock stamp (the scorebug
+  // wasn't sharing its clock), that team's minutes stay blank rather than guess.
+  // Game time now, in seconds from the opening tip: the shared clock, or the end of the period at halftime / the final.
+  const gameNow = (m, clock) => {
+    if (m.status === 'final' || m.status === 'half') return clock.end(m.period);
+    const c = m.clock;
+    if (!c || m.clockSrc !== 'scorebug' || Date.now() - (m.clockAt || 0) >= 150000) return null;
+    return clock.at(m.period, Math.max(0, (c.base || 0) - (c.run ? Date.now() - (c.startedAt || Date.now()) : 0)) / 1000);
+  };
+  // → { floor: five slots of player ids (null = open; a sub takes the slot of the player going out),
+  //     secs: { id: seconds played } or null when untimed }
+  const floorTrack = (events, starters, side, clock, now) => {
+    const floor = (starters || []).slice(0, 5), inAt = new Map(floor.map(id => [id, 0])), secs = {};
+    while (floor.length < 5) floor.push(null);
+    let timed = true, lastT = 0;
+    for (const e of events) {
+      if (e.side !== side || (e.type !== 'in' && e.type !== 'out')) continue;
+      const m = /^(\d+):(\d\d)$/.exec(e.min || ''), t = m ? clock.at(e.period, +m[1] * 60 + +m[2]) : null;
+      if (t == null) timed = false; else lastT = Math.max(lastT, t);
+      const slot = floor.indexOf(e.player);
+      if (e.type === 'out' && slot >= 0) {
+        const t0 = inAt.get(e.player);
+        if (t != null && t0 != null) secs[e.player] = (secs[e.player] || 0) + Math.max(0, t - t0);
+        floor[slot] = null; inAt.delete(e.player);
+      } else if (e.type === 'in' && slot < 0) {
+        const open = floor.indexOf(null);
+        if (open >= 0) floor[open] = e.player; else floor.push(e.player);
+        inAt.set(e.player, t);
+      }
+    }
+    const end = now == null ? lastT : Math.max(now, lastT);
+    for (const [id, t0] of inAt) if (t0 != null) secs[id] = (secs[id] || 0) + Math.max(0, end - t0);
+    return { floor, secs: timed ? secs : null };
+  };
+  // Minutes as box scores show them: whole minutes, rounded.
+  const minText = sec => sec == null ? '–' : String(Math.round(sec / 60));
+  const clockOf = v => leadClock(v.meta.qMin, v.meta.otMin);
+  // A team's starters (players still on its roster), and who's on the floor now with everyone's seconds played.
+  const startersOf = (v, side) => ((v.meta.starters || {})[side] || []).filter(id => (v.meta.rosters[side] || []).some(p => p.id === id));
+  const floorOf = (v, side) => { const c = clockOf(v); return floorTrack(v.events, startersOf(v, side), side, c, gameNow(v.meta, c)); };
+  const isSub = e => e.type === 'in' || e.type === 'out';
+  // A substitution is two plays with one id stem: <stem>-o (going out) and <stem>-i (coming in). Undo takes both.
+  const subIds = (v, e) => { if (!isSub(e)) return [e.id]; const stem = e.id.replace(/-[oi]$/, ''); return v.events.filter(x => x.id === stem + '-o' || x.id === stem + '-i').map(x => x.id); };
+  const subText = (v, side, outId, inId) => inId && outId ? 'Sub: ' + who(v, side, inId) + ' in for ' + who(v, side, outId)
+    : inId ? 'Sub: ' + who(v, side, inId) + ' in' : 'Sub: ' + who(v, side, outId) + ' out';
+  const playText = (v, e) => {
+    if (!isSub(e)) return who(v, e.side, e.player) + ' · ' + TYPES[e.type];
+    const pair = subIds(v, e).map(id => v.events.find(x => x.id === id));
+    const o = pair.find(x => x.type === 'out'), i = pair.find(x => x.type === 'in');
+    return subText(v, e.side, o && o.player, i && i.player);
+  };
+
   // ---- Sending ----
   const savePending = () => store.set(LS.pending, pending);
   const setServer = st => {
@@ -341,7 +420,10 @@
     const body = { gameId: server.meta.gameId, ...payload }, last = pending[pending.length - 1];
     const lastBusy = sending && pending.length === 1; // the one being sent can't change
     if (kind === 'events' && last && last.kind === 'events' && !lastBusy && last.body.gameId === body.gameId) last.body.events.push(...payload.events);
-    else if (kind === 'meta' && last && last.kind === 'meta' && !lastBusy && last.body.gameId === body.gameId) last.body.meta = { ...last.body.meta, ...payload.meta };
+    else if (kind === 'meta' && last && last.kind === 'meta' && !lastBusy && last.body.gameId === body.gameId) {
+      const st = last.body.meta.starters || payload.meta.starters ? { starters: { ...(last.body.meta.starters || {}), ...(payload.meta.starters || {}) } } : {};
+      last.body.meta = { ...last.body.meta, ...payload.meta, ...st };
+    }
     else pending.push({ kind, body });
     savePending(); render(); flush();
   };
@@ -428,25 +510,64 @@
     assist = (type === 'm2' || type === 'm3') && player !== 'team' ? { side, scorer: player, until: Date.now() + 7000 } : null;
     toast(who(v, side, player) + ' · ' + TYPES[type], ev.id);
   };
-  const undo = id => {
-    // Not sent yet: just take it out. Otherwise ask the worker to remove it.
-    for (let i = pending.length - 1; i >= 0; i--) {
-      const p = pending[i];
-      if (p.kind !== 'events' || (i === 0 && sending)) continue;
-      const j = p.body.events.findIndex(e => e.id === id);
-      if (j < 0) continue;
-      p.body.events.splice(j, 1);
-      if (!p.body.events.length) pending.splice(i, 1);
-      savePending(); render(); return;
+  // ids: one play's id, or several (a substitution's two halves).
+  const undo = ids => {
+    const remote = [];
+    for (const id of [].concat(ids)) {
+      // Not sent yet: just take it out. Otherwise ask the worker to remove it.
+      let gone = false;
+      for (let i = pending.length - 1; i >= 0 && !gone; i--) {
+        const p = pending[i];
+        if (p.kind !== 'events' || (i === 0 && sending)) continue;
+        const j = p.body.events.findIndex(e => e.id === id);
+        if (j < 0) continue;
+        p.body.events.splice(j, 1);
+        if (!p.body.events.length) pending.splice(i, 1);
+        gone = true;
+      }
+      if (!gone) remote.push(id);
     }
-    enqueue('undo', { ids: [id] });
+    savePending();
+    if (remote.length) enqueue('undo', { ids: remote }); else render();
+  };
+  // A substitution: the player going out and the one coming in (either may be missing), stamped like a play.
+  const logSub = (side, outId, inId) => {
+    const v = view(); if (!v || (!outId && !inId)) return;
+    const stem = rid(), stamp = { side, period: v.meta.period, at: Date.now() }, time = gameTime(v.meta);
+    if (time) stamp.min = time;
+    const evs = [];
+    if (outId) evs.push({ id: stem + '-o', player: outId, type: 'out', ...stamp });
+    if (inId) evs.push({ id: stem + '-i', player: inId, type: 'in', ...stamp });
+    enqueue('events', { events: evs });
+    if (navigator.vibrate) navigator.vibrate(15);
+    keepAwake();
+    toast(subText(v, side, outId, inId), evs.map(e => e.id));
+  };
+  // Taps while setting the floor. Starters: pick up to five. Sub: the player going out (on the floor) and the one
+  // coming in (on the bench), in either order; a bench player with an open spot on the floor just goes in.
+  const lineupTap = (side, id) => {
+    const v = view(); if (!v || !lineup || lineup.side !== side) return;
+    if (lineup.kind === 'starters') {
+      const d = lineup.draft, i = d.indexOf(id);
+      if (i >= 0) d.splice(i, 1);
+      else if (d.length < 5) d.push(id);
+      else toast('That\'s five. Tap a starter to take them off first.');
+      render(); return;
+    }
+    const floor = floorOf(v, side).floor;
+    if (floor.includes(id)) lineup.out = lineup.out === id ? null : id;
+    else lineup.in = lineup.in === id ? null : id;
+    if (lineup.in && (lineup.out || floor.includes(null))) { logSub(side, lineup.out, lineup.in); lineup.out = lineup.in = null; }
+    render();
   };
   const tapPlayer = (side, player) => {
+    if (lineup) { lineupTap(side, player); return; }
     if (pick.type) { logPlay(side, player, pick.type); pick = {}; }
     else pick = pick.side === side && pick.player === player ? {} : { side, player };
     render();
   };
   const tapAction = type => {
+    if (lineup) return;
     if (pick.player) { logPlay(pick.side, pick.player, type); pick = {}; }
     else pick = pick.type === type ? {} : { type };
     render();
@@ -503,26 +624,66 @@
       const box = paint(el('div', 'team' + (side === shown || sides.length === 1 ? ' on' : '')), v, side);
       const h = el('h2', null, v.meta.names[side]);
       h.append(el('small', null, pts(t[side].tot) + ' pts · ' + t[side].fouls + (t[side].fouls === 1 ? ' team foul' : ' team fouls')));
-      const grid = el('div', 'players');
-      for (const p of t[side].players) {
-        const b = el('button', 'pl' + (pick.side === side && pick.player === p.id ? ' sel' : '') + (p.pf >= 5 ? ' out' : ''));
-        b.append(el('b', null, p.num ? '#' + p.num : '–'), el('span', null, lastName(p.name)), el('small', null, pts(p) + ' pts · ' + p.pf + ' F'));
-        b.setAttribute('aria-label', (p.num ? '#' + p.num + ' ' : '') + p.name + ', ' + pts(p) + ' points, ' + p.pf + ' fouls');
+      const mode = lineup && lineup.side === side ? lineup : null, f = floorOf(v, side);
+      const floor = mode && mode.kind === 'starters' ? [...mode.draft, null, null, null, null, null].slice(0, 5) : f.floor;
+      const onFloor = new Set(floor.filter(Boolean)), byId = new Map(t[side].players.map(p => [p.id, p]));
+      const btn = p => {
+        const cls = (pick.side === side && pick.player === p.id ? ' sel' : '') + (p.pf >= 5 ? ' out' : '')
+          + (mode && mode.kind === 'sub' && mode.out === p.id ? ' going' : '') + (mode && mode.kind === 'sub' && mode.in === p.id ? ' coming' : '');
+        const b = el('button', 'pl' + cls), min = f.secs && onFloor.has(p.id) ? ' · ' + minText(f.secs[p.id] || 0) + ' min' : '';
+        b.append(el('b', null, p.num ? '#' + p.num : '–'), el('span', null, lastName(p.name)), el('small', null, pts(p) + ' pts · ' + p.pf + ' F' + min));
+        b.setAttribute('aria-label', (p.num ? '#' + p.num + ' ' : '') + p.name + ', ' + pts(p) + ' points, ' + p.pf + ' fouls' + (onFloor.has(p.id) ? ', on the floor' : ''));
         b.onclick = () => tapPlayer(side, p.id);
-        grid.append(b);
-      }
-      const tb = el('button', 'pl team-pl' + (pick.side === side && pick.player === 'team' ? ' sel' : ''));
-      tb.append(el('b', null, 'TEAM'), el('small', null, 'rebounds, TOs'));
-      tb.onclick = () => tapPlayer(side, 'team');
-      grid.append(tb);
+        return b;
+      };
       box.append(h);
-      if (!t[side].players.length) box.append(el('p', 'empty', 'No roster yet. Add players in Setup, or use TEAM for now.'));
+      if (!t[side].players.length) {
+        box.append(el('p', 'empty', 'No roster yet. Add players in Setup, or use TEAM for now.'));
+      } else {
+        // On the floor: five spots, with the Starters and Sub buttons (or Save / Done while setting them)
+        const tools = el('div', 'tools'), b = (label, fn, cls) => { const x = el('button', cls || null, label); x.onclick = fn; tools.append(x); return x; };
+        if (!mode) {
+          b('Starters', () => { pick = {}; lineup = { side, kind: 'starters', draft: startersOf(v, side).slice() }; render(); });
+          b('Sub', () => { pick = {}; lineup = { side, kind: 'sub', out: null, in: null }; render(); });
+        } else if (mode.kind === 'starters') {
+          b('Save starters (' + mode.draft.length + '/5)', () => { enqueue('meta', { meta: { starters: { [side]: mode.draft.slice() } } }); lineup = null; toast('Starters saved.'); render(); }, 'on');
+          b('Cancel', () => { lineup = null; render(); });
+        } else {
+          if (mode.out) b('Take out', () => { logSub(side, mode.out, null); mode.out = null; render(); });
+          b('Done', () => { lineup = null; render(); }, 'on');
+        }
+        const g1 = el('div', 'grp'); g1.append('On the floor', tools); box.append(g1);
+        if (mode && mode.kind === 'starters') {
+          const played = v.events.some(e => e.side === side);
+          box.append(el('p', 'lu-hint' + (played ? ' warn' : ''), played
+            ? 'This game already has plays. Changing the starters now changes who started, and everyone\'s minutes. For a change during the game, use Sub.'
+            : 'Tap five players for the starting lineup. Tap one again to take them off.'));
+        } else if (mode) {
+          box.append(el('p', 'lu-hint' + (gameTime(v.meta) ? '' : ' warn'), (mode.out ? 'Now tap who comes in for ' + who(v, side, mode.out) + ', or Take out.'
+            : mode.in ? 'Now tap who goes out for ' + who(v, side, mode.in) + '.' : 'Tap the player going out and the one coming in, in either order. Keep going for more subs; Done when play resumes.')
+            + (gameTime(v.meta) ? '' : ' The scorebug isn\'t sharing its clock, so these subs change who\'s on the floor but minutes stay blank.')));
+        }
+        const fl = el('div', 'floor');
+        if (!onFloor.size && !mode) box.append(el('p', 'empty', 'Tap Starters to set the starting five. Then use Sub to swap players and keep their minutes.'));
+        else { floor.forEach(id => fl.append(id && byId.get(id) ? btn(byId.get(id)) : el('div', 'slot', 'Open'))); box.append(fl); }
+        const g2 = el('div', 'grp'); g2.append('Bench'); box.append(g2);
+      }
+      const grid = el('div', 'players');
+      for (const p of t[side].players) if (!onFloor.has(p.id)) grid.append(btn(p));
+      if (!mode) {
+        const tb = el('button', 'pl team-pl' + (pick.side === side && pick.player === 'team' ? ' sel' : ''));
+        tb.append(el('b', null, 'TEAM'), el('small', null, 'rebounds, TOs'));
+        tb.onclick = () => tapPlayer(side, 'team');
+        grid.append(tb);
+      }
       box.append(grid);
       return box;
     }));
 
     const hint = el('div', 'pick-hint');
-    if (pick.player) hint.append('Now tap what ', el('b', null, who(v, pick.side, pick.player)), ' did.');
+    $('pad').classList.toggle('locked', !!lineup);
+    if (lineup) hint.textContent = lineup.kind === 'starters' ? 'Setting starters: save or cancel to record plays.' : 'Making subs: tap Done to record plays.';
+    else if (pick.player) hint.append('Now tap what ', el('b', null, who(v, pick.side, pick.player)), ' did.');
     else if (pick.type) hint.append('Now tap who: ', el('b', null, TYPES[pick.type]), '.');
     else hint.textContent = 'Tap a player, then the play. Or the play, then the player.';
     $('pad').replaceChildren(hint, ...PAD.map(([type, label, cls]) => {
@@ -548,13 +709,14 @@
     } else { as.hidden = true; if (assist && Date.now() >= assist.until) assist = null; }
 
     // Recent plays, newest first (this keeper's team only, with two keepers)
-    const mine = v.events.filter(e => sides.includes(e.side));
+    // A substitution's two halves show as one line.
+    const mine = v.events.filter(e => sides.includes(e.side) && !(e.type === 'in' && v.events.some(x => x.id === e.id.replace(/-i$/, '-o'))));
     $('btnUndo').disabled = !mine.length;
     $('log').replaceChildren(...mine.slice(-12).reverse().map(e => {
       const li = el('li');
-      li.append(el('span', 'per', e.period + (e.min ? ' ' + e.min : '')), el('span', 'what', who(v, e.side, e.player) + ' · ' + TYPES[e.type]));
+      li.append(el('span', 'per', e.period + (e.min ? ' ' + e.min : '')), el('span', 'what', playText(v, e)));
       if (e.unsent) li.append(el('span', 'unsent', 'not sent'));
-      const b = el('button', null, 'Undo'); b.onclick = () => undo(e.id); li.append(b);
+      const b = el('button', null, 'Undo'); b.onclick = () => undo(subIds(v, e)); li.append(b);
       return li;
     }));
     if (!mine.length) $('log').append(el('li', null, 'No plays yet.'));
@@ -562,7 +724,7 @@
   $('btnUndo').onclick = () => {
     const v = view(); if (!v) return;
     const mine = v.events.filter(e => sidesShown(v).includes(e.side));
-    if (mine.length) { const e = mine[mine.length - 1]; undo(e.id); toast('Undid ' + who(v, e.side, e.player) + ' · ' + TYPES[e.type]); }
+    if (mine.length) { const e = mine[mine.length - 1], text = playText(v, e); undo(subIds(v, e)); toast('Undid ' + text); }
   };
   setInterval(() => { if (assist && Date.now() >= assist.until) render(); }, 1000);
 
@@ -573,10 +735,13 @@
     $('boxes').replaceChildren(...SIDES.map(side => {
       const card = el('div', 'card'), tbl = el('table', 'box'), head = el('tr');
       card.append(paint(el('h3', 'tc', v.meta.names[side] + ' · ' + pts(t[side].tot)), v, side));
-      ['#', 'Player', ...COLS.map(c => c[0])].forEach(h => head.append(el('th', null, h)));
+      // With starters set: starters first (marked *), then the bench, and minutes played.
+      const st = startersOf(v, side), f = st.length ? floorOf(v, side) : null;
+      ['#', 'Player', ...(f ? ['MIN'] : []), ...COLS.map(c => c[0])].forEach(h => head.append(el('th', null, h)));
       tbl.append(head);
-      const row = (cls, num, name, p) => { const tr = el('tr', cls); tr.append(el('td', null, num), el('td', null, name), ...COLS.map(c => el('td', null, String(c[1](p))))); tbl.append(tr); };
-      t[side].players.forEach(p => row('', p.num, p.name, p));
+      const row = (cls, num, name, p, min) => { const tr = el('tr', cls); tr.append(el('td', null, num), el('td', null, name), ...(f ? [el('td', null, min ?? '')] : []), ...COLS.map(c => el('td', null, String(c[1](p))))); tbl.append(tr); };
+      const order = f ? [...st.map(id => t[side].players.find(p => p.id === id)), ...t[side].players.filter(p => !st.includes(p.id))] : t[side].players;
+      order.forEach(p => row('', p.num, p.name + (f && st.includes(p.id) ? ' *' : ''), p, f ? minText(f.secs ? f.secs[p.id] || 0 : null) : null));
       if (Object.values(t[side].team).some(Boolean)) row('teamrow', '', 'Team / removed', t[side].team);
       row('tot', '', 'Total', t[side].tot);
       const wrap = el('div', 'scroll'); wrap.append(tbl); card.append(wrap);

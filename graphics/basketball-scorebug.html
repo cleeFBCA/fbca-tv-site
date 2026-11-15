@@ -1162,7 +1162,7 @@
 
         <div data-pane="lu" hidden>
           <div class="row-btns" id="luTeams"></div>
-          <p class="hint" style="margin-top:0">Pick each starter from the roster or type one like <b>#3 Jordan Lee</b>. Headshots come from Setup → Player photos (a number shows where there isn't one).</p>
+          <p class="hint" style="margin-top:0">The starters fill in from the stat keeper page when its keeper sets them (with stats from the stat keeper). Or pick each one from the roster or type one like <b>#3 Jordan Lee</b>. Headshots come from Setup → Player photos (a number shows where there isn't one).</p>
           <div id="luRows"></div>
           <label for="luCoach">Head coach</label><input id="luCoach" maxlength="40" placeholder="Coach Smith">
           <div class="row-btns" style="margin-top:12px">
@@ -3474,12 +3474,26 @@
     }
     data.lead = leadTrack(skGame.events, leadClock(s.qMin, s.otMin));
     skLastPlay = skGame.events.reduce((a, ev) => Math.max(a, ev.at || 0), 0);
+    // Starters set on the stat keeper page fill the starting lineup, each time they change there. A position stays
+    // with its player; typed-in lines are left alone until the stat keeper's starters change again.
+    let luChanged = false;
+    for (const side of SIDES) {
+      const ids = ((skGame.meta.starters || {})[side] || []), roster = skGame.meta.rosters[side] || [];
+      const lines = ids.map(id => roster.find(p => p.id === id)).filter(Boolean).map(p => (p.num ? '#' + p.num + ' ' : '') + p.name);
+      const sig = JSON.stringify(lines), was = (s.luFrom || {})[side];
+      if (!lines.length || sig === was) continue;
+      s.luFrom = { ...(s.luFrom || {}), [side]: sig };
+      const old = s.lu[side].p;
+      s.lu[side].p = Array.from({ length: 5 }, (_, i) => { const line = lines[i] || '', o = old.find(r => r.line && r.line === line); return { line, pos: o ? o.pos : '' }; });
+      luChanged = true;
+    }
     const first = !sheetLive(), { at, err, ...prev } = s.sheet;
     if (first || err || JSON.stringify(data) !== JSON.stringify(prev)) {
       s.sheet = { at: Date.now(), err: '', ...data };
       if (first && s.src.fouls === 'sheet') SIDES.forEach(side => s.foulBase[side] = s.sheet[side].tot.pf - s[side].fouls);
       sheetToBug(); save();
-    } else renderSheetStatus();
+    } else if (luChanged) save();
+    else renderSheetStatus();
   };
   // ---- Share the bug's clock with the basketball stat keeper ----
   // Whenever the clock starts, stops, is set, or the quarter changes (and once a minute so the stat pages know

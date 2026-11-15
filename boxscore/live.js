@@ -82,6 +82,47 @@
     return end > 0 ? { home: led.home / end, away: led.away / end } : { home: 0, away: 0 };
   };
 
+  // Who's on the floor and minutes played (basketball). The same code is in boxscore/live.js and
+  // graphics/basketball-stats.html. The stat keeper sets each team's five starters (meta.starters) and records each
+  // substitution as an "out" and an "in" play, stamped with the game clock like every play. Starters go in at the
+  // opening tip. A player's minutes are the game time between going in and coming out (or now, while still on the
+  // floor): game clock, so timeouts and halftime don't count. If any of a team's subs has no clock stamp (the scorebug
+  // wasn't sharing its clock), that team's minutes stay blank rather than guess.
+  // Game time now, in seconds from the opening tip: the shared clock, or the end of the period at halftime / the final.
+  const gameNow = (m, clock) => {
+    if (m.status === 'final' || m.status === 'half') return clock.end(m.period);
+    const c = m.clock;
+    if (!c || m.clockSrc !== 'scorebug' || Date.now() - (m.clockAt || 0) >= 150000) return null;
+    return clock.at(m.period, Math.max(0, (c.base || 0) - (c.run ? Date.now() - (c.startedAt || Date.now()) : 0)) / 1000);
+  };
+  // → { floor: five slots of player ids (null = open; a sub takes the slot of the player going out),
+  //     secs: { id: seconds played } or null when untimed }
+  const floorTrack = (events, starters, side, clock, now) => {
+    const floor = (starters || []).slice(0, 5), inAt = new Map(floor.map(id => [id, 0])), secs = {};
+    while (floor.length < 5) floor.push(null);
+    let timed = true, lastT = 0;
+    for (const e of events) {
+      if (e.side !== side || (e.type !== 'in' && e.type !== 'out')) continue;
+      const m = /^(\d+):(\d\d)$/.exec(e.min || ''), t = m ? clock.at(e.period, +m[1] * 60 + +m[2]) : null;
+      if (t == null) timed = false; else lastT = Math.max(lastT, t);
+      const slot = floor.indexOf(e.player);
+      if (e.type === 'out' && slot >= 0) {
+        const t0 = inAt.get(e.player);
+        if (t != null && t0 != null) secs[e.player] = (secs[e.player] || 0) + Math.max(0, t - t0);
+        floor[slot] = null; inAt.delete(e.player);
+      } else if (e.type === 'in' && slot < 0) {
+        const open = floor.indexOf(null);
+        if (open >= 0) floor[open] = e.player; else floor.push(e.player);
+        inAt.set(e.player, t);
+      }
+    }
+    const end = now == null ? lastT : Math.max(now, lastT);
+    for (const [id, t0] of inAt) if (t0 != null) secs[id] = (secs[id] || 0) + Math.max(0, end - t0);
+    return { floor, secs: timed ? secs : null };
+  };
+  // Minutes as box scores show them: whole minutes, rounded.
+  const minText = sec => sec == null ? '–' : String(Math.round(sec / 60));
+
   // Players and team totals for both sides, the score, and the latest play.
   const compute = (sport, st) => {
     const m = st.meta, keys = sport === 'soccer' ? S_KEYS : B_KEYS, out = { sport, meta: m, sides: {} };
@@ -103,15 +144,20 @@
     // Soccer: an own goal (recorded on the defender) counts for the other team.
     if (sport === 'soccer') { out.sides.home.score += out.sides.away.tot.og; out.sides.away.score += out.sides.home.tot.og; }
     const evs = st.events || [];
-    out.latest = evs.length ? evs[evs.length - 1] : null;
-    // Basketball: largest lead and percent led (to now: the shared clock, or the end of the period at halftime / the final).
+    const plays = evs.filter(e => e.type !== 'in' && e.type !== 'out'); // substitutions aren't plays to show
+    out.latest = plays.length ? plays[plays.length - 1] : null;
+    // Basketball: largest lead and percent led, and starters and minutes (all to now; see gameNow).
     if (sport === 'basketball') {
-      const clock = leadClock(m.qMin, m.otMin), L = leadTrack(evs, clock), c = m.clock;
-      const now = m.status === 'final' || m.status === 'half' ? clock.end(m.period)
-        : c && m.clockSrc === 'scorebug' && Date.now() - (m.clockAt || 0) < 150000
-          ? clock.at(m.period, Math.max(0, (c.base || 0) - (c.run ? Date.now() - (c.startedAt || Date.now()) : 0)) / 1000) : null;
-      const pct = leadPct(L, now);
-      for (const side of ['home', 'away']) Object.assign(out.sides[side].tot, { lead: L.big[side], ledPct: pct ? pct[side] : null });
+      const clock = leadClock(m.qMin, m.otMin), L = leadTrack(evs, clock), now = gameNow(m, clock), pct = leadPct(L, now);
+      for (const side of ['home', 'away']) {
+        const t = out.sides[side], starters = ((m.starters || {})[side] || []).filter(id => t.players.some(p => p.id === id));
+        Object.assign(t.tot, { lead: L.big[side], ledPct: pct ? pct[side] : null });
+        t.starters = starters;
+        if (starters.length) {
+          const f = floorTrack(evs, starters, side, clock, now);
+          for (const p of t.players) p.sec = f.secs ? f.secs[p.id] || 0 : null;
+        }
+      }
     }
     out.plays = evs.length;
     return out;
@@ -371,17 +417,26 @@
       th.append(el('span', null, t.name), el('small', null, t.score));
       card.append(th);
       if (!t.players.length) { card.append(el('div', 'none', 'No roster entered for this team yet.')); return card; }
-      const tbl = el('table'), hr = el('tr');
-      hr.append(el('th', null, 'Player'), ...S.cols.map(c => el('th', null, c)));
-      tbl.append(hr);
-      for (const p of t.players) {
+      // Basketball with starters set on the stat page: STARTERS, then BENCH, each under its own header, with minutes.
+      const starters = t.starters || [], split = starters.length > 0, cols = split ? ['MIN', ...S.cols] : S.cols;
+      const tbl = el('table');
+      const header = (label, cls) => { const hr = el('tr', cls); hr.append(el('th', null, label), ...cols.map(c => el('th', null, c))); tbl.append(hr); };
+      const line = p => {
         const tr = el('tr'), name = el('td');
         if (p.num) name.append(el('b', null, '#' + p.num));
         name.append(p.name);
-        tr.append(name, ...S.row(p).map((v, i) => el('td', (i === 0 ? 'pts' : '') + (v === 0 || v === '0-0' ? ' zero' : ''), v)));
+        const vals = S.row(p), first = split ? 1 : 0;
+        if (split) vals.unshift(minText(p.sec));
+        tr.append(name, ...vals.map((v, i) => el('td', (i === first ? 'pts' : '') + (v === 0 || v === '0-0' || v === '0' ? ' zero' : ''), v)));
         tbl.append(tr);
-      }
-      const tot = el('tr', 'tot'); tot.append(el('td', null, 'Team'), ...S.row(t.tot).map(v => el('td', null, v)));
+      };
+      if (split) {
+        const byId = new Map(t.players.map(p => [p.id, p]));
+        header('Starters'); starters.forEach(id => line(byId.get(id)));
+        const bench = t.players.filter(p => !starters.includes(p.id));
+        if (bench.length) { header('Bench', 'sub-h'); bench.forEach(line); }
+      } else { header('Player'); t.players.forEach(line); }
+      const tot = el('tr', 'tot'); tot.append(el('td', null, 'Team'), ...(split ? [el('td', null, '')] : []), ...S.row(t.tot).map(v => el('td', null, v)));
       tbl.append(tot);
       const sc = el('div', 'scroll'); sc.append(tbl); card.append(sc);
       return card;
@@ -420,5 +475,5 @@
   const isLive = g => !!g && g.scheduled && g.status !== 'final';
   // The tag beside the box score: LIVE, HALFTIME, FINAL, or LAST GAME (a game outside its scheduled window).
   const statusTag = g => !g ? '' : g.status === 'final' ? 'Final' : g.status === 'half' && g.scheduled ? 'Halftime' : g.scheduled ? 'Live' : 'Last game';
-  window.EotaLive = { watch, renderBox, tickBox, latestText, clockText, isLive, statusTag, playerName, PERIOD, PER_SHORT };
+  window.EotaLive = { watch, compute, renderBox, tickBox, latestText, clockText, isLive, statusTag, playerName, PERIOD, PER_SHORT };
 })();

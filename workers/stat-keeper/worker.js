@@ -11,7 +11,8 @@
 //   GET  /ws?game=basketball            WebSocket: the game on connect, then each change
 //   POST /events  { gameId, events: [{ id, side, player, type, period, at }] }
 //   POST /undo    { gameId, ids: [...] }
-//   POST /meta    { gameId, meta: { keepers, period, names, colors, rosters } }   (any subset)
+//   POST /meta    { gameId, meta: { keepers, period, names, colors, rosters, starters } }   (any subset)
+//                 starters (basketball): { home: [player ids], away: [...] }, up to five each, set on the stat page.
 //                 Soccer also: halfMin, otMin, clock { run, startedAt, base } (time played), clockSrc.
 //                 Basketball also: qMin, otMin, clock { run, startedAt, base, len } (time LEFT in the quarter,
 //                 counting down), clockSrc: the basketball scorebug shares its clock the way the soccer one does.
@@ -33,7 +34,8 @@ import { DurableObject } from 'cloudflare:workers';
 const SITE_ORIGINS = ['https://fbca.tv', 'https://www.fbca.tv'];
 // Plays each sport records. A game named "soccer…" is soccer; anything else is basketball.
 const TYPES_BY_SPORT = {
-  basketball: ['m2', 'x2', 'm3', 'x3', 'mft', 'xft', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf'],
+  // in / out: a substitution, stamped with the game clock like any play (minutes and who's on the floor).
+  basketball: ['m2', 'x2', 'm3', 'x3', 'mft', 'xft', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf', 'in', 'out'],
   // og: an own goal, recorded on the defender who put it in (their side); it counts for the other team.
   soccer: ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc', 'og']
 };
@@ -212,6 +214,12 @@ export class Game extends DurableObject {
       if (m.names) next.names = Object.fromEntries(SIDES.map(s => [s, clean(m.names[s], 60) || meta.names[s]]));
       if (m.colors) next.colors = Object.fromEntries(SIDES.map(s => [s, colorOk(m.colors[s]) ? m.colors[s].toUpperCase() : meta.colors[s]]));
       if (m.rosters) next.rosters = Object.fromEntries(SIDES.map(s => [s, m.rosters[s] ? cleanRoster(m.rosters[s]) : meta.rosters[s]]));
+      // Starters: up to five player ids per team, each once. A side left out keeps what it had.
+      if (m.starters && this.sport === 'basketball') {
+        const was = meta.starters || { home: [], away: [] };
+        next.starters = Object.fromEntries(SIDES.map(s => [s, Array.isArray(m.starters[s])
+          ? [...new Set(m.starters[s].filter(idOk))].slice(0, 5) : (was[s] || [])]));
+      }
       this.put('meta', next);
       this.send({ t: 'meta', rev: this.bump(), meta: next });
       return json({ ok: true, rev: this.rev(), meta: next });
