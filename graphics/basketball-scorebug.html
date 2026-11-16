@@ -63,8 +63,9 @@
     transform-origin: 0 0; background: var(--key);
     font-family: var(--font-display); text-transform: uppercase;
   }
+  /* The EOTA logo, in FBCA gold on every graphic */
   .logo {
-    display: block; aspect-ratio: 640 / 366; background: #fff;
+    display: block; aspect-ratio: 640 / 366; background: #EAAF0F;
     -webkit-mask: var(--logo) center / contain no-repeat; mask: var(--logo) center / contain no-repeat;
   }
 
@@ -240,6 +241,8 @@
                      filter: grayscale(1) brightness(2.4); animation: pgKen 16s ease-in-out infinite alternate; pointer-events: none; }
   .sp-photo > * { z-index: 1; }
   .sp-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  /* No photo: the team's logo, contained, in the photo's place */
+  .sp-photo img.crest { inset: 12% 10%; width: 80%; height: 76%; object-fit: contain; filter: drop-shadow(0 10px 24px rgba(0,0,0,.4)); }
   .sp-photo .bignum { position: relative; font-size: 280px; font-weight: 800; line-height: 1; color: var(--f); text-shadow: 0 8px 24px rgba(0,0,0,.35); }
   .sp-info { position: relative; display: flex; flex-direction: column; padding: 46px 56px 44px; border-left: 5px solid var(--a); }
   .sp-mark { position: absolute; top: 34px; right: 44px; height: 70px; max-width: 160px; object-fit: contain; }
@@ -606,7 +609,7 @@
   .cp-head .t { font-size: 42px; font-weight: 800; letter-spacing: .1em; }
   .cp-head .s { font-size: 30px; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.65); }
   .cp-head .s:empty { display: none; }
-  .cp-head .logo { position: absolute; right: 30px; top: 50%; width: 92px; margin-top: -26px; background: #fff; }
+  .cp-head .logo { position: absolute; right: 30px; top: 50%; width: 92px; margin-top: -26px; }
   .cp-edge { position: relative; height: 5px; overflow: hidden; display: grid; grid-template-columns: 1fr 1fr;
              background: linear-gradient(90deg, var(--field), var(--gold) 55%); }
   .cp-edge > i { display: block; }
@@ -1214,6 +1217,7 @@
           <div class="stn-row">
             <label class="switch"><input type="checkbox" id="stnOn" role="switch"><span class="track"></span><span>Station bug</span></label>
             <select id="stnCorner" aria-label="Station bug corner"><option value="tr">Top right</option><option value="tl">Top left</option></select>
+            <select id="stnColor" aria-label="Station bug color"><option value="gold">Gold</option><option value="white">White</option><option value="black">Black</option></select>
             <span class="op">Opacity <input type="range" id="stnOp" min="20" max="100" step="5"><b id="stnOpV"></b></span>
           </div>
           <p class="hint" id="stnNote"></p>
@@ -1339,7 +1343,7 @@
     // Which roster the player photos are for ('boys' | 'girls' | ''): FBCA has a boys' and a girls' team.
     squad: '',
     // Station bug: on, corner ('tr' | 'tl'), opacity in percent.
-    stn: { on: false, corner: 'tr', opacity: 60 },
+    stn: { on: false, corner: 'tr', opacity: 60, color: 'gold' },
     // Pop-up above the bar: kind 'text' | 'stat' | 'run'; until = when it comes down (0 = stays up).
     // Pregame matchup (s.panel === 'match'): title, subtitle, date/time and venue. Records come from Setup.
     // homeFull / awayFull: full school names for the title card (the bug keeps the short names).
@@ -1886,8 +1890,12 @@
         // The rules on the charcoal side use the team color, lightened when it's too dark to see there.
         const bgc = hex(t.bg, '#333333'), n = parseInt(bgc.slice(1), 16), lum = (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255;
         box.style.setProperty('--a', lum < .3 ? `color-mix(in srgb, ${bgc} 55%, #fff)` : bgc);
-        $('spPhoto').replaceChildren(p.photo ? Object.assign(el('img'), { src: p.photo, alt: '' }) : el('div', 'bignum', p.num ? '#' + p.num : ''));
-        const mark = t.logo ? Object.assign(el('img', 'sp-mark'), { src: t.logo, alt: '' }) : el('i', 'logo sp-mark');
+        // No photo: the team's logo stands in (no logo either: the number, big). The corner mark is then the EOTA
+        // logo, so the team's logo isn't on the graphic twice.
+        const crest = !p.photo && !!t.logo;
+        $('spPhoto').replaceChildren(p.photo ? Object.assign(el('img'), { src: p.photo, alt: '' })
+          : crest ? Object.assign(el('img', 'crest'), { src: t.logo, alt: '' }) : el('div', 'bignum', p.num ? '#' + p.num : ''));
+        const mark = t.logo && !crest ? Object.assign(el('img', 'sp-mark'), { src: t.logo, alt: '' }) : el('i', 'logo sp-mark');
         const name = el('div', 'sp-name'), nameText = el('span', null, p.name); name.append(nameText);
         const stats = el('div', 'sp-stats');
         p.stats.filter(x => x.v || x.l).forEach((x, i) => { const d = el('div'); d.style.setProperty('--d', i); d.append(el('b', null, x.v), el('span', null, x.l)); stats.append(d); });
@@ -2086,6 +2094,8 @@
       const stn = $('stn');
       stn.classList.toggle('on', s.stn.on); stn.classList.toggle('tr', s.stn.corner !== 'tl'); stn.classList.toggle('tl', s.stn.corner === 'tl');
       stn.style.setProperty('--o', Math.min(100, Math.max(10, s.stn.opacity)) / 100);
+      // The station bug's color: FBCA gold (like every EOTA logo on the graphics), white or black.
+      stn.style.background = { white: '#FFFFFF', black: '#000000' }[s.stn.color] || '#EAAF0F';
       $('bb').classList.toggle('hidden', !bugUp());
       paintSide('L', leftSide()); paintSide('R', rightSide());
       paintTimeout('L', leftSide()); paintTimeout('R', rightSide());
@@ -2627,9 +2637,10 @@
   // --- Station bug ---
   $('stnOn').addEventListener('change', e => { s.stn = { ...s.stn, on: e.target.checked }; save(); });
   $('stnCorner').addEventListener('change', e => { s.stn = { ...s.stn, corner: e.target.value }; save(); });
+  $('stnColor').addEventListener('change', e => { s.stn = { ...s.stn, color: e.target.value }; save(); });
   $('stnOp').addEventListener('input', e => { s.stn = { ...s.stn, opacity: +e.target.value }; save(); });
   const renderStn = () => {
-    $('stnOn').checked = s.stn.on; $('stnCorner').value = s.stn.corner; setField($('stnOp'), s.stn.opacity); $('stnOpV').textContent = s.stn.opacity + '%';
+    $('stnOn').checked = s.stn.on; $('stnCorner').value = s.stn.corner; $('stnColor').value = s.stn.color || 'gold'; setField($('stnOp'), s.stn.opacity); $('stnOpV').textContent = s.stn.opacity + '%';
     // See-through only keys cleanly with fill + key; over a chroma color it would tint.
     $('stnNote').textContent = s.stn.on && s.keyMode !== 'alpha' && s.stn.opacity < 100
       ? 'See-through needs Fill + key (Setup → Output signal). On a chroma key it shows tinted, so use 100% there.' : '';
