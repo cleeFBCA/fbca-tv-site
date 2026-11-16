@@ -2337,7 +2337,53 @@
   const store = () => {
     try { localStorage.setItem(STORE, JSON.stringify(forStorage(s))); storeWarn(true); } catch (e) { storeWarn(false); }
   };
+  // ---- Team logos for the app and box scores: shared through the stat keeper ----
+  // Whenever a team's logo (or its name) changes here, a trimmed copy up to 320x160 goes to the stat keeper, which
+  // the iOS app (box score, Lock Screen banner) and fbca.tv/boxscore read. Sent only when it changed (remembered on
+  // this computer); a removed logo is removed there too. Uses the stat keeper key, like sharing the clock.
+  const LOGO_SENT_LS = 'eota-soccer-logos-shared';
+  let logoShareTimer = 0;
+  const queueLogoShare = () => { if (isBug) return; clearTimeout(logoShareTimer); logoShareTimer = setTimeout(shareLogos, 1500); };
+  const logoForShare = src => new Promise(ok => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const w = img.naturalWidth, h = img.naturalHeight, c = Object.assign(document.createElement('canvas'), { width: w, height: h });
+        const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0);
+        const a = ctx.getImageData(0, 0, w, h).data;
+        let x0 = w, y0 = h, x1 = -1, y1 = -1;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (a[(y * w + x) * 4 + 3] > 16) {
+          if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        }
+        if (x1 < 0) { x0 = 0; y0 = 0; x1 = w - 1; y1 = h - 1; }
+        const cw = x1 - x0 + 1, ch = y1 - y0 + 1, k = Math.min(1, 320 / cw, 160 / ch);
+        const out = Object.assign(document.createElement('canvas'), { width: Math.max(1, Math.round(cw * k)), height: Math.max(1, Math.round(ch * k)) });
+        const o = out.getContext('2d'); o.imageSmoothingQuality = 'high'; o.drawImage(c, x0, y0, cw, ch, 0, 0, out.width, out.height);
+        ok(out.toDataURL('image/png'));
+      } catch (e) { ok(''); }
+    };
+    img.onerror = () => ok('');
+    img.src = src;
+  });
+  const shareLogos = async () => {
+    const key = skKey(); if (!key) return;
+    let sent = {}; try { sent = JSON.parse(localStorage.getItem(LOGO_SENT_LS) || '{}'); } catch (e) {}
+    for (const side of ['home', 'away']) {
+      const src = ((side === 'home' ? s.homeLogo : s.awayLogo) || ''), name = String((side === 'home' ? s.home : s.away) || ''), sig = name + '|' + src.length + '|' + src.slice(-60);
+      if (sent[side] === sig) continue;
+      const png = src ? await logoForShare(src) : '';
+      if (src && !png) continue;
+      try {
+        const r = await fetch(SK_API + '/logo?game=soccer', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+          body: JSON.stringify({ side, name, png }) });
+        if (r.ok) { sent[side] = sig; try { localStorage.setItem(LOGO_SENT_LS, JSON.stringify(sent)); } catch (e) {} }
+      } catch (e) { /* offline: tried again on the next change or reload */ }
+    }
+  };
+  queueLogoShare(); // once when the control page opens: shares logos set before this, or changed elsewhere
+
   const save = () => {
+    queueLogoShare();
     store();
     if (bc) bc.postMessage(s);
     renderCtl();

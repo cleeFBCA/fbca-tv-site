@@ -21,6 +21,9 @@
 //                 or, with archive false (a test game), taken out of it
 //   A game is also kept in the archive when the scorebug marks it final (meta.status), and kept up to date if a play
 //   is added or undone after that, so it's in Past games without waiting for the next new game.
+//   GET  /logo?game=basketball&side=home   a team's logo (PNG), as shared by the scorebug; meta.logos[side] = { v, name }
+//                 says which version is current and which team it belongs to (the app and box scores fetch it by v)
+//   POST /logo    { side, name, png: 'data:image/png;base64,…' }  (png '' removes it)
 //   GET  /archive?game=basketball      past games, newest first: { games: [{ id, startedAt, savedAt, names, score, plays }] }
 //   GET  /archive?game=basketball&id=X one past game: { id, savedAt, meta, events }
 //   POST /archive { action: 'delete', id }   forgets a past game
@@ -47,7 +50,7 @@ const TYPES_BY_SPORT = {
 };
 const sportOf = game => /^soccer/.test(game || '') ? 'soccer' : 'basketball';
 const SIDES = ['home', 'away'];
-const MAX_EVENTS = 3000, MAX_ROSTER = 30, MAX_SAVED = 150, MAX_ARCHIVE = 400; // ~two seasons of games per sport
+const MAX_EVENTS = 3000, MAX_ROSTER = 30, MAX_SAVED = 150, MAX_ARCHIVE = 400, MAX_LOGO = 200000; // a logo's data URL, ~150 KB of PNG // ~two seasons of games per sport
 
 const allowedOrigin = origin => SITE_ORIGINS.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 const cors = origin => ({
@@ -156,6 +159,14 @@ export class Game extends DurableObject {
       return new Response(null, { status: 101, webSocket: client });
     }
     if (request.method === 'GET' && url.pathname === '/state') return json(this.state());
+    if (request.method === 'GET' && url.pathname === '/logo') {
+      const side = url.searchParams.get('side'), logo = SIDES.includes(side) ? this.get('logo:' + side) : null;
+      if (!logo) return new Response('No logo', { status: 404 });
+      const bytes = Uint8Array.from(atob(logo.png.split(',')[1] || ''), c => c.charCodeAt(0));
+      // Versioned by ?v=, so it can be cached for good; without one, briefly.
+      return new Response(bytes, { headers: { 'Content-Type': 'image/png',
+        'Cache-Control': url.searchParams.get('v') === logo.v ? 'public, max-age=31536000, immutable' : 'public, max-age=60' } });
+    }
     if (request.method === 'GET' && url.pathname === '/archive') {
       const id = url.searchParams.get('id');
       if (id) {
@@ -258,6 +269,21 @@ export class Game extends DurableObject {
       return json({ ok: true, rev: this.rev(), meta: next });
     }
 
+    if (url.pathname === '/logo') {
+      const side = body.side, png = typeof body.png === 'string' ? body.png : '';
+      if (!SIDES.includes(side)) return json({ error: 'side must be home or away' }, 400);
+      if (png && (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(png) || png.length > MAX_LOGO)) return json({ error: 'Send a PNG data URL under 150 KB' }, 400);
+      const name = clean(body.name, 60), was = this.get('logo:' + side);
+      const v = png ? [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(png)))].slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('') : '';
+      if ((was ? was.v : '') === v && (!was || was.name === name)) return json({ ok: true, v, unchanged: true });
+      if (png) this.put('logo:' + side, { v, name, png }); else this.sql.exec('DELETE FROM kv WHERE k = ?', 'logo:' + side);
+      const next = { ...meta, logos: { ...(meta.logos || {}) } };
+      if (png) next.logos[side] = { v, name }; else delete next.logos[side];
+      this.put('meta', next);
+      this.send({ t: 'meta', rev: this.bump(), meta: next });
+      return json({ ok: true, v });
+    }
+
     if (url.pathname === '/archive') {
       if (body.action !== 'delete' || typeof body.id !== 'string') return json({ error: 'Unknown action' }, 400);
       this.sql.exec('DELETE FROM archive WHERE id = ?', body.id);
@@ -268,7 +294,8 @@ export class Game extends DurableObject {
       if (body.archive !== false) this.archiveCurrent();
       else this.sql.exec('DELETE FROM archive WHERE id = ?', meta.gameId); // a test game, saved when it was marked final
       const next = defaultMeta(this.sport);
-      if (body.keepRosters) { next.rosters = meta.rosters; next.names = meta.names; next.colors = meta.colors; next.keepers = meta.keepers; if (meta.halfMin) next.halfMin = meta.halfMin; }
+      if (body.keepRosters) { next.rosters = meta.rosters; next.names = meta.names; next.colors = meta.colors; next.keepers = meta.keepers; if (meta.halfMin) next.halfMin = meta.halfMin; if (meta.logos) next.logos = meta.logos; }
+      else for (const side of SIDES) this.sql.exec('DELETE FROM kv WHERE k = ?', 'logo:' + side); // new teams: their logos come from the scorebug
       this.sql.exec('DELETE FROM events');
       this.put('seq', 0); this.put('meta', next);
       this.bump();
@@ -299,11 +326,11 @@ export default {
       if (request.headers.get('Upgrade') !== 'websocket') return json({ error: 'WebSocket only' }, 426, origin);
       return stub.fetch(request);
     }
-    if (request.method === 'GET' && (url.pathname === '/state' || url.pathname === '/archive')) {
+    if (request.method === 'GET' && (url.pathname === '/state' || url.pathname === '/archive' || url.pathname === '/logo')) {
       const r = await stub.fetch(request);
       return withCors(r, origin);
     }
-    if (['/events', '/undo', '/meta', '/reset', '/library', '/archive'].includes(url.pathname) && (request.method === 'POST' || url.pathname === '/library')) {
+    if (['/events', '/undo', '/meta', '/reset', '/library', '/archive', '/logo'].includes(url.pathname) && (request.method === 'POST' || url.pathname === '/library')) {
       const given = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
       if (!await keyMatches(given, env.STAT_KEY)) return json({ error: 'Wrong stat keeper key' }, 401, origin);
       const r = await stub.fetch(request);

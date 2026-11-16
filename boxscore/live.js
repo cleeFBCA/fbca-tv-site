@@ -366,7 +366,17 @@
       top.append(h);
     }
     const board = el('div', 'board');
-    const tm = (t, cls) => { const d = paint(el('div', 'tm slab ' + cls), t.color); d.append(el('span', null, t.name)); return d; };
+    // A team's logo, as the scorebug shared it through the stat keeper (meta.logos), fetched by version. Not on past
+    // games: the stat keeper keeps only each side's current logo.
+    const logoImg = (side, cls) => {
+      const lg = !g.past && g.meta.logos && g.meta.logos[side];
+      return lg && lg.v ? Object.assign(el('img', cls), { src: API + '/logo?game=' + g.sport + '&side=' + side + '&v=' + lg.v, alt: '' }) : null;
+    };
+    const tm = (t, cls) => {
+      const d = paint(el('div', 'tm slab ' + cls), t.color), img = logoImg(t === H ? 'home' : 'away', 'tlogo');
+      d.append(...(img ? [img] : []), el('span', null, t.name));
+      return d;
+    };
     const mid = el('div', 'mid'), clk = el('div', 'clk', '–'), per = el('div', 'per', PERIOD[g.meta.period] || g.meta.period || '');
     mid.append(clk, per);
     board.append(tm(H, 'L'), el('div', 'sc', H.score), mid, el('div', 'sc', A.score), tm(A, 'R'));
@@ -415,7 +425,8 @@
     // Players
     const table = t => {
       const card = el('div', 'card'), th = paint(el('div', 'team-h slab'), t.color);
-      th.append(el('span', null, t.name), el('small', null, t.score));
+      const lg = logoImg(t === H ? 'home' : 'away', 'tlogo');
+      th.append(...(lg ? [lg] : []), el('span', null, t.name), el('small', null, t.score));
       card.append(th);
       if (!t.players.length) { card.append(el('div', 'none', 'No roster entered for this team yet.')); return card; }
       // Basketball with starters set on the stat page: STARTERS, then BENCH, each under its own header, with minutes.
