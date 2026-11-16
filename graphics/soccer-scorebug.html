@@ -2278,8 +2278,14 @@
       for (const c of ['tr', 'tl', 'br', 'bl']) stn.classList.toggle(c, c === corner);
       stn.style.setProperty('--o', Math.min(100, Math.max(10, s.stn.opacity)) / 100);
       stn.style.background = { white: '#FFFFFF', black: '#000000' }[s.stn.color] || '#EAAF0F';
+      // In a top corner, line it up with the scorebug across the screen: its middle level with the middle of the bug's bar.
+      const row = $('sb').querySelector('.row');
+      stn.style.top = corner[0] === 't' && row && row.offsetHeight
+        ? Math.round($('sb').offsetTop + row.offsetTop + row.offsetHeight / 2 - stn.offsetHeight / 2) + 'px' : '';
     };
     const render = () => { applyKey(); renderBug(); renderDrop(); renderL3(); renderFanVote(); renderXI(); renderPanels(); renderStn(); };
+    // The bar's height depends on the fonts: align again once they've loaded.
+    if (document.fonts) document.fonts.ready.then(() => renderStn());
     const accept = next => { s = merge(next); render(); };
     picsHook = render;
     if (bc) bc.onmessage = e => accept(e.data);
