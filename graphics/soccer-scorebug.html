@@ -754,7 +754,7 @@
   .count { font-size: 13px; color: var(--chalk-dim); margin-top: 4px; }
   /* Station bug: the EOTA logo in a corner, see-through, in gold, white or black. The soccer bug sits at the top,
      so by default it takes the top corner opposite the bug. */
-  .stn { position: absolute; width: 150px; opacity: 0; transition: opacity .8s ease; }
+  .stn { position: absolute; height: 76px; width: auto; opacity: 0; transition: opacity .8s ease; } /* the scorebug bar's height */
   .stn.tr { right: 96px; top: 54px; } .stn.tl { left: 96px; top: 54px; }
   .stn.br { right: 96px; bottom: 54px; } .stn.bl { left: 96px; bottom: 54px; }
   .stn.on { opacity: var(--o, .6); }
@@ -2278,10 +2278,10 @@
       for (const c of ['tr', 'tl', 'br', 'bl']) stn.classList.toggle(c, c === corner);
       stn.style.setProperty('--o', Math.min(100, Math.max(10, s.stn.opacity)) / 100);
       stn.style.background = { white: '#FFFFFF', black: '#000000' }[s.stn.color] || '#EAAF0F';
-      // In a top corner, line it up with the scorebug across the screen: its middle level with the middle of the bug's bar.
+      // In a top corner, line it up with the scorebug across the screen: same height as the bug's bar, top and bottom level.
       const row = $('sb').querySelector('.row');
-      stn.style.top = corner[0] === 't' && row && row.offsetHeight
-        ? Math.round($('sb').offsetTop + row.offsetTop + row.offsetHeight / 2 - stn.offsetHeight / 2) + 'px' : '';
+      stn.style.height = row && row.offsetHeight ? row.offsetHeight + 'px' : '';
+      stn.style.top = corner[0] === 't' && row && row.offsetHeight ? ($('sb').offsetTop + row.offsetTop) + 'px' : '';
     };
     const render = () => { applyKey(); renderBug(); renderDrop(); renderL3(); renderFanVote(); renderXI(); renderPanels(); renderStn(); };
     // The bar's height depends on the fonts: align again once they've loaded.
