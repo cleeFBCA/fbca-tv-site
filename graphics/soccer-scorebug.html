@@ -76,6 +76,7 @@
   .wipe { transition: clip-path .35s ease; clip-path: inset(0 0 0 0); }
 
   /* EOTA logo as a one-color mask, so each graphic can tint it to fit (gold on dark, green on cream). */
+  /* The EOTA logo: FBCA gold on every graphic (the bug's --gold), as on the basketball scorebug */
   .logo {
     display: block; aspect-ratio: 640 / 366; background: var(--gold);
     -webkit-mask: var(--logo) center / contain no-repeat; mask: var(--logo) center / contain no-repeat;
@@ -325,7 +326,7 @@
                                mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent); padding-left: 14px; }
   @keyframes xsScroll { to { transform: translateX(calc(-1 * var(--w))); } }
   .xi .xsubs .list b { color: var(--gold-hi); margin-right: 6px; }
-  .xi .xsubs .logo { width: 84px; flex: none; background: #fff; }
+  .xi .xsubs .logo { width: 84px; flex: none; }
   .xi .xlogo { position: absolute; right: 96px; bottom: 64px; width: 92px; background: #fff; opacity: .85; }
   .xi .xlogo[hidden] { display: none; }
 
@@ -352,7 +353,7 @@
   .cp-head .t { font-size: 42px; font-weight: 800; letter-spacing: .1em; }
   .cp-head .s { font-size: 30px; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.65); }
   .cp-head .s:empty { display: none; }
-  .cp-head .logo { position: absolute; right: 30px; top: 50%; width: 92px; margin-top: -26px; background: #fff; }
+  .cp-head .logo { position: absolute; right: 30px; top: 50%; width: 92px; margin-top: -26px; }
   .cp-edge { position: relative; height: 5px; overflow: hidden; display: grid; grid-template-columns: 1fr 1fr;
              background: linear-gradient(90deg, var(--field), var(--gold) 55%); }
   .cp-edge > i { display: block; }
@@ -505,7 +506,7 @@
     transform: translateY(-100%); transition: transform .35s cubic-bezier(.6,0,.3,1);
   }
   .pgd.on .pgd-in { transform: none; transition: transform .5s cubic-bezier(.2,.8,.2,1) .75s; }
-  .pgd .logo { width: 96px; flex: none; background: #fff; } /* white, as on the basketball pregame */
+  .pgd .logo { width: 96px; flex: none; }
   .pgd .pg-pill, .pgd .pg-venue { white-space: nowrap; }
   .pgd .sep { width: 2px; height: 34px; background: rgba(255,255,255,.2); flex: none; }
   .pgd .sep:last-child, .pgd .sep:has(+ :empty) { display: none; }
@@ -539,13 +540,17 @@
   .sp-photo { display: grid; place-items: center; }
   .sp-photo::after { background-size: 92%; }
   .sp-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; transform-origin: 50% 20%; }
+  /* No photo: the team's logo in its place, trimmed and sized like the title card's logos (stand-in, not crest:
+     .crest sizes the logos on the slabs) */
+  .sp-photo img.stand-in { position: relative; inset: auto; width: auto; height: 230px; max-width: 360px; object-fit: contain;
+                           filter: drop-shadow(0 6px 16px rgba(0,0,0,.35)); }
   .sp-photo .bignum { font-size: 280px; font-weight: 800; line-height: 1; color: var(--f); text-shadow: 0 8px 24px rgba(0,0,0,.35); }
   .sp-photo .shade { position: absolute; left: 0; right: 0; bottom: 0; height: 30%; z-index: 2; background: linear-gradient(transparent, rgba(0,0,0,.45)); }
   .sp-info { position: relative; display: flex; flex-direction: column; padding: 46px 56px 44px; border-left: 5px solid var(--a); overflow: hidden; }
   /* The jersey number, huge and faint behind the info */
   .sp-ghost { position: absolute; right: -10px; bottom: -70px; font-size: 470px; font-weight: 800; line-height: 1; color: rgba(255,255,255,.04); pointer-events: none; }
   .sp-mark { position: absolute; top: 30px; right: 44px; height: 64px; max-width: 150px; object-fit: contain; }
-  .sp-info .logo.sp-mark { width: 112px; height: auto; background: #fff; }
+  .sp-info .logo.sp-mark { width: 112px; height: auto; }
   .sp-kicker { font-size: 26px; font-weight: 800; letter-spacing: .22em; color: rgba(255,255,255,.65); }
   .sp-name { font-size: 106px; font-weight: 800; line-height: .95; margin-top: 12px; white-space: nowrap; }
   .sp-name span { display: inline-block; transform-origin: left center; }
@@ -747,6 +752,17 @@
   @media (max-width: 560px) { .lineup-cols { grid-template-columns: 1fr; } }
   .lineup-cols h3 { font-family: var(--font-display); text-transform: uppercase; font-size: 20px; margin: 0; }
   .count { font-size: 13px; color: var(--chalk-dim); margin-top: 4px; }
+  /* Station bug: the EOTA logo in a corner, see-through, in gold, white or black. The soccer bug sits at the top,
+     so by default it takes the top corner opposite the bug. */
+  .stn { position: absolute; width: 150px; opacity: 0; transition: opacity .8s ease; }
+  .stn.tr { right: 96px; top: 54px; } .stn.tl { left: 96px; top: 54px; }
+  .stn.br { right: 96px; bottom: 54px; } .stn.bl { left: 96px; bottom: 54px; }
+  .stn.on { opacity: var(--o, .6); }
+  .stn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 4px; }
+  .stn-row label.switch { margin: 0; }
+  .stn-row select { width: auto; }
+  .stn-row .op { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--chalk-dim); }
+  .stn-row .op input { width: 120px; padding: 0; }
   label.switch { position: relative; display: flex; align-items: center; gap: 12px; margin: 12px 0 0; cursor: pointer; font-size: 15px; color: var(--chalk); }
   label.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
   label.switch .track { flex: 0 0 auto; position: relative; width: 46px; height: 26px; border-radius: 13px; background: var(--line); transition: background .2s; }
@@ -808,6 +824,7 @@
 <body>
 
 <div id="stage">
+  <i class="logo stn tr" id="stn"></i>
   <div class="sb wipe pos-tl" id="sb">
     <div class="row">
       <div class="brand"><i class="logo"></i></div>
@@ -1040,6 +1057,7 @@
           <button data-tab="pk">Shootout</button>
           <button data-tab="next">Up next</button>
           <button data-tab="fv">Fan vote</button>
+          <button data-tab="stn">Station Bug</button>
           <button data-tab="setup">Setup</button>
           <button data-tab="storage">Storage</button>
         </div>
@@ -1293,6 +1311,17 @@
         </div>
 
         <!-- Setup -->
+        <div data-pane="stn" hidden>
+          <div class="pane-h">Station bug</div>
+          <div class="stn-row">
+            <label class="switch"><input type="checkbox" id="stnOn" role="switch"><span class="track"></span><span>Station bug</span></label>
+            <select id="stnCorner" aria-label="Station bug corner"><option value="auto">Opposite the scorebug</option><option value="tr">Top right</option><option value="tl">Top left</option><option value="br">Bottom right</option><option value="bl">Bottom left</option></select>
+            <select id="stnColor" aria-label="Station bug color"><option value="gold">Gold</option><option value="white">White</option><option value="black">Black</option></select>
+            <span class="op">Opacity <input type="range" id="stnOp" min="20" max="100" step="5"><b id="stnOpV"></b></span>
+          </div>
+          <p class="hint" id="stnNote"></p>
+        </div>
+
         <div data-pane="setup" hidden>
           <label for="game">Load from schedule</label>
           <select id="game"><option value="">Schedule not loaded. Type teams below.</option></select>
@@ -1398,6 +1427,7 @@
     awayBg: '#1F3A93', awayFg: '#FFFFFF',
     homeLogo: '', awayLogo: '', // school logos (trimmed, transparent background) for the pregame card
     keyColor: '#FF00FF', keyMode: 'chroma', // 'alpha' = fill + key outputs
+    stn: { on: false, corner: 'auto', opacity: 60, color: 'gold' }, // station bug; corner 'auto' = the top corner opposite the bug
     period: '1ST', halfMin: 40, otMin: 10, dir: 'down', pos: 'tl', visible: true, swap: false,
     len: 40 * 60000, base: 0, running: false, startedAt: 0, added: 0,
     // What the scoreboard file (Scorebridge) drives when connected.
@@ -1480,6 +1510,7 @@
   };
   const merge = raw => {
     const out = Object.assign(defaults(), raw);
+    out.stn = Object.assign(defaults().stn, raw.stn);
     out.spotList = withPics(Array.isArray(out.spotList) ? out.spotList : []);
     delete out.lineupShow; // replaced by `panel`
     // The Excel stat sheets are retired: every page moves to the stat keeper once (Excel stays in the menu,
@@ -2018,6 +2049,34 @@
 
     // Player spotlight: rebuilt when the player changes; a new player while one is up plays the entrance again.
     let spSig = '';
+    // A team logo can sit small or off-center in its own picture (empty, see-through edges). Where it stands in for a
+    // photo, trim those edges so it's centered and full size. Trimmed copies are kept by logo, made once.
+    const trimCache = new Map();
+    const trimmedLogo = src => {
+      if (trimCache.has(src)) return trimCache.get(src);
+      const job = new Promise(ok => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const w = img.naturalWidth, h = img.naturalHeight, c = Object.assign(document.createElement('canvas'), { width: w, height: h });
+            const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0);
+            const a = ctx.getImageData(0, 0, w, h).data;
+            let x0 = w, y0 = h, x1 = -1, y1 = -1;
+            for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (a[(y * w + x) * 4 + 3] > 16) {
+              if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+            }
+            if (x1 < 0) return ok(src);
+            const out = Object.assign(document.createElement('canvas'), { width: x1 - x0 + 1, height: y1 - y0 + 1 });
+            out.getContext('2d').drawImage(c, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
+            ok(out.toDataURL('image/png'));
+          } catch (e) { ok(src); }
+        };
+        img.onerror = () => ok(src);
+        img.src = src;
+      });
+      trimCache.set(src, job);
+      return job;
+    };
     const renderSpotPanel = () => {
       const p = s.spot, side = p.team, logo = logoOf(side);
       const sig = JSON.stringify([p.team, p.num, p.name, p.pos, p.year, p.stats, (p.photo || '').length, (p.photo || '').slice(-40),
@@ -2027,11 +2086,16 @@
       spSig = sig;
       const ph = paintSlab($('spPhoto'), side);
       if (p.photo) ph.replaceChildren(at(Object.assign(el('img', 'a-settle'), { src: p.photo, alt: '' }), .25), el('div', 'shade'));
-      else ph.replaceChildren(at(el('div', 'bignum a-pop'), .45), el('div', 'shade'));
-      if (!p.photo) ph.firstChild.textContent = p.num ? '#' + p.num : '';
+      else if (logo) {
+        // No photo: the team's logo stands in (the corner mark below is then the EOTA logo, so it isn't shown twice).
+        const im = at(Object.assign(el('img', 'stand-in a-pop'), { src: logo, alt: '' }), .45);
+        trimmedLogo(logo).then(t => { if (t !== logo) im.src = t; });
+        ph.replaceChildren(im, el('div', 'shade'));
+      } else ph.replaceChildren(at(el('div', 'bignum a-pop'), .45), el('div', 'shade'));
+      if (!p.photo && !logo) ph.firstChild.textContent = p.num ? '#' + p.num : '';
       const info = $('spInfo');
       info.style.setProperty('--a', accentOf(side));
-      const mark = logo ? Object.assign(el('img', 'sp-mark a-up'), { src: logo, alt: '' }) : el('i', 'logo sp-mark a-up');
+      const mark = logo && p.photo ? Object.assign(el('img', 'sp-mark a-up'), { src: logo, alt: '' }) : el('i', 'logo sp-mark a-up');
       const span = el('span', null, p.name), name = at(el('div', 'sp-name a-l'), .45);
       name.append(span);
       const meta = at(el('div', 'sp-meta a-up'), .55);
@@ -2207,7 +2271,15 @@
       renderShootout();
     };
 
-    const render = () => { applyKey(); renderBug(); renderDrop(); renderL3(); renderFanVote(); renderXI(); renderPanels(); };
+    // Station bug: on/off, corner (auto: the top corner opposite the scorebug), opacity and color.
+    const renderStn = () => {
+      const stn = $('stn'), corner = s.stn.corner === 'auto' ? (s.pos === 'tr' ? 'tl' : 'tr') : s.stn.corner;
+      stn.classList.toggle('on', !!s.stn.on);
+      for (const c of ['tr', 'tl', 'br', 'bl']) stn.classList.toggle(c, c === corner);
+      stn.style.setProperty('--o', Math.min(100, Math.max(10, s.stn.opacity)) / 100);
+      stn.style.background = { white: '#FFFFFF', black: '#000000' }[s.stn.color] || '#EAAF0F';
+    };
+    const render = () => { applyKey(); renderBug(); renderDrop(); renderL3(); renderFanVote(); renderXI(); renderPanels(); renderStn(); };
     const accept = next => { s = merge(next); render(); };
     picsHook = render;
     if (bc) bc.onmessage = e => accept(e.data);
@@ -2330,7 +2402,21 @@
 
   const setField = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v; };
 
+  // --- Station bug ---
+  $('stnOn').addEventListener('change', e => { s.stn = { ...s.stn, on: e.target.checked }; save(); });
+  $('stnCorner').addEventListener('change', e => { s.stn = { ...s.stn, corner: e.target.value }; save(); });
+  $('stnColor').addEventListener('change', e => { s.stn = { ...s.stn, color: e.target.value }; save(); });
+  $('stnOp').addEventListener('input', e => { s.stn = { ...s.stn, opacity: +e.target.value }; save(); });
+  const renderStnCtl = () => {
+    $('stnOn').checked = !!s.stn.on; $('stnCorner').value = s.stn.corner || 'auto'; $('stnColor').value = s.stn.color || 'gold';
+    setField('stnOp', s.stn.opacity); $('stnOpV').textContent = s.stn.opacity + '%';
+    // See-through only keys cleanly with fill + key; over a chroma color it would tint.
+    $('stnNote').textContent = s.stn.on && s.keyMode !== 'alpha' && s.stn.opacity < 100
+      ? 'See-through needs Fill + key (Setup). On a chroma key it shows tinted, so use 100% there.'
+      : s.stn.corner !== 'auto' && s.stn.corner === s.pos ? 'That corner is where the scorebug sits; they will overlap.' : '';
+  };
   const renderCtl = () => {
+    renderStnCtl();
     if (fvRenderHook) fvRenderHook();
     if (logoHook) logoHook();
     if (rosterHook) rosterHook();
