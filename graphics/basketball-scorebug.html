@@ -2807,6 +2807,16 @@
     }
     return '';
   };
+  // Remove a player's headshot everywhere the scorebug would find it: this roster (boys or girls) and photos
+  // saved with no roster, by number or by name. (Those older ones don't show in the panel, but are still used.)
+  const unPhoto = (team, num, name) => {
+    const t = phTeam(team), n = String(num || '').trim(), nm = String(name || '').trim().toLowerCase(), sqs = [s.squad || '', ''];
+    const hit = [...photoLib].filter(([, r]) => r.photo && r.team === t && sqs.includes(r.squad || '')
+      && ((n && String(r.num || '').trim() === n) || (nm && String(r.name || '').trim().toLowerCase() === nm)));
+    for (const [k, r] of hit) photoLib.set(k, { ...r, photo: '' });
+    pphSig.home = pphSig.away = ''; renderCtl();
+    return phIdb('readwrite', st => { let q; for (const [k, r] of hit) q = st.put({ ...r, photo: '' }, k); return q; }).catch(() => {});
+  };
   // A team's players with headshots: the stats roster, plus anyone in Player photos for this team and roster.
   // (Player spotlight menu and the fan vote nominee picker.)
   const rosterFor = side => {
@@ -2846,13 +2856,13 @@
     const add = (num, name) => { const k = phKey(team, num, name); if (seen.has(k)) return; seen.add(k); list.push({ num: String(num || ''), name: name || '', key: k }); };
     if (sheetLive() && s.sheet[side]) s.sheet[side].players.forEach(pl => add(pl.num, pl.name));
     mine.sort((a, b) => jerseyOrder(a, b)).forEach(r => add(r.num, r.name));
-    const sig = JSON.stringify([team, s.squad, t.bg, t.fg, list.map(x => x.key + (photoLib.get(x.key) || {}).photo?.length)]);
+    const sig = JSON.stringify([team, s.squad, t.bg, t.fg, list.map(x => x.key + findPhoto(team, x.num, x.name).length)]);
     if (sig === pphSig[side]) return;
     pphSig[side] = sig;
     const grid = d.querySelector('.pph-grid');
     grid.style.setProperty('--c', hex(t.bg, '#063E0C')); grid.style.setProperty('--f', hex(t.fg, '#FFFFFF'));
     grid.replaceChildren(...list.map(x => {
-      const rec = photoLib.get(x.key), photo = rec && rec.photo;
+      const rec = photoLib.get(x.key), photo = findPhoto(team, x.num, x.name); // the one the scorebug uses (this roster, or one saved with none)
       const tile = el('div', 'pph-tile'), ph = el('div', 'ph');
       if (photo) ph.append(Object.assign(el('img'), { src: photo, alt: '' })); else ph.textContent = x.num ? '#' + x.num : '?';
       const file = el('input'); file.type = 'file'; file.accept = 'image/*';
@@ -2863,7 +2873,7 @@
       });
       const up = el('button', null, photo ? 'Change' : 'Add photo'); up.onclick = () => file.click();
       const acts = el('div', 'acts'); acts.append(up);
-      if (photo) { const rm = el('button', null, 'Remove'); rm.onclick = () => putPhoto({ team, num: x.num, name: x.name, photo: '' }); acts.append(rm); }
+      if (photo) { const rm = el('button', null, 'Remove'); rm.onclick = () => unPhoto(team, x.num, x.name); acts.append(rm); }
       else if (rec) { const rm = el('button', null, '✕'); rm.title = 'Take off the list'; rm.onclick = () => dropPhoto(rec); acts.append(rm); }
       tile.append(ph, el('b', null, (x.num ? '#' + x.num + ' ' : '') + x.name), acts, file);
       return tile;
