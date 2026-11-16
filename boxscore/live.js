@@ -379,7 +379,8 @@
     };
     const mid = el('div', 'mid'), clk = el('div', 'clk', '–'), per = el('div', 'per', PERIOD[g.meta.period] || g.meta.period || '');
     mid.append(clk, per);
-    board.append(tm(H, 'L'), el('div', 'sc', H.score), mid, el('div', 'sc', A.score), tm(A, 'R'));
+    // Away on the left, home on the right, as on TV. FBCA is the stat keeper's home team, so it's on the right.
+    board.append(tm(A, 'L'), el('div', 'sc', A.score), mid, el('div', 'sc', H.score), tm(H, 'R'));
     top.append(board);
     parts.push(top);
 
@@ -396,9 +397,10 @@
     } else parts.push(el('p', 'note', 'No plays recorded yet.'));
 
     // Team stats
-    const cmp = el('div', 'card cmp'), rowsA = S.cmp(A.tot), bars = barsOf(g);
-    S.cmp(H.tot).forEach(([label, hv, ha, isPct, lowGood], i) => {
-      const [, av, aa] = rowsA[i];
+    // Away's numbers on the left, home's (FBCA) on the right, like the scoreboard above.
+    const cmp = el('div', 'card cmp'), rowsH = S.cmp(H.tot), bars = barsOf(g);
+    S.cmp(A.tot).forEach(([label, av, aa, isPct, lowGood], i) => {
+      const [, hv, ha] = rowsH[i];
       const r = el('div', 'row'), mid2 = el('div'), bar = el('div', 'bar2'), lf = el('i'), rf = el('i');
       const shoot = isPct === true, share = isPct === 'share';
       const val = (v, a, cls) => {
@@ -408,13 +410,13 @@
         return d;
       };
       const hs = shoot ? (ha ? hv / ha : 0) : hv || 0, as = shoot ? (aa ? av / aa : 0) : av || 0, tot = hs + as;
-      // Home's share fills from the left, away fills the rest; nothing yet on either side shows an even, dimmed split.
-      lf.style.cssText = `width:${tot ? 100 * hs / tot : 50}%;background:${bars.home}`; rf.style.background = bars.away;
+      // Away's share fills from the left, home (FBCA gold) the rest from the right; nothing yet on either side shows an even, dimmed split.
+      lf.style.cssText = `width:${tot ? 100 * as / tot : 50}%;background:${bars.away}`; rf.style.background = bars.home;
       if (!tot) bar.classList.add('none');
       bar.append(lf, rf); mid2.append(el('div', 'lbl', label), bar);
-      const hv2 = val(hv, ha, 'L'), av2 = val(av, aa, 'R'), better = lowGood ? (a, b) => a < b : (a, b) => a > b;
+      const av2 = val(av, aa, 'L'), hv2 = val(hv, ha, 'R'), better = lowGood ? (a, b) => a < b : (a, b) => a > b;
       if (better(as, hs)) hv2.classList.add('lo'); if (better(hs, as)) av2.classList.add('lo');
-      r.append(hv2, mid2, av2); cmp.append(r);
+      r.append(av2, mid2, hv2); cmp.append(r);
     });
     if (collapseTeamStats) {
       const d = el('details', 'sect'), sum = el('summary', null, 'Team stats');
@@ -454,7 +456,7 @@
       return card;
     };
     const players = el('section'), grid = el('div', 'grid2');
-    grid.append(table(H), table(A));
+    grid.append(table(A), table(H)); // away, then home (FBCA), as across the top
     players.append(el('h2', 'h', 'Players'), grid);
     parts.push(players);
     root.replaceChildren(...parts);
@@ -502,19 +504,20 @@
   const csv = g => {
     const S = SPORT[g.sport], H = g.sides.home, A = g.sides.away, soccer = g.sport === 'soccer', rows = [];
     const date = gameDate(g).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    rows.push([(soccer ? 'Soccer' : 'Basketball') + ' box score', date], [H.name, H.score], [A.name, A.score], []);
+    // Away first, then home (FBCA), as on the page.
+    rows.push([(soccer ? 'Soccer' : 'Basketball') + ' box score', date], [A.name, A.score], [H.name, H.score], []);
     // Team stats, as on the page
-    rows.push(['Team stats', H.name, A.name]);
+    rows.push(['Team stats', A.name, H.name]);
     const cA = S.cmp(A.tot);
     S.cmp(H.tot).forEach(([label, hv, ha, kind], i) => {
       const [, av, aa] = cA[i], f = (v, a) => kind === true ? v + ' of ' + a + ' (' + pct(v, a) + ')' : kind === 'share' ? (v == null ? '' : Math.round(100 * v) + '%') : v;
-      rows.push([label, f(hv, ha), f(av, aa)]);
+      rows.push([label, f(av, aa), f(hv, ha)]);
     });
     rows.push([]);
     // Every player (starters first when they were set), then each team's total
     const cols = CSV_COLS[g.sport], mins = !soccer;
     rows.push(['Team', '#', 'Player', ...(mins ? ['Starter', 'MIN'] : []), ...cols.map(c => c[0])]);
-    for (const t of [H, A]) {
+    for (const t of [A, H]) {
       const st = t.starters || [];
       const order = st.length ? [...st.map(id => t.players.find(p => p.id === id)).filter(Boolean), ...t.players.filter(p => !st.includes(p.id))] : t.players;
       for (const p of order) rows.push([t.name, p.num, p.name, ...(mins ? [st.includes(p.id) ? 'Yes' : '', p.sec == null ? '' : Math.round(p.sec / 60)] : []), ...cols.map(c => c[1](p))]);
