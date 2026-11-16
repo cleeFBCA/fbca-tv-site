@@ -31,6 +31,12 @@
 .ebx .board { display: grid; grid-template-columns: 1fr auto auto auto 1fr; align-items: stretch; min-height: 92px; }
 .ebx .board .tm { display: flex; align-items: center; padding: 10px 8px; min-width: 0; font: 800 22px/1 var(--font-display); text-transform: uppercase; text-shadow: 0 2px 6px rgba(0,0,0,.35); }
 .ebx .board .tm.R { justify-content: flex-end; text-align: right; }
+/* The team's logo large and faint behind its slab, toward the score and cropped by the slab's edges (as on the scorebug) */
+.ebx .board .tm::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .14;
+                         background: var(--wm, none) no-repeat; background-size: auto 190%; }
+.ebx .board .tm.L::after { background-position: 92% 45%; }
+.ebx .board .tm.R::after { background-position: 8% 45%; }
+.ebx .board .tm.light::after { opacity: .2; }
 /* The team's logo, shared from the scorebug: beside the name on its slab (outside it on the right-hand team) */
 .ebx .board .tm .tlogo { height: 46px; max-width: 64px; object-fit: contain; flex: none; margin-right: 10px; filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
 .ebx .board .tm.R { gap: 0; }

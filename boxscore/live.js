@@ -374,6 +374,7 @@
     };
     const tm = (t, cls) => {
       const d = paint(el('div', 'tm slab ' + cls), t.color), img = logoImg(t === H ? 'home' : 'away', 'tlogo');
+      if (img) d.style.setProperty('--wm', `url("${img.src}")`); // the same logo, large and faint behind, by the score
       d.append(...(img ? [img] : []), el('span', null, t.name));
       return d;
     };
