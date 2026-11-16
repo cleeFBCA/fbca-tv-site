@@ -2790,7 +2790,26 @@
   const phKey = (team, num, name, squad = s.squad || '') => phTeam(team) + '|' + squad + '|' + (String(num || '').trim() ? '#' + String(num).trim() : 'n:' + String(name || '').trim().toLowerCase());
   let photoLib = new Map();
   const pphSig = { home: '', away: '' };
-  phIdb('readonly', st => st.getAll()).then(list => { photoLib = new Map((list || []).map(r => [phKey(r.team, r.num, r.name, r.squad || ''), r])); renderCtl(); }).catch(() => {});
+  // Load the library, first moving photos saved by older versions (keyed "TEAM|#1", before boys/girls rosters) to
+  // today's keys ("TEAM||#1"). Left under the old key, Remove couldn't reach them, and the starting lineup still used them.
+  // Where both exist, today's wins (a Remove already done stays done).
+  const phLoad = () => new Promise((ok, fail) => {
+    const open = indexedDB.open('eota-bball-photos', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('p');
+    open.onerror = () => fail(open.error);
+    open.onsuccess = () => {
+      try {
+        const tx = open.result.transaction('p', 'readwrite'), st = tx.objectStore('p'), cur = new Map(), old = [];
+        tx.oncomplete = () => ok({ lib: cur, moved: old.length }); tx.onerror = () => fail(tx.error);
+        st.openCursor().onsuccess = e => {
+          const c = e.target.result;
+          if (c) { const r = c.value || {}, k = phKey(r.team, r.num, r.name, r.squad || ''); if (c.key === k) cur.set(k, r); else old.push([c.key, k, r]); c.continue(); return; }
+          for (const [was, k, r] of old) { st.delete(was); if (!cur.has(k)) { const n = { ...r, squad: r.squad || '' }; cur.set(k, n); st.put(n, k); } }
+        };
+      } catch (e) { fail(e); }
+    };
+  });
+  phLoad().then(({ lib, moved }) => { photoLib = lib; if (moved) phChanged(); else renderCtl(); }).catch(() => {});
   const putPhoto = rec => {
     const squad = rec.squad !== undefined ? rec.squad : (s.squad || ''), k = phKey(rec.team, rec.num, rec.name, squad), was = photoLib.get(k);
     const next = { ...(was || {}), ...rec, squad, team: phTeam(rec.team), photo: rec.photo !== undefined ? rec.photo : (was ? was.photo : '') };
