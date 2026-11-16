@@ -166,7 +166,7 @@
 
   // ---------- Words for the page ----------
   const B_PLAY = { m2: 'made a 2-pointer', x2: 'missed a 2-pointer', m3: 'made a 3-pointer', x3: 'missed a 3-pointer', mft: 'made a free throw', xft: 'missed a free throw',
-                   oreb: 'offensive rebound', dreb: 'defensive rebound', ast: 'assist', stl: 'steal', blk: 'block', to: 'turnover', pf: 'foul' };
+                   oreb: 'offensive rebound', dreb: 'defensive rebound', ast: 'assist', stl: 'steal', blk: 'block', to: 'turnover', pf: 'foul', timeout: 'timeout' };
   const S_PLAY = { goal: 'GOAL', ast: 'assist', sog: 'shot on target', shot: 'shot off target', save: 'save', corner: 'corner kick', foul: 'foul', offside: 'offside', yc: 'yellow card', rc: 'red card', og: 'OWN GOAL' };
   const PERIOD = { '1Q': '1st quarter', '2Q': '2nd quarter', '3Q': '3rd quarter', '4Q': '4th quarter', OT: 'Overtime', OT2: '2nd overtime', OT3: '3rd overtime',
                    '1H': '1st half', '2H': '2nd half', OT1: 'Overtime', };
@@ -180,7 +180,9 @@
   const playTime = (g, e) => e.min ? (g.sport === 'soccer' ? e.min + "'" : e.min) : '';
   const latestText = g => {
     const e = g.latest; if (!e) return null;
-    const words = (g.sport === 'soccer' ? S_PLAY : B_PLAY)[e.type] || e.type;
+    let words = (g.sport === 'soccer' ? S_PLAY : B_PLAY)[e.type] || e.type;
+    // A timeout: the team's name, then "timeout (2 left)" (the scorebug sends how many are left).
+    if (e.type === 'timeout' && e.note) words += ' (' + e.note + ')';
     // An own goal: "#5 Jane Doe (TKS) · OWN GOAL", then "Goal for FBCA" where the team usually goes.
     if (e.type === 'og') {
       const other = e.side === 'home' ? 'away' : 'home', who = e.player === 'team' || !e.player ? g.sides[e.side].name + ' defender' : playerName(g, e.side, e.player) + ' (' + g.sides[e.side].name + ')';
@@ -529,7 +531,7 @@
     for (const e of g.events || []) {
       if (!g.sides[e.side]) continue;
       rows.push([(PER_SHORT[e.period] || e.period) + (e.min ? ' ' + playTime(g, e) : ''), g.sides[e.side].name,
-                 e.player === 'team' ? 'Team' : playerName(g, e.side, e.player), WORDS[e.type] || e.type]);
+                 e.player === 'team' ? 'Team' : playerName(g, e.side, e.player), (WORDS[e.type] || e.type) + (e.note ? ' (' + e.note + ')' : '')]);
     }
     const q = v => { const t = v == null ? '' : String(v); return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
     // The byte-order mark tells Excel the file is UTF-8 (names with accents, the dash).

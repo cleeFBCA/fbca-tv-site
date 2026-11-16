@@ -410,6 +410,7 @@
   const subText = (v, side, outId, inId) => inId && outId ? 'Sub: ' + who(v, side, inId) + ' in for ' + who(v, side, outId)
     : inId ? 'Sub: ' + who(v, side, inId) + ' in' : 'Sub: ' + who(v, side, outId) + ' out';
   const playText = (v, e) => {
+    if (e.type === 'timeout') return v.meta.names[e.side] + ' · Timeout' + (e.note ? ' (' + e.note + ')' : '');
     if (!isSub(e)) return who(v, e.side, e.player) + ' · ' + TYPES[e.type];
     const pair = subIds(v, e).map(id => v.events.find(x => x.id === id));
     const o = pair.find(x => x.type === 'out'), i = pair.find(x => x.type === 'in');
@@ -543,6 +544,19 @@
     savePending();
     if (remote.length) enqueue('undo', { ids: remote }); else render();
   };
+  // A timeout, as a backup for when the scorebug isn't sending them (it sends each one it calls, with how many are
+  // left). If one for that team came in during the last minute and a half, ask first: it's probably the same one.
+  const logTimeout = side => {
+    const v = view(); if (!v) return;
+    const recent = v.events.filter(e => e.side === side && e.type === 'timeout' && Date.now() - (e.at || 0) < 90000).pop();
+    if (recent && !confirm('A timeout for ' + v.meta.names[side] + ' was recorded ' + Math.round((Date.now() - recent.at) / 1000)
+      + ' seconds ago (probably from the scorebug). Add another?')) return;
+    const ev = { id: rid(), side, player: 'team', type: 'timeout', period: v.meta.period, at: Date.now() };
+    const time = gameTime(v.meta); if (time) ev.min = time;
+    enqueue('events', { events: [ev] });
+    if (navigator.vibrate) navigator.vibrate(15);
+    toast(v.meta.names[side] + ' · Timeout', ev.id);
+  };
   // A substitution: the player going out and the one coming in (either may be missing), stamped like a play.
   const logSub = (side, outId, inId) => {
     const v = view(); if (!v || (!outId && !inId)) return;
@@ -656,6 +670,7 @@
         // On the floor: five spots, with the Starters and Sub buttons (or Save / Done while setting them)
         const tools = el('div', 'tools'), b = (label, fn, cls) => { const x = el('button', cls || null, label); x.onclick = fn; tools.append(x); return x; };
         if (!mode) {
+          b('Timeout', () => logTimeout(side));
           b('Starters', () => { pick = {}; lineup = { side, kind: 'starters', draft: startersOf(v, side).slice() }; render(); });
           b('Sub', () => { pick = {}; lineup = { side, kind: 'sub', out: null, in: null }; render(); });
         } else if (mode.kind === 'starters') {

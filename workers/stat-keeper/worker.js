@@ -9,7 +9,7 @@
 //
 //   GET  /state?game=basketball         the game: { rev, meta, events }
 //   GET  /ws?game=basketball            WebSocket: the game on connect, then each change
-//   POST /events  { gameId, events: [{ id, side, player, type, period, at }] }
+//   POST /events  { gameId, events: [{ id, side, player, type, period, at, min?, note? }] }
 //   POST /undo    { gameId, ids: [...] }
 //   POST /meta    { gameId, meta: { keepers, period, names, colors, rosters, starters } }   (any subset)
 //                 starters (basketball): { home: [player ids], away: [...] }, up to five each, set on the stat page.
@@ -44,7 +44,8 @@ const SITE_ORIGINS = ['https://fbca.tv', 'https://www.fbca.tv'];
 // Plays each sport records. A game named "soccer…" is soccer; anything else is basketball.
 const TYPES_BY_SPORT = {
   // in / out: a substitution, stamped with the game clock like any play (minutes and who's on the floor).
-  basketball: ['m2', 'x2', 'm3', 'x3', 'mft', 'xft', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf', 'in', 'out'],
+  // timeout: a team's timeout (player 'team'; note says how many it has left), from the scorebug or the stat page.
+  basketball: ['m2', 'x2', 'm3', 'x3', 'mft', 'xft', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf', 'in', 'out', 'timeout'],
   // og: an own goal, recorded on the defender who put it in (their side); it counts for the other team.
   soccer: ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc', 'og']
 };
@@ -108,6 +109,8 @@ export class Game extends DurableObject {
     this.sql.exec('CREATE TABLE IF NOT EXISTS archive (id TEXT PRIMARY KEY, savedAt INTEGER NOT NULL, summary TEXT NOT NULL, data TEXT NOT NULL)');
     // The minute of a play (soccer goals), added after the first games were stored.
     try { this.sql.exec('ALTER TABLE events ADD COLUMN min TEXT'); } catch (e) { /* already there */ }
+    // A short note on a play ("2 left" on a timeout), added later still.
+    try { this.sql.exec('ALTER TABLE events ADD COLUMN note TEXT'); } catch (e) { /* already there */ }
     this.sport = 'basketball';
     // Keep-alive pings from the pages are answered without waking the object.
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
@@ -124,8 +127,8 @@ export class Game extends DurableObject {
   rev() { return this.get('rev', 0); }
   bump() { const r = this.rev() + 1; this.put('rev', r); return r; }
   events() {
-    return this.sql.exec('SELECT id, side, player, type, period, at, min FROM events WHERE deleted = 0 ORDER BY seq').toArray()
-      .map(e => { if (!e.min) delete e.min; return e; });
+    return this.sql.exec('SELECT id, side, player, type, period, at, min, note FROM events WHERE deleted = 0 ORDER BY seq').toArray()
+      .map(e => { if (!e.min) delete e.min; if (!e.note) delete e.note; return e; });
   }
   state() { return { rev: this.rev(), meta: this.meta(), events: this.events() }; }
   // Keeps the current game in the archive (if it has any plays): its score worked out the way the pages do.
@@ -192,10 +195,11 @@ export class Game extends DurableObject {
         if (!e || !idOk(e.id) || !SIDES.includes(e.side) || !TYPES_BY_SPORT[this.sport].includes(e.type)) continue;
         if (count >= MAX_EVENTS) break;
         const ev = { id: e.id, side: e.side, player: idOk(e.player) || e.player === 'team' ? e.player : 'team',
-                     type: e.type, period: clean(e.period, 4) || meta.period, at: Number(e.at) || Date.now(), ...(e.min ? { min: clean(e.min, 6) } : {}) };
+                     type: e.type, period: clean(e.period, 4) || meta.period, at: Number(e.at) || Date.now(), ...(e.min ? { min: clean(e.min, 6) } : {}),
+                     ...(e.note ? { note: clean(e.note, 20) } : {}) };
         // INSERT OR IGNORE: a retried play, or one already undone (kept as deleted), changes nothing.
-        const r = this.sql.exec('INSERT OR IGNORE INTO events (id, seq, side, player, type, period, at, min) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          ev.id, seq + 1, ev.side, ev.player, ev.type, ev.period, ev.at, ev.min || null);
+        const r = this.sql.exec('INSERT OR IGNORE INTO events (id, seq, side, player, type, period, at, min, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          ev.id, seq + 1, ev.side, ev.player, ev.type, ev.period, ev.at, ev.min || null, ev.note || null);
         if (r.rowsWritten > 0) { seq++; count++; added.push(ev); }
       }
       this.put('seq', seq);

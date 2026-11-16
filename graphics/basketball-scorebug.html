@@ -2300,11 +2300,45 @@
     else s[side].fouls = Math.max(0, s[side].fouls + n);
     save();
   };
-  const timeout = (side, n) => { s[side].to = Math.min(s.toMax + 3, Math.max(0, s[side].to + n)); save(); };
+  // ---- Timeouts as plays in the stat keeper (the box score's latest play, the play-by-play, the app's banner) ----
+  // Every timeout called here (the Timeout button, or the scoreboard's timeouts-left dropping) is sent as a
+  // "timeout" play, stamped with the game clock and how many that team has left. One per team per minute, so the
+  // button and the scoreboard catching the same timeout send it once. Giving it back (+1) soon after takes it out.
+  const toSent = { home: null, away: null }; // { id, at, gameId } of the last timeout sent per team
+  const sendTimeoutPlay = async (side, left) => {
+    if (isBug) return;
+    const now = Date.now(), last = toSent[side];
+    if (last && now - last.at < 60000) return;
+    const key = skKey(); if (!key) return;
+    const g = await shareTarget(); if (!g || !g.meta) return;
+    const per = STAT_PER[s.period]; if (!per) return; // not at halftime or after the final
+    const sec = Math.ceil(remaining(now) / 1000), id = 'to' + now.toString(36) + Math.random().toString(36).slice(2, 8);
+    const ev = { id, side, player: 'team', type: 'timeout', period: per, at: now, min: Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'),
+                 note: Math.max(0, left) + ' left' };
+    toSent[side] = { id, at: now, gameId: g.meta.gameId };
+    try {
+      await fetch(SK_API + '/events?game=basketball', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        body: JSON.stringify({ gameId: g.meta.gameId, events: [ev] }) });
+    } catch (e) { /* offline: the timeout still shows on the bug */ }
+  };
+  const takeBackTimeoutPlay = async side => {
+    const last = toSent[side]; if (!last || Date.now() - last.at > 3 * 60000) return;
+    toSent[side] = null;
+    const key = skKey(); if (!key) return;
+    try {
+      await fetch(SK_API + '/undo?game=basketball', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        body: JSON.stringify({ gameId: last.gameId, ids: [last.id] }) });
+    } catch (e) { /* offline */ }
+  };
+  const timeout = (side, n) => {
+    s[side].to = Math.min(s.toMax + 3, Math.max(0, s[side].to + n)); save();
+    if (n > 0) takeBackTimeoutPlay(side); // a timeout given back (pressed by mistake)
+  };
   // Call a timeout: takes one off (unless the scoreboard keeps the count), stops our clock, and
   // flashes the timeout graphic on the bug.
   const callTimeout = side => {
     if (s.src.tos !== 'board') s[side].to = Math.max(0, s[side].to - 1);
+    sendTimeoutPlay(side, s.src.tos === 'board' ? s[side].to - 1 : s[side].to);
     if (s.running && !(s.src.clock === 'board' && sbHandle)) startStop(); // a connected scoreboard stops its own clock
     s.toCall = { side, at: Date.now() };
     save();
@@ -3943,6 +3977,7 @@
       if (isNaN(v)) continue;
       // A timeout taken on the console: flash the graphic.
       if (!c.first && s.toAuto && v < s[side].to) s.toCall = { side, at: Date.now() };
+      if (!c.first && v < s[side].to) sendTimeoutPlay(side, v); // also a play in the stat keeper
       s[side].to = Math.min(v, s.toMax);
     }
     save();
