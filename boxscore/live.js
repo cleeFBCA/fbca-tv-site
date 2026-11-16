@@ -465,14 +465,19 @@
     root.replaceChildren(...parts);
     root._fitW = 0; tickBox(root, g);
     if (document.fonts) document.fonts.ready.then(() => fitNames(root));
+    // A logo takes its width when it loads, so the names are checked again then.
+    root.querySelectorAll('.board .tlogo').forEach(img => { if (!img.complete) img.addEventListener('load', () => fitNames(root), { once: true }); });
   };
-  // A scoreboard team name that doesn't fit on one line goes to two (smaller); checked again as fonts load or the
-  // screen resizes, so a name that fits again goes back to one line.
+  // A scoreboard team name that doesn't fit beside its logo moves below it (the name gets the slab's whole width);
+  // still too long, it goes to two lines (smaller), then four. Checked again as fonts load or the screen resizes,
+  // so a name that fits again goes back beside its logo on one line.
   const fitNames = root => {
     for (const tm of root.querySelectorAll('.board .tm')) {
       const s = tm.querySelector('span'); if (!s) continue;
-      tm.classList.remove('long', 'longer');
-      if (s.scrollWidth > s.clientWidth + 1) tm.classList.add('long');
+      tm.classList.remove('long', 'longer', 'stack');
+      const over = () => s.scrollWidth > s.clientWidth + 1;
+      if (over() && tm.querySelector('.tlogo')) tm.classList.add('stack');
+      if (over()) tm.classList.add('long');
       if (tm.classList.contains('long') && s.scrollHeight > s.clientHeight + 1) tm.classList.add('longer');
     }
   };

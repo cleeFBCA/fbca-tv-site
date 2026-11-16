@@ -45,6 +45,12 @@
 .ebx .board .tm.long span { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: .72em; line-height: 1.02; }
 /* Still too long (a phone's narrow slab): up to four lines, smaller still */
 .ebx .board .tm.long.longer span { -webkit-line-clamp: 4; font-size: .58em; }
+/* A narrow slab with a logo (see fitNames): the logo on top, the name below it with the slab's whole width */
+.ebx .board .tm.stack { flex-direction: column; align-items: stretch; justify-content: center; gap: 5px; text-align: center; }
+.ebx .board .tm.stack .tlogo, .ebx .board .tm.R.stack .tlogo { order: 0; align-self: center; margin: 0; height: 36px; max-width: 100%; }
+.ebx .board .tm.stack span { font-size: .8em; }
+.ebx .board .tm.stack.long span { font-size: .62em; }
+.ebx .board .tm.stack.long.longer span { font-size: .5em; }
 .ebx .board .sc { display: grid; place-items: center; min-width: 54px; padding: 0 8px; background: linear-gradient(#ffffff, #dcdde0); color: #17181b;
                   font: 800 40px/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .ebx .board .mid { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 70px; padding: 6px 8px; background: #111214; }
