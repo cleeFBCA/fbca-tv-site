@@ -242,7 +242,7 @@
   .sp-photo > * { z-index: 1; }
   .sp-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   /* No photo: the team's logo, contained, in the photo's place */
-  .sp-photo img.crest { inset: 12% 10%; width: 80%; height: 76%; object-fit: contain; filter: drop-shadow(0 10px 24px rgba(0,0,0,.4)); }
+  .sp-photo img.crest { inset: 9% 8%; width: 84%; height: 82%; object-fit: contain; filter: drop-shadow(0 10px 24px rgba(0,0,0,.4)); }
   .sp-photo .bignum { position: relative; font-size: 280px; font-weight: 800; line-height: 1; color: var(--f); text-shadow: 0 8px 24px rgba(0,0,0,.35); }
   .sp-info { position: relative; display: flex; flex-direction: column; padding: 46px 56px 44px; border-left: 5px solid var(--a); }
   .sp-mark { position: absolute; top: 34px; right: 44px; height: 70px; max-width: 160px; object-fit: contain; }
@@ -1880,6 +1880,41 @@
       }
     };
     let spSig = '';
+    // A team logo is stored at the bug's end-cap shape, with whatever size and nudge it was given in Setup, so it
+    // can sit small and off-center in its own picture. Where it stands in for a photo, trim the see-through edges
+    // so it fills the space. Trimmed copies are kept by logo, made once.
+    const trimCache = new Map();
+    const trimmedLogo = src => {
+      if (trimCache.has(src)) return trimCache.get(src);
+      const job = new Promise(ok => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const w = img.naturalWidth, h = img.naturalHeight, c = Object.assign(document.createElement('canvas'), { width: w, height: h });
+            const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0);
+            const a = ctx.getImageData(0, 0, w, h).data;
+            let x0 = w, y0 = h, x1 = -1, y1 = -1;
+            for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (a[(y * w + x) * 4 + 3] > 16) {
+              if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+            }
+            if (x1 < 0) return ok(src);
+            const out = Object.assign(document.createElement('canvas'), { width: x1 - x0 + 1, height: y1 - y0 + 1 });
+            out.getContext('2d').drawImage(c, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
+            ok(out.toDataURL('image/png'));
+          } catch (e) { ok(src); }
+        };
+        img.onerror = () => ok(src);
+        img.src = src;
+      });
+      trimCache.set(src, job);
+      return job;
+    };
+    // An <img class="crest"> showing the logo now, swapped for the trimmed copy when it's ready.
+    const crestImg = src => {
+      const im = Object.assign(el('img', 'crest'), { src, alt: '' });
+      trimmedLogo(src).then(t => { if (t !== src) im.src = t; });
+      return im;
+    };
     const renderSpot = () => {
       const on = s.panel === 'spot', box = $('pSpot'), p = s.spot, t = s[p.team] || s.home;
       const sig = JSON.stringify([p.team, p.num, p.name, p.pos, p.year, p.stats, p.photo.length, p.photo.slice(-40), t.name, t.bg, t.fg, t.logo.length, t.logo.slice(-40)]);
@@ -1894,7 +1929,7 @@
         // logo, so the team's logo isn't on the graphic twice.
         const crest = !p.photo && !!t.logo;
         $('spPhoto').replaceChildren(p.photo ? Object.assign(el('img'), { src: p.photo, alt: '' })
-          : crest ? Object.assign(el('img', 'crest'), { src: t.logo, alt: '' }) : el('div', 'bignum', p.num ? '#' + p.num : ''));
+          : crest ? crestImg(t.logo) : el('div', 'bignum', p.num ? '#' + p.num : ''));
         const mark = t.logo && !crest ? Object.assign(el('img', 'sp-mark'), { src: t.logo, alt: '' }) : el('i', 'logo sp-mark');
         const name = el('div', 'sp-name'), nameText = el('span', null, p.name); name.append(nameText);
         const stats = el('div', 'sp-stats');
@@ -2024,7 +2059,7 @@
         const card = el('div', 'lu-card'); card.style.setProperty('--i', i);
         // No headshot: the school's logo with the number in the corner; no logo either: the number, big.
         const ph = el('div', 'lu-ph'), photo = luPhotoFor(luLib, t.name, p), pic = photo || t.logo;
-        ph.append(photo ? Object.assign(el('img'), { src: photo, alt: '' }) : t.logo ? Object.assign(el('img', 'crest'), { src: t.logo, alt: '' }) : el('div', 'bignum', p.num || ''), el('div', 'shade'));
+        ph.append(photo ? Object.assign(el('img'), { src: photo, alt: '' }) : t.logo ? crestImg(t.logo) : el('div', 'bignum', p.num || ''), el('div', 'shade'));
         if (p.num && pic) { const num = el('div', 'lu-num'); num.append(el('small', null, '#'), p.num); ph.append(num); }
         const [fn, ln] = luSplit(p.name), np = el('div', 'lu-np'), lnEl = el('div', 'ln'), lnText = el('span', null, ln);
         lnEl.append(lnText);
@@ -2047,7 +2082,7 @@
       $('lulRow').replaceChildren(...players.map((p, i) => {
         const cell = el('div', 'lul-p'); cell.style.setProperty('--i', i);
         const hs = el('div', 'hs'), photo = luPhotoFor(luLib, t.name, p), pic = photo || t.logo;
-        hs.append(photo ? Object.assign(el('img'), { src: photo, alt: '' }) : t.logo ? Object.assign(el('img', 'crest'), { src: t.logo, alt: '' }) : el('div', 'bn', p.num || ''));
+        hs.append(photo ? Object.assign(el('img'), { src: photo, alt: '' }) : t.logo ? crestImg(t.logo) : el('div', 'bn', p.num || ''));
         const [fn, ln] = luSplit(p.name), tx = el('div', 'tx'), lnEl = el('div', 'ln'), lnText = el('span', null, ln);
         lnEl.append(lnText);
         tx.append(el('div', 'nu', p.num && pic ? '#' + p.num : ''), el('div', 'fn', fn), lnEl, el('div', 'dt', p.pos)); // no photo or logo: the number is already big beside it
