@@ -15,8 +15,8 @@
 
   One file, three modes:
     basketball-scorebug.html       -> control page (operator)
-    basketball-scorebug.html#bug   -> 1920x1080 output on a chroma key color, or the fill
-                                      (graphics on black) when "Fill + key" is on
+    basketball-scorebug.html#bug   -> 1920x1080 fill (graphics on black) with "Fill + key" on (the
+                                      default), or one output on a chroma key color with it off
     basketball-scorebug.html#key   -> 1920x1080 key signal: the graphics as a white matte on black
 
   The bug is a full-width bar along the bottom: team name strips, logo end caps in team colors,
@@ -1041,6 +1041,7 @@
           <button data-tab="lu">Starting Lineup</button>
           <button data-tab="l3" class="active">Lower third</button>
           <button data-tab="pop">Pop-up</button>
+          <button data-tab="ann">Announcers</button>
           <button data-tab="stats">Team stats</button>
           <button data-tab="fv">Fan vote</button>
           <button data-tab="stn">Station Bug</button>
@@ -1104,6 +1105,22 @@
             <div><label>&nbsp;</label><button class="danger" id="btnPopHide" style="width:100%">Take down pop-up</button></div>
           </div>
           <p class="hint" id="popNow"></p>
+        </div>
+
+        <div data-pane="ann" hidden>
+          <p class="hint" style="margin-top:0">The announcers' names in a pop-up strip above the bug. It uses the pop-up's spot, so showing it takes down a lower third, the fan vote QR or another pop-up. The names are remembered for next time.</p>
+          <label for="annLabel">Label</label>
+          <input id="annLabel" maxlength="24" placeholder="On the call">
+          <label for="ann1">Announcers</label>
+          <input id="ann1" maxlength="30" placeholder="First announcer">
+          <input id="ann2" maxlength="30" placeholder="Second announcer (optional)" style="margin-top:8px">
+          <input id="ann3" maxlength="30" placeholder="Third announcer (optional)" style="margin-top:8px">
+          <div class="two" style="margin-top:14px">
+            <button class="primary" id="btnAnnShow">Show announcers</button>
+            <button class="danger" id="btnAnnHide">Take down</button>
+          </div>
+          <p class="hint">It comes down on its own after the pop-up's time (Pop-up tab, now <span id="annSecs">8</span> seconds; 0 = stays up).</p>
+          <p class="hint" id="annNow"></p>
         </div>
 
         <div data-pane="pre" hidden>
@@ -1325,7 +1342,7 @@
     len: 8 * 60000, base: 0, running: false, startedAt: 0,
     // TAPPS plays without a shot clock; turn it on in Rules if a game uses one.
     shotOn: false, shotFull: 35, shotShort: 20, shot: { len: 35000, base: 0, startedAt: 0, show: true },
-    poss: '', visible: true, keyColor: '#FF00FF', keyMode: 'chroma',
+    poss: '', visible: true, keyColor: '#FF00FF', keyMode: 'alpha', keyV: 2, // 'alpha' = fill + key outputs (the default), 'chroma' = one output on the key color
     // Where each item comes from: 'board' (scoreboard file), 'sheet' (stat sheet) or '' (buttons on the page).
     src: { clock: 'board', shot: 'board', period: '', score: '', fouls: '', tos: '', players: 'sheet', team: 'sheet' },
     // Stat sheet: the share link, whether it's connected, and the last read (players and totals per side).
@@ -1355,6 +1372,8 @@
     // edit = the team being edited in the tab, show = the team on air; full screen is s.panel === 'lu', l3 the lower third.
     lu: { edit: 'home', show: 'home', l3: false, home: blankLu(), away: blankLu() },
     pop: { on: false, kind: 'text', text: '', team: '', stat: 'FG', run: null, until: 0, at: 0 },
+    // Announcers (shown as a pop-up): up to three names and the label before them, remembered between games.
+    ann: { names: ['', '', ''], label: 'On the call' },
     // Score after each change, [home, away], to work out runs (the last 80 kept).
     scoreLog: [],
     l3: { on: false, name: '', stat: '', team: 'home', until: 0, photo: '' },
@@ -1429,6 +1448,8 @@
     // The Excel stat sheets are retired: every page moves to the stat keeper once (Excel stays in the menu,
     // marked deprecated). A page that was connected to a sheet is disconnected, so it can connect to the stat keeper.
     if (raw.statsV !== 2) { if (out.statFrom !== 'keeper') { out.statFrom = 'keeper'; out.sheetOn = false; } out.statsV = 2; }
+    // Fill + key is the default output: a page still on the chroma key moves to it once (the toggle in Setup → Output signal switches back).
+    if (raw.keyV !== 2) { out.keyMode = 'alpha'; out.keyV = 2; }
     // The home text default moved from light gold (#F2D54C) to FBCA gold (#EAAF0F): untouched defaults follow, once.
     if (raw.homeFgV !== 2) { if (String(out.home.fg).toUpperCase() === '#F2D54C' && String(out.home.bg).toUpperCase() === '#063E0C') out.home.fg = '#EAAF0F'; out.homeFgV = 2; }
     return out;
@@ -1454,6 +1475,11 @@
   const hex = (v, fb) => /^#[0-9a-f]{6}$/i.test(v || '') ? v : fb;
   const SIDES = ['home', 'away'];
   const leftSide = () => s.swap ? 'home' : 'away';
+  // The announcers as one line: "Jordan Lee", "Jordan Lee & Sam Park", "Jordan Lee, Sam Park & Alex Kim".
+  const annNames = () => {
+    const n = ((s.ann && s.ann.names) || []).map(x => String(x || '').trim()).filter(Boolean);
+    return n.length > 1 ? n.slice(0, -1).join(', ') + ' & ' + n[n.length - 1] : n[0] || '';
+  };
   const rightSide = () => s.swap ? 'away' : 'home';
   const other = side => side === 'home' ? 'away' : 'home';
 
@@ -1672,7 +1698,7 @@
     const renderPop = () => {
       const p = s.pop, on = p.on && bugUp() && (!p.until || Date.now() < p.until);
       $('pop').classList.toggle('on', on);
-      const sig = JSON.stringify([p.kind, p.text, p.team, p.stat, p.run, p.at, leftSide(), s.home.name, s.away.name, s.home.bg, s.away.bg,
+      const sig = JSON.stringify([p.kind, p.text, p.team, p.stat, p.run, p.at, p.kind === 'ann' ? s.ann : '', leftSide(), s.home.name, s.away.name, s.home.bg, s.away.bg,
         p.kind === 'stat' ? SIDES.map(side => { const r = POP_STATS.find(x => x[0] === p.stat); return r && (!r[2] || sheetLive()) ? r[1](side) : ''; }) : '']);
       if (sig === popSig) return;
       popSig = sig;
@@ -1689,6 +1715,9 @@
         const val = x => { const d = el('div', 'p-val'); d.append(String(x[0])); if (x[2]) d.append(el('small', null, x[2])); return d; };
         const half = (...kids) => { const h = el('div', 'p-half'); h.append(...kids); return h; };
         parts.push(half(popTag(L), val(lv)), el('div', 'p-lbl', (p.stat || '').toUpperCase()), half(val(rv), popTag(R)));
+      } else if (p.kind === 'ann') {
+        // "ON THE CALL | JORDAN LEE & SAM PARK"
+        parts.push(el('div', 'p-lbl', (s.ann.label || 'On the call').toUpperCase()), el('div', 'p-text', annNames().toUpperCase()));
       } else if (p.kind === 'run' && p.run) {
         // "FBCA ON A 10–0 RUN", after the team's logo when it has one (no repeat of the initials otherwise).
         const txt = el('div', 'p-text'); txt.append(initials(s[p.run.side].name) + ' ON A', el('b', null, p.run.pts + '–' + p.run.opp), 'RUN');
@@ -3221,9 +3250,26 @@
     $('popRunNote').textContent = run ? '' : 'No run yet: it counts points since the other team last scored.';
     const p = s.pop, up = p.on && (!p.until || Date.now() < p.until);
     $('btnPopHide').disabled = !up;
-    $('popNow').textContent = up ? 'On air: ' + (p.kind === 'stat' ? p.stat : p.kind === 'run' ? 'the run' : '"' + p.text + '"') + (p.until ? ', down in ' + Math.ceil((p.until - Date.now()) / 1000) + ' s' : '') + '.' : '';
+    $('popNow').textContent = up ? 'On air: ' + (p.kind === 'stat' ? p.stat : p.kind === 'run' ? 'the run' : p.kind === 'ann' ? 'the announcers' : '"' + p.text + '"') + (p.until ? ', down in ' + Math.ceil((p.until - Date.now()) / 1000) + ' s' : '') + '.' : '';
   };
   popHook = renderPopTab;
+
+  // --- Announcers: a pop-up with their names ---
+  const annIds = ['ann1', 'ann2', 'ann3'];
+  annIds.forEach((id, i) => { $(id).value = s.ann.names[i] || ''; $(id).addEventListener('input', () => { s.ann.names[i] = $(id).value; save(); }); });
+  $('annLabel').value = s.ann.label || '';
+  $('annLabel').addEventListener('input', () => { s.ann.label = $('annLabel').value; save(); });
+  $('btnAnnShow').onclick = () => { if (!annNames()) { $('ann1').focus(); return; } showPop({ kind: 'ann' }); };
+  $('btnAnnHide').onclick = () => { if (s.pop.kind === 'ann') hidePop(); };
+  annIds.forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $('btnAnnShow').click(); }));
+  const renderAnnTab = () => {
+    const p = s.pop, up = p.on && p.kind === 'ann' && (!p.until || Date.now() < p.until);
+    $('btnAnnHide').disabled = !up;
+    $('btnAnnShow').classList.toggle('active', up);
+    $('annSecs').textContent = popSecs;
+    $('annNow').textContent = up ? 'On air' + (p.until ? ', down in ' + Math.ceil((p.until - Date.now()) / 1000) + ' s' : '') + '.' : '';
+  };
+  popHook = () => { renderPopTab(); renderAnnTab(); };
 
   // --- Lower third ---
   const untilFrom = id => { const sec = Math.max(0, parseInt($(id).value, 10) || 0); return sec ? Date.now() + sec * 1000 : 0; };

@@ -15,8 +15,8 @@
 
   One file, two modes:
     soccer-scorebug.html       -> control page (operator)
-    soccer-scorebug.html#bug   -> 1920x1080 output on a magenta (#FF00FF) key background,
-                                  or the fill (graphics on black) when "Fill + key" is on
+    soccer-scorebug.html#bug   -> 1920x1080 fill (graphics on black) with "Fill + key" on (the
+                                  default), or one output on a magenta (#FF00FF) key background with it off
     soccer-scorebug.html#key   -> 1920x1080 key signal: the graphics as a white silhouette on black
 
   Fill + key gives the ATEM a real alpha channel: send #bug and #key to two inputs and set an
@@ -1050,6 +1050,7 @@
         <div class="tabs" id="tabs">
           <button data-tab="drop" class="active">Drop-down</button>
           <button data-tab="l3">Lower third</button>
+          <button data-tab="ann">Announcers</button>
           <button data-tab="stats">Stats &amp; Score</button>
           <button data-tab="pre">Title Card</button>
           <button data-tab="spot">Player Spotlight</button>
@@ -1108,6 +1109,23 @@
           </div>
           <p class="hint">Save lower thirds before the game (announcers, key players), then show them from the list with one click.</p>
           <ul class="l3-list" id="l3List"></ul>
+        </div>
+
+        <div data-pane="ann" hidden>
+          <p class="hint" style="margin-top:0">The announcers' names as a lower third, in the EOTA colors. Showing it takes down any other lower third. The names are remembered for next time.</p>
+          <label for="ann1">Announcers</label>
+          <input id="ann1" maxlength="30" placeholder="First announcer">
+          <input id="ann2" maxlength="30" placeholder="Second announcer (optional)" style="margin-top:8px">
+          <input id="ann3" maxlength="30" placeholder="Third announcer (optional)" style="margin-top:8px">
+          <div class="two">
+            <div><label for="annLabel">Line below the names</label><input id="annLabel" maxlength="40" placeholder="On the call"></div>
+            <div><label for="annSecs">Auto-hide after (sec, 0 = stay)</label><input id="annSecs" type="number" min="0" max="120" value="8"></div>
+          </div>
+          <div class="two" style="margin-top:14px">
+            <button class="primary" id="btnAnnShow">Show announcers</button>
+            <button class="danger" id="btnAnnHide">Take down</button>
+          </div>
+          <p class="hint" id="annNow"></p>
         </div>
 
         <!-- Stats & Score: the match stats and score panel graphics -->
@@ -1426,7 +1444,7 @@
     homeBg: HOME_COLORS.bg, homeFg: HOME_COLORS.fg,
     awayBg: '#1F3A93', awayFg: '#FFFFFF',
     homeLogo: '', awayLogo: '', // school logos (trimmed, transparent background) for the pregame card
-    keyColor: '#FF00FF', keyMode: 'chroma', // 'alpha' = fill + key outputs
+    keyColor: '#FF00FF', keyMode: 'alpha', keyV: 2, // 'alpha' = fill + key outputs (the default), 'chroma' = one output on the key color
     stn: { on: false, corner: 'auto', opacity: 60, color: 'gold' }, // station bug; corner 'auto' = the top corner opposite the bug
     period: '1ST', halfMin: 40, otMin: 10, dir: 'down', pos: 'tl', visible: true, swap: false,
     len: 40 * 60000, base: 0, running: false, startedAt: 0, added: 0,
@@ -1435,6 +1453,8 @@
     clockShow: true, // false hides the time on the bug (the clock keeps running)
     drop: { on: false, team: 'home', label: 'GOAL', minute: '', text: '', out: '', until: 0 },
     l3: { on: false, name: '', stat: '', team: 'home', until: 0, photo: '' },
+    // Announcers (shown as a lower third): up to three names and the line below them, remembered between games.
+    ann: { names: ['', '', ''], label: 'On the call', secs: 8 },
     // Which roster the player photos are for ('boys' | 'girls' | ''): FBCA has a boys' and a girls' team.
     squad: '',
     l3List: [],
@@ -1518,6 +1538,8 @@
     // The soccer bug only sits at the top now: a saved bottom position moves to the top on the same side.
     if (out.pos === 'bl' || out.pos === 'br') out.pos = out.pos === 'bl' ? 'tl' : 'tr';
     if (raw.statsV !== 2) { if (out.statFrom !== 'keeper') { out.statFrom = 'keeper'; out.sheetOn = false; } out.statsV = 2; }
+    // Fill + key is the default output: a page still on the chroma key moves to it once (the toggle in Setup → Output signal switches back).
+    if (raw.keyV !== 2) { out.keyMode = 'alpha'; out.keyV = 2; }
     // The home text default moved from light gold (#F2D54C) to FBCA gold (#EAAF0F): untouched defaults follow, once.
     if (raw.homeFgV !== 2) { if (String(out.homeFg).toUpperCase() === '#F2D54C' && String(out.homeBg).toUpperCase() === '#063E0C') out.homeFg = HOME_COLORS.fg; out.homeFgV = 2; }
     return out;
@@ -1559,6 +1581,11 @@
   const colorsFor = side => side === 'home' ? { bg: s.homeBg, fg: s.homeFg }
     : side === 'away' ? { bg: s.awayBg, fg: s.awayFg } : NEUTRAL_COLORS;
   const teamName = side => side === 'home' ? s.home : side === 'away' ? s.away : '';
+  // The announcers as one line: "Jordan Lee", "Jordan Lee & Sam Park", "Jordan Lee, Sam Park & Alex Kim".
+  const annNames = () => {
+    const n = ((s.ann && s.ann.names) || []).map(x => String(x || '').trim()).filter(Boolean);
+    return n.length > 1 ? n.slice(0, -1).join(', ') + ' & ' + n[n.length - 1] : n[0] || '';
+  };
   // Jersey colors for the lineup. Home defaults to white so it stands out on the green field.
   const hex = (v, fallback) => /^#[0-9a-f]{6}$/i.test(v || '') ? v : fallback;
   const kitFor = side => {
@@ -2467,8 +2494,10 @@
       ? 'See-through needs Fill + key (Setup). On a chroma key it shows tinted, so use 100% there.'
       : s.stn.corner !== 'auto' && s.stn.corner === s.pos ? 'That corner is where the scorebug sits; they will overlap.' : '';
   };
+  let annHook = null; // the Announcers tab (set up below)
   const renderCtl = () => {
     renderStnCtl();
+    if (annHook) annHook();
     if (fvRenderHook) fvRenderHook();
     if (logoHook) logoHook();
     if (rosterHook) rosterHook();
@@ -3664,6 +3693,28 @@
     if (!it.name) { $('lName').focus(); return; }
     s.l3List.push(it); save();
     $('lName').value = ''; $('lStat').value = '';
+  };
+
+  // --- Announcers: a lower third with their names ---
+  const ann = () => s.ann || (s.ann = { names: ['', '', ''], label: 'On the call', secs: 8 });
+  ['ann1', 'ann2', 'ann3'].forEach((id, i) => { $(id).value = ann().names[i] || ''; $(id).addEventListener('input', () => { ann().names[i] = $(id).value; save(); }); });
+  $('annLabel').value = ann().label || '';
+  $('annLabel').addEventListener('input', () => { ann().label = $('annLabel').value; save(); });
+  $('annSecs').value = ann().secs ?? 8;
+  $('annSecs').addEventListener('input', () => { ann().secs = Math.max(0, Math.min(120, parseInt($('annSecs').value, 10) || 0)); save(); });
+  $('btnAnnShow').onclick = () => {
+    const names = annNames(); if (!names) { $('ann1').focus(); return; }
+    showLower('l3', () => {
+      const secs = ann().secs ?? 8;
+      s.l3 = { on: true, name: names, stat: ann().label || '', team: 'none', until: secs ? Date.now() + secs * 1000 : 0, photo: '', ann: true };
+    });
+  };
+  $('btnAnnHide').onclick = () => { if (s.l3.on && s.l3.ann) hideL3(); };
+  ['ann1', 'ann2', 'ann3'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $('btnAnnShow').click(); }));
+  annHook = () => {
+    const up = s.l3.on && !!s.l3.ann;
+    $('btnAnnHide').disabled = !up; $('btnAnnShow').classList.toggle('active', up);
+    $('annNow').textContent = up ? 'On air.' : '';
   };
 
   // --- Lineups ---
