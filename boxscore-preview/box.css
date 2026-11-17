@@ -173,7 +173,8 @@
 /* Scores by quarter */
 .ebx table.qt td, .ebx table.qt th { background: none; position: static; }
 .ebx table.qt th { background: none; }
-.ebx table.qt td:first-child { display: flex; align-items: center; gap: 8px; font: 700 16px var(--font-body); text-transform: none; letter-spacing: 0; min-width: 150px; }
+.ebx table.qt td:first-child { font: 700 16px var(--font-body); text-transform: none; letter-spacing: 0; }
+.ebx table.qt .qn { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ebx table.qt td.tot { font-weight: 800; }
 .ebx table.qt td.zero { color: rgba(255,255,255,.35); }
 
@@ -181,9 +182,16 @@
 .ebx .court + .court { margin-top: 14px; }
 .ebx .ch { display: flex; align-items: center; gap: 12px; padding: 8px 0; font: 800 20px var(--font-display); letter-spacing: .03em; text-transform: uppercase; box-shadow: inset 0 -1px 0 rgba(255,255,255,.14); }
 .ebx table.ct th, .ebx table.ct td { background: none; position: static; }
-.ebx table.ct th { text-align: right; }
+.ebx table.ct th, .ebx table.ct td { text-align: center; }
 .ebx table.ct th:first-child { text-align: left; }
-.ebx table.ct td { text-align: right; font-weight: 600; }
+.ebx table.ct td { font-weight: 600; }
+/* Scoring and On the Court share columns: the same name column, then equal number columns that line up */
+.ebx table.qt, .ebx table.ct { table-layout: fixed; }
+.ebx table.qt th:first-child, .ebx table.ct th:first-child { width: 42%; }
+.ebx table.qt th, .ebx table.qt td, .ebx table.ct th, .ebx table.ct td { padding-left: 4px; padding-right: 4px; }
+.ebx table.qt td:first-child, .ebx table.ct td:first-child, .ebx table.qt th:first-child, .ebx table.ct th:first-child { padding-left: 10px; }
+.ebx table.qt td:first-child span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ebx table.ct td:first-child b { display: block; overflow: hidden; text-overflow: ellipsis; }
 .ebx table.ct td:first-child { text-align: left; font: 600 16px var(--font-body); text-transform: none; letter-spacing: 0; }
 .ebx table.ct td:first-child b { color: #fff; margin: 0; }
 .ebx table.ct td:first-child small { display: block; color: rgba(255,255,255,.55); font-size: 13px; }

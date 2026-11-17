@@ -433,10 +433,14 @@
     }
   };
   // A team's logo, as the scorebug shared it through the stat keeper (meta.logos), fetched by version. Not on past
-  // games: the stat keeper keeps only each side's current logo.
+  // games: the stat keeper keeps only each side's current logo. With none, FBCA gets its eagle; another team, its initials.
+  // FBCA without a shared logo gets its eagle (as the app does): "FBCA", "FBCA Varsity", "Fort Bend Christian Academy"...
+  const isFBCA = name => /\bFBCA\b/i.test(name || '') || /FORT BEND CHRISTIAN/i.test(name || '');
+  const FBCA_EAGLE = '/boxscore/fbca-eagle.png';
   const logoImg = (g, side, cls) => {
     const lg = !g.past && g.meta.logos && g.meta.logos[side];
-    return lg && lg.v ? Object.assign(el('img', cls), { src: API + '/logo?game=' + g.sport + '&side=' + side + '&v=' + lg.v, alt: '' }) : null;
+    const src = lg && lg.v ? API + '/logo?game=' + g.sport + '&side=' + side + '&v=' + lg.v : isFBCA(g.sides[side] && g.sides[side].name) ? FBCA_EAGLE : '';
+    return src ? Object.assign(el('img', cls), { src, alt: '' }) : null;
   };
   // "Fort Bend Christian Academy" → "FBCA", "Kinkaid" → "KINK" (as the Live Activity does)
   const abbr = name => {
@@ -586,7 +590,7 @@
     hr.append(el('th'), ...F.quarters.map((x, i) => el('th', null, i < 4 ? String(i + 1) : i === 4 ? 'OT' : (i - 3) + 'OT')), el('th', null, 'T'));
     tbl.append(hr);
     for (const side of ['away', 'home']) {
-      const tr = el('tr'), nm = el('td'); nm.append(mark(g, side), el('span', null, g.sides[side].name));
+      const tr = el('tr'), nm = el('td'), qn = el('div', 'qn'); qn.append(mark(g, side), el('span', null, g.sides[side].name)); nm.append(qn);
       tr.append(nm, ...F.quarters.map((x, i) => el('td', i > F.curPer ? 'zero' : null, i > F.curPer ? '–' : x[side])), el('td', 'tot', g.sides[side].score));
       tbl.append(tr);
     }
@@ -658,12 +662,14 @@
     const d = 'M' + pts[0][0] + ',' + pts[0][1] + pts.slice(1).map(([x, y]) => `H${x.toFixed(1)}V${y.toFixed(1)}`).join('');
     const last = pts[pts.length - 1];
     svg.append(sv('path', { d: d + `H${last[0]}V${Hh / 2}H0Z`, class: 'area' }), sv('path', { d, class: 'line', stroke: '#fff' }));
-    const wrap = el('div', 'wpc'), row = side => {
-      const r = el('div', 'wpr'), p = side === 'home' ? F.pNow : 1 - F.pNow, k = el('i', 'key'); k.style.background = bars[side];
+    const pct = {}, wrap = el('div', 'wpc'), row = side => {
+      const r = el('div', 'wpr'), k = el('i', 'key'); k.style.background = bars[side];
       const nm = el('span', 'wpn'); nm.append(mark(g, side, 'big'), el('span', null, abbr(g.sides[side].name)), k);
-      r.append(nm, el('b', null, (100 * p).toFixed(1) + '%')); return r;
+      pct[side] = el('b'); r.append(nm, pct[side]); return r;
     };
-    wrap.append(row('away'), svg, row('home'), scrub(g, F, svg, X, Hh, s => [[Y(s.p), '#fff']], 'score'));
+    // The percentages: at the picked moment, or now
+    const setPct = s => { const p = s ? s.p : F.pNow; pct.home.textContent = (100 * p).toFixed(1) + '%'; pct.away.textContent = (100 * (1 - p)).toFixed(1) + '%'; };
+    wrap.append(row('away'), svg, row('home'), scrub(g, F, svg, X, Hh, s => [[Y(s.p), '#fff']], 'score', setPct));
     return wrap;
   };
   const flowChart = (g, F, bars) => {
@@ -674,20 +680,23 @@
       const d = 'M0,' + Hh + F.series.slice(1).map(s => `H${X(s.t).toFixed(1)}V${Y(s[side === 'home' ? 'h' : 'a']).toFixed(1)}`).join('');
       svg.append(sv('path', { d, class: 'line' + (side === 'away' ? ' dash' : ''), stroke: bars[side] }));
     }
-    const wrap = el('div', 'gfc'), head = el('div', 'gfh');
+    const wrap = el('div', 'gfc'), head = el('div', 'gfh'), score = {};
     const team = side => { const d = el('div', 'gft ' + side), k = el('i', 'key' + (side === 'away' ? ' dash' : '')); k.style.color = bars[side];
-      const t = el('div'); t.append(el('b', null, g.sides[side].score)); const n = el('small'); n.append(...(side === 'away' ? [k, ' ' + abbr(g.sides[side].name)] : [abbr(g.sides[side].name) + ' ', k])); t.append(n);
+      const t = el('div'); score[side] = el('b', null, g.sides[side].score); t.append(score[side]); const n = el('small'); n.append(...(side === 'away' ? [k, ' ' + abbr(g.sides[side].name)] : [abbr(g.sides[side].name) + ' ', k])); t.append(n);
       d.append(...(side === 'away' ? [mark(g, side, 'big'), t] : [t, mark(g, side, 'big')])); return d; };
     const mid = el('div', 'gfm'); mid.append(el('b', null, F.changes), el('small', null, F.changes === 1 ? 'Lead change' : 'Lead changes'));
     head.append(team('away'), mid, team('home'));
-    wrap.append(head, svg, scrub(g, F, svg, X, Hh, s => [[Y(s.a), bars.away], [Y(s.h), bars.home]], 'win'));
+    // The scores: at the picked moment, or now
+    const setScore = s => { score.away.textContent = s ? s.a : g.sides.away.score; score.home.textContent = s ? s.h : g.sides.home.score; };
+    wrap.append(head, svg, scrub(g, F, svg, X, Hh, s => [[Y(s.a), bars.away], [Y(s.h), bars.home]], 'win', setScore));
     return wrap;
   };
-  // Tap, drag or hover on a chart: a line and dots at the nearest basket, and that play in the card below it (the score
-  // then on the win probability chart; the win chance then on game flow). The card starts on the latest basket, and
-  // keeps the viewer's pick as the game updates (F.pick).
-  const scrub = (g, F, svg, X, Hh, dotsFor, side) => {
+  // Tap, drag or hover on a chart: a line and dots at the nearest basket, that play in the card below it (the score then
+  // on the win probability chart; the win chance then on game flow), and the numbers above the chart as they were then
+  // (onPick). Moving off the chart or lifting a finger goes back to now: the numbers as they are, the latest basket.
+  const scrub = (g, F, svg, X, Hh, dotsFor, side, onPick) => {
     const pts = F.series.filter(s => s.id), card = el('div', 'pcard');
+    onPick(null);
     if (!pts.length) { card.append(el('p', 'note', 'No baskets yet.')); return card; }
     const items = new Map(playList(g).map(it => [it.e.id, it]));
     const over = sv('g', { class: 'scrub' }), vline = sv('line', { y1: 0, y2: Hh, class: 'vline' }); over.append(vline); svg.append(over);
@@ -708,9 +717,15 @@
       const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal, x = (ev.clientX - r.left) / r.width * vb.width;
       return pts.reduce((b, s) => Math.abs(X(s.t) - x) < Math.abs(X(b.t) - x) ? s : b, pts[0]);
     };
-    svg.addEventListener('pointermove', ev => show(nearest(ev)));
-    svg.addEventListener('pointerdown', ev => show(nearest(ev)));
-    show(pts.find(s => s.id === F.pick.id) || pts[pts.length - 1]);
+    const pick = ev => { const s = nearest(ev); show(s); onPick(s); };
+    const now = () => { F.pick.id = null; show(pts[pts.length - 1]); F.pick.id = null; onPick(null); };
+    svg.addEventListener('pointermove', pick);
+    svg.addEventListener('pointerdown', pick);
+    for (const t of ['pointerleave', 'pointercancel']) svg.addEventListener(t, now);
+    svg.addEventListener('pointerup', ev => { if (ev.pointerType !== 'mouse') now(); });
+    // A pick still under the mouse survives the game updating; otherwise the latest basket
+    const kept = pts.find(s => s.id === F.pick.id);
+    if (kept) { show(kept); onPick(kept); } else now();
     return card;
   };
 
