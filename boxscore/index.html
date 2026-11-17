@@ -147,7 +147,7 @@
       $('kick').textContent = (game.sport === 'soccer' ? 'Soccer' : 'Basketball') + ' · ' + H.name + ' vs ' + A.name;
       document.title = 'Box Score: ' + H.name + ' ' + H.score + ', ' + A.name + ' ' + A.score + ' · Eagles on the Air';
       $('msg').hidden = true; $('box').hidden = false;
-      L.renderBox($('box'), game);
+      L.renderBox($('box'), game, { tabs: true });
     }
     $('tools').hidden = !(game && game.sides) && !past[1];
     tick();
