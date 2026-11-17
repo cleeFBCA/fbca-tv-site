@@ -34,10 +34,12 @@
       .sort((a, b) => b.start - a.start);
     return on[0] ? { sport: on[0].sport, start: on[0].start, game: on[0].g } : null;
   };
-  // The schedule entry for a game: same sport, same day (local time) as `when` (ms).
+  // The schedule entry for a game: same sport, same day (local time) as `when` (ms, when the stat crew started it). On a
+  // doubleheader day (girls at 5, boys at 7), the one whose start is closest to `when`.
   const scheduleFor = (games, sport, when) => {
     const day = d => { const x = new Date(d); return x.getFullYear() + '-' + x.getMonth() + '-' + x.getDate(); }, want = day(when);
-    return (games || []).find(g => sportOfScheduled(g) === sport && !isOff(g) && day(Date.parse(g.start)) === want) || null;
+    const same = (games || []).filter(g => sportOfScheduled(g) === sport && !isOff(g) && day(Date.parse(g.start)) === want);
+    return same.sort((a, b) => Math.abs(Date.parse(a.start) - when) - Math.abs(Date.parse(b.start) - when))[0] || null;
   };
   const loadSchedule = () => fetch('/schedule.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(d => (d && d.games) || []).catch(() => null);
 
@@ -884,6 +886,8 @@
     } else { const s = el('section'); s.append(el('h2', 'h', 'Team stats'), cmp); parts.push(s); }
     const players = el('section'); players.append(el('h2', 'h', 'Players'), playerTables(g));
     parts.push(players);
+    // The date, time and venue from the schedule (fbca.tv/boxscore; not the home page's compact box score)
+    const info = !head && gameInfo(g); if (info) parts.push(section('Game Information', info));
     root.replaceChildren(...parts);
     root._fitW = 0; tickBox(root, g);
     if (document.fonts) document.fonts.ready.then(() => fitNames(root));
