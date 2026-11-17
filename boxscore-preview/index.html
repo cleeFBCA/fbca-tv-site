@@ -180,7 +180,15 @@
   $('pastMore').onclick = () => { pastOpen = true; renderPast(); };
   L.pastGames().then(list => { pastAll = list; renderPast(); });
 
-  if (past[0] && past[1]) {
+  // ?demo: a made-up game (demo.json) to review the new tabs when there's no basketball game with plays.
+  if (new URLSearchParams(location.search).has('demo')) {
+    fetch('demo.json', { cache: 'no-cache' }).then(r => r.json()).then(st => {
+      const d = new Date(); d.setHours(19, 0, 0, 0);
+      game = { ...L.compute('basketball', st), at: Date.now(), scheduled: false, status: '', past: true,
+               info: { start: d.toISOString(), location: 'The Nest', opponent: 'The Emery Weiner School', homeAway: 'home' } };
+      render(); $('kick').textContent += ' · Demo game';
+    });
+  } else if (past[0] && past[1]) {
     // One past game: final, not live, and no live connection.
     $('btnLive').hidden = false;
     L.pastGame(past[0], past[1]).then(g => {
