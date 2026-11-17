@@ -208,7 +208,7 @@
         if (e.side === 'home') h += pts; else a += pts;
         const lead = Math.sign(h - a); if (lead && leader && lead !== leader) changes++; if (lead) leader = lead;
         const t = tOf.get(e.id), lft = t < full ? full - t : Math.max(0, clock.end(LEAD_PERIODS[per(e)]) - t);
-        series.push({ t, h, a, p: winProb(h - a, lft, full) });
+        series.push({ t, h, a, p: winProb(h - a, lft, full), id: e.id });
       }
       scoreAfter.set(e.id, { home: h, away: a });
       wpAfter.set(e.id, series[series.length - 1].p);
@@ -663,7 +663,7 @@
       const nm = el('span', 'wpn'); nm.append(mark(g, side, 'big'), el('span', null, abbr(g.sides[side].name)), k);
       r.append(nm, el('b', null, (100 * p).toFixed(1) + '%')); return r;
     };
-    wrap.append(row('away'), svg, row('home'));
+    wrap.append(row('away'), svg, row('home'), scrub(g, F, svg, X, Hh, s => [[Y(s.p), '#fff']], 'score'));
     return wrap;
   };
   const flowChart = (g, F, bars) => {
@@ -680,8 +680,38 @@
       d.append(...(side === 'away' ? [mark(g, side, 'big'), t] : [t, mark(g, side, 'big')])); return d; };
     const mid = el('div', 'gfm'); mid.append(el('b', null, F.changes), el('small', null, F.changes === 1 ? 'Lead change' : 'Lead changes'));
     head.append(team('away'), mid, team('home'));
-    wrap.append(head, svg);
+    wrap.append(head, svg, scrub(g, F, svg, X, Hh, s => [[Y(s.a), bars.away], [Y(s.h), bars.home]], 'win'));
     return wrap;
+  };
+  // Tap, drag or hover on a chart: a line and dots at the nearest basket, and that play in the card below it (the score
+  // then on the win probability chart; the win chance then on game flow). The card starts on the latest basket, and
+  // keeps the viewer's pick as the game updates (F.pick).
+  const scrub = (g, F, svg, X, Hh, dotsFor, side) => {
+    const pts = F.series.filter(s => s.id), card = el('div', 'pcard');
+    if (!pts.length) { card.append(el('p', 'note', 'No baskets yet.')); return card; }
+    const items = new Map(playList(g).map(it => [it.e.id, it]));
+    const over = sv('g', { class: 'scrub' }), vline = sv('line', { y1: 0, y2: Hh, class: 'vline' }); over.append(vline); svg.append(over);
+    let dots = [];
+    const show = s => {
+      F.pick.id = s.id;
+      const x = X(s.t); vline.setAttribute('x1', x); vline.setAttribute('x2', x);
+      dots.forEach(d => d.remove());
+      dots = dotsFor(s).map(([y, c]) => { const d = sv('circle', { cx: x, cy: y, r: 6, class: 'dot', fill: c }); over.append(d); return d; });
+      const it = items.get(s.id) || { e: (g.events || []).find(e => e.id === s.id) }, e = it.e; if (!e) return;
+      const left = el('div', 'pcl'), right = el('div', 'pcr');
+      left.append(el('b', null, TITLE[e.type] || e.type), el('div', 'pw', [e.min, PERIOD_ORD[e.period] || e.period].filter(Boolean).join(' - ')), el('div', 'pd', describe(g, it)));
+      if (side === 'score') for (const sd of ['away', 'home']) { const c = el('div', 'pcs'); c.append(el('b', null, sd === 'home' ? s.h : s.a), el('small', null, abbr(g.sides[sd].name))); right.append(c); }
+      else { const home = s.p >= .5, c = el('div', 'pcs'); c.append(el('b', null, abbr(g.sides[home ? 'home' : 'away'].name) + ' ' + (100 * (home ? s.p : 1 - s.p)).toFixed(1) + '%'), el('small', null, 'Win %')); right.append(c); }
+      card.replaceChildren(left, right);
+    };
+    const nearest = ev => {
+      const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal, x = (ev.clientX - r.left) / r.width * vb.width;
+      return pts.reduce((b, s) => Math.abs(X(s.t) - x) < Math.abs(X(b.t) - x) ? s : b, pts[0]);
+    };
+    svg.addEventListener('pointermove', ev => show(nearest(ev)));
+    svg.addEventListener('pointerdown', ev => show(nearest(ev)));
+    show(pts.find(s => s.id === F.pick.id) || pts[pts.length - 1]);
+    return card;
   };
 
   // Team stats the Gamecast way: shooting as each team's own bar from the outside in (the middle is 100%); counts as
@@ -752,6 +782,7 @@
   const TABS = [['gamecast', 'Gamecast'], ['box', 'Box Score'], ['pbp', 'Play-by-Play'], ['team', 'Team Stats']];
   const renderTabs = (root, g) => {
     const F = flow(g), bars = barsOf(g), plays = playList(g), newest = [...plays].reverse();
+    F.pick = root._pick = root._pick || { id: null };
     const want = (location.hash || '').slice(1), tab = root._tab || (TABS.some(t => t[0] === want) ? want : 'gamecast');
     root._tab = tab;
     const top = boardCard(g, false), bar = el('nav', 'tabs');
@@ -779,7 +810,7 @@
     const drawChart = k => { root._chart = k; seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.c === k)); chartBox.replaceChildren(k === 'wp' ? winChart(g, F, bars) : flowChart(g, F, bars)); };
     for (const [k, label] of [['wp', 'Win Probability'], ['flow', 'Game Flow']]) { const b = el('button', null, label); b.type = 'button'; b.dataset.c = k; b.onclick = () => drawChart(k); seg.append(b); }
     drawChart(which);
-    gc.append(section('Probabilities & Game Flow', seg, chartBox, el('p', 'fine', 'Win probability is an EOTA estimate from the score and the time left.')));
+    gc.append(section('Probabilities & Game Flow', seg, chartBox, el('p', 'fine', 'According to EOTA Analytics')));
     gc.append(section('Team Stats', statBars(g, bars, ['Field Goal %', 'Three Point %', 'Free Throw %', 'Turnovers', 'Rebounds', 'Percent Led', 'Largest Lead']), moreLink('Full Team Stats', () => go('team'))));
     const info = gameInfo(g); if (info) gc.append(section('Game Information', info));
     panes.gamecast = gc;
