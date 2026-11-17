@@ -1214,6 +1214,8 @@
 
         <!-- Lineups -->
         <div data-pane="xi" hidden>
+          <div class="row-btns xi-refresh"><button id="btnXiRefresh">Refresh rosters from the stat keeper</button></div>
+          <p class="hint" id="xiRefreshNote" style="margin-top:-4px">Switching teams (girls to boys): start a new game on the stat keeper and load the new rosters, click Clear lineup for each team, then Refresh rosters.</p>
           <div class="lineup-cols sides">
             <div>
               <h3 id="xiHomeTitle">FBCA</h3>
@@ -1226,6 +1228,7 @@
               <div class="count" id="xiHomeCount"></div>
               <label for="xiHomeSubs">Substitutes</label>
               <textarea class="subs" id="xiHomeSubs" data-xi="home" data-k="subs" placeholder="12 Name&#10;14 Name"></textarea>
+              <div class="row-btns" style="margin-top:8px"><button class="small danger" data-xiclear="home">Clear lineup</button></div>
               <div class="two">
                 <div><label for="xiHomeKit">Jersey</label><input type="color" id="xiHomeKit" data-xi="home" data-k="kit"></div>
                 <div><label for="xiHomeKitNum">Number</label><input type="color" id="xiHomeKitNum" data-xi="home" data-k="kitNum"></div>
@@ -1249,6 +1252,7 @@
               <div class="count" id="xiAwayCount"></div>
               <label for="xiAwaySubs">Substitutes</label>
               <textarea class="subs" id="xiAwaySubs" data-xi="away" data-k="subs" placeholder="12 Name&#10;14 Name"></textarea>
+              <div class="row-btns" style="margin-top:8px"><button class="small danger" data-xiclear="away">Clear lineup</button></div>
               <div class="two">
                 <div><label for="xiAwayKit">Jersey</label><input type="color" id="xiAwayKit" data-xi="away" data-k="kit"></div>
                 <div><label for="xiAwayKitNum">Number</label><input type="color" id="xiAwayKitNum" data-xi="away" data-k="kitNum"></div>
@@ -3724,6 +3728,29 @@
   document.querySelectorAll('[data-xi]').forEach(inp => inp.addEventListener('input', () => {
     s.xi[inp.dataset.xi][inp.dataset.k] = inp.value; save();
   }));
+  // Clear lineup: the starters, subs and coach go (for the next game's team); the formation and jersey colors stay.
+  document.querySelectorAll('[data-xiclear]').forEach(b => b.onclick = () => {
+    const side = b.dataset.xiclear;
+    if (!confirm('Clear the ' + teamName(side) + ' starters, substitutes and head coach? The formation and jersey colors stay.')) return;
+    Object.assign(s.xi[side], { raw: '', subs: '', coach: '', picks: [] });
+    xiPickSig[side] = ''; save();
+  });
+  // Refresh rosters: read the stat keeper now instead of waiting for the next check.
+  $('btnXiRefresh').onclick = async () => {
+    const btn = $('btnXiRefresh'), note = $('xiRefreshNote');
+    btn.disabled = true; note.textContent = 'Reading the stat keeper…';
+    let got = null;
+    try { const r = await fetch(SK_API + '/state?game=soccer', { cache: 'no-store' }); if (r.ok) got = await r.json(); } catch (e) { /* shown below */ }
+    btn.disabled = false;
+    if (!got || !got.meta) { note.textContent = "Couldn't reach the stat keeper. Check the internet connection and try again."; return; }
+    if (skGame) { if (got.rev >= skGame.rev) skGame = { rev: got.rev, meta: got.meta, events: got.events || [] }; }
+    else rosterGame = got;
+    xiPickSig.home = xiPickSig.away = '';
+    renderCtl();
+    const count = side => ((got.meta.rosters && got.meta.rosters[side]) || []).filter(p => p.name).length;
+    note.textContent = 'Rosters updated at ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ': '
+      + teamName('home') + ' ' + count('home') + ' players, ' + teamName('away') + ' ' + count('away') + ' players.';
+  };
   document.querySelectorAll('[data-kitreset]').forEach(b => b.onclick = () => {
     Object.assign(s.xi[b.dataset.kitreset], { kit: '', kitNum: '' }); save();
   });
