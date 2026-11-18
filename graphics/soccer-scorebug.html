@@ -1611,7 +1611,9 @@
   const layout = formation => {
     const lines = formation.split('-').map(Number);
     const spots = [{ u: .5, v: .07 }];
-    const yBack = project(.5, .33).y, yFront = project(.5, .93).y;
+    // Four lines (4-2-3-1, 4-1-4-1) start the back line deeper, into the room in front of the keeper, so the rows
+    // get more space between them.
+    const yBack = project(.5, lines.length >= 4 ? .25 : .33).y, yFront = project(.5, .93).y;
     lines.forEach((n, k) => {
       const y = lines.length === 1 ? (yBack + yFront) / 2 : yBack + (yFront - yBack) * k / (lines.length - 1);
       const v = unprojectV(y);
