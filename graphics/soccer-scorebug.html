@@ -2521,7 +2521,9 @@
     const sbClock = !!sbHandle && s.sbUse.clock;
     run.disabled = clockOff(s) || sbClock;
     document.querySelectorAll('[data-adj], #btnSet, #setClock').forEach(b => b.disabled = sbClock);
-    $('btnShow').textContent = s.visible && !s.panel ? 'Hide bug' : 'Show bug'; // under a full-screen graphic it isn't on screen
+    // Under a full-screen graphic the button says whether the bug comes back when the graphic goes down.
+    $('btnShow').textContent = s.visible ? 'Hide bug' : 'Show bug';
+    $('btnShow').title = s.panel ? (s.visible ? 'The bug comes back when this graphic goes down. Click to keep it hidden.' : 'The bug stays hidden when this graphic goes down. Click to bring it back then.') : '';
     $('btnClockShow').textContent = s.clockShow ? 'Hide clock on bug' : 'Show clock on bug';
     $('btnClockShow').classList.toggle('active', !s.clockShow);
     $('cTeams').classList.toggle('swapped', s.swap);
@@ -3623,11 +3625,9 @@
   const rightSide = () => s.swap ? 'home' : 'away';
 
   // --- Output ---
-  // Show bug while a full-screen graphic is up: the graphic goes down first, then the bug comes in.
-  const toggleBug = () => {
-    if (s.panel) return bugThen(() => { s.visible = true; });
-    s.visible = !s.visible; save();
-  };
+  // While a full-screen graphic is up, this sets whether the bug comes back when the graphic goes down
+  // (the graphic stays up); Take down clears the graphic.
+  const toggleBug = () => { s.visible = !s.visible; save(); };
   $('btnShow').onclick = toggleBug;
   $('btnClockShow').onclick = () => { s.clockShow = !s.clockShow; save(); };
   // The preview and output windows load this page fresh (a version stamp in the address), so the browser
