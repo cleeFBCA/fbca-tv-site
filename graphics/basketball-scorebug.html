@@ -3746,11 +3746,13 @@
       const run = !!(per && left > 0 && (s.running || boardRunning));
       // Halftime and the final go to the stat keeper too, so fbca.tv's box score shows them and turns LIVE off at the final.
       const status = s.period === 'HALF' ? 'half' : s.period === 'FINAL' ? 'final' : '';
-      const meta = { period: per || g.meta.period, qMin: s.qMin, otMin: s.otMin, status, clockSrc: 'scorebug', clock: { run, startedAt: now, base: left, len: s.len } };
-      // Sent at once when the quarter, lengths or running state change, or the time is off by more than 1.5 s from where
+      // Each team's timeouts left go along too, for the box score (fbca.tv and the app) to show under the score.
+      const timeouts = { home: s.home.to, away: s.away.to, max: s.toMax };
+      const meta = { period: per || g.meta.period, qMin: s.qMin, otMin: s.otMin, status, clockSrc: 'scorebug', clock: { run, startedAt: now, base: left, len: s.len }, timeouts };
+      // Sent at once when the quarter, lengths, running state or timeouts change, or the time is off by more than 1.5 s from where
       // the stat pages would have it; otherwise once a minute. A running clock is pinned by when it would hit 0:00.
       const anchor = run ? now + left : left;
-      const sig = JSON.stringify([meta.period, s.qMin, s.otMin, s.len, status, run, g.meta.gameId]);
+      const sig = JSON.stringify([meta.period, s.qMin, s.otMin, s.len, status, run, g.meta.gameId, timeouts]);
       const drifted = shareAnchor !== null && Math.abs(anchor - shareAnchor) > 1500 && (!boardRunning || now - boardMovedAt < 300);
       if (sig === shareSig && shareAnchor !== null && !drifted && now - shareAt < 60000) return;
       const r = await fetch(SK_API + '/meta?game=basketball', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },

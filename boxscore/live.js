@@ -286,6 +286,14 @@
     return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
   };
 
+  // Basketball timeouts left, shared by the scorebug with its clock: { home, away, max }, or null when it isn't
+  // sharing (or has stopped checking in) or the game is over.
+  const timeoutsLeft = g => {
+    const m = g.meta, t = m.timeouts;
+    if (g.sport !== 'basketball' || !t || g.status === 'final' || m.clockSrc !== 'scorebug' || Date.now() - (m.clockAt || 0) > 150000) return null;
+    return t;
+  };
+
   // ---------- Staying connected ----------
   // watch(onUpdate): onUpdate(game | null) on load and every change. game = { sport, live, at, ...compute() }.
   // scheduledOnly (the home page): nothing (and no connection) unless a scheduled soccer or basketball game is live.
@@ -474,7 +482,20 @@
     const mid = el('div', 'mid'), clk = el('div', 'clk', '–'), per = el('div', 'per', PERIOD[g.meta.period] || g.meta.period || '');
     mid.append(clk, per);
     // Away on the left, home on the right, as on TV. FBCA is the stat keeper's home team, so it's on the right.
-    board.append(tm(A, 'L'), el('div', 'sc', A.score), mid, el('div', 'sc', H.score), tm(H, 'R'));
+    // The score, with that team's timeouts left under it as dots (lit for each one left), as on the scorebug.
+    const sc = side => {
+      const d = el('div', 'sc'); d.append(el('span', 'n', g.sides[side].score));
+      const t = timeoutsLeft(g);
+      if (t) {
+        const left = t[side] || 0, dots = el('div', 'tos');
+        dots.title = left + (left === 1 ? ' timeout' : ' timeouts') + ' left';
+        dots.setAttribute('aria-label', dots.title);
+        for (let i = 0; i < Math.max(t.max || 0, left); i++) dots.append(el('i', i < left ? 'on' : null));
+        d.append(dots);
+      }
+      return d;
+    };
+    board.append(tm(A, 'L'), sc('away'), mid, sc('home'), tm(H, 'R'));
     top.append(board);
     return top;
   };
@@ -917,6 +938,9 @@
     const done = g.status === 'final' ? 'Final' : g.status === 'half' ? 'Half' : '';
     if (clk) { const t = done || clockText(g); clk.textContent = t || '–'; clk.hidden = !t; }
     if (per) per.hidden = !!done;
+    // Timeouts go away when the scorebug stops sharing or the game ends, without waiting for the next play.
+    const showTos = !!timeoutsLeft(g);
+    root.querySelectorAll('.board .tos').forEach(d => { d.hidden = !showTos; });
   };
 
   // LIVE: the scheduled game, in its live window, and not marked final by the scorebug.

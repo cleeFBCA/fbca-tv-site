@@ -51,12 +51,17 @@
 .ebx .board .tm.stack span { font-size: .8em; }
 .ebx .board .tm.stack.long span { font-size: .62em; }
 .ebx .board .tm.stack.long.longer span { font-size: .5em; }
-.ebx .board .sc { display: grid; place-items: center; min-width: 54px; padding: 0 8px; background: linear-gradient(#ffffff, #dcdde0); color: #17181b;
+.ebx .board .sc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 54px; padding: 0 8px; background: linear-gradient(#ffffff, #dcdde0); color: #17181b;
                   font: 800 40px/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .ebx .board .mid { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 70px; padding: 6px 8px; background: #111214; }
 .ebx .board .clk { font: 800 26px/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .ebx .board .per { font: 800 13px var(--font-display); letter-spacing: .14em; color: var(--gold-on); text-transform: uppercase; text-align: center; }
 .ebx .board .per[hidden], .ebx .board .clk[hidden] { display: none; }
+/* Timeouts left, under the score: a dot for each of the game's timeouts, dark for each one left */
+.ebx .board .tos { display: flex; gap: 3px; }
+.ebx .board .tos[hidden] { display: none; }
+.ebx .board .tos i { width: 7px; height: 7px; border-radius: 50%; background: rgba(23,24,27,.16); }
+.ebx .board .tos i.on { background: #17181b; }
 
 /* The latest play */
 .ebx .play { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
@@ -125,6 +130,8 @@
   .ebx .board .sc { min-width: 110px; padding: 0 10px; font-size: 72px; }
   .ebx .board .mid { min-width: 130px; }
   .ebx .board .clk { font-size: 40px; }
+  .ebx .board .tos { gap: 5px; }
+  .ebx .board .tos i { width: 10px; height: 10px; }
   .ebx .board .per { font-size: 16px; }
   .ebx .play { padding: 14px 18px; }
   .ebx .play .txt { font-size: 26px; }

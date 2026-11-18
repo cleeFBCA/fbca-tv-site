@@ -16,6 +16,8 @@
 //                 Soccer also: halfMin, otMin, clock { run, startedAt, base } (time played), clockSrc.
 //                 Basketball also: qMin, otMin, clock { run, startedAt, base, len } (time LEFT in the quarter,
 //                 counting down), clockSrc: the basketball scorebug shares its clock the way the soccer one does.
+//                 timeouts { home, away, max }: each team's timeouts left and the game's allotment, shared with
+//                 the clock (the box score shows them under the score).
 //                 Both: status '' | 'half' | 'final', set from the scorebug's period (for the live box score).
 //   POST /reset   { keepRosters, archive }   starts a new game; the finished one is kept in the archive first,
 //                 or, with archive false (a test game), taken out of it
@@ -253,6 +255,7 @@ export class Game extends DurableObject {
         if (m.qMin != null) next.qMin = Math.max(1, Math.min(20, Math.round(Number(m.qMin)) || 8));
         if (m.otMin != null) next.otMin = Math.max(1, Math.min(10, Math.round(Number(m.otMin)) || 4));
         if (m.clock) next.clock = { run: !!m.clock.run, startedAt: n(m.clock.startedAt), base: Math.min(n(m.clock.base), 3600000), len: Math.min(n(m.clock.len), 3600000) };
+        if (m.timeouts) { const to = v => Math.max(0, Math.min(11, Math.round(Number(v)) || 0)); next.timeouts = { home: to(m.timeouts.home), away: to(m.timeouts.away), max: to(m.timeouts.max) }; }
       }
       // Halftime or final, as set on the scorebug (fbca.tv's box score turns LIVE off at the final).
       if (m.status != null) next.status = m.status === 'half' || m.status === 'final' ? m.status : '';
