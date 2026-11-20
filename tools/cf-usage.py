@@ -2,7 +2,8 @@
 """Today's Cloudflare Workers + Durable Objects usage against the free plan's daily limits.
 
 Run it yourself (it reads your API token from ~/Developer/Cloudflare API Token.rtf and never prints it):
-    python3 ~/Developer/fbca-tv-site/tools/cf-usage.py
+    python3 ~/Developer/fbca-tv-site/tools/cf-usage.py               today so far
+    python3 ~/Developer/fbca-tv-site/tools/cf-usage.py 2026-11-19    a whole earlier UTC day
 
 Or pass the token in an environment variable instead:  CF_API_TOKEN=... python3 cf-usage.py
 The token needs "Account Analytics: Read". Free-plan daily limits reset at 00:00 UTC (6:00 PM Central in
@@ -57,10 +58,17 @@ def gql(tok, query, variables):
 def main():
     tok = token()
     now = datetime.datetime.now(datetime.timezone.utc)
-    day = now.strftime('%Y-%m-%d')
-    start, end = day + 'T00:00:00Z', now.strftime('%Y-%m-%dT%H:%M:%SZ')
-    resets = (now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)).astimezone()
-    print(f'Cloudflare usage for the UTC day {day} (resets {resets:%a %-I:%M %p %Z}, local time)\n')
+    today = now.strftime('%Y-%m-%d')
+    day = sys.argv[1] if len(sys.argv) > 1 else today
+    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', day) or day > today:
+        sys.exit('Give a UTC date like 2026-11-19 (today or earlier), or nothing for today.')
+    try: d0 = datetime.datetime.strptime(day, '%Y-%m-%d').replace(tzinfo=datetime.timezone.utc)
+    except ValueError: sys.exit(day + " isn't a real date.")
+    start = day + 'T00:00:00Z'
+    end = now.strftime('%Y-%m-%dT%H:%M:%SZ') if day == today else day + 'T23:59:59Z'
+    # The UTC day in local time: a game night spans two of them (the count resets at 6:00 PM Central in winter).
+    span = f"{d0.astimezone():%a %-I:%M %p} to {(d0 + datetime.timedelta(days=1)).astimezone():%a %-I:%M %p %Z} local time"
+    print(f'Cloudflare usage for the UTC day {day} ({span}' + (', so far' if day == today else '') + ')\n')
 
     acct, err = gql(tok, '''query($a: String!, $s: Time!, $e: Time!) { viewer { accounts(filter: {accountTag: $a}) {
         workersInvocationsAdaptive(limit: 100, filter: {datetime_geq: $s, datetime_leq: $e}) { sum { requests errors } dimensions { scriptName } } } } }''',
@@ -70,7 +78,7 @@ def main():
     else:
         rows = acct['workersInvocationsAdaptive']
         total = sum(r['sum']['requests'] for r in rows)
-        print(f"Workers requests today: {total:,} of {LIMITS['requests']:,}  ({100 * total / LIMITS['requests']:.1f}%)  -> {LIMITS['requests'] - total:,} left")
+        print(f"Workers requests: {total:,} of {LIMITS['requests']:,}  ({100 * total / LIMITS['requests']:.1f}%)  -> {LIMITS['requests'] - total:,} left")
         for r in sorted(rows, key=lambda r: -r['sum']['requests']):
             print(f"   {r['dimensions']['scriptName']:<22} {r['sum']['requests']:>8,} requests  {r['sum']['errors']:>5,} errors")
 
@@ -89,8 +97,8 @@ def main():
         msgs_out = sum(r['sum']['outboundWebsocketMsgCount'] for r in per)
         peak = max((r['max']['activeWebsocketConnections'] for r in per), default=0)
         billed = req + msgs_in / 20  # incoming WebSocket messages count 1 per 20
-        print(f"\nDurable Objects requests today: {req:,} (+ {msgs_in:,} incoming WebSocket messages = {billed:,.0f} billed) of {LIMITS['do_requests']:,}  ({100 * billed / LIMITS['do_requests']:.1f}%)")
-        print(f"Durable Objects duration today: {gb_s:,.1f} GB-s of {LIMITS['do_gb_s']:,}  ({100 * gb_s / LIMITS['do_gb_s']:.1f}%)")
+        print(f"\nDurable Objects requests: {req:,} (+ {msgs_in:,} incoming WebSocket messages = {billed:,.0f} billed) of {LIMITS['do_requests']:,}  ({100 * billed / LIMITS['do_requests']:.1f}%)")
+        print(f"Durable Objects duration: {gb_s:,.1f} GB-s of {LIMITS['do_gb_s']:,}  ({100 * gb_s / LIMITS['do_gb_s']:.1f}%)")
         print(f"WebSocket messages sent to viewers: {msgs_out:,} (free)  |  most live connections at once: {peak:,}")
 
 
