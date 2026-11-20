@@ -171,21 +171,12 @@
       "notes": null
     },
     {
-      "id": "2027-01-07-gsoc-tbd",
-      "start": "2027-01-07T17:00:00-06:00",
-      "sport": "Girls Soccer",
-      "opponent": "TBD",
+      "id": "2027-01-08-bbb-logos-prep",
+      "start": "2027-01-08T18:00:00-06:00",
+      "sport": "Boys Basketball",
+      "opponent": "Logos Preparatory Academy",
       "homeAway": "home",
-      "location": "Eagle Stadium",
-      "notes": null
-    },
-    {
-      "id": "2027-01-07-bsoc-tbd",
-      "start": "2027-01-07T19:00:00-06:00",
-      "sport": "Boys Soccer",
-      "opponent": "Monsignor Kelly Catholic High School",
-      "homeAway": "home",
-      "location": "Eagle Stadium",
+      "location": "The Nest",
       "notes": null
     },
     {
