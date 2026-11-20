@@ -244,7 +244,8 @@
   // ---------- Words for the page ----------
   const B_PLAY = { m2: 'made a 2-pointer', x2: 'missed a 2-pointer', m3: 'made a 3-pointer', x3: 'missed a 3-pointer', mft: 'made a free throw', xft: 'missed a free throw',
                    oreb: 'offensive rebound', dreb: 'defensive rebound', ast: 'assist', stl: 'steal', blk: 'block', to: 'turnover', pf: 'foul', timeout: 'timeout' };
-  const S_PLAY = { goal: 'GOAL', ast: 'assist', sog: 'shot on target', shot: 'shot off target', save: 'save', corner: 'corner kick', foul: 'foul', offside: 'offside', yc: 'yellow card', rc: 'red card', og: 'OWN GOAL' };
+  const S_PLAY = { goal: 'GOAL', ast: 'assist', sog: 'shot on target', shot: 'shot off target', save: 'save', corner: 'corner kick', foul: 'foul', offside: 'offside', yc: 'yellow card', rc: 'red card', og: 'OWN GOAL',
+                   throw: 'throw-in', fk: 'free kick', hand: 'handball', pkm: 'missed penalty kick' };
   const PERIOD = { '1Q': '1st quarter', '2Q': '2nd quarter', '3Q': '3rd quarter', '4Q': '4th quarter', OT: 'Overtime', OT2: '2nd overtime', OT3: '3rd overtime',
                    '1H': '1st half', '2H': '2nd half', OT1: 'Overtime', };
   const PER_SHORT = { '1Q': '1Q', '2Q': '2Q', '3Q': '3Q', '4Q': '4Q', OT: 'OT', OT2: '2OT', OT3: '3OT', '1H': '1H', '2H': '2H', OT1: 'OT', };
@@ -260,6 +261,8 @@
     let words = (g.sport === 'soccer' ? S_PLAY : B_PLAY)[e.type] || e.type;
     // A timeout: the team's name, then "timeout (2 left)" (the scorebug sends how many are left).
     if (e.type === 'timeout' && e.note) words += ' (' + e.note + ')';
+    // A penalty kick that went in: a goal with note 'PK'.
+    if (g.sport === 'soccer' && e.type === 'goal' && e.note === 'PK') words = 'PENALTY KICK GOAL';
     // An own goal: "#5 Jane Doe (TKS) · OWN GOAL", then "Goal for FBCA" where the team usually goes.
     if (e.type === 'og') {
       const other = e.side === 'home' ? 'away' : 'home', who = e.player === 'team' || !e.player ? g.sides[e.side].name + ' defender' : playerName(g, e.side, e.player) + ' (' + g.sides[e.side].name + ')';

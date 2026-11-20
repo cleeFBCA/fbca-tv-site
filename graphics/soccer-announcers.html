@@ -148,7 +148,11 @@
   const PER_SHORT = { '1H': '1st half', '2H': '2nd half', OT1: 'OT', OT2: '2OT' };
   const KEYS = ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc'];
   const PLAY = { goal: 'scored', ast: 'assist', sog: 'shot on target', shot: 'shot off target', save: 'save', corner: 'corner kick',
-                 foul: 'foul', offside: 'offside', yc: 'yellow card', rc: 'red card' };
+                 foul: 'foul', offside: 'offside', yc: 'yellow card', rc: 'red card', og: 'own goal',
+                 throw: 'throw-in', fk: 'free kick', hand: 'handball', pkm: 'missed a penalty kick' };
+  // In the plays list but not the stats: an own goal (it scores for the other team) and the play-by-play-only plays.
+  const PLAY_ONLY = ['og', 'throw', 'fk', 'hand', 'pkm'];
+  const playWords = p => p.type === 'goal' && p.note === 'PK' ? 'scored a penalty kick' : PLAY[p.type];
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
   const html = (tag, cls, h) => { const n = el(tag, cls); n.innerHTML = h; return n; };
@@ -204,23 +208,38 @@
     let streak = { side: '', n: 0 }, lastLeader = '', leadChanges = 0, ties = 0;
     const evs = g.events;
     evs.forEach((e, i) => {
-      const t = T[e.side]; if (!t || !KEYS.includes(e.type)) return;
-      t.tot[e.type]++;
+      const t = T[e.side]; if (!t || !(KEYS.includes(e.type) || PLAY_ONLY.includes(e.type))) return;
       const p = t.byId.get(e.player), who = p ? (p.num ? '#' + p.num + ' ' : '') + p.name : t.name + ' team';
+      if (PLAY_ONLY.includes(e.type)) {
+        // An own goal (recorded on the defender) scores for the other team, like on the scorebug and box score.
+        if (e.type === 'og') {
+          const o = other(e.side); score[o]++;
+          T[o].perGoals[e.period] = (T[o].perGoals[e.period] || 0) + 1;
+          goals.push({ side: o, min: e.min || '', period: e.period, scorer: null, og: true, ogBy: p, who: who + ' (own goal)', assist: null, score: { ...score } });
+          streak = streak.side === o ? { side: o, n: streak.n + 1 } : { side: o, n: 1 };
+          const leader = score.home > score.away ? 'home' : score.away > score.home ? 'away' : '';
+          if (leader && lastLeader && leader !== lastLeader) leadChanges++;
+          if (!leader) ties++;
+          if (leader) lastLeader = leader;
+        }
+        plays.push({ ...e, who, goal: e.type === 'og', score: { ...score } });
+        return;
+      }
+      t.tot[e.type]++;
       if (p) p[e.type]++;
       if (e.type === 'goal' || e.type === 'sog' || e.type === 'shot') t.perShots[e.period] = (t.perShots[e.period] || 0) + 1;
       if (e.type === 'goal') {
         score[e.side]++;
         t.perGoals[e.period] = (t.perGoals[e.period] || 0) + 1;
         if (p) p.byPer[e.period] = (p.byPer[e.period] || 0) + 1;
-        // The assist: the next assist play for that team, before their next goal.
+        // The assist: the next assist play for that team, before their next goal (none on a penalty kick).
         let assist = null;
-        for (let j = i + 1; j < evs.length; j++) {
+        for (let j = i + 1; j < evs.length && e.note !== 'PK'; j++) {
           if (evs[j].side !== e.side) continue;
           if (evs[j].type === 'goal') break;
           if (evs[j].type === 'ast') { assist = t.byId.get(evs[j].player) || null; break; }
         }
-        goals.push({ side: e.side, min: e.min || '', period: e.period, scorer: p, who, assist, score: { ...score } });
+        goals.push({ side: e.side, min: e.min || '', period: e.period, scorer: p, pk: e.note === 'PK', who, assist, score: { ...score } });
         streak = streak.side === e.side ? { side: e.side, n: streak.n + 1 } : { side: e.side, n: 1 };
         const leader = score.home > score.away ? 'home' : score.away > score.home ? 'away' : '';
         if (leader && lastLeader && leader !== lastLeader) leadChanges++;
@@ -260,7 +279,9 @@
   const raw = p => [p.goal + ' G', p.ast + ' A', p.shots + ' SH', p.onT + ' SOG', p.save + ' SV', p.foul + ' FC', p.offside + ' OFF', p.yc + ' YC', p.rc + ' RC'].join(' · ');
   const leaders = (t, k) => { const top = Math.max(0, ...t.players.map(p => p[k])); return top ? t.players.filter(p => p[k] === top) : []; };
   const nm = p => (p.num ? '#' + p.num + ' ' : '') + p.name;
-  const goalLine = (A, gl) => `${gl.min ? gl.min + "' " : ''}${esc(gl.scorer ? lastName(gl.scorer.name) : 'Own goal / team')}` + (gl.assist ? ` <small>assist ${esc(lastName(gl.assist.name))}</small>` : '');
+  // "52' Diaz", "60' Diaz (PK)", "71' Smith (OG)" (an own goal, under the team it counted for)
+  const goalName = gl => gl.og ? (gl.ogBy ? lastName(gl.ogBy.name) + ' (OG)' : 'Own goal') : (gl.scorer ? lastName(gl.scorer.name) : 'Team') + (gl.pk ? ' (PK)' : '');
+  const goalLine = (A, gl) => `${gl.min ? gl.min + "' " : ''}${esc(goalName(gl))}` + (gl.assist ? ` <small>assist ${esc(lastName(gl.assist.name))}</small>` : '');
 
   // ---------------- Drawing ----------------
   let tab = 'talk';
@@ -286,7 +307,7 @@
     mid.append(html('div', 'per', `<span class="conn${open ? ' ok' : ''}"></span>${PER_SHORT[A.period] || A.period}${min ? ' · ' + min : ''}`));
     $('sb').replaceChildren(team(L, 'L'), mid, team(R, 'R'));
     const lp = A.plays[A.plays.length - 1];
-    $('last').innerHTML = lp ? `Last: <b>${esc(lp.who)}</b> (${esc(A.T[lp.side].short)}) ${PLAY[lp.type]}${lp.min ? ' · ' + esc(lp.min) + "'" : ''}` : 'No plays yet.';
+    $('last').innerHTML = lp ? `Last: <b>${esc(lp.who)}</b> (${esc(A.T[lp.side].short)}) ${playWords(lp)}${lp.min ? ' · ' + esc(lp.min) + "'" : ''}` : 'No plays yet.';
     if (lp && lp.id !== lastSeenId) { if (lastSeenId) { $('last').classList.remove('flash'); void $('last').offsetWidth; $('last').classList.add('flash'); } lastSeenId = lp.id; }
     if (tab === 'talk') renderTalk(A);
     if (tab === 'players') renderPlayers(A);
@@ -423,7 +444,7 @@
     c.append(el('h2', null, 'Plays, newest first'));
     for (const p of [...A.plays].reverse().slice(0, 150)) {
       const li = el('li', p.goal ? 'sc' : '');
-      li.append(el('span', 'p', p.min ? p.min + "'" : p.period), html('span', null, `<span class="dot" style="--c:${esc(A.T[p.side].color)}"></span>${esc(p.who)} ${PLAY[p.type]}`),
+      li.append(el('span', 'p', p.min ? p.min + "'" : p.period), html('span', null, `<span class="dot" style="--c:${esc(A.T[p.side].color)}"></span>${esc(p.who)} ${playWords(p)}`),
                 el('span', 's', p.goal ? `${A.T.home.short} ${p.score.home}–${p.score.away} ${A.T.away.short}` : ''));
       ul.append(li);
     }

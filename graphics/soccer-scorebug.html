@@ -3240,7 +3240,9 @@
           if (evs[j].type === 'goal') break;
           if (evs[j].type === 'ast') { assist = nameOf(e.side, evs[j].player); break; }
         }
-        out.goals.push({ side: e.side, min: e.min || '', name: nameOf(e.side, e.player) || 'Own goal / team', assist });
+        // A penalty kick that went in (note 'PK') shows "(PK)" after the scorer, the way broadcasts list it.
+        const pk = e.note === 'PK';
+        out.goals.push({ side: e.side, min: e.min || '', name: (nameOf(e.side, e.player) || (pk ? teamName(e.side) : 'Own goal / team')) + (pk ? ' (PK)' : ''), assist: pk ? '' : assist });
       }
       // An own goal (recorded on the defender) counts for the other team; listed with the defender's name and (OG),
       // the way broadcasts show it. Not a shot or goal for any player.
@@ -3322,7 +3324,9 @@
         return { side: e.side === 'home' ? 'away' : 'home', min: e.min || '', p: { num: '', name: 'Own goal: ' + by }, text: 'Own goal: ' + by,
                  label: 'OWN GOAL by ' + by + ' (' + teamName(e.side) + ')' };
       }
-      return { side: e.side, min: e.min || '', p: p ? { num: p.num || '', name: p.name, id: p.id } : { num: '', name: teamName(e.side) + ' (' + nobody + ')' } };
+      const r = { side: e.side, min: e.min || '', p: p ? { num: p.num || '', name: p.name, id: p.id } : { num: '', name: teamName(e.side) + ' (' + nobody + ')' } };
+      if (type === 'goal' && e.note === 'PK') r.label = 'PK: ' + playerLabel(r.p) + ' (' + teamName(e.side) + ')'; // the menu says it was a penalty
+      return r;
     }).reverse();
     const sig = type + ':' + JSON.stringify([goals.map(x => [x.side, x.min, playerLabel(x.p)]), teamName('home'), teamName('away')]);
     if (pickSig.get(sel) === sig) return;

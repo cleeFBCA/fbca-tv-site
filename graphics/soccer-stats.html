@@ -277,11 +277,18 @@
   const PERIODS = ['1H', '2H', 'OT1', 'OT2'];
   const PER_LABEL = { '1H': '1st half', '2H': '2nd half', OT1: 'OT 1', OT2: 'OT 2' };
   const TYPES = { goal: 'Goal', ast: 'Assist', sog: 'Shot on target', shot: 'Shot off target', save: 'Save', corner: 'Corner kick',
-                  foul: 'Foul', offside: 'Offside', yc: 'Yellow card', rc: 'Red card', og: 'Own goal' };
-  // The play buttons, in pad order: [type, label, style]
+                  foul: 'Foul', offside: 'Offside', yc: 'Yellow card', rc: 'Red card', og: 'Own goal',
+                  throw: 'Throw-in', fk: 'Free kick', hand: 'Handball', pkm: 'PK missed' };
+  // A penalty kick that goes in: logged as a goal with note 'PK' (it counts in the score, and as the kicker's goal).
+  const LABEL = { ...TYPES, pkg: 'PK goal' };
+  const label = e => e.type === 'goal' && e.note === 'PK' ? LABEL.pkg : TYPES[e.type];
+  // Throw-ins and free kicks are the team's: tapping any player on that team credits the team.
+  const TEAM_ONLY = ['throw', 'fk'];
+  // The play buttons, in pad order: [type, label, style]. The last five are for the play-by-play (PK goal also scores).
   const PAD = [['goal', 'Goal', 'made'], ['sog', 'On target', ''], ['shot', 'Off target', 'miss'], ['save', 'Save', ''],
                ['corner', 'Corner', ''], ['foul', 'Foul', 'foul'], ['offside', 'Offside', ''], ['ast', 'Assist', ''],
-               ['yc', 'Yellow', 'yc'], ['rc', 'Red', 'rc'], ['og', 'Own goal', 'miss']];
+               ['yc', 'Yellow', 'yc'], ['rc', 'Red', 'rc'], ['og', 'Own goal', 'miss'], ['hand', 'Handball', 'foul'],
+               ['throw', 'Throw-in', ''], ['fk', 'Free kick', ''], ['pkg', 'PK goal', 'made'], ['pkm', 'PK missed', 'miss']];
   // Same stat keeper key as the basketball page; everything else kept separately.
   const LS = { key: 'eota-stats-key', side: 'eota-soccer-stats-side', pending: 'eota-soccer-stats-pending', cache: 'eota-soccer-stats-cache' };
   const store = {
@@ -472,13 +479,16 @@
 
   const logPlay = (side, player, type) => {
     const v = view(); if (!v) return;
-    const ev = { id: rid(), side, player, type, period: v.meta.period, at: Date.now() };
-    if (type === 'goal' || type === 'og' || type === 'yc' || type === 'rc') ev.min = minuteNow(v.meta); // for the goal list and cards
+    const pk = type === 'pkg';
+    if (TEAM_ONLY.includes(type)) player = 'team';
+    const ev = { id: rid(), side, player, type: pk ? 'goal' : type, period: v.meta.period, at: Date.now(), ...(pk ? { note: 'PK' } : {}) };
+    // The minute, for the goal list, cards and the play-by-play
+    if (['goal', 'og', 'yc', 'rc', 'throw', 'fk', 'hand', 'pkm'].includes(ev.type)) ev.min = minuteNow(v.meta);
     enqueue('events', { events: [ev] });
     if (navigator.vibrate) navigator.vibrate(15);
     keepAwake();
-    assist = type === 'goal' && player !== 'team' ? { side, scorer: player, until: Date.now() + 8000 } : null;
-    toast(who(v, side, player) + ' · ' + TYPES[type] + (ev.min ? ' · ' + ev.min + "'" : ''), ev.id);
+    assist = type === 'goal' && player !== 'team' ? { side, scorer: player, until: Date.now() + 8000 } : null; // no assist on a PK
+    toast(who(v, side, player) + ' · ' + label(ev) + (ev.min ? ' · ' + ev.min + "'" : ''), ev.id);
   };
   const undo = id => {
     // Not sent yet: just take it out. Otherwise ask the worker to remove it.
@@ -577,7 +587,7 @@
         grid.append(b);
       }
       const tb = el('button', 'pl team-pl' + (pick.side === side && pick.player === 'team' ? ' sel' : ''));
-      tb.append(el('b', null, 'TEAM'), el('small', null, 'corners, team fouls'));
+      tb.append(el('b', null, 'TEAM'), el('small', null, 'corners, throw-ins, free kicks'));
       tb.onclick = () => tapPlayer(side, 'team');
       grid.append(tb);
       box.append(h);
@@ -594,11 +604,12 @@
 
     const hint = el('div', 'pick-hint');
     if (pick.player) hint.append('Now tap what ', el('b', null, who(v, pick.side, pick.player)), ' did.');
-    else if (pick.type) hint.append('Now tap who: ', el('b', null, TYPES[pick.type]), '.');
+    else if (pick.type && TEAM_ONLY.includes(pick.type)) hint.append('Now tap the team taking the ', el('b', null, LABEL[pick.type]), ': TEAM or any of its players.');
+    else if (pick.type) hint.append('Now tap who: ', el('b', null, LABEL[pick.type]), '.');
     else hint.textContent = 'Tap a player, then the play. Or the play, then the player.';
     $('pad').replaceChildren(hint, ...PAD.map(([type, label, cls]) => {
       const b = el('button', 'act ' + cls + (pick.type === type ? ' sel' : ''), label);
-      b.setAttribute('aria-label', TYPES[type]);
+      b.setAttribute('aria-label', LABEL[type]);
       b.onclick = () => tapAction(type);
       return b;
     }));
@@ -623,7 +634,7 @@
     $('btnUndo').disabled = !mine.length;
     $('log').replaceChildren(...mine.slice(-12).reverse().map(e => {
       const li = el('li');
-      li.append(el('span', 'min', e.min ? e.min + "'" : e.period), el('span', 'what', who(v, e.side, e.player) + ' · ' + TYPES[e.type]));
+      li.append(el('span', 'min', e.min ? e.min + "'" : e.period), el('span', 'what', who(v, e.side, e.player) + ' · ' + label(e)));
       if (e.unsent) li.append(el('span', 'unsent', 'not sent'));
       const b = el('button', null, 'Undo'); b.onclick = () => undo(e.id); li.append(b);
       return li;
@@ -633,7 +644,7 @@
   $('btnUndo').onclick = () => {
     const v = view(); if (!v) return;
     const mine = v.events.filter(e => sidesShown(v).includes(e.side));
-    if (mine.length) { const e = mine[mine.length - 1]; undo(e.id); toast('Undid ' + who(v, e.side, e.player) + ' · ' + TYPES[e.type]); }
+    if (mine.length) { const e = mine[mine.length - 1]; undo(e.id); toast('Undid ' + who(v, e.side, e.player) + ' · ' + label(e)); }
   };
   setInterval(() => { if (assist && Date.now() >= assist.until) render(); }, 1000);
 
@@ -647,7 +658,7 @@
       tbl.append(head);
       const row = (cls, num, name, p) => { const tr = el('tr', cls); tr.append(el('td', null, num), el('td', null, name), ...COLS.map(c => el('td', null, String(c[1](p))))); tbl.append(tr); };
       t[side].players.forEach(p => row('', p.num, p.name, p));
-      if (Object.values(t[side].team).some(Boolean)) row('teamrow', '', 'Team / removed', t[side].team);
+      if (COLS.some(c => c[1](t[side].team))) row('teamrow', '', 'Team / removed', t[side].team); // not for throw-ins and free kicks alone
       row('tot', '', 'Total', t[side].tot);
       const wrap = el('div', 'scroll'); wrap.append(tbl); card.append(wrap);
       return card;

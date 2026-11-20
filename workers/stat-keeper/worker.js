@@ -50,7 +50,10 @@ const TYPES_BY_SPORT = {
   // timeout: a team's timeout (player 'team'; note says how many it has left), from the scorebug or the stat page.
   basketball: ['m2', 'x2', 'm3', 'x3', 'mft', 'xft', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf', 'in', 'out', 'timeout'],
   // og: an own goal, recorded on the defender who put it in (their side); it counts for the other team.
-  soccer: ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc', 'og']
+  // A penalty kick that goes in is a goal with note 'PK'. throw (throw-in) and fk (free kick) are the team's
+  // (player 'team'); hand (handball) and pkm (a missed penalty kick) are a player's or the team's. Those four are
+  // for the play-by-play only: no stats.
+  soccer: ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc', 'og', 'throw', 'fk', 'hand', 'pkm']
 };
 const sportOf = game => /^soccer/.test(game || '') ? 'soccer' : 'basketball';
 const SIDES = ['home', 'away'];
