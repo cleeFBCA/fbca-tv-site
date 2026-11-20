@@ -608,6 +608,76 @@
     return row;
   };
   const section = (title, ...kids) => { const s = el('section', 'card gc'); s.append(el('h2', 'gh', title), ...kids); return s; };
+
+  // ---------- Soccer play-by-play: every play, newest first, under its half ----------
+  const S_TITLE = { goal: 'Goal', ast: 'Assist', sog: 'Shot on Target', shot: 'Shot off Target', save: 'Save', corner: 'Corner Kick', foul: 'Foul',
+                    offside: 'Offside', yc: 'Yellow Card', rc: 'Red Card', og: 'Own Goal', throw: 'Throw-in', fk: 'Free Kick', hand: 'Handball',
+                    pkm: 'Missed Penalty Kick' };
+  // The plays, oldest first: a goal carries its assist (that team's next play, recorded within a minute), and each
+  // goal (an own goal for the other team) the score after it.
+  const soccerPlays = g => {
+    const evs = (g.events || []).filter(e => g.sides[e.side] && S_TITLE[e.type]), out = [], used = new Set(), score = { home: 0, away: 0 };
+    evs.forEach((e, i) => {
+      if (used.has(e.id)) return;
+      const it = { e, side: e.side };
+      if (e.type === 'goal' && e.note !== 'PK') {
+        const n = evs.slice(i + 1).find(x => x.side === e.side);
+        if (n && n.type === 'ast' && Math.abs((n.at || 0) - (e.at || 0)) < 60000) { it.ast = n; used.add(n.id); }
+      }
+      if (e.type === 'og') it.side = e.side === 'home' ? 'away' : 'home';   // shown for the team it counted for
+      if (e.type === 'goal' || e.type === 'og') { score[it.side]++; it.goal = true; }
+      it.score = { ...score };
+      out.push(it);
+    });
+    return out;
+  };
+  const soccerDescribe = (g, it) => {
+    const e = it.e, who = nameOnly(g, e.side, e.player), team = g.sides[e.side].name, mine = e.player && e.player !== 'team';
+    switch (e.type) {
+      case 'goal': return e.note === 'PK' ? who + ' scores from the penalty spot' : who + ' scores' + (it.ast ? ' (assist: ' + nameOnly(g, e.side, it.ast.player) + ')' : '');
+      case 'og': return 'Own goal by ' + (mine ? who + ' (' + team + ')' : team);
+      case 'ast': return 'Assist by ' + who;
+      case 'sog': return 'Shot on target by ' + who;
+      case 'shot': return 'Shot off target by ' + who;
+      case 'save': return 'Save by ' + who;
+      case 'corner': return mine ? 'Corner kick by ' + who : 'Corner kick for ' + team;
+      case 'foul': return 'Foul on ' + who;
+      case 'offside': return who + ' offside';
+      case 'yc': return 'Yellow card for ' + who;
+      case 'rc': return 'Red card for ' + who;
+      case 'throw': return 'Throw-in for ' + team;
+      case 'fk': return 'Free kick for ' + team;
+      case 'hand': return 'Handball on ' + who;
+      case 'pkm': return who + ' misses a penalty kick';
+    }
+    return who;
+  };
+  // One play, drawn like basketball's: the team's mark and a bar (a goal) or dots in its color, the title, the
+  // score after a goal (the scoring team's number bright), the minute and half, and what happened.
+  const soccerPlayItem = (g, bars, it) => {
+    const e = it.e, side = it.side, row = el('div', 'pp' + (it.goal ? ' score' : ''));
+    row.style.setProperty('--tc', bars[side]);
+    const rail = el('div', 'rail'); rail.append(mark(g, side), el('i', it.goal ? 'bar' : 'dots')); row.append(rail);
+    const body = el('div', 'pb'), top = el('div', 'pt');
+    top.append(el('b', null, e.type === 'goal' && e.note === 'PK' ? 'Penalty Kick Goal' : S_TITLE[e.type]));
+    if (it.goal) {
+      const nums = el('span', 'ps'), an = el('span', null, it.score.away), hn = el('span', null, it.score.home);
+      (side === 'home' ? an : hn).classList.add('dim');
+      nums.append(an, hn); top.append(nums);
+    }
+    body.append(top, el('div', 'pw', [e.min ? e.min + "'" : '', PERIOD[e.period] || e.period].filter(Boolean).join(' - ')), el('div', 'pd', soccerDescribe(g, it)));
+    row.append(body);
+    return row;
+  };
+  const soccerPlayCard = g => {
+    const plays = soccerPlays(g); if (!plays.length) return null;
+    const bars = barsOf(g), card = el('section', 'card gc'); let per = null;
+    for (const it of plays.reverse()) {
+      if (it.e.period !== per) { per = it.e.period; card.append(el('h2', 'gh', PERIOD[per] || per)); }
+      card.append(soccerPlayItem(g, bars, it));
+    }
+    return card;
+  };
   const moreLink = (text, go) => { const b = el('button', 'more', text); b.type = 'button'; b.onclick = go; return b; };
 
   // Scores by quarter, away above home
@@ -910,6 +980,9 @@
     } else { const s = el('section'); s.append(el('h2', 'h', 'Team stats'), cmp); parts.push(s); }
     const players = el('section'); players.append(el('h2', 'h', 'Players'), playerTables(g));
     parts.push(players);
+    // Soccer on fbca.tv/boxscore (not the home page's compact box score): every play, newest first
+    const pbp = g.sport === 'soccer' && !head && soccerPlayCard(g);
+    if (pbp) { const s = el('section'); s.append(el('h2', 'h', 'Play-by-play'), pbp); parts.push(s); }
     // The date, time and venue from the schedule (fbca.tv/boxscore; not the home page's compact box score)
     const info = !head && gameInfo(g); if (info) parts.push(section('Game Information', info));
     root.replaceChildren(...parts);

@@ -482,8 +482,8 @@
     const pk = type === 'pkg';
     if (TEAM_ONLY.includes(type)) player = 'team';
     const ev = { id: rid(), side, player, type: pk ? 'goal' : type, period: v.meta.period, at: Date.now(), ...(pk ? { note: 'PK' } : {}) };
-    // The minute, for the goal list, cards and the play-by-play
-    if (['goal', 'og', 'yc', 'rc', 'throw', 'fk', 'hand', 'pkm'].includes(ev.type)) ev.min = minuteNow(v.meta);
+    // The minute on every play, for the goal list, cards and the play-by-play
+    ev.min = minuteNow(v.meta);
     enqueue('events', { events: [ev] });
     if (navigator.vibrate) navigator.vibrate(15);
     keepAwake();
