@@ -27,6 +27,7 @@
 //                 With &v=, that version even after the side's logo has changed, so past games keep their logos.
 //                 says which version is current and which team it belongs to (the app and box scores fetch it by v)
 //   POST /logo    { side, name, png: 'data:image/png;base64,…' }  (png '' removes it)
+//   POST /archive { action: 'delete', id } removes a past game; { action: 'logo', id, side, name, png } gives one a logo
 //   GET  /archive?game=basketball      past games, newest first: { games: [{ id, startedAt, savedAt, names, score, plays }] }
 //   GET  /archive?game=basketball&id=X one past game: { id, savedAt, meta, events }
 //   POST /archive { action: 'delete', id }   forgets a past game
@@ -305,7 +306,22 @@ export class Game extends DurableObject {
     }
 
     if (url.pathname === '/archive') {
-      if (body.action !== 'delete' || typeof body.id !== 'string') return json({ error: 'Unknown action' }, 400);
+      if (typeof body.id !== 'string') return json({ error: 'Unknown action' }, 400);
+      // A logo for a past game that was saved without one: { action: 'logo', id, side, name, png }
+      if (body.action === 'logo') {
+        const r = this.sql.exec('SELECT data FROM archive WHERE id = ?', body.id).toArray()[0];
+        if (!r) return json({ error: 'No saved game with that id' }, 404);
+        const side = body.side, png = typeof body.png === 'string' ? body.png : '';
+        if (!SIDES.includes(side) || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(png) || png.length > MAX_LOGO) return json({ error: 'Send a side and a PNG data URL under 150 KB' }, 400);
+        const name = clean(body.name, 60);
+        const v = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(png)))].slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('');
+        if (!this.get('logov:' + v)) this.put('logov:' + v, { name, png });
+        const data = JSON.parse(r.data);
+        data.meta.logos = { ...(data.meta.logos || {}), [side]: { v, name } };
+        this.sql.exec('UPDATE archive SET data = ? WHERE id = ?', JSON.stringify(data), body.id);
+        return json({ ok: true, v });
+      }
+      if (body.action !== 'delete') return json({ error: 'Unknown action' }, 400);
       this.sql.exec('DELETE FROM archive WHERE id = ?', body.id);
       return json({ ok: true });
     }
