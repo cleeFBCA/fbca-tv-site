@@ -676,10 +676,53 @@
   };
   const soccerPlayCard = g => {
     const plays = soccerPlays(g); if (!plays.length) return null;
-    const bars = barsOf(g), card = el('section', 'card gc'); let per = null;
-    for (const it of plays.reverse()) {
-      if (it.e.period !== per) { per = it.e.period; card.append(el('h2', 'gh', PERIOD[per] || per)); }
-      card.append(soccerPlayItem(g, bars, it));
+    const bars = barsOf(g);
+    return pbpCard(g, plays, it => soccerPlayItem(g, bars, it));
+  };
+  // ---------- Period markers in the play-by-play: End of 1st, Halftime, End of 3rd, Final ----------
+  // From the scorebug: the period it's in, halftime or final, and (basketball) its shared clock at 0:00. A period the
+  // game has moved past gets its end marker too, each with the score at that point.
+  const PER_SEQ = { soccer: ['1H', '2H', 'OT1', 'OT2'], basketball: LEAD_PERIODS };
+  const END_OF = {
+    soccer: { '1H': 'Halftime', '2H': 'End of regulation', OT1: 'End of 1st overtime', OT2: 'End of 2nd overtime' },
+    basketball: { '1Q': 'End of 1st', '2Q': 'Halftime', '3Q': 'End of 3rd', '4Q': 'End of regulation', OT: 'End of OT', OT2: 'End of 2OT', OT3: 'End of 3OT' }
+  };
+  const periodMarks = g => {
+    const seq = PER_SEQ[g.sport], m = g.meta, evs = (g.events || []).filter(e => seq.includes(e.period)), marks = new Map();
+    const cur = Math.max(seq.indexOf(m.period), ...evs.map(e => seq.indexOf(e.period)));
+    if (cur < 0) return marks;
+    for (let i = 0; i < cur; i++) marks.set(seq[i], END_OF[g.sport][seq[i]]);
+    const p = seq[cur], c = m.clock;
+    const atZero = g.sport === 'basketball' && c && !c.run && (c.base || 0) <= 0 && m.clockSrc === 'scorebug' && Date.now() - (m.clockAt || 0) < 150000;
+    if (g.status === 'final') marks.set(p, 'Final');
+    else if (g.status === 'half') marks.set(p, 'Halftime');
+    else if (atZero) marks.set(p, END_OF.basketball[p]);
+    // The score once each marked period was over
+    const out = new Map();
+    for (const [per, label] of marks) {
+      const upTo = seq.indexOf(per), sc = { home: 0, away: 0 };
+      for (const e of evs) {
+        if (seq.indexOf(e.period) > upTo) continue;
+        if (g.sport === 'soccer') { if (e.type === 'goal') sc[e.side]++; if (e.type === 'og') sc[e.side === 'home' ? 'away' : 'home']++; }
+        else if (PTS_OF[e.type] && sc[e.side] != null) sc[e.side] += PTS_OF[e.type];
+      }
+      out.set(per, { label, score: sc });
+    }
+    return out;
+  };
+  const markRow = (g, mk) => {
+    const d = el('div', 'pmark');
+    d.append(el('b', null, mk.label), el('span', null, abbr(g.sides.away.name) + ' ' + mk.score.away + ', ' + abbr(g.sides.home.name) + ' ' + mk.score.home));
+    return d;
+  };
+  // The play-by-play card: newest period first, its header, its end marker, then its plays newest first.
+  const pbpCard = (g, items, draw) => {
+    const marks = periodMarks(g), seq = PER_SEQ[g.sport], card = el('section', 'card gc');
+    const pers = [...new Set([...items.map(it => it.e.period), ...marks.keys()])].sort((a, b) => seq.indexOf(b) - seq.indexOf(a));
+    for (const per of pers) {
+      card.append(el('h2', 'gh', PERIOD[per] || per));
+      if (marks.has(per)) card.append(markRow(g, marks.get(per)));
+      items.filter(it => it.e.period === per).reverse().forEach(it => card.append(draw(it)));
     }
     return card;
   };
@@ -936,14 +979,8 @@
 
     // Play-by-Play: every play, newest first, under its quarter
     const pb = el('div', 'pane');
-    if (plays.length) {
-      const card = el('section', 'card gc'); let per = null;
-      for (const it of newest) {
-        if (it.e.period !== per) { per = it.e.period; card.append(el('h2', 'gh', PERIOD[per] || per)); }
-        card.append(playItem(g, F, bars, it));
-      }
-      pb.append(card);
-    } else pb.append(el('p', 'note', 'No plays recorded yet.'));
+    if (plays.length) pb.append(pbpCard(g, plays, it => playItem(g, F, bars, it)));
+    else pb.append(el('p', 'note', 'No plays recorded yet.'));
     panes.pbp = pb;
 
     // Team Stats

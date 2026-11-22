@@ -175,6 +175,11 @@
 .ebx .pw { font-size: 14px; color: rgba(255,255,255,.62); }
 .ebx .pd { font-size: 15px; color: rgba(255,255,255,.85); }
 .ebx .pd.wp { color: rgba(255,255,255,.55); font-size: 14px; }
+/* A period marker in the play-by-play (End of 1st, Halftime, Final), with the score then */
+.ebx .pmark { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 8px 0 4px; padding: 10px 12px; border-radius: 6px;
+              background: rgba(234,175,15,.12); box-shadow: inset 3px 0 0 var(--gold-on); }
+.ebx .pmark b { font: 800 18px var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--gold-on); }
+.ebx .pmark span { font: 700 16px var(--font-display); letter-spacing: .04em; font-variant-numeric: tabular-nums; color: rgba(255,255,255,.85); }
 .ebx .plays { display: flex; flex-direction: column; }
 
 /* Scores by quarter */
