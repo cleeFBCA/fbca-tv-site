@@ -542,6 +542,8 @@
   .l3.R { left: auto; right: 300px; flex-direction: row-reverse; }
   .l3.hidden { clip-path: inset(0 100% 0 0); }
   .l3.R.hidden { clip-path: inset(0 0 0 100%); }
+  /* The announcers as a lower third: in the bug's spot (the bug steps aside for it), lined up with its left end */
+  .l3.low { left: 300px; right: auto; bottom: 46px; }
   .l3 .accent { width: 14px; background: var(--s); }
   /* Headshot from Player photos, on the team color, between the stripe and the name */
   .l3 .lph { position: relative; width: 124px; flex: none; overflow: hidden; background: linear-gradient(160deg, color-mix(in srgb, var(--c) 90%, #fff), color-mix(in srgb, var(--c) 70%, #000)); }
@@ -1109,7 +1111,9 @@
         </div>
 
         <div data-pane="ann" hidden>
-          <p class="hint" style="margin-top:0">The announcers' names in a pop-up strip above the bug. It uses the pop-up's spot, so showing it takes down a lower third, the fan vote QR or another pop-up. The names are remembered for next time.</p>
+          <p class="hint" style="margin-top:0">The announcers' names, as a pop-up strip above the bug or as a lower third in the bug's spot. Showing it takes down any other lower third, pop-up or full-screen graphic. The names are remembered for next time.</p>
+          <label for="annStyle">Show as</label>
+          <select id="annStyle"><option value="pop">Pop-up above the bug</option><option value="l3">Lower third (the bug steps aside, then comes back)</option></select>
           <label for="annLabel">Label</label>
           <input id="annLabel" maxlength="24" placeholder="On the call">
           <label for="ann1">Announcers</label>
@@ -1120,7 +1124,7 @@
             <button class="primary" id="btnAnnShow">Show announcers</button>
             <button class="danger" id="btnAnnHide">Take down</button>
           </div>
-          <p class="hint">It comes down on its own after the pop-up's time (Pop-up tab, now <span id="annSecs">8</span> seconds; 0 = stays up).</p>
+          <p class="hint">It comes down on its own after the pop-up's time (Pop-up tab, now <span id="annSecs">8</span> seconds; 0 = stays up). As a lower third, the bug comes back when it goes down, unless Hide bug was pressed.</p>
           <p class="hint" id="annNow"></p>
         </div>
 
@@ -1620,7 +1624,10 @@
     const BUG_HOLD = 900, BUG_OUT_MAX = 1500;
     let bugHoldUntil = 0, hadPanel = false;
     const bugOutLeft = () => Math.max(0, (s.bugOutAt || 0) + BUG_OUT_MAX - Date.now());
-    const bugUp = () => s.visible && !s.panel && Date.now() >= bugHoldUntil && !bugOutLeft();
+    // The announcers' lower third sits in the bug's spot, so the bug stays down while it's up (and while it wipes out).
+    const annLow = () => s.l3.on && !!s.l3.ann;
+    let hadAnnLow = false;
+    const bugUp = () => s.visible && !s.panel && !annLow() && Date.now() >= bugHoldUntil && !bugOutLeft();
     // Entrance animations (the .fx graphics) play each time one comes up. After ~3 s it's .live: content that
     // changes while it's on air (a stat, a vote) appears without the entrance replaying. It stays .live going out.
     const fxReplay = node => { clearTimeout(node._fx); node.classList.remove('live'); node._fx = setTimeout(() => node.classList.add('live'), 3200); };
@@ -1838,6 +1845,7 @@
       box.style.setProperty('--s', team ? hex(team.fg, '#F2D54C') : 'var(--gold)');
       const right = !!team && l.team === rightSide();
       box.classList.toggle('R', right);
+      box.classList.toggle('low', !!l.ann);
       // The name and stat line come in from the bug's end: from the left on the left, from the right on the right.
       for (const id of ['l3NameT', 'l3StatT']) { const n = $(id); n.classList.toggle('a-l', !right); n.classList.toggle('a-r', right); }
       $('l3NameT').textContent = l.name;
@@ -2157,6 +2165,8 @@
     const render = () => {
       if (hadPanel && !s.panel) { bugHoldUntil = Date.now() + BUG_HOLD; setTimeout(render, BUG_HOLD + 20); }
       hadPanel = !!s.panel;
+      if (hadAnnLow && !annLow()) { bugHoldUntil = Math.max(bugHoldUntil, Date.now() + 450); setTimeout(render, 470); } // its wipe out, then the bug
+      hadAnnLow = annLow();
       if (bugOutLeft()) { clearTimeout(render._out); render._out = setTimeout(render, bugOutLeft() + 20); }
       applyKey(); renderL3(); renderFanVote(); renderPop();
       const stn = $('stn');
@@ -2710,7 +2720,7 @@
     if (s.running && remaining(now) === 0) startStop(); // the horn: stop at 0.0
     // Pop-up: take it down when its time is up (the outputs also hide it on time by themselves).
     if (s.pop.on && s.pop.until && now >= s.pop.until) { s.pop = { ...s.pop, on: false }; save(); }
-    else if (s.pop.on && s.pop.until && popHook && Math.floor(now / 1000) !== ctlTick.sec) { ctlTick.sec = Math.floor(now / 1000); popHook(); }
+    else if (((s.pop.on && s.pop.until) || (s.l3.on && s.l3.ann && s.l3.until)) && popHook && Math.floor(now / 1000) !== ctlTick.sec) { ctlTick.sec = Math.floor(now / 1000); popHook(); }
     // Clear the timeout once its flash is over, so every output (even one running older code) takes it down.
     if (s.toCall && now > s.toCall.at + 3600) { s.toCall = null; save(); }
     requestAnimationFrame(ctlTick);
@@ -3213,7 +3223,7 @@
   // Output card: every graphic insert on air (the bug and station bug stay), and one button to take them all down.
   const PANEL_NAMES = { match: 'Title card', spot: 'Player spotlight', stats: 'Team stats', vote: 'Fan vote results', lu: 'Starting lineup' };
   function renderOnAir() {
-    const onAir = [s.panel && (PANEL_NAMES[s.panel] || 'Full-screen graphic'), s.l3.on && 'Lower third', s.pop.on && 'Pop-up', s.fv.l3 && 'Fan vote QR', s.lu.l3 && 'Lineup lower third'].filter(Boolean);
+    const onAir = [s.panel && (PANEL_NAMES[s.panel] || 'Full-screen graphic'), s.l3.on && (s.l3.ann ? 'Announcers lower third' : 'Lower third'), s.pop.on && 'Pop-up', s.fv.l3 && 'Fan vote QR', s.lu.l3 && 'Lineup lower third'].filter(Boolean);
     $('panelNote').replaceChildren(...(onAir.length ? [el('b', null, 'ON AIR: '), onAir.join(', ')] : ['No graphic inserts on air']));
     $('btnPanelHide').disabled = !onAir.length;
   }
@@ -3267,15 +3277,36 @@
   annIds.forEach((id, i) => { $(id).value = s.ann.names[i] || ''; $(id).addEventListener('input', () => { s.ann.names[i] = $(id).value; save(); }); });
   $('annLabel').value = s.ann.label || '';
   $('annLabel').addEventListener('input', () => { s.ann.label = $('annLabel').value; save(); });
-  $('btnAnnShow').onclick = () => { if (!annNames()) { $('ann1').focus(); return; } showPop({ kind: 'ann' }); };
-  $('btnAnnHide').onclick = () => { if (s.pop.kind === 'ann') hidePop(); };
+  $('annStyle').value = s.ann.style === 'l3' ? 'l3' : 'pop';
+  $('annStyle').addEventListener('change', () => { s.ann.style = $('annStyle').value; save(); });
+  // As a lower third: everything else goes out first (full-screen graphic, lower thirds, pop-up, and the bug), then
+  // the names come in where the bug was. The bug comes back after it goes down if Hide bug wasn't pressed (s.visible).
+  const showAnnL3 = () => {
+    clearTimeout(seqTimer); seqTimer = 0;
+    let wait = 0;
+    if (s.panel) { s.panel = ''; wait = OUT_FULL; }
+    for (const k of Object.keys(LOWERS)) if (LOWERS[k]()) { lowerOff(k); wait = Math.max(wait, OUT_SMALL); }
+    if (s.visible) { s.bugOutAt = Date.now(); wait = Math.max(wait, BUG_OUT); } // the bug goes out with the others
+    const names = annNames().toUpperCase(), label = (s.ann.label || 'On the call').toUpperCase();
+    save();
+    after(wait, () => { s.l3 = { on: true, name: names, stat: label, team: 'none', until: popSecs ? Date.now() + popSecs * 1000 : 0, photo: '', ann: true }; });
+  };
+  $('btnAnnShow').onclick = () => {
+    if (!annNames()) { $('ann1').focus(); return; }
+    if (s.ann.style === 'l3') showAnnL3(); else showPop({ kind: 'ann' });
+  };
+  $('btnAnnHide').onclick = () => {
+    if (s.l3.on && s.l3.ann) { s.l3.on = false; save(); }
+    if (s.pop.on && s.pop.kind === 'ann') hidePop();
+  };
   annIds.forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $('btnAnnShow').click(); }));
   const renderAnnTab = () => {
-    const p = s.pop, up = p.on && p.kind === 'ann' && (!p.until || Date.now() < p.until);
+    const p = s.pop, popUp = p.on && p.kind === 'ann' && (!p.until || Date.now() < p.until), low = s.l3.on && !!s.l3.ann;
+    const up = popUp || low, until = low ? s.l3.until : p.until;
     $('btnAnnHide').disabled = !up;
     $('btnAnnShow').classList.toggle('active', up);
     $('annSecs').textContent = popSecs;
-    $('annNow').textContent = up ? 'On air' + (p.until ? ', down in ' + Math.ceil((p.until - Date.now()) / 1000) + ' s' : '') + '.' : '';
+    $('annNow').textContent = up ? 'On air' + (low ? ' as a lower third' : '') + (until ? ', down in ' + Math.max(0, Math.ceil((until - Date.now()) / 1000)) + ' s' : '') + '.' : '';
   };
   popHook = () => { renderPopTab(); renderAnnTab(); };
 
