@@ -24,6 +24,7 @@
 //   A game is also kept in the archive when the scorebug marks it final (meta.status), and kept up to date if a play
 //   is added or undone after that, so it's in Past games without waiting for the next new game.
 //   GET  /logo?game=basketball&side=home   a team's logo (PNG), as shared by the scorebug; meta.logos[side] = { v, name }
+//                 With &v=, that version even after the side's logo has changed, so past games keep their logos.
 //                 says which version is current and which team it belongs to (the app and box scores fetch it by v)
 //   POST /logo    { side, name, png: 'data:image/png;base64,…' }  (png '' removes it)
 //   GET  /archive?game=basketball      past games, newest first: { games: [{ id, startedAt, savedAt, names, score, plays }] }
@@ -169,7 +170,10 @@ export class Game extends DurableObject {
     }
     if (request.method === 'GET' && url.pathname === '/state') return json(this.state());
     if (request.method === 'GET' && url.pathname === '/logo') {
-      const side = url.searchParams.get('side'), logo = SIDES.includes(side) ? this.get('logo:' + side) : null;
+      const side = url.searchParams.get('side'), v = url.searchParams.get('v') || '';
+      let logo = SIDES.includes(side) ? this.get('logo:' + side) : null;
+      // A past game's logo: kept by version (logov:<v>) when it was shared
+      if (v && (!logo || logo.v !== v) && /^[0-9a-f]{12}$/.test(v)) { const old = this.get('logov:' + v); logo = old ? { v, ...old } : null; }
       if (!logo) return new Response('No logo', { status: 404 });
       const bytes = Uint8Array.from(atob(logo.png.split(',')[1] || ''), c => c.charCodeAt(0));
       // Versioned by ?v=, so it can be cached for good; without one, briefly.
@@ -290,6 +294,8 @@ export class Game extends DurableObject {
       const v = png ? [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(png)))].slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('') : '';
       if ((was ? was.v : '') === v && (!was || was.name === name)) return json({ ok: true, v, unchanged: true });
       if (png) this.put('logo:' + side, { v, name, png }); else this.sql.exec('DELETE FROM kv WHERE k = ?', 'logo:' + side);
+      // Every version is kept too, so a past game's box score still shows the logos it had (one copy per logo).
+      if (png && !this.get('logov:' + v)) this.put('logov:' + v, { name, png });
       const next = { ...meta, logos: { ...(meta.logos || {}) } };
       if (png) next.logos[side] = { v, name }; else delete next.logos[side];
       this.put('meta', next);

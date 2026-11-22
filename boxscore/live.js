@@ -451,9 +451,14 @@
   const isFBCA = name => /\bFBCA\b/i.test(name || '') || /FORT BEND CHRISTIAN/i.test(name || '');
   const FBCA_EAGLE = '/boxscore/fbca-eagle.png';
   const logoImg = (g, side, cls) => {
-    const lg = !g.past && g.meta.logos && g.meta.logos[side];
-    const src = lg && lg.v ? API + '/logo?game=' + g.sport + '&side=' + side + '&v=' + lg.v : isFBCA(g.sides[side] && g.sides[side].name) ? FBCA_EAGLE : '';
-    return src ? Object.assign(el('img', cls), { src, alt: '' }) : null;
+    // A past game asks for the logo version it was saved with (the stat keeper keeps every version).
+    const lg = g.meta.logos && g.meta.logos[side], fbca = isFBCA(g.sides[side] && g.sides[side].name);
+    const src = lg && lg.v ? API + '/logo?game=' + g.sport + '&side=' + side + '&v=' + lg.v : fbca ? FBCA_EAGLE : '';
+    if (!src) return null;
+    const img = Object.assign(el('img', cls), { src, alt: '' });
+    // A logo the stat keeper no longer has (from before it kept them): FBCA's eagle, or nothing
+    img.onerror = () => { img.onerror = null; if (fbca && img.src !== FBCA_EAGLE) img.src = FBCA_EAGLE; else img.style.visibility = 'hidden'; };
+    return img;
   };
   // "Fort Bend Christian Academy" → "FBCA", "Kinkaid" → "KINK" (as the Live Activity does)
   const abbr = name => {

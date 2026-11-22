@@ -2264,8 +2264,12 @@
     const key = skKey(); if (!key) return;
     let sent = {}; try { sent = JSON.parse(localStorage.getItem(LOGO_SENT_LS) || '{}'); } catch (e) {}
     for (const side of ['home', 'away']) {
-      const src = (s[side].logo || ''), name = String(s[side].name || ''), sig = name + '|' + src.length + '|' + src.slice(-60);
-      if (sent[side] === sig) continue;
+      // A logo belongs to the stat keeper's current game (a new game starts without the last one's), so it's sent
+      // again for each new game, and whenever that game doesn't have it (or still has one removed here).
+      const g = await shareTarget(); if (!g || !g.meta) return;
+      const src = (s[side].logo || ''), name = String(s[side].name || '');
+      const sig = g.meta.gameId + '|' + name + '|' + src.length + '|' + src.slice(-60), has = !!(g.meta.logos || {})[side];
+      if (sent[side] === sig && !!src === has) continue;
       const png = src ? await logoForShare(src) : '';
       if (src && !png) continue;
       try {
@@ -2276,6 +2280,9 @@
     }
   };
   queueLogoShare(); // once when the control page opens: shares logos set before this, or changed elsewhere
+  // And when the stat crew starts a new game (it starts without logos)
+  let logoGame = '';
+  setInterval(async () => { const g = await shareTarget(), id = g && g.meta && g.meta.gameId; if (id && id !== logoGame) { logoGame = id; queueLogoShare(); } }, 15000);
 
   const save = () => {
     queueLogoShare();
