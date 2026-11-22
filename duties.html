@@ -149,6 +149,8 @@
   .seg button{font:700 .95rem 'Barlow';background:var(--pine);color:var(--chalk-dim);border:0;padding:8px 18px;cursor:pointer}
   .seg button[aria-pressed=true]{background:var(--gold);color:var(--pine)}
   .setup .hint{font-weight:500;font-size:.9rem}
+  .sport-pick{display:inline-flex;align-items:center;gap:8px}
+  .sport-pick select{font:700 .95rem 'Barlow';background:var(--pine);color:var(--chalk);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
 
   /* Scorebug Stats tab: the next game's pages by role, what's coming up, and every page by sport */
   .sb-next{background:linear-gradient(160deg,var(--field),#12331f);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
@@ -258,6 +260,13 @@
           <button data-mode="home" aria-pressed="true">Home</button>
           <button data-mode="away" aria-pressed="false">Away</button>
         </div>
+        <label class="sport-pick">Sport
+          <select id="sportPick" aria-label="Show steps for this sport">
+            <option value="Football">Football</option><option value="Volleyball">Volleyball</option><option value="Basketball">Basketball</option>
+            <option value="Soccer">Soccer</option><option value="Baseball">Baseball</option><option value="Softball">Softball</option>
+            <option value="">All sports</option>
+          </select>
+        </label>
         <span class="hint" id="setupHint"></span>
       </div>
       <section id="tab-duties" hidden><div id="kitpanel"></div><div id="duties"></div></section>
@@ -350,8 +359,18 @@
     return [...picked.values()];
   }
 
-  // A line ending in "{Baseball, Softball}" is only for those sports. With no game
-  // picked, it shows with a label instead.
+  // The sport the duty cards are for (the Sport menu above them): the one picked last on this device, or the next
+  // game's. "All sports" ('') shows every sport's steps, each labeled.
+  const SPORTS = ['Football', 'Volleyball', 'Basketball', 'Soccer', 'Baseball', 'Softball'];
+  const SPORT_KEY = 'eota-duties-sport';
+  function pickedSport(next) {
+    const saved = store.get(SPORT_KEY);
+    if (saved !== null && saved !== undefined) return saved || null;
+    return SPORTS.find((sp) => ((next && next.sport) || '').toLowerCase().includes(sp.toLowerCase())) || null;
+  }
+
+  // A line ending in "{Baseball, Softball}" is only for those sports. With no sport
+  // picked (All sports), it shows with a label instead.
   function sportTag(text) {
     const m = text.match(/^(.*?)\s*\{([^}]+)\}\s*$/);
     if (!m) return { text, show: true };
@@ -473,6 +492,7 @@
     const games = data.games.filter((g) => g.date >= today);
     // Start on the setup the next game needs.
     state = { ...data, games, secs, mode: modeOf(games[0]), equipment: data.equipment || [], kitByName: {} };
+    state.sport = pickedSport(games[0]);
     state.kitsBySection = {};
     state.itemIndex = {}; // an item's name or its column's name → every { kit, i } it could mean
     for (const sec of state.equipment) {
@@ -573,7 +593,8 @@
     state.byId = byId;
     document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
     const next = state.games.find((g) => modeOf(g) === mode);
-    $('setupHint').textContent = state.sport ? `Showing steps for ${state.sport}` : next ? `Next ${mode} game: ${when(next.date).tag || when(next.date).text}` : '';
+    $('setupHint').textContent = next ? `Next ${mode} game: ${when(next.date).tag || when(next.date).text}` : '';
+    $('sportPick').value = SPORTS.find((sp) => (state.sport || '').toLowerCase().includes(sp.toLowerCase())) || '';
     // Keep the same cards open across the switch.
     const open = [...document.querySelectorAll('.duty[open]')].map((d) => d.id);
     renderDuties();
@@ -745,7 +766,7 @@
   /** Opens the duty cards for a position from a game or "my games". */
   function openDuty(position, mode, gi) {
     const g = gi == null ? null : state.games[+gi];
-    state.sport = g ? g.sport : null;
+    state.sport = g ? g.sport : pickedSport(state.games[0]);
     setMode(mode || state.mode);
     const ids = cardsFor(position, state.byId);
     renderKitPanel(position, gi == null ? -1 : +gi);
@@ -779,13 +800,19 @@
   });
 
   $('who').addEventListener('change', renderGames);
+  $('sportPick').addEventListener('change', () => {
+    const v = $('sportPick').value;
+    store.set(SPORT_KEY, v || ''); // '' = all sports, remembered too
+    state.sport = v || null;
+    setMode(state.mode);
+  });
   $('showOpen').addEventListener('change', () => { store.set('eota-duties-open', $('showOpen').checked ? '1' : null); renderGames(); });
   document.querySelector('.tabs').addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
-    if (b.dataset.tab === 'duties' && (state.sport || $('kitpanel').innerHTML)) {
+    if (b.dataset.tab === 'duties' && $('kitpanel').innerHTML) {
       $('kitpanel').innerHTML = '';
-      state.sport = null;
+      state.sport = pickedSport(state.games[0]);
       setMode(state.mode);
     }
     tab(b.dataset.tab);
