@@ -142,6 +142,11 @@
     font-size: 48px; font-weight: 700; font-variant-numeric: tabular-nums;
   }
   .sb .clock.off { display: none; }
+  /* The colon never moves: minutes right-aligned in a two-digit box, seconds in one after it (each digit is .5em). */
+  .sb .clock .cw { display: flex; align-items: baseline; }
+  .sb .clock .cm, .sb .clock .cs { display: inline-block; min-width: 1em; white-space: pre; }
+  .sb .clock .cm { text-align: right; }
+  .sb .clock .cs { text-align: left; }
   .sb .added {
     display: grid; place-items: center; padding: 0 14px;
     background: var(--gold); color: var(--pine);
@@ -2326,9 +2331,18 @@
     addEventListener('storage', e => { if (e.key === STORE && e.newValue) accept(JSON.parse(e.newValue)); });
 
     let last = '';
+    // "12:34" as minutes | colon | seconds in fixed boxes, so the colon (and every digit) stays put as the time
+    // changes, even from 9:59 to 10:00 or with the stadium scoreboard's own spacing. Anything else shows as is.
+    const setClock = (node, t) => {
+      const m = /^\s*(\d*)\s*([:.])\s*(\d*)\s*$/.exec(t || '');
+      if (!m) { node.textContent = String(t || '').trim(); return; }
+      const w = el('span', 'cw');
+      w.append(el('span', 'cm', m[1]), el('span', null, m[2]), el('span', 'cs', m[3]));
+      node.replaceChildren(w);
+    };
     const tick = () => {
       const t = clockText(s, Date.now());
-      if (t !== last) { $('sbClock').textContent = t; last = t; }
+      if (t !== last) { setClock($('sbClock'), t); last = t; }
       requestAnimationFrame(tick);
     };
     render(); tick();
