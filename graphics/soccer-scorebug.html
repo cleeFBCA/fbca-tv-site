@@ -1199,6 +1199,8 @@
             <input id="spV2" maxlength="6" placeholder="9"><input id="spL2" maxlength="20" placeholder="Assists">
             <input id="spV3" maxlength="6" placeholder="3"><input id="spL3" maxlength="20" placeholder="Game winners">
           </div>
+          <div class="row-btns" style="margin-top:8px"><button id="spFill">Fill tonight's stats</button></div>
+          <p class="hint" id="spFillNote">Goals, assists and shots so far tonight from the stat keeper (a keeper gets saves first), for the player above.</p>
           <label for="spFile">Photo (optional; without one, the jersey number shows)</label>
           <div class="set-row"><input type="file" id="spFile" accept="image/*"><button id="spPhotoClear">Remove</button></div>
           <p class="hint">Best: a PNG cutout with a transparent background, waist up or full body. It is sized from the player's outline so the top of the head lands on the dashed line, and the team color fills in behind. Use Size and Up / down to adjust. To prep photos ahead of time, use the <a href="spotlight-photo-template.png" target="_blank" style="color:var(--gold-hi)">photo template</a> as a top layer in Photoshop or Canva.</p>
@@ -3382,6 +3384,20 @@
   });
   // Player spotlight: team, number, name, and the headshot from Lineups → Player photos (shown in the
   // fit preview so Size and Up / down still work). Without a headshot, the jersey number shows.
+  // Fill tonight's stats: the player in the form (team, number, name), found on the stat keeper roster.
+  $('spFill').onclick = async () => {
+    const note = $('spFillNote');
+    if (!skGame) await rosterRead(); // the newest plays
+    const g = skGame || rosterGame, side = $('spTeam').value, num = $('spNum').value.trim(), name = $('spNameIn').value.trim().toLowerCase();
+    const roster = (g && g.meta && g.meta.rosters && g.meta.rosters[side]) || [];
+    const p = roster.find(x => num ? String(x.num || '').trim() === num : String(x.name || '').trim().toLowerCase() === name);
+    if (!p) { note.textContent = g ? 'That player isn\'t on the stat keeper\'s ' + teamName(side) + ' roster. Pick them from the list above, or check the number.' : 'Can\'t reach the stat keeper right now.'; return; }
+    const c = {}; for (const e of g.events || []) if (e.side === side && e.player === p.id) c[e.type] = (c[e.type] || 0) + 1;
+    const goals = c.goal || 0, ast = c.ast || 0, shots = goals + (c.sog || 0) + (c.shot || 0), saves = c.save || 0;
+    const rows = saves ? [[saves, 'Saves'], [goals, 'Goals'], [ast, 'Assists']] : [[goals, 'Goals'], [ast, 'Assists'], [shots, 'Shots']];
+    rows.forEach(([v, l], k) => { $('spV' + (k + 1)).value = String(v); $('spL' + (k + 1)).value = l; });
+    note.textContent = 'Filled from the stat keeper: ' + playerLabel(p) + ', ' + rows.map(([v, l]) => v + ' ' + l.toLowerCase()).join(', ') + '.';
+  };
   $('spPick').addEventListener('change', () => {
     const x = picked($('spPick')); if (!x) return;
     $('spPick').value = '';
