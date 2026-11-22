@@ -634,19 +634,6 @@
       it.score = { ...score };
       out.push(it);
     });
-    // A play without a minute (recorded before every play got one): estimated from the nearest timed play in the same
-    // half, by when each was entered. The minute runs 1, 2, ..., then 40+1 in stoppage.
-    const timed = (g.events || []).filter(e => /^\d+(\+\d+)?$/.test(e.min || '') && e.at);
-    const val = m => m.split('+').reduce((a, b) => a + +b, 0);
-    const half = g.meta.halfMin || 40, ot = g.meta.otMin || 10;
-    for (const it of out) {
-      const e = it.e; if (e.min || !e.at) continue;
-      const near = timed.filter(x => x.period === e.period).sort((a, b) => Math.abs(a.at - e.at) - Math.abs(b.at - e.at))[0];
-      if (!near) continue;
-      const start = { '1H': 0, '2H': half, OT1: 2 * half, OT2: 2 * half + ot }[e.period] || 0, end = start + (/^OT/.test(e.period) ? ot : half);
-      const est = Math.max(start + 1, val(near.min) + Math.round((e.at - near.at) / 60000));
-      it.min = String(est > end ? end + '+' + (est - end) : est);
-    }
     return out;
   };
   const soccerDescribe = (g, it) => {
@@ -683,8 +670,7 @@
       (side === 'home' ? an : hn).classList.add('dim');
       nums.append(an, hn); top.append(nums);
     }
-    const min = e.min || it.min;
-    body.append(top, el('div', 'pw', [min ? min + "'" : '', PERIOD[e.period] || e.period].filter(Boolean).join(' - ')), el('div', 'pd', soccerDescribe(g, it)));
+    body.append(top, el('div', 'pw', [e.min ? e.min + "'" : '', PERIOD[e.period] || e.period].filter(Boolean).join(' - ')), el('div', 'pd', soccerDescribe(g, it)));
     row.append(body);
     return row;
   };

@@ -999,7 +999,8 @@
           <option value="sheet">Excel stat sheet on OneDrive (deprecated)</option>
         </select>
         <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
-        <label class="check"><input type="checkbox" id="clockShare"> Share this clock with the stat keeper (the stat page and fbca.tv box score show it; plays get the game time)</label>
+        <input type="checkbox" id="clockShare" checked hidden>
+        <p class="hint" style="margin-bottom:0">This clock is always shared with the stat keeper: every play is stamped with the game time the moment it's tapped, and the fbca.tv box score shows it.</p>
         <div class="set-row" id="skKeyRow" hidden><input id="skKey" type="password" autocomplete="off" placeholder="Stat keeper key (the same one the stat crew uses)"><button id="skKeySave">Save key</button></div>
         <p class="hint" id="clockShareStatus"></p>
         <div id="sheetBox">
@@ -3735,7 +3736,8 @@
     return shareGame;
   };
   const shareClock = async () => {
-    if (!s.clockShare || shareBusy) return;
+    s.clockShare = true; // always shared: every play gets the game time (a page saved with it off is turned back on)
+    if (shareBusy) return;
     shareBusy = true;
     try {
       const key = skKey(), g = key ? await shareTarget() : null;
