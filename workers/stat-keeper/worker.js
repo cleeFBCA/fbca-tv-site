@@ -292,10 +292,11 @@ export class Game extends DurableObject {
       if (png && (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(png) || png.length > MAX_LOGO)) return json({ error: 'Send a PNG data URL under 150 KB' }, 400);
       const name = clean(body.name, 60), was = this.get('logo:' + side);
       const v = png ? [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(png)))].slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('') : '';
+      // Every version is kept too, so a past game's box score still shows the logos it had (one copy per logo).
+      // Before the unchanged check, so a logo first shared before versions were kept gets its copy on a re-send.
+      if (png && !this.get('logov:' + v)) this.put('logov:' + v, { name, png });
       if ((was ? was.v : '') === v && (!was || was.name === name)) return json({ ok: true, v, unchanged: true });
       if (png) this.put('logo:' + side, { v, name, png }); else this.sql.exec('DELETE FROM kv WHERE k = ?', 'logo:' + side);
-      // Every version is kept too, so a past game's box score still shows the logos it had (one copy per logo).
-      if (png && !this.get('logov:' + v)) this.put('logov:' + v, { name, png });
       const next = { ...meta, logos: { ...(meta.logos || {}) } };
       if (png) next.logos[side] = { v, name }; else delete next.logos[side];
       this.put('meta', next);
