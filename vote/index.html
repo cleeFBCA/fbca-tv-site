@@ -139,8 +139,10 @@
      up to three from 720px wide, four from 952px (4 x 210 + 3 x 20 + 32 = 932, plus room for a Windows scrollbar,
      which these widths count). Narrower than that, or five or more,
      they stay stacked as on a phone, so a fourth card never wraps alone onto a second line. */
+  /* Each card is never wider than it is with four players across, centered: with two or three, the cards and the
+     (small) photos stay that size instead of stretching to fill the row. */
   @media (min-width: 720px) and (max-width: 951.98px) {
-    .noms:not(:has(> .nom:nth-child(4))) { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; }
+    .noms:not(:has(> .nom:nth-child(4))) { grid-template-columns: repeat(auto-fit, minmax(210px, calc((100% - 60px) / 4))); justify-content: center; gap: 20px; }
     /* Picture, then name and stats, then Vote along the bottom, so every card lines up. The picture box gets
        an explicit full width: Safari otherwise sizes a ratio-only box inside a button from its content. */
     .noms:not(:has(> .nom:nth-child(4))) .nom { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; align-items: start; padding: 0 0 16px; text-align: center; gap: 12px; }
@@ -151,7 +153,7 @@
     .noms:not(:has(> .nom:nth-child(4))) .nom .go { margin: 0 16px; align-self: end; }
   }
   @media (min-width: 952px) {
-    .noms:not(:has(> .nom:nth-child(5))) { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; }
+    .noms:not(:has(> .nom:nth-child(5))) { grid-template-columns: repeat(auto-fit, minmax(210px, calc((100% - 60px) / 4))); justify-content: center; gap: 20px; }
     /* Picture, then name and stats, then Vote along the bottom, so every card lines up. The picture box gets
        an explicit full width: Safari otherwise sizes a ratio-only box inside a button from its content. */
     .noms:not(:has(> .nom:nth-child(5))) .nom { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; align-items: start; padding: 0 0 16px; text-align: center; gap: 12px; }
