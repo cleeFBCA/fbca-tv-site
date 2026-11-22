@@ -524,6 +524,8 @@
   .bb .pill .clk i.d, .bb .pill .shot i.d { width: .49em; }
   .bb .pill .clk i.p { width: .25em; }
   .bb .pill .shot { font-size: 30px; padding-left: 16px; border-left: 2px solid rgba(0,0,0,.2); min-width: 50px; text-align: center; }
+  /* The shot clock's space stays when it goes off late in a period, so the game clock doesn't slide over */
+  .bb .pill .shot.off { visibility: hidden; }
   .bb .pill .shot.low { color: #C8102E; }
   .bb .pill .word { font-size: 32px; letter-spacing: .06em; }
   .bb .mid .logo { width: 84px; margin-top: 8px; opacity: .95; }
@@ -2188,6 +2190,7 @@
       else {
         parts = [['per', periodLabel(s.period)], ['clk', fmtClock(remaining(now))]];
         if (shotShown(now)) { const sl = shotLeft(now); parts.push(['shot' + (sl <= 5000 ? ' low' : ''), fmtShot(sl)]); }
+        else if (s.shotOn && s.shot.show) parts.push(['shot off', '']); // keeps its space (see .shot.off)
         sig = parts.map(p => p.join('=')).join('|');
       }
       if (sig !== pillSig) {
