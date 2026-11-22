@@ -257,7 +257,8 @@
       d.append(el('span', null, teamOf(s).name));
       return d;
     };
-    box.replaceChildren(side('home', 'L'), el('div', 'vs', 'VS'), side('away', 'R'));
+    // The home team is always on the right, away on the left (as on TV and the box score).
+    box.replaceChildren(side('away', 'L'), el('div', 'vs', 'VS'), side('home', 'R'));
   };
 
   const render = () => {
