@@ -3103,7 +3103,20 @@
     const d = derive(pl);
     $('spTeam').value = side; $('spNum').value = pl.num || ''; $('spNameIn').value = pl.name;
     [[d.pts, 'Points'], [d.reb, 'Rebounds'], [d.ast, 'Assists']].forEach(([v, l], k) => { $('spV' + (k + 1)).value = v; $('spL' + (k + 1)).value = l; });
-    refitPhoto();
+    // The player's headshot from Player photos too, as picking from the roster does
+    loadSpotHeadshot(String(pl.num || '').trim(), String(pl.name || '').trim(), findPhoto(s[side].name, pl.num, pl.name));
+  };
+  // A player's headshot into the fit preview (so Size and Up / down still work); without one, a note and the
+  // jersey number shows.
+  const loadSpotHeadshot = (num, name, photo) => {
+    clearPhoto();
+    const note = $('spRosterNote');
+    note.hidden = !!photo;
+    note.textContent = photo ? '' : 'No headshot for ' + (num ? '#' + num + ' ' : '') + name + ' yet. Add one in Setup → Player photos, or upload a photo below.';
+    if (!photo) return;
+    const img = new Image();
+    img.onload = () => { photoImg = img; photoBox = subjectBox(img); resetFit(); $('spFit').hidden = false; refitPhoto(); };
+    img.src = photo;
   };
   // Picking from the roster fills team, number and name, and loads the headshot from Player photos into the
   // fit preview (so Size and Up / down still work). Without a headshot, the jersey number shows.
@@ -3117,14 +3130,7 @@
       const k = s.sheet[side].players.findIndex(x => pl.num ? String(x.num || '').trim() === pl.num : String(x.name || '').trim().toLowerCase() === pl.name.toLowerCase());
       if (k >= 0) $('spPick').value = side + ':' + k;
     }
-    clearPhoto();
-    const note = $('spRosterNote');
-    note.hidden = !!pl.photo;
-    note.textContent = pl.photo ? '' : 'No headshot for ' + (pl.num ? '#' + pl.num + ' ' : '') + pl.name + ' yet. Add one in Setup → Player photos, or upload a photo below.';
-    if (!pl.photo) return;
-    const img = new Image();
-    img.onload = () => { photoImg = img; photoBox = subjectBox(img); resetFit(); $('spFit').hidden = false; refitPhoto(); };
-    img.src = pl.photo;
+    loadSpotHeadshot(pl.num, pl.name, pl.photo);
   });
   let spPickSig = '', spRosterSig = '', spRosterList = {};
   const renderSpotTab = () => {
