@@ -21,3 +21,4 @@
 id_rsa*
 
 # Deliberately NOT ignored: Word ~$ lock files. Those are wanted in commits.
+.DS_Store
