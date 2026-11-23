@@ -161,6 +161,39 @@
   .past-list li .what { flex: 1 1 220px; min-width: 0; }
   .past-list li .what small { display: block; color: var(--chalk-dim); font-size: 13px; }
   .past-list li button { min-height: 38px; padding: 4px 12px; font-size: 14px; }
+
+  /* ---------- Theme: dark charcoal panels, bright status buttons ----------
+     Green = connected / running / made.  Red = clear, remove, fouls.  Blue = selected.  Amber = queued, waiting on you. */
+  :root {
+    --pine: #0F1012; --field: #1A1B1E; --turf: #2A2C31; --line: #3A3D44;
+    --chalk: #F1F2F4; --chalk-dim: #A3A7AF; --tally: #F43B3B; --ok: #22D865;
+    --cue: #2F7BFF; --wait: #FFB21E; --wait-ink: #1F1500; --head: #D5D8DE;
+  }
+  .card { background: linear-gradient(#1D1E22, #17181B); border-color: #2C2E33; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+  .top { background: #141518; border-bottom-color: #2C2E33; }
+  .log h3, .card h3, .team h2 { color: var(--head); }
+  button { background: linear-gradient(#32343A, #282A2F); border-color: #43464E; box-shadow: inset 0 1px 0 rgba(255,255,255,.07); }
+  button:hover { background: linear-gradient(#3B3E45, #30333A); }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline-color: var(--cue); }
+  input, select, textarea { background: #0F1012; }
+  button.primary { background: linear-gradient(color-mix(in srgb, var(--cue) 88%, #fff), var(--cue)); color: #fff; border-color: var(--cue); }
+  button.danger { background: rgba(244,59,59,.08); border: 1.5px solid var(--tally); color: #FF6B6B; font-weight: 700; }
+  button.danger:hover { background: var(--tally); color: #fff; }
+  /* Selected: the period, a team, a setting */
+  .periods button.on, .switch button.on, .seg button.on, .grp .tools button.on {
+    background: linear-gradient(color-mix(in srgb, var(--cue) 88%, #fff), var(--cue)); color: #fff; border-color: var(--cue); }
+  .tabs button.on { outline: 0; color: #fff; background: #3A3D44; border-color: #6B7079; box-shadow: inset 0 -3px 0 #fff; }
+  /* Running clock */
+  .clockrow button.run { background: linear-gradient(color-mix(in srgb, var(--ok) 85%, #fff), var(--ok)); color: #03170A; border-color: var(--ok); font-weight: 800; box-shadow: 0 0 14px rgba(34,216,101,.35); }
+  /* A play waiting for its player, and the player picked: amber (queued) */
+  .pad .act.sel { background: linear-gradient(color-mix(in srgb, var(--wait) 85%, #fff), var(--wait)); color: var(--wait-ink); border-color: var(--wait);
+                  outline: 3px solid #fff; outline-offset: 2px; position: relative; z-index: 1; }
+  .pl.sel { outline-color: #fff; box-shadow: 0 0 0 7px var(--wait); }
+  .act.made { color: var(--ok); }
+  .act.foul { border-color: var(--tally); color: #FF6B6B; }
+  .conn.wait, .log li .unsent, .hint.warn, .pick-hint b { color: var(--wait); }
+  .assist, .lu-hint { border-color: var(--wait); }
+  .lu-hint.warn { border-color: var(--tally); }
 </style>
 </head>
 <body>

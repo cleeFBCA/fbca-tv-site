@@ -866,6 +866,58 @@
   .l3-list .txt span { color: var(--chalk-dim); font-size: 14px; }
   .on-air { color: var(--tally); font-weight: 700; font-size: 13px; letter-spacing: .06em; }
   .keys { color: var(--chalk-dim); font-size: 14px; line-height: 1.7; margin: 0; padding: 0; list-style: none; }
+
+  /* ---------- Control page theme: dark charcoal panels, bright status buttons ----------
+     Only the control page (body.ctl); the on-air output keeps FBCA's colors.
+     Green = on air / running.  Red = take down / clear.  Blue = ready to take, or selected.  Amber = queued, waiting. */
+  body.ctl {
+    --pine: #0F1012; --field: #1A1B1E; --turf: #2A2C31; --line: #3A3D44;
+    --chalk: #F1F2F4; --chalk-dim: #A3A7AF; --tally: #FF4747;
+    --on: #22D865; --on-ink: #03170A; --off: #F43B3B; --off-ink: #fff;
+    --cue: #2F7BFF; --cue-ink: #fff; --wait: #FFB21E; --wait-ink: #1F1500; --head: #D5D8DE;
+  }
+  body.ctl .card { background: linear-gradient(#1D1E22, #17181B); border-color: #2C2E33; box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 6px 18px rgba(0,0,0,.35); }
+  body.ctl .card h2, body.ctl .pane-h { color: var(--head); }
+  body.ctl button { background: linear-gradient(#32343A, #282A2F); border-color: #43464E; box-shadow: inset 0 1px 0 rgba(255,255,255,.07); }
+  body.ctl button:hover:not(:disabled) { background: linear-gradient(#3B3E45, #30333A); border-color: #555962; }
+  body.ctl button:disabled { opacity: .38; }
+  /* Selected (a tab, the period, the possession arrow, a picked player) */
+  body.ctl button.active { outline: 0; color: #fff; background: color-mix(in srgb, var(--cue) 28%, #24262B); border-color: var(--cue); box-shadow: inset 0 0 0 1px var(--cue); }
+  body.ctl .tabs button.active { background: #3A3D44; border-color: #6B7079; box-shadow: inset 0 -3px 0 #fff; }
+  /* Ready to take: a graphic's Show button */
+  body.ctl button.primary { background: linear-gradient(color-mix(in srgb, var(--cue) 88%, #fff), var(--cue)); color: var(--cue-ink); border-color: var(--cue); font-weight: 700; }
+  body.ctl button.primary:hover:not(:disabled) { background: linear-gradient(color-mix(in srgb, var(--cue) 76%, #fff), color-mix(in srgb, var(--cue) 90%, #fff)); border-color: var(--cue); }
+  /* On air / running: bright green with a pulsing light */
+  body.ctl button.primary.active, body.ctl button.onair, body.ctl button.running {
+    background: linear-gradient(color-mix(in srgb, var(--on) 85%, #fff), var(--on)); color: var(--on-ink); border-color: var(--on);
+    box-shadow: 0 0 0 2px rgba(34,216,101,.28), 0 0 16px rgba(34,216,101,.35); font-weight: 800;
+  }
+  body.ctl button.primary.active:hover:not(:disabled), body.ctl button.onair:hover:not(:disabled), body.ctl button.running:hover:not(:disabled) {
+    background: linear-gradient(color-mix(in srgb, var(--on) 75%, #fff), color-mix(in srgb, var(--on) 90%, #fff)); border-color: var(--on); }
+  body.ctl button.primary.active::before, body.ctl button.onair::before, body.ctl button.running::before {
+    content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; vertical-align: 1px;
+    background: var(--on-ink); animation: ctlLive 1.2s ease-in-out infinite; }
+  @keyframes ctlLive { 50% { opacity: .25; } }
+  /* Queued: waiting to come back or go on */
+  body.ctl button.queued { background: linear-gradient(color-mix(in srgb, var(--wait) 85%, #fff), var(--wait)); color: var(--wait-ink); border-color: var(--wait); font-weight: 700; }
+  body.ctl button.queued:hover:not(:disabled) { background: linear-gradient(color-mix(in srgb, var(--wait) 72%, #fff), color-mix(in srgb, var(--wait) 90%, #fff)); }
+  /* Take down / take off air: solid red (dim when there's nothing to take down) */
+  body.ctl button.take { background: linear-gradient(color-mix(in srgb, var(--off) 85%, #fff), var(--off)); color: var(--off-ink); border-color: var(--off); font-weight: 700; }
+  body.ctl button.take:hover:not(:disabled) { background: linear-gradient(color-mix(in srgb, var(--off) 72%, #fff), color-mix(in srgb, var(--off) 90%, #fff)); }
+  body.ctl button.take:disabled { background: linear-gradient(#32343A, #282A2F); color: var(--chalk); border-color: #43464E; }
+  /* Clear / reset data: red outline */
+  body.ctl button.danger { background: rgba(244,59,59,.08); border: 1.5px solid var(--off); color: #FF6B6B; font-weight: 700; }
+  body.ctl button.danger:hover:not(:disabled) { background: var(--off); color: var(--off-ink); }
+  body.ctl .panel-note b, body.ctl .on-air { color: var(--on); }
+  body.ctl .warn { color: var(--wait); }
+  body.ctl input, body.ctl select, body.ctl textarea { background: #0F1012; border-color: #3A3D44; }
+  body.ctl input:focus, body.ctl select:focus, body.ctl textarea:focus { outline: 2px solid var(--cue); outline-offset: -1px; border-color: var(--cue); }
+  body.ctl label.switch input:checked + .track { background: var(--on); }
+  body.ctl label.switch input:checked + .track::after { background: #fff; }
+  body.ctl label.check input { accent-color: var(--on); }
+  body.ctl .fv-chip.on { background: var(--cue); color: #fff; border-color: var(--cue); }
+  body.ctl .fv-tally .f { background: var(--cue); }
+  body.ctl #btnClockShow.active { background: linear-gradient(color-mix(in srgb, var(--wait) 85%, #fff), var(--wait)); color: var(--wait-ink); border-color: var(--wait); box-shadow: none; }
 </style>
 </head>
 <body>
@@ -1034,7 +1086,7 @@
         </div>
         <div class="row-btns" style="margin:0">
           <p class="panel-note" id="panelNote"></p>
-          <button id="btnPanelHide" style="flex:0 0 auto">Take down</button>
+          <button class="take" id="btnPanelHide" style="flex:0 0 auto">Take down</button>
         </div>
       </div>
 
@@ -1084,7 +1136,7 @@
           <label class="check"><input type="checkbox" id="lPhoto" checked> Show the player's headshot (from Setup → Player photos)</label>
           <div class="row-btns" style="margin-top:14px">
             <button class="primary" id="btnL3Show">Show lower third</button>
-            <button id="btnL3Hide">Hide</button>
+            <button class="take" id="btnL3Hide">Hide</button>
             <button id="btnL3Save">Save to list</button>
           </div>
           <p class="hint">Save lower thirds before the game (announcers, starters, key players), then show them from the list with one click. Showing one takes down the fan vote QR, since they share a spot.</p>
@@ -1107,7 +1159,7 @@
           <p class="hint" id="popStatsNote"></p>
           <div class="two">
             <div><label for="popSecs">Take it down after (seconds, 0 = stays up)</label><input id="popSecs" type="number" min="0" max="120"></div>
-            <div><label>&nbsp;</label><button class="danger" id="btnPopHide" style="width:100%">Take down pop-up</button></div>
+            <div><label>&nbsp;</label><button class="take" id="btnPopHide" style="width:100%">Take down pop-up</button></div>
           </div>
           <p class="hint" id="popNow"></p>
         </div>
@@ -1124,7 +1176,7 @@
           <input id="ann3" maxlength="30" placeholder="Third announcer (optional)" style="margin-top:8px">
           <div class="two" style="margin-top:14px">
             <button class="primary" id="btnAnnShow">Show announcers</button>
-            <button class="danger" id="btnAnnHide">Take down</button>
+            <button class="take" id="btnAnnHide">Take down</button>
           </div>
           <p class="hint">It comes down on its own after the pop-up's time (Pop-up tab, now <span id="annSecs">8</span> seconds; 0 = stays up). As a lower third, the bug comes back when it goes down, unless Hide bug was pressed.</p>
           <p class="hint" id="annNow"></p>
@@ -1230,7 +1282,7 @@
           <p class="hint" id="fvStatus"></p>
           <ul class="fv-tally" id="fvTally"></ul>
           <div class="row-btns" style="margin-top:10px">
-            <button id="fvShowQr">Show QR lower third</button>
+            <button class="primary" id="fvShowQr">Show QR lower third</button>
             <button class="primary" id="fvShowRes">Show results</button>
           </div>
           <label for="fvKey">Admin key (saved on this computer only)</label>
@@ -2746,6 +2798,18 @@
   $('btnShotOff').onclick = () => { s.shot = { ...s.shot, show: !s.shot.show }; save(); };
   document.querySelectorAll('[data-p]').forEach(b => b.onclick = () => setPeriod(b.dataset.p));
   $('btnShow').onclick = toggleBug;
+  // Control page status colors: green while a graphic is on air, amber while the bug waits under a full-screen graphic
+  // or the announcers lower third.
+  const tally = () => {
+    const on = (id, v) => $(id).classList.toggle('onair', !!v);
+    on('btnPre', s.panel === 'match'); on('btnSpShow', s.panel === 'spot'); on('btnStats', s.panel === 'stats'); on('fvShowRes', s.panel === 'vote');
+    on('btnL3Show', s.l3.on && !s.l3.ann);
+    $('btnL3Hide').disabled = !s.l3.on; // red only when there's something to take down
+    on('btnPopText', s.pop.on && s.pop.kind === 'text'); on('btnPopRun', s.pop.on && s.pop.kind === 'run');
+    const bugQ = s.visible && (!!s.panel || (s.l3.on && !!s.l3.ann));
+    on('btnShow', s.visible && !bugQ); $('btnShow').classList.toggle('queued', bugQ);
+  };
+  tally(); setInterval(tally, 250);
   $('btnSwap').onclick = () => { s.swap = !s.swap; save(); };
   // The preview and output windows load this page fresh (a version stamp in the address), so the browser
   // can't hand them an older cached copy than the control page itself.
@@ -3268,7 +3332,7 @@
     const live = sheetLive();
     popStatBtns.forEach(b => {
       b.disabled = b.dataset.needs === '1' && !live;
-      b.classList.toggle('active', s.pop.on && s.pop.kind === 'stat' && s.pop.stat === b.textContent);
+      b.classList.toggle('onair', s.pop.on && s.pop.kind === 'stat' && s.pop.stat === b.textContent);
     });
     $('popStatsNote').textContent = live ? '' : 'Shooting, rebounds and the rest need the stats connected (Setup → Data sources). Team fouls and timeouts work any time.';
     const run = currentRun();
