@@ -323,11 +323,11 @@
   :is(.lu[data-st="2"], .lu[data-st="3"]) .wm { opacity: .1; transform: none; transition-delay: .15s; }
   :is(.lu[data-st="2"], .lu[data-st="3"]) .ph:not(.haspic) .big { opacity: 1; transform: none; transition-delay: .2s; }
   .lu[data-st="3"] .ph.haspic .pic { opacity: 1; transform: none; }
-  /* After the gold highlight lands, a light sweeps across the photo, masked to the photo itself so a cut-out's clear background stays clear */
-  .lu .ph .pic::after { content: ''; position: absolute; inset: 0; -webkit-mask: var(--pic) center top / cover no-repeat; mask: var(--pic) center top / cover no-repeat;
-                        background: linear-gradient(105deg, transparent 34%, rgba(255,255,255,.28) 42%, rgba(255,255,255,.85) 50%, rgba(255,255,255,.28) 58%, transparent 66%) 110% 0 / 300% 100% no-repeat; }
-  .lu[data-st="3"] .ph.haspic .pic::after { animation: luSheen 1.1s cubic-bezier(.4,0,.4,1) 1.35s; }
-  @keyframes luSheen { from { background-position: 110% 0; } to { background-position: -10% 0; } }
+  /* The soccer spotlight's shine: a soft band sweeps across the photo side, first just after the gold highlight lands, then every 7 seconds */
+  .lu .ph .shine { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 5;
+                   background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.18) 50%, transparent 60%); }
+  .lu[data-st="3"] .ph .shine { animation: luShine 7s 1.35s ease-in-out infinite both; }
+  @keyframes luShine { 0% { opacity: 1; transform: translateX(-100%); } 22%, 100% { opacity: 1; transform: translateX(100%); } }
   .lu[data-st="3"] .plate.has { clip-path: inset(0 0 0 0); }
   .lu[data-st="3"] .r.hi .hl { clip-path: inset(0 0 0 0); transition-delay: .25s; }
   .lu[data-st="3"] .ft span { clip-path: inset(0 0 0 0); transition-delay: .3s; }
@@ -522,7 +522,7 @@
     <div class="hd"><span id="luHd"></span><i class="logo"></i></div>
     <div class="vs tm" id="luVs"></div>
     <div class="ph tm" id="luPh"><div class="crest wm" id="luWm"></div><div class="crest big" id="luBig"></div><div class="pic" id="luPic"></div>
-      <div class="plate" id="luPlate"><span class="f" id="luF"></span><span class="l" id="luL"></span></div></div>
+      <div class="plate" id="luPlate"><span class="f" id="luF"></span><span class="l" id="luL"></span></div><i class="shine"></i></div>
     <div class="ls tm" id="luLs"></div>
     <div class="ft"><span id="luFt"></span></div>
   </div>
@@ -824,7 +824,7 @@
       $('luVs').textContent = g.vs || '';
       crest($('luWm'), t); crest($('luBig'), t);
       $('luPh').classList.toggle('haspic', !!g.photo);
-      $('luPic').style.backgroundImage = g.photo ? `url("${g.photo}")` : 'none'; $('luPic').style.setProperty('--pic', g.photo ? `url("${g.photo}")` : 'none');
+      $('luPic').style.backgroundImage = g.photo ? `url("${g.photo}")` : 'none';
       const h = g.hi; $('luPlate').classList.toggle('has', !!h);
       $('luF').replaceChildren(...(h ? [...(h.num ? [el('i', null, '#' + h.num)] : []), h.first || ''] : []));
       $('luL').textContent = h ? h.last : ''; if (h) fit($('luL'), 450);
