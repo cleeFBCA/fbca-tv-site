@@ -60,6 +60,14 @@
 /* Baseball: the bases, lit for runners on (as on the scorebug) */
 .ebx .board .dmd { position: relative; width: 46px; height: 34px; margin: 4px 0 2px; flex: none; }
 .ebx .board .dmd[hidden] { display: none; }
+/* Baseball: the count, then the outs as two dots */
+.ebx .board .per.bc { display: flex; align-items: center; gap: 6px; letter-spacing: .06em; }
+.ebx .board .per.bc[hidden] { display: none; }
+.ebx .board .per.bc b { font: 800 18px/1 var(--font-display); color: #fff; letter-spacing: .02em; font-variant-numeric: tabular-nums; margin-right: 2px; }
+.ebx .board .per.bc .od { display: flex; gap: 4px; }
+.ebx .board .per.bc .od i { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--gold-on); }
+.ebx .board .per.bc .od i.on { background: var(--gold-on); }
+.ebx .board .per.bc small { font: inherit; }
 .ebx .board .dmd i { position: absolute; width: 13px; height: 13px; transform: rotate(45deg); border: 2px solid rgba(255,255,255,.55); border-radius: 1px; transition: background .25s, border-color .25s, box-shadow .25s; }
 .ebx .board .dmd .b2 { left: 16.5px; top: 2px; } .ebx .board .dmd .b3 { left: 4.5px; top: 14px; } .ebx .board .dmd .b1 { left: 28.5px; top: 14px; }
 .ebx .board .dmd i.on { background: #fff; border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,.5); }
@@ -140,6 +148,7 @@
   .ebx .board .tos i { width: 10px; height: 10px; }
   .ebx .board .per { font-size: 16px; }
   .ebx .board .dmd { transform: scale(1.35); margin: 10px 0 8px; }
+  .ebx .board .per.bc { gap: 8px; } .ebx .board .per.bc b { font-size: 24px; } .ebx .board .per.bc .od i { width: 11px; height: 11px; }
   .ebx .play { padding: 14px 18px; }
   .ebx .play .txt { font-size: 26px; }
   .ebx .grid2 { grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
@@ -327,6 +336,7 @@
   .ebx .slab, .ebx .board .sc, .ebx .cmp .bar2, .ebx .cmp .bar2 i { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .ebx .slab::before, .ebx .tag.on::before { animation: none; }
   .ebx .board .mid { background: #fff; color: #000; }
+  .ebx .board .per.bc b { color: #000; } .ebx .board .per.bc .od i { box-shadow: inset 0 0 0 2px #000; } .ebx .board .per.bc .od i.on { background: #000; }
   .ebx .board .dmd i { border-color: #888; } .ebx .board .dmd i.on { background: #000; border-color: #000; box-shadow: none; }
   .ebx .board .per, .ebx .play .txt b, .ebx td:first-child b { color: #6b5208; }
   .ebx .play, .ebx .play.flash { animation: none; }

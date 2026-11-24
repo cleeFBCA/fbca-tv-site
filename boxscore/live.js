@@ -542,8 +542,14 @@
       d.append(...(img ? [img] : []), el('span', null, t.name));
       return d;
     };
-    const t9 = g.ball && g.ball.sit, ballPer = t9 ? t9.o + (t9.o === 1 ? ' out' : ' outs') + (t9.b || t9.s ? ' · ' + t9.b + '-' + t9.s : '') : '';
-    const mid = el('div', 'mid'), clk = el('div', 'clk', '–'), per = el('div', 'per', BALL(g.sport) ? ballPer : PERIOD[g.meta.period] || g.meta.period || '');
+    const t9 = g.ball && g.ball.sit;
+    const mid = el('div', 'mid'), clk = el('div', 'clk', '–'), per = el('div', 'per', t9 ? null : PERIOD[g.meta.period] || g.meta.period || '');
+    // Baseball: the count (balls-strikes) and the outs as two dots, as on TV
+    if (t9) {
+      per.classList.add('bc'); per.setAttribute('aria-label', 'Count ' + t9.b + '-' + t9.s + ', ' + t9.o + (t9.o === 1 ? ' out' : ' outs'));
+      const od = el('span', 'od'); od.title = t9.o + (t9.o === 1 ? ' out' : ' outs'); for (let i = 0; i < 2; i++) od.append(el('i', i < t9.o ? 'on' : null));
+      per.append(el('b', null, t9.b + '-' + t9.s), od, el('small', null, t9.o === 1 ? 'Out' : 'Outs'));
+    }
     // Baseball: the bases, lit for each runner on, as on the scorebug (2nd at the top, 3rd left, 1st right)
     if (t9) { const dmd = el('div', 'dmd'); dmd.setAttribute('role', 'img');
       const on = t9.bases.map(Boolean), names = ['1st', '2nd', '3rd'].filter((_, i) => on[i]);
