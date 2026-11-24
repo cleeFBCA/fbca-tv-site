@@ -2036,16 +2036,21 @@
     };
     const readableOn = c => { const n = parseInt(c.slice(1), 16); return (.2126 * (n >> 16) + .7152 * (n >> 8 & 255) + .0722 * (n & 255)) / 255 > .6 ? '#03260A' : '#FFFFFF'; };
     const renderL3 = () => {
-      const l = s.l3;
-      fxShow($('l3'), l.on && !s.panel);
+      const l = s.l3, box = $('l3');
+      // Off air, it waits clipped toward the side it was last on. Coming back on the other side, move it to that side's
+      // starting edge first (no transition), so it wipes in from the outside, not from where the other side left it.
+      const right = l.on && l.team !== 'none' && l.team === rightSide();
+      if (l.on && box.classList.contains('hidden') && box.classList.contains('R') !== right) {
+        box.style.transition = 'none'; box.classList.toggle('R', right); void box.offsetWidth; box.style.transition = '';
+      }
+      fxShow(box, l.on && !s.panel);
       if (!l.on) return; // the old text stays while it wipes away
-      const box = $('l3'), team = l.team === 'none' ? null : s[l.team];
+      const team = l.team === 'none' ? null : s[l.team];
       // Main color behind the name (with white or dark text to suit it), stripe in the team's text color.
       const bg = team ? hex(team.bg, '#063E0C') : '#F3EFE2';
       box.style.setProperty('--c', bg);
       box.style.setProperty('--f', team ? readableOn(bg) : '#03260A');
       box.style.setProperty('--s', team ? hex(team.fg, '#F2D54C') : 'var(--gold)');
-      const right = !!team && l.team === rightSide();
       box.classList.toggle('R', right);
       box.classList.toggle('low', !!l.ann);
       // The name and stat line come in from the bug's end: from the left on the left, from the right on the right.
