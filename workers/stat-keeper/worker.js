@@ -55,9 +55,13 @@ const TYPES_BY_SPORT = {
   // A penalty kick that goes in is a goal with note 'PK'. throw (throw-in) and fk (free kick) are the team's
   // (player 'team'); hand (handball) and pkm (a missed penalty kick) are a player's or the team's. Those four are
   // for the play-by-play only: no stats.
-  soccer: ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc', 'og', 'throw', 'fk', 'hand', 'pkm']
+  soccer: ['goal', 'ast', 'sog', 'shot', 'save', 'corner', 'foul', 'offside', 'yc', 'rc', 'og', 'throw', 'fk', 'hand', 'pkm'],
+  // Baseball and softball (graphics/baseball.js): every pitch and play, each carrying the situation after it in data.
+  baseball: ['pitch', 'pa', 'br', 'pc', 'fix']
 };
-const sportOf = game => /^soccer/.test(game || '') ? 'soccer' : 'basketball';
+const sportOf = game => /^soccer/.test(game || '') ? 'soccer' : /^(baseball|softball)/.test(game || '') ? 'baseball' : 'basketball';
+const MAX_DATA = 3000; // a baseball play's details and situation, as JSON
+const MAX_SEASON = 400000; // one team's season record (typed or imported totals plus each game's lines)
 const SIDES = ['home', 'away'];
 const MAX_EVENTS = 3000, MAX_ROSTER = 30, MAX_SAVED = 150, MAX_ARCHIVE = 400, MAX_LOGO = 200000; // a logo's data URL, ~150 KB of PNG // ~two seasons of games per sport
 
@@ -100,9 +104,10 @@ const cleanRoster = list => (Array.isArray(list) ? list : []).slice(0, MAX_ROSTE
 
 // Soccer also keeps a match clock (shared by every stat device, for goal minutes) and its half length.
 const defaultMeta = (sport = 'basketball') => ({
-  gameId: newId(), startedAt: Date.now(), keepers: 1, period: sport === 'soccer' ? '1H' : '1Q',
+  gameId: newId(), startedAt: Date.now(), keepers: 1, period: sport === 'soccer' ? '1H' : sport === 'baseball' ? 'T1' : '1Q',
   names: { home: 'FBCA', away: 'Opponent' }, colors: { ...DEFAULT_COLORS }, rosters: { home: [], away: [] },
-  ...(sport === 'soccer' ? { halfMin: 40, clock: { run: false, startedAt: 0, base: 0 } } : {})
+  ...(sport === 'soccer' ? { halfMin: 40, clock: { run: false, startedAt: 0, base: 0 } } : {}),
+  ...(sport === 'baseball' ? { innings: 7, order: { home: [], away: [] } } : {})
 });
 
 export class Game extends DurableObject {
@@ -119,6 +124,8 @@ export class Game extends DurableObject {
     try { this.sql.exec('ALTER TABLE events ADD COLUMN min TEXT'); } catch (e) { /* already there */ }
     // A short note on a play ("2 left" on a timeout), added later still.
     try { this.sql.exec('ALTER TABLE events ADD COLUMN note TEXT'); } catch (e) { /* already there */ }
+    // A baseball play's details (JSON), added for baseball.
+    try { this.sql.exec('ALTER TABLE events ADD COLUMN data TEXT'); } catch (e) { /* already there */ }
     this.sport = 'basketball';
     // Keep-alive pings from the pages are answered without waking the object.
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
@@ -135,8 +142,8 @@ export class Game extends DurableObject {
   rev() { return this.get('rev', 0); }
   bump() { const r = this.rev() + 1; this.put('rev', r); return r; }
   events() {
-    return this.sql.exec('SELECT id, side, player, type, period, at, min, note FROM events WHERE deleted = 0 ORDER BY seq').toArray()
-      .map(e => { if (!e.min) delete e.min; if (!e.note) delete e.note; return e; });
+    return this.sql.exec('SELECT id, side, player, type, period, at, min, note, data FROM events WHERE deleted = 0 ORDER BY seq').toArray()
+      .map(e => { if (!e.min) delete e.min; if (!e.note) delete e.note; if (e.data) { try { e.data = JSON.parse(e.data); } catch (x) { delete e.data; } } else delete e.data; return e; });
   }
   state() { return { rev: this.rev(), meta: this.meta(), events: this.events() }; }
   // Keeps the current game in the archive (if it has any plays): its score worked out the way the pages do.
@@ -144,7 +151,8 @@ export class Game extends DurableObject {
     const meta = this.meta(), events = this.events();
     if (!events.length) return;
     const score = { home: 0, away: 0 }, PTS = { m2: 2, m3: 3, mft: 1 };
-    for (const e of events) {
+    if (this.sport === 'baseball') { const last = [...events].reverse().find(e => e.data && e.data.sit); if (last) Object.assign(score, last.data.sit.score); }
+    else for (const e of events) {
       if (this.sport === 'soccer') { if (e.type === 'goal') score[e.side]++; if (e.type === 'og') score[e.side === 'home' ? 'away' : 'home']++; }
       else score[e.side] += PTS[e.type] || 0;
     }
@@ -189,6 +197,9 @@ export class Game extends DurableObject {
       }
       return json({ games: this.sql.exec('SELECT summary FROM archive ORDER BY savedAt DESC').toArray().map(r => JSON.parse(r.summary)) });
     }
+    // Season stats (baseball): one record per team name. GET is open (the numbers go on air); changes need the key.
+    const seasons = () => this.sql.exec("SELECT v FROM kv WHERE k LIKE 'season:%'").toArray().map(r => JSON.parse(r.v));
+    if (request.method === 'GET' && url.pathname === '/season') return json({ teams: seasons() });
     const library = () => Object.values(this.get('library', {})).sort((a, b) => a.name.localeCompare(b.name));
     if (request.method === 'GET' && url.pathname === '/library') return json({ teams: library() });
 
@@ -208,9 +219,15 @@ export class Game extends DurableObject {
         const ev = { id: e.id, side: e.side, player: idOk(e.player) || e.player === 'team' ? e.player : 'team',
                      type: e.type, period: clean(e.period, 4) || meta.period, at: Number(e.at) || Date.now(), ...(e.min ? { min: clean(e.min, 6) } : {}),
                      ...(e.note ? { note: clean(e.note, 20) } : {}) };
+        let data = null;
+        if (this.sport === 'baseball') {
+          const text = e.data && typeof e.data === 'object' ? JSON.stringify(e.data) : '';
+          if (!text || text.length > MAX_DATA) continue;
+          data = text; ev.data = e.data;
+        }
         // INSERT OR IGNORE: a retried play, or one already undone (kept as deleted), changes nothing.
-        const r = this.sql.exec('INSERT OR IGNORE INTO events (id, seq, side, player, type, period, at, min, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          ev.id, seq + 1, ev.side, ev.player, ev.type, ev.period, ev.at, ev.min || null, ev.note || null);
+        const r = this.sql.exec('INSERT OR IGNORE INTO events (id, seq, side, player, type, period, at, min, note, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          ev.id, seq + 1, ev.side, ev.player, ev.type, ev.period, ev.at, ev.min || null, ev.note || null, data);
         if (r.rowsWritten > 0) { seq++; count++; added.push(ev); }
       }
       this.put('seq', seq);
@@ -248,6 +265,26 @@ export class Game extends DurableObject {
       return json({ ok: true, teams: library() });
     }
 
+    if (url.pathname === '/season') {
+      const name = clean(body.name, 60), k = 'season:' + name.toLowerCase();
+      if (!name) return json({ error: 'Send the team name' }, 400);
+      const rec = this.get(k, { name, asOf: 0, base: { players: [] }, games: [] });
+      const players = list => (Array.isArray(list) ? list : []).slice(0, 60);
+      if (body.action === 'base') { rec.base = { players: players(body.players) }; rec.asOf = Math.max(0, Number(body.asOf) || 0); rec.source = clean(body.source, 30); }
+      else if (body.action === 'game') {
+        if (!idOk(body.id)) return json({ error: 'Send the game id' }, 400);
+        const g = { id: body.id, at: Number(body.at) || Date.now(), opp: clean(body.opp, 60), players: players(body.players) };
+        rec.games = [...(rec.games || []).filter(x => x.id !== g.id), g].sort((a, b) => a.at - b.at);
+      } else if (body.action === 'dropgame') rec.games = (rec.games || []).filter(x => x.id !== body.id);
+      else if (body.action === 'delete') { this.sql.exec('DELETE FROM kv WHERE k = ?', k); return json({ ok: true, teams: seasons() }); }
+      else return json({ error: 'Unknown action' }, 400);
+      rec.name = name; rec.updatedAt = Date.now();
+      if (JSON.stringify(rec).length > MAX_SEASON) return json({ error: 'That season record is too big' }, 413);
+      this.put(k, rec);
+      this.send({ t: 'season', name });
+      return json({ ok: true, teams: seasons() });
+    }
+
     if (url.pathname === '/meta') {
       if (body.gameId !== meta.gameId) return stale();
       const m = body.meta || {}, next = { ...meta };
@@ -276,6 +313,15 @@ export class Game extends DurableObject {
       if (m.colors) next.colors = Object.fromEntries(SIDES.map(s => [s, colorOk(m.colors[s]) ? m.colors[s].toUpperCase() : meta.colors[s]]));
       if (m.rosters) next.rosters = Object.fromEntries(SIDES.map(s => [s, m.rosters[s] ? cleanRoster(m.rosters[s]) : meta.rosters[s]]));
       // Starters: up to five player ids per team, each once. A side left out keeps what it had.
+      if (this.sport === 'baseball') {
+        if (m.innings != null) next.innings = Math.max(1, Math.min(12, Math.round(Number(m.innings)) || 7));
+        // Batting orders: up to 12 slots per team, each a player id and a position. A side left out keeps what it had.
+        if (m.order) {
+          const was = meta.order || { home: [], away: [] };
+          next.order = Object.fromEntries(SIDES.map(s => [s, Array.isArray(m.order[s])
+            ? m.order[s].filter(o => o && idOk(o.id)).slice(0, 12).map(o => ({ id: o.id, pos: clean(o.pos, 4) })) : (was[s] || [])]));
+        }
+      }
       if (m.starters && this.sport === 'basketball') {
         const was = meta.starters || { home: [], away: [] };
         next.starters = Object.fromEntries(SIDES.map(s => [s, Array.isArray(m.starters[s])
@@ -330,7 +376,7 @@ export class Game extends DurableObject {
       if (body.archive !== false) this.archiveCurrent();
       else this.sql.exec('DELETE FROM archive WHERE id = ?', meta.gameId); // a test game, saved when it was marked final
       const next = defaultMeta(this.sport);
-      if (body.keepRosters) { next.rosters = meta.rosters; next.names = meta.names; if (meta.saved) next.saved = meta.saved; next.colors = meta.colors; next.keepers = meta.keepers; if (meta.halfMin) next.halfMin = meta.halfMin; if (meta.logos) next.logos = meta.logos; }
+      if (body.keepRosters) { if (meta.innings) next.innings = meta.innings; next.rosters = meta.rosters; next.names = meta.names; if (meta.saved) next.saved = meta.saved; next.colors = meta.colors; next.keepers = meta.keepers; if (meta.halfMin) next.halfMin = meta.halfMin; if (meta.logos) next.logos = meta.logos; }
       else for (const side of SIDES) this.sql.exec('DELETE FROM kv WHERE k = ?', 'logo:' + side); // new teams: their logos come from the scorebug
       this.sql.exec('DELETE FROM events');
       this.put('seq', 0); this.put('meta', next);
@@ -362,11 +408,11 @@ export default {
       if (request.headers.get('Upgrade') !== 'websocket') return json({ error: 'WebSocket only' }, 426, origin);
       return stub.fetch(request);
     }
-    if (request.method === 'GET' && (url.pathname === '/state' || url.pathname === '/archive' || url.pathname === '/logo')) {
+    if (request.method === 'GET' && (url.pathname === '/state' || url.pathname === '/archive' || url.pathname === '/logo' || url.pathname === '/season')) {
       const r = await stub.fetch(request);
       return withCors(r, origin);
     }
-    if (['/events', '/undo', '/meta', '/reset', '/library', '/archive', '/logo'].includes(url.pathname) && (request.method === 'POST' || url.pathname === '/library')) {
+    if (['/events', '/undo', '/meta', '/reset', '/library', '/archive', '/logo', '/season'].includes(url.pathname) && (request.method === 'POST' || url.pathname === '/library')) {
       const given = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
       if (!await keyMatches(given, env.STAT_KEY)) return json({ error: 'Wrong stat keeper key' }, 401, origin);
       const r = await stub.fetch(request);

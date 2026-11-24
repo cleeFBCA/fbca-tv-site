@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EOTA Baseball Stat Keeper</title>
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAEH0lEQVR42u2WS2xVVRSG/3/tc24vbS99UUoFLgq0xYpIkRSkEA3MfATFCDhgYBz4SoxxqImOjBGZiK+ZJkaQmBBifESDTkRTJTyKwYC1xdsCLdzb1r7u49xz9l4OemlT7MDEMOufNVnJ2uvLztrrz2Zi9RLcSgluseYB84D/L+9mIOEUS6p0a7NL1rmKMpC0VscL+GNQfuo2uWKp5j/KlNVWTvUlIQKn6GhyD6+3VQvUNxDCulJpY7W2Jd3wpAxP0ggIkAABgDc6TKVzAHQqFB1NdluzCyKQ6Enz527vbD8H/pa4j/IyBBHuWe4GRjmS5dSRad2UTotTVnH4mQIFAJbVaCwm352Td7/3MhNsaVRrNTPBsTw3rXRv7S4ao9ZhYJTOsaoCRzrNoU6vMo4De4KldXjtqN/VJyIz9y7NYPtakPAMsgVW1+Lgt8xM8MDeYjFCT9osqrSnU+b8FbQsBUBr9c6lUNXyWnalFMCO1ujJDqXhU+noxb7YHEMey6pn8MInsVRGysq0L8NXHyk+ttG+d9zzPY152Lwq6ur3t78ZE+CdfcG6JF4+5HX1m5GsAth1rw2KyBbcjjW6OOGnJzj9EEoACjyDP69Lb7o0qaFJCUMLxWQe1XEsSiAR1wsDAiAIGY/hUkZ+v0qAd9S7+1td3xDT4+y4Sx5abz8+4U0DSntARWRx+Nngx1fyv71RaFvhLg6yPI7qSkQOJChoWAgReAIhoCjzVAQAdrbZ2gb56qzZ/40vBrs2RiKwOtceVFeoc6iuRNzH0CQLRWxYYeOe5ENGlvUL1Tl4nvqm9GCcQzyGRzdEhTGe6JbTKdOdCjc3YUPSnUrJLIASnsHu98u6r4lvdCzHe1bYyHFNox75RQohayu0GIFEw0Isq9EgpGdI4oEW27qc4xP69t5QEVbEVMjd7dGpVGw2QGEVOhWA78ETNtagL4Mn2m1tpV4dwevHYqpoX+kiC3ej+PGNlsRkASJKIFdkNq/bW11dpQ5PcgZQHgOJz54PcgEaqvHSp7HPT5p9H/r79xYB/NojB4/7l0e4arG7vd6NB0hWIB+iPqEPrrdhxKc/il0cNCIw1CPPBVvu5p5N0Qc/+DND7r2O3uvIjMM3yAa4b7VdlNDOXjnXz/NX5Otz5vII1y53O9uss8gV+dcgR3PY0mRHI/PlGZ5OmWyAiTxGczzc6fVfQ/tKN2uTfQOhOuXWZrut2eWKAHBhQBqqdNNqe/Sktziht9VoEGJBDEdPmb5hRo6eqCpDC2LGhVThC4zRQsgZL3IK6+gUqSEpRkzWqRAVcc0VODQhA6Ncl3ShpVV8ccb0pMU66o0j/5ZTRI6zzI4EWTLFyyO8lJHEAiTi2tKozY1qhPkiLgzIsTNeepwiM8ZGzmVwnHFVzv+L5gHzAPwDMNXxTQ6uySIAAAAASUVORK5CYII=">
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,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">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0F1012">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  Baseball and softball stat keeper for Eagles on the Air.
+
+  One stat keeper records every pitch and play (tablet or laptop, phone in a pinch). Each one goes to the
+  eota-stat-keeper Cloudflare Worker (game "baseball" or "softball") with the situation after it (inning,
+  count, outs, runners, score), so the baseball scorebug follows along live and builds its graphics from it.
+  The rules (what each play does, the stats) are in baseball.js, shared with the scorebug.
+
+  Season stats: each team's totals as of a date (typed in, or a GameChanger season CSV), plus every game
+  recorded here after that date. A game is added when it's marked final.
+  Plays are saved on the device first, so a Wi-Fi dropout loses nothing. ?api=http://localhost:8787 for a local worker.
+-->
+<style>
+  :root {
+    --pine: #0F1012; --field: #1A1B1E; --turf: #2A2C31; --line: #3A3D44;
+    --chalk: #F1F2F4; --chalk-dim: #A3A7AF; --tally: #F43B3B; --ok: #22D865;
+    --cue: #2F7BFF; --wait: #FFB21E; --wait-ink: #1F1500; --head: #D5D8DE; --gold-hi: #F2C14E;
+    --font-display: 'Big Shoulders Display', Impact, 'Arial Narrow', sans-serif;
+    --font-body: 'Barlow', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--pine); color: var(--chalk); font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
+  button { font: 600 16px var(--font-body); color: var(--chalk); background: linear-gradient(#32343A, #282A2F); border: 1px solid #43464E; box-shadow: inset 0 1px 0 rgba(255,255,255,.07); border-radius: 8px; padding: 10px; cursor: pointer; min-height: 48px; touch-action: manipulation; }
+  button:hover { background: linear-gradient(#3B3E45, #30333A); }
+  button:disabled { opacity: .45; cursor: default; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--cue); outline-offset: 1px; }
+  button.primary { background: linear-gradient(color-mix(in srgb, var(--cue) 88%, #fff), var(--cue)); color: #fff; border-color: var(--cue); font-weight: 700; }
+  button.danger { background: rgba(244,59,59,.08); border: 1.5px solid var(--tally); color: #FF6B6B; font-weight: 700; }
+  button.danger:hover { background: var(--tally); color: #fff; }
+  button.ghost { background: transparent; min-height: 0; padding: 8px 12px; font-size: 14px; }
+  button.on { background: linear-gradient(color-mix(in srgb, var(--cue) 88%, #fff), var(--cue)); color: #fff; border-color: var(--cue); }
+  label { display: block; font-size: 13px; color: var(--chalk-dim); margin: 12px 0 4px; }
+  input, select, textarea { width: 100%; font: 500 16px var(--font-body); color: var(--chalk); background: #0F1012; border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+  textarea { min-height: 220px; resize: vertical; line-height: 1.5; }
+  .hint { font-size: 14px; color: var(--chalk-dim); margin: 8px 0 0; line-height: 1.4; }
+  .hint.warn { color: var(--wait); }
+  [hidden] { display: none !important; }
+
+  .top { position: sticky; top: 0; z-index: 5; background: #141518; border-bottom: 1px solid #2C2E33; padding: 10px 16px 8px; padding-top: max(10px, env(safe-area-inset-top)); }
+  .top-row { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+  .top h1 { font-family: var(--font-display); font-weight: 800; font-size: 24px; letter-spacing: .04em; color: var(--gold-hi); margin: 0; text-transform: uppercase; }
+  .conn { font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .conn.ok { color: var(--ok); } .conn.wait { color: var(--wait); } .conn.bad { color: var(--tally); }
+  .sport { font-size: 13px; font-weight: 700; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: .08em; }
+  .score { margin-left: auto; font-family: var(--font-display); font-weight: 800; font-size: 24px; letter-spacing: .03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 12px 16px 120px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; }
+  .tabs button { flex: 1 0 auto; min-height: 42px; }
+  .tabs button.on { color: #fff; background: #3A3D44; border-color: #6B7079; box-shadow: inset 0 -3px 0 #fff; }
+
+  .card { background: linear-gradient(#1D1E22, #17181B); border: 1px solid #2C2E33; border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+  .card h3 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; font-size: 17px; margin: 0 0 8px; color: var(--head); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .card h3 button { min-height: 36px; padding: 4px 12px; font-family: var(--font-body); letter-spacing: 0; text-transform: none; font-size: 14px; }
+
+  /* The situation: inning, outs, count, runners, batter and pitcher */
+  .sit { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; }
+  .sit .inn { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1; text-align: center; min-width: 70px; }
+  .sit .inn small { display: block; font-family: var(--font-body); font-size: 13px; color: var(--chalk-dim); font-weight: 600; }
+  .sit .mid { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; min-width: 0; }
+  .dia { width: 92px; height: 70px; flex: none; }
+  .dia rect { fill: transparent; stroke: #8A8F98; stroke-width: 3; }
+  .dia rect.on { fill: var(--wait); stroke: var(--wait); }
+  .cnt { font-family: var(--font-display); font-weight: 800; font-size: 34px; font-variant-numeric: tabular-nums; line-height: 1; }
+  .cnt small { display: block; font-family: var(--font-body); font-size: 13px; color: var(--chalk-dim); font-weight: 600; }
+  .outs { display: flex; gap: 6px; align-items: center; }
+  .outs i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #8A8F98; }
+  .outs i.on { background: var(--tally); border-color: var(--tally); }
+  .who { display: grid; gap: 4px; font-size: 15px; min-width: 0; }
+  .who b { font-size: 17px; }
+  .who span { color: var(--chalk-dim); }
+  .who .row { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .runners { font-size: 14px; color: var(--chalk-dim); margin-top: 6px; }
+  @media (max-width: 700px) { .sit { grid-template-columns: auto 1fr; } .sit .who { grid-column: 1 / -1; } }
+
+  .grp { margin-top: 12px; }
+  .grp h4 { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: .08em; }
+  .pad { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+  .act { min-height: 56px; font-size: 16px; font-weight: 700; padding: 6px 4px; }
+  .act.ball { color: var(--ok); } .act.strike { color: #FF6B6B; } .act.hit { color: var(--ok); } .act.out { color: #FF8F8F; }
+  .act small { display: block; font-size: 12px; font-weight: 600; color: var(--chalk-dim); }
+
+  /* Where the runners went: shown after a ball in play or a running play */
+  .adj { border-color: var(--wait); }
+  .adj .mv { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid rgba(243,239,226,.1); }
+  .adj .mv .seg { display: flex; gap: 4px; flex-wrap: wrap; }
+  .adj .mv .seg button { min-height: 44px; padding: 6px 12px; flex: 1 0 auto; }
+  .adj .mv .seg button.pick { background: linear-gradient(color-mix(in srgb, var(--wait) 85%, #fff), var(--wait)); color: var(--wait-ink); border-color: var(--wait); }
+  .adj .mv .seg button.pick.outb { background: var(--tally); color: #fff; border-color: var(--tally); }
+  .step { display: inline-flex; align-items: center; gap: 6px; margin-right: 18px; }
+  .step button { min-height: 40px; min-width: 44px; padding: 4px; }
+  .step b { min-width: 24px; text-align: center; font-size: 20px; }
+  .adj .foot { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+
+  .log ol { list-style: none; margin: 0; padding: 0; }
+  .log li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid rgba(243,239,226,.1); font-size: 15px; }
+  .log li .per { font-size: 12px; color: var(--chalk-dim); width: 36px; flex: 0 0 auto; }
+  .log li .what { flex: 1; min-width: 0; }
+  .log li .unsent { font-size: 12px; color: var(--wait); }
+
+  .toast { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--chalk); color: var(--pine); font-weight: 700; padding: 10px 16px; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.4); display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); z-index: 10; }
+  .toast button { min-height: 34px; padding: 2px 12px; background: var(--pine); color: var(--chalk); border: 0; }
+
+  .scroll { overflow-x: auto; }
+  table.box { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.box th, table.box td { padding: 6px 7px; text-align: right; border-top: 1px solid rgba(243,239,226,.1); }
+  table.box th { color: var(--chalk-dim); font-weight: 600; font-size: 12px; border-top: 0; }
+  table.box th:nth-child(-n+2), table.box td:nth-child(-n+2) { text-align: left; }
+  table.box tr.tot td { font-weight: 700; border-top: 2px solid var(--line); }
+  table.box td input { width: 58px; padding: 4px 6px; font-size: 14px; text-align: right; }
+  table.box td input.nm { width: 150px; text-align: left; }
+  table.box td input.no { width: 46px; text-align: left; }
+  .tc { border-left: 6px solid var(--tc, var(--turf)); padding-left: 8px; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+  .set-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .set-row input, .set-row select { flex: 1; min-width: 0; }
+  .set-row button { flex: 0 0 auto; }
+  .seg2 { display: flex; gap: 6px; } .seg2 button { flex: 1; }
+  input.swatch { flex: 0 0 56px; width: 56px; padding: 4px; height: auto; cursor: pointer; }
+  .ord { display: grid; grid-template-columns: 28px 1fr 92px; gap: 6px; align-items: center; margin-top: 6px; }
+  .ord b { text-align: right; color: var(--chalk-dim); }
+  .ord select { padding: 8px; }
+  .past-list { list-style: none; margin: 10px 0 0; padding: 0; }
+  .past-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid rgba(243,239,226,.1); font-size: 15px; }
+  .past-list li .what { flex: 1 1 220px; min-width: 0; }
+  .past-list li .what small { display: block; color: var(--chalk-dim); font-size: 13px; }
+  .past-list li button { min-height: 38px; padding: 4px 12px; font-size: 14px; }
+  .final-on { background: linear-gradient(color-mix(in srgb, var(--ok) 85%, #fff), var(--ok)) !important; color: #03170A !important; border-color: var(--ok) !important; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-row">
+    <h1 id="title">Baseball stats</h1>
+    <span class="conn wait" id="conn" role="status">Connecting…</span>
+    <div class="score" id="score"></div>
+  </div>
+</header>
+
+<main>
+  <div class="tabs" role="tablist">
+    <button data-tab="plays" class="on">Plays</button>
+    <button data-tab="lineups">Lineups</button>
+    <button data-tab="box">Box score</button>
+    <button data-tab="season">Season stats</button>
+    <button data-tab="setup">Setup</button>
+  </div>
+
+  <section data-pane="plays">
+    <p class="hint warn" id="playsWarn" hidden></p>
+    <div class="card" id="sitCard">
+      <div class="sit">
+        <div class="inn" id="sInn"></div>
+        <div class="mid">
+          <svg class="dia" viewBox="0 0 92 70" aria-label="Runners"><rect id="b2" x="35" y="4" width="22" height="22" transform="rotate(45 46 15)"/><rect id="b3" x="9" y="30" width="22" height="22" transform="rotate(45 20 41)"/><rect id="b1" x="61" y="30" width="22" height="22" transform="rotate(45 72 41)"/></svg>
+          <div class="cnt" id="sCnt"></div>
+          <div class="outs" id="sOuts" aria-label="Outs"><i></i><i></i></div>
+        </div>
+        <div class="who" id="sWho"></div>
+      </div>
+      <div class="runners" id="sRun"></div>
+    </div>
+
+    <div class="card adj" id="adj" hidden></div>
+
+    <div id="pads">
+      <div class="grp"><h4>Pitch</h4><div class="pad" id="padPitch"></div></div>
+      <div class="grp"><h4>Ball in play</h4><div class="pad" id="padPlay"></div></div>
+      <div class="grp" id="grpRun"><h4>Runners</h4><div class="pad" id="padRun"></div></div>
+      <div class="grp"><h4>Changes</h4><div class="pad" id="padMore">
+        <button class="act" id="btnPitcher">Pitching change</button>
+        <button class="act" id="btnBatter">Different batter</button>
+        <button class="act" id="btnFix">Fix the situation</button>
+        <button class="act" id="btnFinal">Mark final</button>
+      </div></div>
+    </div>
+
+    <div class="card log" style="margin-top:14px">
+      <h3>Plays <button id="btnUndo">Undo last</button></h3>
+      <ol id="log"></ol>
+    </div>
+  </section>
+
+  <section data-pane="lineups" hidden>
+    <p class="hint" style="margin:0 0 10px">The batting order runs the batter up and on deck. Pick a player and a position for each spot; the player at P is the starting pitcher. A pinch hitter or a sub: change the player in that spot and save (their stats stay with each player).</p>
+    <div class="two" id="lineups"></div>
+    <div class="set-row" style="margin-top:10px"><button class="primary" id="btnOrder">Save lineups</button><span class="hint" id="orderNote" style="margin:0"></span></div>
+  </section>
+
+  <section data-pane="box" hidden>
+    <div class="card"><h3>Line score</h3><div class="scroll" id="lineBox"></div></div>
+    <div id="boxes"></div>
+  </section>
+
+  <section data-pane="season" hidden>
+    <div class="card">
+      <h3>Season stats</h3>
+      <p class="hint" style="margin-top:0">Each team's totals as of a date, from a GameChanger season export or typed in here, plus every game recorded on this page after that date (a game is added when it's marked final). The scorebug's averages, ERA and season lines come from these.</p>
+      <div class="set-row" style="margin-top:10px">
+        <select id="seaTeam"></select>
+        <button id="seaNew" class="ghost">Another team…</button>
+      </div>
+    </div>
+    <div class="card" id="seaCard" hidden>
+      <h3 id="seaHead"></h3>
+      <div class="two">
+        <div>
+          <label for="seaFile">Import a GameChanger season export (CSV)</label>
+          <input type="file" id="seaFile" accept=".csv,text/csv">
+          <p class="hint">In GameChanger: the team's Stats → Export (CSV). Importing replaces the typed-in totals below; games recorded here after the export date are still added on top.</p>
+        </div>
+        <div>
+          <label for="seaAsOf">Totals are through</label>
+          <input type="date" id="seaAsOf">
+          <p class="hint">Games recorded on this page after this date add to these totals. Games on or before it are taken as already in them.</p>
+        </div>
+      </div>
+      <h3 style="margin-top:16px">Batting totals <button id="seaAddRow">Add a player</button></h3>
+      <div class="scroll" id="seaBat"></div>
+      <h3 style="margin-top:16px">Pitching totals</h3>
+      <div class="scroll" id="seaPit"></div>
+      <div class="set-row" style="margin-top:12px"><button class="primary" id="seaSave">Save totals</button><button class="ghost" id="seaFromRoster">Fill names from the roster</button><button class="danger" id="seaDelete">Delete this team's season stats</button></div>
+      <p class="hint" id="seaNote"></p>
+      <h3 style="margin-top:16px">Games added</h3>
+      <ol class="past-list" id="seaGames"></ol>
+      <h3 style="margin-top:16px">Season with today's game</h3>
+      <div class="scroll" id="seaNow"></div>
+    </div>
+  </section>
+
+  <section data-pane="setup" hidden>
+    <div class="card">
+      <h3>Stat keeper key</h3>
+      <div class="set-row"><input id="key" type="password" autocomplete="off" placeholder="Paste the key from Mr. Lee"><button id="btnKey">Save</button></div>
+      <p class="hint" id="keyNote">Needed once on each device to send plays.</p>
+    </div>
+    <div class="card">
+      <h3>Sport</h3>
+      <div class="seg2" id="sportSeg"><button data-g="baseball">Baseball</button><button data-g="softball">Softball</button></div>
+      <p class="hint">Baseball and softball are kept as separate games (and separate season stats), so both can be on at once. The scorebug picks the same one in its setup.</p>
+      <div class="set-row" style="margin-top:10px"><label for="innings" style="margin:auto 0;flex:0 0 auto">Innings in a game</label><input id="innings" type="number" min="1" max="12" style="max-width:100px"></div>
+      <p class="hint">7 for high school. ERA is figured on this many innings.</p>
+    </div>
+    <div class="card">
+      <h3>Teams and rosters</h3>
+      <div class="two">
+        <div>
+          <label for="libAway">Saved teams</label>
+          <div class="set-row"><select id="libAway"></select><button id="forgetAway" class="ghost">Forget</button></div>
+          <label for="nameAway">Visitors and their color</label><div class="set-row"><input id="nameAway" maxlength="60"><input type="color" id="colorAway" class="swatch" aria-label="Visitors' color"></div>
+          <label for="saveAway">Save as (optional)</label><input id="saveAway" maxlength="60" placeholder="Same as the team name">
+          <label for="rosterAway">Roster: one player per line, number then name</label>
+          <textarea id="rosterAway" placeholder="1 Sam Ortiz&#10;4 Eli Brooks"></textarea>
+        </div>
+        <div>
+          <label for="libHome">Saved teams</label>
+          <div class="set-row"><select id="libHome"></select><button id="forgetHome" class="ghost">Forget</button></div>
+          <label for="nameHome">Home team and its color</label><div class="set-row"><input id="nameHome" maxlength="60"><input type="color" id="colorHome" class="swatch" aria-label="Home team's color"></div>
+          <label for="saveHome">Save as (optional)</label><input id="saveHome" maxlength="60" placeholder="Same as the team name, or e.g. FBCA Softball">
+          <label for="rosterHome">Roster: one player per line, number then name</label>
+          <textarea id="rosterHome" placeholder="2 Luke Tran&#10;3 Jordan Lee&#10;5 Noah Kim"></textarea>
+        </div>
+      </div>
+      <div class="set-row" style="margin-top:10px"><button class="primary" id="btnRoster">Save teams and rosters</button></div>
+      <p class="hint" id="rosterNote">The visitors bat first (top of the inning). Saving also keeps each team in Saved teams for next time. A player's name can be fixed mid-game; their plays stay with them.</p>
+    </div>
+    <div class="card">
+      <h3>New game</h3>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--chalk);font-size:15px"><input type="checkbox" id="keepRosters" checked style="width:auto"> Keep the teams, rosters and lineups</label>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--chalk);font-size:15px"><input type="checkbox" id="saveGame" checked style="width:auto"> Save this game to Past games (untick for a test game)</label>
+      <div class="set-row" style="margin-top:10px"><button class="danger" id="btnReset">Start a new game</button></div>
+      <p class="hint">Clears every play for the scorebug too. A test game: untick Save, and don't mark it final (a final game goes into the season stats).</p>
+    </div>
+    <div class="card">
+      <h3>Past games <button id="pastRefresh" class="ghost">Refresh</button></h3>
+      <ol class="past-list" id="pastList"></ol>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden><span id="toastText"></span><button id="toastUndo">Undo</button></div>
+
+<script src="baseball.js"></script>
+<script>
+(() => {
+  const BB = window.EotaBaseball;
+  const qs = new URLSearchParams(location.search);
+  const API = (qs.get('api') || 'https://eota-stat-keeper.clee-625.workers.dev').replace(/\/$/, '');
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+  // Baseball or softball: two separate games on the stat keeper (?game=softball also picks it)
+  const GAME = (qs.get('game') === 'softball' || qs.get('game') === 'baseball') ? qs.get('game') : store.get('eota-baseball-sport', 'baseball');
+  const SPORT = GAME === 'softball' ? 'Softball' : 'Baseball';
+  const SIDES = ['home', 'away'], SHOW = ['away', 'home']; // visitors on the left (they bat first), home on the right
+  const LS = { key: 'eota-stats-key', pending: 'eota-' + GAME + '-stats-pending', cache: 'eota-' + GAME + '-stats-cache' };
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const rid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
+  const Cap = side => side === 'home' ? 'Home' : 'Away';
+  document.title = 'EOTA ' + SPORT + ' Stat Keeper';
+  $('title').textContent = SPORT + ' stats';
+
+  let server = store.get(LS.cache, null);
+  let pending = store.get(LS.pending, []);
+  let key = store.get(LS.key, '');
+  let ws = null, wsOpen = false, lastPong = 0, sending = false, sendErr = '', tab = 'plays';
+  let adj = null; // a play waiting for where the runners went: { k: 'pa'|'br', code, moves, rbi, err, runner }
+
+  // ---- The game as this device sees it: the worker's copy plus plays not sent yet ----
+  const view = () => {
+    if (!server) return null;
+    const meta = { ...server.meta };
+    let events = server.events.slice();
+    const have = new Set(events.map(e => e.id));
+    for (const p of pending) {
+      if (p.body.gameId !== server.meta.gameId) continue;
+      if (p.kind === 'events') for (const e of p.body.events) if (!have.has(e.id)) { events.push({ ...e, unsent: true }); have.add(e.id); }
+      if (p.kind === 'undo') events = events.filter(e => !p.body.ids.includes(e.id));
+      if (p.kind === 'meta') Object.assign(meta, p.body.meta);
+    }
+    if (!meta.order) meta.order = { home: [], away: [] };
+    return { meta, events };
+  };
+  const DEFAULT_COLORS = { home: '#063E0C', away: '#1F3A93' };
+  const colorOf = (v, side) => (v.meta.colors && /^#[0-9a-f]{6}$/i.test(v.meta.colors[side])) ? v.meta.colors[side] : DEFAULT_COLORS[side];
+  const lastName = n => { const w = String(n || '').trim().split(/\s+/); return w.length > 1 ? w[w.length - 1] : w[0] || ''; };
+  const player = (v, side, id) => (v.meta.rosters[side] || []).find(x => x.id === id);
+  const who = (v, side, id) => {
+    if (!id || id === 'team') return v.meta.names[side];
+    const p = player(v, side, id);
+    return p ? (p.num ? '#' + p.num + ' ' : '') + p.name : 'Removed player';
+  };
+  const ordinal = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
+  const halfName = sit => (sit.top ? 'Top ' : 'Bottom ') + ordinal(sit.inn);
+
+  // ---- Sending (same as the other stat keepers: saved on the device, sent in order) ----
+  const savePending = () => store.set(LS.pending, pending);
+  const setServer = st => {
+    if (server && st.meta.gameId !== server.meta.gameId) {
+      pending = pending.filter(p => p.body.gameId === st.meta.gameId); savePending(); adj = null;
+      toast('A new game was started.');
+    }
+    server = { rev: st.rev, meta: st.meta, events: st.events };
+    store.set(LS.cache, server);
+  };
+  const enqueue = (kind, payload) => {
+    if (!server) return;
+    const body = { gameId: server.meta.gameId, ...payload }, last = pending[pending.length - 1];
+    const lastBusy = sending && pending.length === 1;
+    if (kind === 'events' && last && last.kind === 'events' && !lastBusy && last.body.gameId === body.gameId) last.body.events.push(...payload.events);
+    else if (kind === 'meta' && last && last.kind === 'meta' && !lastBusy && last.body.gameId === body.gameId) last.body.meta = { ...last.body.meta, ...payload.meta };
+    else pending.push({ kind, body });
+    savePending(); render(); flush();
+  };
+  let retryTimer = 0;
+  const flush = async () => {
+    if (sending || !pending.length || !server) return;
+    if (!key) { sendErr = 'key'; render(); return; }
+    sending = true;
+    const job = pending[0];
+    try {
+      const r = await fetch(API + '/' + job.kind + '?game=' + GAME, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify(job.body) });
+      const data = await r.json().catch(() => ({}));
+      if (r.status === 401) { sending = false; sendErr = 'badkey'; render(); return; }
+      if (r.status === 409 && data.state) { sending = false; setServer(data.state); sendErr = ''; render(); flush(); return; }
+      if (!r.ok) throw new Error(data.error || 'Error ' + r.status);
+      if (job.kind === 'events') { const have = new Set(server.events.map(e => e.id)); server.events.push(...job.body.events.filter(e => !have.has(e.id))); }
+      if (job.kind === 'undo') server.events = server.events.filter(e => !job.body.ids.includes(e.id));
+      if (job.kind === 'meta' && data.meta) server.meta = data.meta;
+      store.set(LS.cache, server);
+      pending.shift(); savePending(); sendErr = '';
+    } catch (e) {
+      sending = false; sendErr = 'offline'; render();
+      clearTimeout(retryTimer); retryTimer = setTimeout(flush, 2000);
+      return;
+    }
+    sending = false; render();
+    if (pending.length) flush();
+  };
+  const connect = () => {
+    try { ws = new WebSocket(API.replace(/^http/, 'ws') + '/ws?game=' + GAME); } catch (e) { setTimeout(connect, 3000); return; }
+    ws.onopen = () => { wsOpen = true; lastPong = Date.now(); render(); flush(); };
+    ws.onclose = () => { wsOpen = false; render(); setTimeout(connect, 2000); };
+    ws.onerror = () => {};
+    ws.onmessage = e => {
+      lastPong = Date.now();
+      if (e.data === 'pong') return;
+      let m; try { m = JSON.parse(e.data); } catch (err) { return; }
+      if (m.t === 'season') { loadSeasons(); return; }
+      if (m.t === 'state') { setServer(m); render(); return; }
+      if (!server || m.rev !== server.rev + 1) { ws.send('sync'); return; }
+      server.rev = m.rev;
+      if (m.t === 'add') { const have = new Set(server.events.map(x => x.id)); server.events.push(...m.events.filter(x => !have.has(x.id))); }
+      if (m.t === 'del') server.events = server.events.filter(x => !m.ids.includes(x.id));
+      if (m.t === 'meta') server.meta = m.meta;
+      store.set(LS.cache, server); render();
+    };
+  };
+  setInterval(() => {
+    if (!ws || ws.readyState !== 1) return;
+    if (Date.now() - lastPong > 40000) { ws.close(); return; }
+    ws.send('ping');
+  }, 15000);
+  addEventListener('online', () => { flush(); if (ws && ws.readyState !== 1) ws.close(); });
+  let wake = null;
+  const keepAwake = () => { if (!wake && navigator.wakeLock) navigator.wakeLock.request('screen').then(w => { wake = w; w.onrelease = () => wake = null; }).catch(() => {}); };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && wake === null && server) keepAwake(); });
+
+  // ---- Recording ----
+  const describe = (v, e) => {
+    const d = BB.dataOf(e) || {};
+    if (e.type === 'pitch') return BB.PITCHES[d.p] || 'Pitch';
+    if (e.type === 'pa') {
+      const R = BB.RESULTS[d.r] || {}, runs = (d.runs || []).length;
+      return who(v, e.side, e.player) + ' · ' + (R.l || d.r) + (runs ? ' · ' + runs + (runs === 1 ? ' run' : ' runs') : '') + (d.rbi ? ' · ' + d.rbi + ' RBI' : '');
+    }
+    if (e.type === 'br') { const runs = (d.runs || []).length; return (BB.RUNS[d.r] || d.r) + (e.player !== 'team' ? ' · ' + who(v, e.side, e.player) : '') + (runs ? ' · ' + runs + (runs === 1 ? ' run' : ' runs') : ''); }
+    if (e.type === 'pc') return 'Pitching change: ' + who(v, e.side, e.player);
+    if (e.type === 'fix') return d.what === 'batter' ? 'Batter: ' + who(v, e.side, e.player) : 'Situation fixed by hand';
+    return e.type;
+  };
+  const record = act => {
+    const v = view(); if (!v) return;
+    if (v.meta.status === 'final') { toast('This game is final. Tap "Final" again to reopen it first.'); return; }
+    let ev;
+    try { ev = BB.apply(v.meta, BB.current(v.events), act, rid); } catch (e) { toast(e.message); return; }
+    enqueue('events', { events: [ev] });
+    if (navigator.vibrate) navigator.vibrate(15);
+    keepAwake();
+    const after = BB.current([ev]), before = BB.current(v.events);
+    toast(describe(v, ev) + (after.inn !== before.inn || after.top !== before.top ? ' · End of the half' : ''), ev.id);
+  };
+  const undo = id => {
+    for (let i = pending.length - 1; i >= 0; i--) {
+      const p = pending[i];
+      if (p.kind !== 'events' || (i === 0 && sending)) continue;
+      const j = p.body.events.findIndex(e => e.id === id);
+      if (j < 0) continue;
+      p.body.events.splice(j, 1);
+      if (!p.body.events.length) pending.splice(i, 1);
+      savePending(); render(); return;
+    }
+    enqueue('undo', { ids: [id] });
+  };
+  let toastTimer = 0, toastId = null;
+  const toast = (text, id) => {
+    $('toastText').textContent = text; toastId = id || null; $('toastUndo').hidden = !id; $('toast').hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, id ? 4000 : 6000);
+  };
+  $('toastUndo').onclick = () => {
+    const v = view(); const last = v && v.events[v.events.length - 1];
+    if (toastId && last && last.id === toastId) undo(toastId); else toast('Only the last play can be undone.');
+    $('toast').hidden = true;
+  };
+
+  // ---- Pads ----
+  const PITCH_PAD = [['B', 'Ball', 'ball'], ['C', 'Called strike', 'strike'], ['S', 'Swinging strike', 'strike'], ['F', 'Foul', ''], ['HBP', 'Hit by pitch', 'ball']];
+  // Hits, walks and strikeouts move runners the only way they can: those record at once. The rest ask where the runners went.
+  const PLAY_PAD = [['1B', 'hit'], ['2B', 'hit'], ['3B', 'hit'], ['HR', 'hit'], ['GO', 'out'], ['FO', 'out'], ['LO', 'out'], ['PO', 'out'],
+                    ['E', ''], ['FC', ''], ['SAC', 'out'], ['SF', 'out'], ['DP', 'out'], ['IBB', 'ball']];
+  const QUICK = ['HR', 'IBB'];
+  const RUN_PAD = ['SB', 'CS', 'WP', 'PB', 'BK', 'PK', 'E', 'ADV'];
+  $('padPitch').replaceChildren(...PITCH_PAD.map(([p, l, c]) => {
+    const b = el('button', 'act ' + c, l);
+    b.onclick = () => p === 'HBP' ? record({ k: 'pa', code: 'HBP' }) : record({ k: 'pitch', p });
+    return b;
+  }));
+  $('padPlay').replaceChildren(...PLAY_PAD.map(([code, c]) => {
+    const b = el('button', 'act ' + c, BB.RESULTS[code].l);
+    b.onclick = () => {
+      const v = view(); if (!v) return;
+      const sit = BB.current(v.events);
+      // With nobody on, an out or a hit only moves the batter: no need to ask (except an error, a choice or a double play)
+      if (QUICK.includes(code) || (!sit.bases.some(Boolean) && !['E', 'FC', 'DP'].includes(code))) { record({ k: 'pa', code }); return; }
+      const moves = BB.defaultMoves(sit, code);
+      adj = { k: 'pa', code, moves, rbi: BB.defaultRbi(code, moves), err: BB.RESULTS[code].err ? 1 : 0, rbiSet: false };
+      render(); $('adj').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    };
+    return b;
+  }));
+  $('padRun').replaceChildren(...RUN_PAD.map(code => {
+    const b = el('button', 'act', BB.RUNS[code]);
+    b.onclick = () => {
+      const v = view(); if (!v) return;
+      const sit = BB.current(v.events);
+      adj = { k: 'br', code, moves: BB.runMoves(sit, code), err: code === 'E' ? 1 : 0 };
+      render(); $('adj').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    };
+    return b;
+  }));
+
+  const renderAdj = (v, sit) => {
+    const box = $('adj');
+    if (!adj) { box.hidden = true; return; }
+    box.hidden = false;
+    const bat = BB.batting(sit), batter = BB.batterOf(v.meta, sit);
+    const title = adj.k === 'pa' ? BB.RESULTS[adj.code].l : BB.RUNS[adj.code];
+    const rows = [];
+    const seg = (cur, from, set) => {
+      const s = el('div', 'seg');
+      [[0, 'Out'], [1, '1st'], [2, '2nd'], [3, '3rd'], [4, 'Scored']].forEach(([d, l]) => {
+        if (d && d < from) return; // runners don't go backward
+        const b = el('button', (cur === d ? 'pick' + (d === 0 ? ' outb' : '') : ''), l);
+        b.onclick = () => { set(d); if (adj.k === 'pa' && !adj.rbiSet) adj.rbi = BB.defaultRbi(adj.code, adj.moves); render(); };
+        s.append(b);
+      });
+      return s;
+    };
+    for (let i = 2; i >= 0; i--) {
+      const r = sit.bases[i]; if (!r) continue;
+      const row = el('div', 'mv');
+      row.append(el('div', null, 'On ' + ['1st', '2nd', '3rd'][i] + ': ' + who(v, bat, r.id)), seg(adj.moves.r[i], i + 1, d => { adj.moves.r[i] = d; }));
+      rows.push(row);
+    }
+    if (adj.k === 'pa') {
+      const row = el('div', 'mv');
+      row.append(el('div', null, 'Batter: ' + who(v, bat, batter)), seg(adj.moves.b, 1, d => { adj.moves.b = d; }));
+      rows.push(row);
+    }
+    const foot = el('div', 'foot');
+    const stepper = (label, get, set) => {
+      const w = el('span', 'step'), m = el('button', null, '−'), p = el('button', null, '+'), n = el('b', null, String(get()));
+      m.onclick = () => { set(Math.max(0, get() - 1)); render(); }; p.onclick = () => { set(Math.min(4, get() + 1)); render(); };
+      w.append(label + ' ', m, n, p); return w;
+    };
+    if (adj.k === 'pa') foot.append(stepper('RBI', () => adj.rbi, n => { adj.rbi = n; adj.rbiSet = true; }));
+    foot.append(stepper('Errors', () => adj.err, n => { adj.err = n; }));
+    const ok = el('button', 'primary', 'Record ' + title), no = el('button', null, 'Cancel');
+    ok.onclick = () => { const a = adj; adj = null; record(a.k === 'pa' ? { k: 'pa', code: a.code, moves: a.moves, rbi: a.rbi, err: a.err } : { k: 'br', code: a.code, moves: a.moves, err: a.err }); render(); };
+    no.onclick = () => { adj = null; render(); };
+    foot.append(ok, no);
+    const outs = (adj.moves.r || []).filter((d, i) => sit.bases[i] && d === 0).length + (adj.k === 'pa' && adj.moves.b === 0 ? 1 : 0);
+    box.replaceChildren(el('h3', null, title + ': where did everyone end up?'),
+      ...rows, foot, el('p', 'hint', outs + (outs === 1 ? ' out' : ' outs') + ' on the play' + (sit.o + outs >= 3 ? ' (ends the half inning)' : '') + '. A run scored by a runner who reached on an error counts as unearned.'));
+  };
+
+  // ---- Changes ----
+  const pickFrom = (v, side, text, current) => {
+    const list = (v.meta.rosters[side] || []).slice().sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
+    if (!list.length) { toast('No roster for ' + v.meta.names[side] + ' yet. Add one in Setup.'); return null; }
+    const ans = prompt(text + '\n\nType the number (or the name):\n' + list.map(p => (p.num ? '#' + p.num + ' ' : '') + p.name + (p.id === current ? '  ← now' : '')).join('\n'));
+    if (!ans) return null;
+    const a = ans.trim().replace(/^#/, '').toLowerCase();
+    const p = list.find(x => x.num && x.num === a) || list.find(x => x.name.toLowerCase() === a) || list.find(x => x.name.toLowerCase().includes(a));
+    if (!p) { toast('No player matches "' + ans + '".'); return null; }
+    return p;
+  };
+  $('btnPitcher').onclick = () => {
+    const v = view(); if (!v) return;
+    const sit = BB.current(v.events), side = BB.fielding(sit);
+    const p = pickFrom(v, side, 'New pitcher for ' + v.meta.names[side], BB.pitcherOf(v.meta, sit));
+    if (p) record({ k: 'pc', side, id: p.id });
+  };
+  $('btnBatter').onclick = () => {
+    const v = view(); if (!v) return;
+    const sit = BB.current(v.events), side = BB.batting(sit);
+    const p = pickFrom(v, side, 'Who is batting for ' + v.meta.names[side] + '? (For a pinch hitter who stays in, change the lineup instead.)', BB.batterOf(v.meta, sit));
+    if (p) record({ k: 'bat', id: p.id });
+  };
+  $('btnFix').onclick = () => {
+    const v = view(); if (!v) return;
+    const sit = BB.current(v.events);
+    const ans = prompt('Fix the situation. Type: inning, T or B, outs, balls, strikes, visitors\' runs, home runs, runners (e.g. 13 for 1st and 3rd, 0 for none).\n\nNow: '
+      + [sit.inn, sit.top ? 'T' : 'B', sit.o, sit.b, sit.s, sit.score.away, sit.score.home, sit.bases.map((r, i) => r ? i + 1 : '').join('') || '0'].join(' '));
+    if (!ans) return;
+    const f = ans.trim().split(/[\s,]+/);
+    if (f.length < 7) { toast('Type all seven numbers (runners can be left off).'); return; }
+    const n = i => Math.max(0, parseInt(f[i], 10) || 0);
+    const next = { ...sit, inn: Math.max(1, n(0)), top: !/^b/i.test(f[1]), o: Math.min(2, n(2)), b: Math.min(3, n(3)), s: Math.min(2, n(4)), score: { away: n(5), home: n(6) } };
+    const on = String(f[7] || '');
+    const bat = next.top ? 'away' : 'home', pit = BB.pitcherOf(v.meta, next);
+    next.bases = [0, 1, 2].map(i => on.includes(String(i + 1)) ? (sit.bases[i] || { id: 'team', pit, ue: false }) : null);
+    if (bat !== BB.batting(sit)) next.bases = next.bases.map(r => r && { id: 'team', pit, ue: false });
+    record({ k: 'fix', sit: next });
+  };
+  $('btnFinal').onclick = async () => {
+    const v = view(); if (!v) return;
+    const fin = v.meta.status === 'final';
+    if (!confirm(fin ? 'Reopen this game? (It stays in the season stats until it\'s marked final again, which replaces it.)' : 'Mark the game final? Its stats go into both teams\' season stats, and the scorebug shows FINAL.')) return;
+    enqueue('meta', { meta: { status: fin ? '' : 'final' } });
+    if (!fin) addGameToSeason(view());
+  };
+  $('btnUndo').onclick = () => {
+    const v = view(); if (!v || !v.events.length) return;
+    const e = v.events[v.events.length - 1]; undo(e.id); toast('Undid: ' + describe(v, e));
+  };
+
+  // ---- Drawing ----
+  const render = () => {
+    const v = view();
+    const c = $('conn'), waiting = pending.reduce((a, p) => a + (p.kind === 'events' ? p.body.events.length : 1), 0);
+    if (sendErr === 'key' || sendErr === 'badkey') { c.className = 'conn bad'; c.textContent = sendErr === 'key' ? 'Add the key in Setup' : 'Wrong key'; }
+    else if (!wsOpen || sendErr === 'offline') { c.className = 'conn bad'; c.textContent = 'Offline' + (waiting ? ' · ' + waiting + ' waiting' : ''); }
+    else if (waiting) { c.className = 'conn wait'; c.textContent = 'Sending ' + waiting + '…'; }
+    else { c.className = 'conn ok'; c.textContent = 'Live'; }
+    const warn = $('playsWarn');
+    warn.hidden = !(sendErr || !v);
+    warn.textContent = !v ? 'Connecting to the stats server…'
+      : sendErr === 'key' ? 'Plays are saved on this device but can\'t send until you add the stat keeper key in Setup.'
+      : sendErr === 'badkey' ? 'That stat keeper key is wrong. Plays are saved on this device; fix the key in Setup to send them.'
+      : sendErr === 'offline' ? 'No connection. Keep going: plays are saved on this device and send when it reconnects.' : '';
+    if (!v) return;
+    const sit = BB.current(v.events), names = v.meta.names, fin = v.meta.status === 'final';
+    $('score').textContent = names.away + ' ' + sit.score.away + ' – ' + sit.score.home + ' ' + names.home + (fin ? ' · FINAL' : '');
+    if (tab === 'plays') renderPlays(v, sit, fin);
+    if (tab === 'lineups') renderLineups(v);
+    if (tab === 'box') renderBox(v);
+    if (tab === 'season') renderSeason(v);
+    if (tab === 'setup') renderSetup(v);
+  };
+
+  const renderPlays = (v, sit, fin) => {
+    const stats = BB.compute(v.meta, v.events);
+    $('sInn').replaceChildren((sit.top ? '▲' : '▼') + sit.inn, el('small', null, halfName(sit)));
+    $('sCnt').replaceChildren(sit.b + '-' + sit.s, el('small', null, 'Count'));
+    [...$('sOuts').children].forEach((i, n) => i.classList.toggle('on', sit.o > n));
+    $('sOuts').setAttribute('aria-label', sit.o + ' outs');
+    ['b1', 'b2', 'b3'].forEach((id, i) => $(id).classList.toggle('on', !!sit.bases[i]));
+    const bat = BB.batting(sit), fld = BB.fielding(sit), batter = BB.batterOf(v.meta, sit), pit = BB.pitcherOf(v.meta, sit);
+    const line = BB.todayLine(stats.bat[bat][batter]);
+    const pr = (k, val, sub) => { const r = el('div', 'row'); r.append(el('span', null, k), el('b', null, val)); if (sub) r.append(el('span', null, sub)); return r; };
+    $('sWho').replaceChildren(
+      pr('AB', batter ? who(v, bat, batter) : 'No batting order: set the lineup, or Different batter', line ? '(' + line + ')' : ''),
+      pr('P', pit ? who(v, fld, pit) : 'No pitcher: put one at P in the lineup', pit ? 'P: ' + (sit.np[pit] || 0) : ''),
+      pr('Due', [1, 2].map(n => BB.onDeck(v.meta, sit, n)).filter(Boolean).map(id => lastName((player(v, bat, id) || {}).name)).join(', ') || '–'));
+    $('sRun').textContent = sit.bases.some(Boolean) ? 'Runners: ' + sit.bases.map((r, i) => r ? ['1st', '2nd', '3rd'][i] + ' ' + who(v, bat, r.id) : '').filter(Boolean).join(' · ') : 'Bases empty';
+    $('grpRun').hidden = !sit.bases.some(Boolean);
+    renderAdj(v, sit);
+    $('pads').style.opacity = adj ? .45 : 1;
+    $('pads').inert = !!adj;
+    $('btnFinal').textContent = fin ? 'Final (tap to reopen)' : 'Mark final';
+    $('btnFinal').classList.toggle('final-on', fin);
+    $('btnUndo').disabled = !v.events.length;
+    $('log').replaceChildren(...v.events.slice(-15).reverse().map(e => {
+      const li = el('li');
+      li.append(el('span', 'per', e.period), el('span', 'what', describe(v, e)));
+      if (e.unsent) li.append(el('span', 'unsent', 'not sent'));
+      return li;
+    }));
+    if (!v.events.length) $('log').append(el('li', null, 'No plays yet. Set the lineups, then record the first pitch.'));
+  };
+
+  // ---- Lineups ----
+  let orderDraft = null; // edits not saved yet
+  const renderLineups = v => {
+    if (!orderDraft) orderDraft = { home: (v.meta.order.home || []).map(o => ({ ...o })), away: (v.meta.order.away || []).map(o => ({ ...o })) };
+    $('lineups').replaceChildren(...SHOW.map(side => {
+      const card = el('div', 'card'), roster = (v.meta.rosters[side] || []).slice().sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
+      const h = el('h3', 'tc', v.meta.names[side] + (side === 'away' ? ' (bats first)' : '')); h.style.setProperty('--tc', colorOf(v, side));
+      const add = el('button', null, 'Add a spot'); add.onclick = () => { if (orderDraft[side].length < 12) orderDraft[side].push({ id: '', pos: '' }); renderLineups(v); };
+      h.append(add); card.append(h);
+      const ord = orderDraft[side];
+      while (ord.length < 9) ord.push({ id: '', pos: '' });
+      ord.forEach((o, i) => {
+        const row = el('div', 'ord'), ps = el('select'), pp = el('select');
+        ps.append(new Option('–', ''), ...roster.map(p => new Option((p.num ? '#' + p.num + ' ' : '') + p.name, p.id)));
+        ps.value = o.id; ps.onchange = () => { o.id = ps.value; $('orderNote').textContent = 'Not saved yet.'; };
+        pp.append(new Option('Pos', ''), ...BB.POSITIONS.map(x => new Option(x, x)));
+        pp.value = o.pos; pp.onchange = () => { o.pos = pp.value; $('orderNote').textContent = 'Not saved yet.'; };
+        row.append(el('b', null, String(i + 1)), ps, pp); card.append(row);
+      });
+      if (!roster.length) card.append(el('p', 'hint warn', 'No roster yet: add it in Setup first.'));
+      return card;
+    }));
+  };
+  $('btnOrder').onclick = () => {
+    if (!orderDraft) return;
+    const order = { home: orderDraft.home.filter(o => o.id), away: orderDraft.away.filter(o => o.id) };
+    enqueue('meta', { meta: { order } });
+    orderDraft = null; $('orderNote').textContent = 'Saved. ' + order.away.length + ' and ' + order.home.length + ' in the batting orders.';
+  };
+
+  // ---- Box score ----
+  const BAT_COLS = [['AB', b => b.AB], ['R', b => b.R], ['H', b => b.H], ['RBI', b => b.RBI], ['BB', b => b.BB], ['SO', b => b.SO], ['2B', b => b['2B']], ['3B', b => b['3B']], ['HR', b => b.HR], ['SB', b => b.SB]];
+  const PIT_COLS = [['IP', p => BB.ip(p.outs)], ['H', p => p.H], ['R', p => p.R], ['ER', p => p.ER], ['BB', p => p.BB], ['SO', p => p.SO], ['HR', p => p.HR], ['NP', p => p.NP]];
+  const table = (heads, rows, totRow) => {
+    const t = el('table', 'box'), h = el('tr');
+    heads.forEach(x => h.append(el('th', null, x))); t.append(h);
+    for (const r of rows) { const tr = el('tr'); r.forEach(x => tr.append(el('td', null, String(x)))); t.append(tr); }
+    if (totRow) { const tr = el('tr', 'tot'); totRow.forEach(x => tr.append(el('td', null, String(x)))); t.append(tr); }
+    const w = el('div', 'scroll'); w.append(t); return w;
+  };
+  const renderBox = v => {
+    const st = BB.compute(v.meta, v.events), n = Math.max(v.meta.innings || 7, st.line.away.length, st.line.home.length);
+    const inn = Array.from({ length: n }, (_, i) => i + 1);
+    $('lineBox').replaceChildren(table(['', 'Team', ...inn, 'R', 'H', 'E', 'LOB'], SHOW.map(side => ['', v.meta.names[side], ...inn.map(i => st.line[side][i - 1] != null ? st.line[side][i - 1] : ''), st.team[side].R, st.team[side].H, st.team[side].E, st.team[side].LOB])));
+    $('boxes').replaceChildren(...SHOW.map(side => {
+      const card = el('div', 'card'), h = el('h3', 'tc', v.meta.names[side]); h.style.setProperty('--tc', colorOf(v, side)); card.append(h);
+      const ord = (v.meta.order[side] || []).map(o => o.id), roster = v.meta.rosters[side] || [];
+      const ids = [...new Set([...ord, ...Object.keys(st.bat[side])])].filter(id => id !== 'team');
+      const tot = BB.zero(BB.BAT_KEYS);
+      const rows = ids.map(id => { const b = st.bat[side][id] || BB.zero(BB.BAT_KEYS), p = roster.find(x => x.id === id) || {}; BB.BAT_KEYS.forEach(k => tot[k] += b[k]); const o = (v.meta.order[side] || []).find(x => x.id === id); return [p.num || '', (p.name || 'Removed player') + (o && o.pos ? ' ' + o.pos : ''), ...BAT_COLS.map(c => c[1](b))]; });
+      card.append(table(['#', 'Batting', ...BAT_COLS.map(c => c[0])], rows, ['', 'Total', ...BAT_COLS.map(c => c[1](tot))]));
+      const pids = Object.keys(st.pit[side]);
+      if (pids.length) card.append(el('div', null, ''), table(['#', 'Pitching', ...PIT_COLS.map(c => c[0])], pids.map(id => { const p = st.pit[side][id], r = roster.find(x => x.id === id) || {}; return [r.num || '', r.name || 'Removed player', ...PIT_COLS.map(c => c[1](p))]; })));
+      return card;
+    }));
+  };
+
+  // ---- Season stats ----
+  let seasons = null, seaPick = '', seaDraft = null, seaNote = '';
+  const seaFetch = async body => {
+    const r = await fetch(API + '/season?game=' + GAME, body ? { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify(body) } : { cache: 'no-store' });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(r.status === 401 ? 'wrong key' : d.error || 'error ' + r.status);
+    seasons = d.teams || []; return d;
+  };
+  const loadSeasons = async () => { try { await seaFetch(); } catch (e) { seaNote = "Couldn't load season stats (" + e.message + ')'; } if (tab === 'season') render(); };
+  const recOf = name => (seasons || []).find(t => t.name.toLowerCase() === String(name || '').toLowerCase());
+  const seasonName = (v, side) => ((v.meta.saved || {})[side]) || v.meta.names[side];
+  const addGameToSeason = async v => {
+    if (!v || !key) return;
+    const st = BB.compute(v.meta, v.events);
+    for (const side of SIDES) {
+      const players = BB.gamePlayers(v.meta, st, side); if (!players.length) continue;
+      try { await seaFetch({ action: 'game', name: seasonName(v, side), id: v.meta.gameId, at: Math.max(...v.events.map(e => e.at || 0), v.meta.startedAt || 0), opp: v.meta.names[BB.other(side)], players }); }
+      catch (e) { toast("Couldn't add the game to " + seasonName(v, side) + "'s season stats: " + e.message); return; }
+    }
+    toast('Added to both teams\' season stats.');
+  };
+  const BAT_EDIT = ['G', 'PA', 'AB', 'H', '2B', '3B', 'HR', 'RBI', 'R', 'BB', 'SO', 'HBP', 'SAC', 'SF', 'SB', 'CS'];
+  const PIT_EDIT = [['G', 'G'], ['GS', 'GS'], ['IP', 'outs'], ['BF', 'BF'], ['NP', 'NP'], ['H', 'H'], ['R', 'R'], ['ER', 'ER'], ['BB', 'BB'], ['SO', 'SO'], ['HBP', 'HBP'], ['HR', 'HR'], ['W', 'W'], ['L', 'L'], ['SV', 'SV']];
+  const renderSeason = v => {
+    const names = [...new Set([...SHOW.map(side => seasonName(v, side)), ...(seasons || []).map(t => t.name)])];
+    const sel = $('seaTeam');
+    if (!seaPick || !names.includes(seaPick)) seaPick = seasonName(v, 'home');
+    const sig = names.join('|');
+    if (sel.dataset.sig !== sig) { sel.replaceChildren(...names.map(n => new Option(n + (recOf(n) ? '' : ' (no season stats yet)'), n))); sel.dataset.sig = sig; }
+    sel.value = seaPick;
+    $('seaCard').hidden = false;
+    const rec = recOf(seaPick);
+    $('seaHead').textContent = seaPick + (rec && rec.source ? ' · ' + rec.source : '');
+    if (!seaDraft || seaDraft.name !== seaPick) {
+      seaDraft = { name: seaPick, asOf: rec ? rec.asOf : 0, players: JSON.parse(JSON.stringify((rec && rec.base && rec.base.players) || [])) };
+    }
+    $('seaAsOf').value = seaDraft.asOf ? new Date(seaDraft.asOf - new Date(seaDraft.asOf).getTimezoneOffset() * 60000).toISOString().slice(0, 10) : '';
+    // Typed-in totals: one row per player, batting then pitching
+    const inp = (val, cls, set) => { const i = el('input', cls); i.value = val; i.inputMode = cls ? 'text' : 'decimal'; i.onchange = () => { set(i.value); $('seaNote').textContent = 'Not saved yet.'; }; return i; };
+    const bt = el('table', 'box'), bh = el('tr');
+    ['#', 'Player', ...BAT_EDIT].forEach(x => bh.append(el('th', null, x))); bt.append(bh);
+    const pt = el('table', 'box'), ph = el('tr');
+    ['#', 'Player', ...PIT_EDIT.map(x => x[0])].forEach(x => ph.append(el('th', null, x))); pt.append(ph);
+    seaDraft.players.forEach(p => {
+      p.bat = p.bat || BB.zero(BB.BAT_KEYS); p.pit = p.pit || BB.zero(BB.PIT_KEYS);
+      const tr = el('tr'), td = n => { const t = el('td'); t.append(n); return t; };
+      tr.append(td(inp(p.num, 'no', x => p.num = x.trim())), td(inp(p.name, 'nm', x => p.name = x.trim())),
+        ...BAT_EDIT.map(k => td(inp(p.bat[k] || 0, '', x => { p.bat[k] = Number(x) || 0; if (k === 'H' || k === '2B' || k === '3B' || k === 'HR') p.bat['1B'] = Math.max(0, p.bat.H - p.bat['2B'] - p.bat['3B'] - p.bat.HR); }))));
+      bt.append(tr);
+      const tp = el('tr');
+      tp.append(el('td', null, p.num), el('td', null, p.name), ...PIT_EDIT.map(([l, k]) => td(inp(k === 'outs' ? BB.ip(p.pit.outs) : p.pit[k] || 0, '', x => {
+        if (k === 'outs') p.pit.outs = BB.ipToOuts(x); else p.pit[k] = Number(x) || 0;
+        p.pit.ABA = Math.max(0, p.pit.BF - p.pit.BB - p.pit.HBP);
+      }))));
+      pt.append(tp);
+    });
+    $('seaBat').replaceChildren(bt); $('seaPit').replaceChildren(pt);
+    $('seaDelete').hidden = !rec;
+    $('seaNote').textContent = seaNote;
+    // Games recorded here
+    const games = (rec && rec.games) || [];
+    $('seaGames').replaceChildren(...(games.length ? games.slice().reverse().map(g => {
+      const li = el('li'), what = el('span', 'what'), counts = !rec.asOf || g.at > rec.asOf;
+      what.append('vs ' + (g.opp || '?'), el('small', null, new Date(g.at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + (counts ? 'adds to the totals' : 'on or before the totals date: already in them')));
+      const del = el('button', 'danger', 'Take out');
+      del.onclick = async () => { if (!confirm('Take this game out of ' + rec.name + '\'s season stats?')) return; try { await seaFetch({ action: 'dropgame', name: rec.name, id: g.id }); render(); } catch (e) { toast("Couldn't: " + e.message); } };
+      li.append(what, del); return li;
+    }) : [el('li', 'hint', 'None yet. A game is added when it\'s marked final.')]));
+    // The season with today's game
+    const side = SIDES.find(s => seasonName(v, s) === seaPick);
+    const st = BB.compute(v.meta, v.events);
+    const tot = BB.seasonTotals(rec, side && v.meta.status !== 'final' ? { id: v.meta.gameId, players: BB.gamePlayers(v.meta, st, side) } : null);
+    const list = [...tot.values()].sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
+    $('seaNow').replaceChildren(table(['#', 'Player', 'AVG', 'OBP', 'SLG', 'H', 'HR', 'RBI', 'R', 'SB', 'IP', 'ERA', 'K', 'BB', 'BAA'],
+      list.map(p => [p.num, p.name, BB.avg(p.bat), BB.obp(p.bat), BB.slg(p.bat), p.bat.H, p.bat.HR, p.bat.RBI, p.bat.R, p.bat.SB,
+        p.pitched ? BB.ip(p.pit.outs) : '', p.pitched ? BB.era(p.pit, v.meta.innings || 7) : '', p.pitched ? p.pit.SO : '', p.pitched ? p.pit.BB : '', p.pitched ? BB.baa(p.pit) : ''])));
+  };
+  $('seaTeam').onchange = e => { seaPick = e.target.value; seaDraft = null; seaNote = ''; render(); };
+  $('seaNew').onclick = () => { const n = (prompt('Team name for season stats (as the stat keeper shows it, or its Save as name):') || '').trim(); if (n) { seaPick = n; seaDraft = null; const s = $('seaTeam'); s.dataset.sig = ''; if (!seasons) seasons = []; if (!recOf(n)) seasons.push({ name: n, base: { players: [] }, games: [] }); render(); } };
+  $('seaAddRow').onclick = () => { if (seaDraft) { seaDraft.players.push({ num: '', name: '', bat: BB.zero(BB.BAT_KEYS), pit: BB.zero(BB.PIT_KEYS) }); render(); } };
+  $('seaFromRoster').onclick = () => {
+    const v = view(); if (!v || !seaDraft) return;
+    const side = SIDES.find(s => seasonName(v, s) === seaPick); if (!side) { toast('That team isn\'t in today\'s game.'); return; }
+    for (const p of v.meta.rosters[side] || []) if (!seaDraft.players.some(x => BB.nameKey(x.name) === BB.nameKey(p.name))) seaDraft.players.push({ num: p.num, name: p.name, bat: BB.zero(BB.BAT_KEYS), pit: BB.zero(BB.PIT_KEYS) });
+    render();
+  };
+  $('seaAsOf').onchange = e => { if (seaDraft) seaDraft.asOf = e.target.value ? new Date(e.target.value + 'T23:59:59').getTime() : 0; };
+  $('seaFile').onchange = async e => {
+    const f = e.target.files[0]; if (!f || !seaDraft) return;
+    try {
+      const players = BB.parseGameChanger(await f.text());
+      seaDraft.players = players; seaDraft.asOf = f.lastModified || Date.now(); seaDraft.source = 'GameChanger';
+      seaNote = 'Read ' + players.length + ' players from ' + f.name + '. Check the date, then Save totals.';
+    } catch (err) { seaNote = 'Couldn\'t read that file: ' + err.message; }
+    e.target.value = ''; render();
+  };
+  $('seaSave').onclick = async () => {
+    if (!seaDraft) return;
+    if (!key) { toast('Add the stat keeper key in Setup first.'); return; }
+    const players = seaDraft.players.filter(p => p.name.trim());
+    try { await seaFetch({ action: 'base', name: seaDraft.name, asOf: seaDraft.asOf || 0, source: seaDraft.source || 'Typed in', players }); seaNote = 'Saved ' + players.length + ' players.'; seaDraft = null; }
+    catch (e) { seaNote = 'Couldn\'t save: ' + e.message; }
+    render();
+  };
+  $('seaDelete').onclick = async () => {
+    if (!confirm('Delete every season stat for ' + seaPick + ' (the totals and the games added)? This can\'t be undone.')) return;
+    try { await seaFetch({ action: 'delete', name: seaPick }); seaDraft = null; render(); } catch (e) { toast("Couldn't: " + e.message); }
+  };
+
+  // ---- Setup: key, sport, teams and rosters ----
+  let library = null, libNote = '';
+  const rosterBase = { home: null, away: null };
+  const libFetch = async (method, body) => {
+    const r = await fetch(API + '/library?game=' + GAME, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: body ? JSON.stringify(body) : undefined });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(r.status === 401 ? 'wrong key' : d.error || 'error ' + r.status);
+    library = d.teams; libNote = '';
+  };
+  const loadLibrary = async () => {
+    if (!key) { library = null; libNote = 'Saved teams show once the key is saved.'; renderLibrary(); return; }
+    try { await libFetch('GET'); } catch (e) { libNote = "Couldn't load saved teams (" + e.message + ')'; }
+    renderLibrary();
+  };
+  const rosterText = list => (list || []).map(p => (p.num ? p.num + ' ' : '') + p.name).join('\n');
+  const renderLibrary = () => {
+    for (const side of SIDES) {
+      const sel = $('lib' + Cap(side)), keep = sel.value;
+      const opts = [new Option(library ? (library.length ? 'Load a saved team…' : 'No saved teams yet') : libNote || 'Loading saved teams…', '')];
+      for (const t of library || []) opts.push(new Option(t.name + ' (' + t.roster.length + (t.roster.length === 1 ? ' player' : ' players') + (t.team ? ', shows as ' + t.team : '') + ')', t.name));
+      sel.replaceChildren(...opts);
+      sel.value = (library || []).some(t => t.name === keep) ? keep : '';
+      sel.disabled = !library || !library.length;
+      $('forget' + Cap(side)).disabled = !sel.value;
+    }
+  };
+  const FIELDS = ['nameHome', 'nameAway', 'saveHome', 'saveAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway'];
+  for (const side of SIDES) {
+    $('lib' + Cap(side)).addEventListener('change', e => {
+      const t = (library || []).find(x => x.name === e.target.value);
+      $('forget' + Cap(side)).disabled = !t;
+      if (!t) return;
+      $('name' + Cap(side)).value = t.team || t.name; $('save' + Cap(side)).value = t.team ? t.name : '';
+      $('roster' + Cap(side)).value = rosterText(t.roster);
+      if (t.color) $('color' + Cap(side)).value = t.color.toLowerCase();
+      for (const f of ['name', 'save', 'roster', 'color']) $(f + Cap(side)).dataset.dirty = '1';
+      rosterBase[side] = t.roster;
+      $('rosterNote').textContent = 'Loaded ' + t.name + '. Tap Save teams and rosters to use it.'; $('rosterNote').className = 'hint warn';
+    });
+    $('forget' + Cap(side)).onclick = async () => {
+      const name = $('lib' + Cap(side)).value;
+      if (!name || !confirm('Forget the saved roster for ' + name + '? The current game keeps its roster.')) return;
+      try { await libFetch('POST', { action: 'delete', name }); toast('Forgot ' + name + '.'); } catch (e) { toast("Couldn't forget " + name + ': ' + e.message); }
+      renderLibrary();
+    };
+  }
+  const setField = (id, value) => { const f = $(id); if (document.activeElement !== f && f.dataset.dirty !== '1') f.value = value; };
+  const renderSetup = v => {
+    setField('key', key);
+    $('keyNote').textContent = key ? (sendErr === 'badkey' ? 'That key was turned down. Check it with Mr. Lee.' : 'Key saved on this device.') : 'Needed once on each device to send plays.';
+    $('keyNote').className = 'hint' + (sendErr === 'badkey' || !key ? ' warn' : '');
+    for (const b of $('sportSeg').children) b.classList.toggle('on', b.dataset.g === GAME);
+    setField('innings', String(v.meta.innings || 7));
+    setField('nameHome', v.meta.names.home); setField('nameAway', v.meta.names.away);
+    setField('saveHome', (v.meta.saved || {}).home || ''); setField('saveAway', (v.meta.saved || {}).away || '');
+    setField('colorHome', colorOf(v, 'home').toLowerCase()); setField('colorAway', colorOf(v, 'away').toLowerCase());
+    setField('rosterHome', rosterText(v.meta.rosters.home)); setField('rosterAway', rosterText(v.meta.rosters.away));
+  };
+  for (const id of FIELDS) $(id).addEventListener('input', () => { $(id).dataset.dirty = '1'; $('rosterNote').textContent = 'Not saved yet.'; $('rosterNote').className = 'hint warn'; });
+  $('btnKey').onclick = () => { key = $('key').value.trim(); store.set(LS.key, key); sendErr = ''; render(); flush(); loadLibrary(); };
+  for (const b of $('sportSeg').children) b.onclick = () => {
+    if (b.dataset.g === GAME) return;
+    store.set('eota-baseball-sport', b.dataset.g);
+    const u = new URL(location.href); u.searchParams.delete('game'); location.href = u.href;
+  };
+  $('innings').addEventListener('change', e => enqueue('meta', { meta: { innings: Math.max(1, Math.min(12, parseInt(e.target.value, 10) || 7)) } }));
+  const parseRoster = (text, old) => text.split('\n').map(line => {
+    const m = line.trim().match(/^#?(\d{1,3})?\s*[-–.,:]?\s*(.*)$/);
+    return m ? { num: m[1] || '', name: m[2].trim() } : null;
+  }).filter(p => p && (p.num || p.name)).map(p => {
+    const same = old.find(o => p.num && o.num === p.num) || old.find(o => !p.num && o.name === p.name);
+    return { id: same ? same.id : rid(), ...p };
+  });
+  $('btnRoster').onclick = () => {
+    const v = view(); if (!v) return;
+    const base = side => [...(rosterBase[side] || []), ...(v.meta.rosters[side] || [])];
+    const rosters = { home: parseRoster($('rosterHome').value, base('home')), away: parseRoster($('rosterAway').value, base('away')) };
+    const names = { home: $('nameHome').value.trim() || 'FBCA', away: $('nameAway').value.trim() || 'Visitors' };
+    const colors = { home: $('colorHome').value.toUpperCase(), away: $('colorAway').value.toUpperCase() };
+    const saved = Object.fromEntries(SIDES.map(side => { const t = $('save' + Cap(side)).value.trim(); return [side, t && t !== names[side] ? t : '']; }));
+    for (const id of FIELDS) $(id).dataset.dirty = '';
+    // Players taken off a roster come out of the batting order too
+    const order = Object.fromEntries(SIDES.map(side => [side, (v.meta.order[side] || []).filter(o => rosters[side].some(p => p.id === o.id))]));
+    enqueue('meta', { meta: { names, saved, colors, rosters, order } });
+    orderDraft = null;
+    $('rosterNote').textContent = 'Saved. ' + rosters.away.length + ' and ' + rosters.home.length + ' players. Next: the Lineups tab.'; $('rosterNote').className = 'hint';
+    rosterBase.home = rosterBase.away = null;
+    const teams = SIDES.filter(side => rosters[side].length || $('name' + Cap(side)).value.trim())
+      .map(side => ({ name: saved[side] || names[side], team: names[side], color: colors[side], roster: rosters[side] }));
+    if (teams.length && key) libFetch('POST', { action: 'save', teams }).then(renderLibrary).catch(() => { $('rosterNote').textContent += " (Couldn't add them to Saved teams right now.)"; });
+  };
+  $('btnReset').onclick = async () => {
+    if (!confirm('Start a new game? Every play is cleared for the scorebug too.' + ($('saveGame').checked ? ' This game is saved to Past games first.' : ' This game is NOT saved.'))) return;
+    if (!key) { tab = 'setup'; showTab(); toast('Add the stat keeper key first.'); return; }
+    try {
+      const r = await fetch(API + '/reset?game=' + GAME, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ keepRosters: $('keepRosters').checked, archive: $('saveGame').checked }) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || 'Error ' + r.status);
+      const keepOrder = $('keepRosters').checked && server ? server.meta.order : null;
+      pending = []; savePending();
+      server = { rev: data.rev, meta: data.meta, events: data.events }; store.set(LS.cache, server);
+      if (keepOrder) enqueue('meta', { meta: { order: keepOrder } });
+      for (const id of FIELDS) $(id).dataset.dirty = '';
+      adj = null; orderDraft = null; toast('New game started.'); loadPast(); render();
+    } catch (e) { toast("Couldn't start a new game: " + e.message); }
+  };
+
+  let pastList = null, pastNote = '';
+  const loadPast = async () => {
+    try {
+      const r = await fetch(API + '/archive?game=' + GAME, { cache: 'no-store' }), d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'error ' + r.status);
+      pastList = d.games || []; pastNote = '';
+    } catch (e) { pastList = null; pastNote = "Couldn't load past games right now (" + e.message + ').'; }
+    const ol = $('pastList');
+    if (!pastList) { ol.replaceChildren(el('li', 'hint', pastNote)); return; }
+    if (!pastList.length) { ol.replaceChildren(el('li', 'hint', 'No past games yet.')); return; }
+    ol.replaceChildren(...pastList.map(g => {
+      const li = el('li'), what = el('span', 'what'), n = g.names || {}, sc = g.score || { home: 0, away: 0 };
+      what.append((n.away || 'Visitors') + ' ' + sc.away + ' – ' + sc.home + ' ' + (n.home || 'Home'),
+        el('small', null, new Date(g.lastAt || g.savedAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + ' · ' + g.plays + ' plays'));
+      const del = el('button', 'danger', 'Delete');
+      del.onclick = async () => {
+        if (!confirm('Delete this saved game for good? (Its season stats stay until you take it out on the Season stats tab.)')) return;
+        try {
+          const r = await fetch(API + '/archive?game=' + GAME, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ action: 'delete', id: g.id }) });
+          if (!r.ok) throw new Error('error ' + r.status);
+          loadPast();
+        } catch (e) { toast("Couldn't delete it: " + e.message); }
+      };
+      li.append(what, del); return li;
+    }));
+  };
+  $('pastRefresh').onclick = loadPast;
+
+  const showTab = () => {
+    document.querySelectorAll('.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
+    document.querySelectorAll('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== tab);
+    render();
+  };
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+    tab = b.dataset.tab; if (tab === 'lineups') orderDraft = null; showTab();
+    if (tab === 'setup') { loadLibrary(); loadPast(); } if (tab === 'season') loadSeasons();
+  });
+
+  if (!key) tab = 'setup';
+  showTab(); connect(); loadLibrary(); loadSeasons();
+})();
+</script>
+</body>
+</html>
