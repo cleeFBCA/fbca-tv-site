@@ -603,6 +603,31 @@
   };
 
   // ---------- Baseball: line score, each team's batting and pitching, play-by-play by half inning ----------
+  // Who's up and who's pitching now, with their lines today (not after the final)
+  const ballMatchupCard = g => {
+    const BB = window.EotaBaseball, t = g.ball.sit, m = g.meta, bat = BB.batting(t), fld = BB.fielding(t);
+    const bid = BB.batterOf(m, t), pid = BB.pitcherOf(m, t), find = (side, id) => g.sides[side].players.find(p => p.id === id);
+    const bp = find(bat, bid), pp = find(fld, pid);
+    if (!bp && !pp) return null;
+    const card = el('div', 'card mu');
+    const row = (label, side, p, line, val, valLabel) => {
+      const r = el('div', 'r'), who = el('div', 'n');
+      who.append(el('b', null, p ? (p.num ? '#' + p.num + ' ' : '') + p.name : 'Not set'), el('small', null, line));
+      const v = el('div', 'v'); if (val !== '') v.append(el('b', null, val), el('small', null, valLabel));
+      r.append(el('span', 'k', label), mark(g, side), who, v); card.append(r);
+    };
+    if (bp) {
+      const o = BB.orderOf(m, bat), i = o.findIndex(x => x.id === bid), b = g.ball.bat[bat][bid];
+      const next = find(bat, BB.onDeck(m, t));
+      row('At bat', bat, bp, [i >= 0 && o[i].pos, BB.todayLine(b) || 'First time up today', next && next.id !== bid ? 'On deck: ' + next.name : ''].filter(Boolean).join(' · '),
+          i >= 0 ? ORD(i + 1) : '', i >= 0 ? 'in the order' : '');
+    }
+    if (pp) {
+      const q = g.ball.pit[fld][pid];
+      row('Pitching', fld, pp, q && (q.outs || q.BF) ? BB.pitchLine(q) : 'No batters faced yet', String(t.np[pid] || 0), (t.np[pid] || 0) === 1 ? 'pitch' : 'pitches');
+    }
+    return card;
+  };
   const ballLineCard = g => {
     const S = g.ball, n = Math.max(g.meta.innings || 7, S.line.away.length, S.line.home.length), card = el('div', 'card'), tbl = el('table', 'qt ls'), hr = el('tr');
     hr.append(el('th'), ...Array.from({ length: n }, (_, i) => el('th', null, String(i + 1))), ...['R', 'H', 'E'].map(x => el('th', 'rhe', x)));
@@ -1151,7 +1176,10 @@
       root._lastPlay = g.latest.id;
       parts.push(play);
     } else parts.push(el('p', 'note', 'No plays recorded yet.'));
-    if (BALL(g.sport)) { const s = el('section'); s.append(el('h2', 'h', 'Line score'), ballLineCard(g)); parts.push(s); }
+    if (BALL(g.sport)) {
+      const mu = g.status !== 'final' && ballMatchupCard(g); if (mu) parts.push(mu);
+      const s = el('section'); s.append(el('h2', 'h', 'Line score'), ballLineCard(g)); parts.push(s);
+    }
     // Team stats. Away's numbers on the left, home's (FBCA) on the right, like the scoreboard above.
     const cmp = cmpCard(g);
     if (collapseTeamStats) {

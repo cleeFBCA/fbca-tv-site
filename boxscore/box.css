@@ -209,6 +209,18 @@
 .ebx table.qt.ls th:first-child { width: 30%; }
 .ebx table.qt.ls th.rhe { color: #fff; }
 .ebx table.qt.ls td.tot { box-shadow: inset 1px 0 0 rgba(255,255,255,.1); }
+/* Baseball: who's at bat and who's pitching now */
+.ebx .mu { padding: 2px 16px; }
+.ebx .mu .r { display: grid; grid-template-columns: 70px auto 1fr auto; align-items: center; gap: 12px; padding: 12px 0; }
+.ebx .mu .r + .r { box-shadow: inset 0 1px 0 rgba(255,255,255,.1); }
+.ebx .mu .k { font: 800 13px var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: var(--gold-on); }
+.ebx .mu .n { min-width: 0; }
+.ebx .mu .n b { display: block; font: 700 17px/1.2 var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ebx .mu .n small { display: block; margin-top: 2px; font-size: 13px; color: rgba(255,255,255,.6); }
+.ebx .mu .v { text-align: right; }
+.ebx .mu .v b { display: block; font: 800 24px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.ebx .mu .v small { font-size: 12px; color: rgba(255,255,255,.55); }
+@media print { .ebx .mu .k { color: #000; } .ebx .mu .n small, .ebx .mu .v small { color: #444; } }
 /* Baseball's batting and pitching: the position (or W/L/S) after the name */
 .ebx td small.pos { margin-left: 6px; color: rgba(255,255,255,.55); font-size: 13px; font-weight: 600; }
 
