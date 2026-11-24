@@ -556,7 +556,7 @@
   body.ctl .gm .inn { font: 800 40px/1 var(--font-display); text-align: center; }
   body.ctl .gm .inn small, body.ctl .gm .cnt small { display: block; font: 700 11px var(--font-body); letter-spacing: .08em; color: var(--chalk-dim); text-transform: uppercase; }
   body.ctl .gm .cnt { font: 800 40px/1 var(--font-display); text-align: center; font-variant-numeric: tabular-nums; }
-  body.ctl .gm svg { width: 84px; height: 62px; justify-self: center; }
+  body.ctl .gm svg { width: 84px; height: 62px; justify-self: center; overflow: visible; }
   body.ctl .gm svg rect { fill: transparent; stroke: #8A8F98; stroke-width: 3; }
   body.ctl .gm svg rect.on { fill: var(--wait); stroke: var(--wait); }
   body.ctl .outs { display: flex; gap: 6px; justify-content: center; margin-top: 4px; }
@@ -1213,7 +1213,7 @@
              bat: { side: bat, name: bp ? (slot ? slot.n + '. ' : '') + lastName(bp.name).toUpperCase() : '', stat },
              pit: { side: fld, name: pp ? lastName(pp.name).toUpperCase() : '', np: sit.np[pid] || 0 } };
   };
-  const FLASH = { BB: 'BB', IBB: 'IBB', K: 'K', KL: 'KL', HBP: 'HBP' };
+  const FLASH = { BB: 'BB', IBB: 'IBB', K: 'K', KL: 'KL', KD: 'K', HBP: 'HBP' };
   const onKeeper = added => {
     stats = BB.compute(kg.meta, kg.events);
     const now = Date.now();

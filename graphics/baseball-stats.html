@@ -72,7 +72,7 @@
   .sit .inn { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1; text-align: center; min-width: 70px; }
   .sit .inn small { display: block; font-family: var(--font-body); font-size: 13px; color: var(--chalk-dim); font-weight: 600; }
   .sit .mid { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; min-width: 0; }
-  .dia { width: 92px; height: 70px; flex: none; }
+  .dia { width: 92px; height: 70px; flex: none; overflow: visible; } /* 2nd base's top corner reaches just past the box */
   .dia rect { fill: transparent; stroke: #8A8F98; stroke-width: 3; }
   .dia rect.on { fill: var(--wait); stroke: var(--wait); }
   .cnt { font-family: var(--font-display); font-weight: 800; font-size: 34px; font-variant-numeric: tabular-nums; line-height: 1; }
@@ -531,10 +531,11 @@
   // ---- Pads ----
   const PITCH_PAD = [['B', 'Ball', 'ball'], ['C', 'Called strike', 'strike'], ['S', 'Swinging strike', 'strike'], ['F', 'Foul', ''], ['HBP', 'Hit by pitch', 'ball']];
   // Hits, walks and strikeouts move runners the only way they can: those record at once. The rest ask where the runners went.
-  const PLAY_PAD = [['1B', 'hit'], ['2B', 'hit'], ['3B', 'hit'], ['HR', 'hit'], ['GO', 'out'], ['FO', 'out'], ['LO', 'out'], ['PO', 'out'],
-                    ['E', ''], ['FC', ''], ['SAC', 'out'], ['SF', 'out'], ['DP', 'out'], ['IBB', 'ball']];
-  const QUICK = ['HR', 'IBB'];
-  const RUN_PAD = ['SB', 'CS', 'WP', 'PB', 'BK', 'PK', 'E', 'ADV'];
+  const PLAY_PAD = [['1B', 'hit'], ['2B', 'hit'], ['GRD', 'hit'], ['3B', 'hit'], ['HR', 'hit'], ['GO', 'out'], ['FO', 'out'], ['LO', 'out'], ['PO', 'out'],
+                    ['SAC', 'out'], ['SF', 'out'], ['DP', 'out'], ['TP', 'out'], ['E', ''], ['FC', ''], ['KD', ''], ['CI', ''], ['IBB', 'ball']];
+  // These move runners only one way: they record at once. (A ground-rule double moves everyone up exactly two.)
+  const QUICK = ['HR', 'IBB', 'GRD', 'CI'];
+  const RUN_PAD = ['SB', 'CS', 'WP', 'PB', 'BK', 'PK', 'E', 'ADV', 'OUT'];
   $('padPitch').replaceChildren(...PITCH_PAD.map(([p, l, c]) => {
     const b = el('button', 'act ' + c, l);
     b.onclick = () => p === 'HBP' ? record({ k: 'pa', code: 'HBP' }) : record({ k: 'pitch', p });
@@ -546,7 +547,7 @@
       const v = view(); if (!v) return;
       const sit = BB.current(v.events);
       // With nobody on, an out or a hit only moves the batter: no need to ask (except an error, a choice or a double play)
-      if (QUICK.includes(code) || (!sit.bases.some(Boolean) && !['E', 'FC', 'DP'].includes(code))) { record({ k: 'pa', code }); return; }
+      if (QUICK.includes(code) || (!sit.bases.some(Boolean) && !['E', 'FC', 'DP', 'TP'].includes(code))) { record({ k: 'pa', code }); return; }
       const moves = BB.defaultMoves(sit, code);
       adj = { k: 'pa', code, moves, rbi: BB.defaultRbi(code, moves), err: BB.RESULTS[code].err ? 1 : 0, rbiSet: false };
       render(); $('adj').scrollIntoView({ block: 'nearest', behavior: 'smooth' });

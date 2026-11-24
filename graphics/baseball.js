@@ -27,6 +27,7 @@
   const RESULTS = {
     '1B': { l: 'Single', short: '1B', h: 1, ab: 1, bat: 1 },
     '2B': { l: 'Double', short: '2B', h: 2, ab: 1, bat: 2 },
+    GRD: { l: 'Ground-rule double', short: '2B', h: 2, ab: 1, bat: 2 }, // every runner moves up exactly two
     '3B': { l: 'Triple', short: '3B', h: 3, ab: 1, bat: 3 },
     HR: { l: 'Home run', short: 'HR', h: 4, ab: 1, bat: 4 },
     BB: { l: 'Walk', short: 'BB', ab: 0, bat: 1, force: 1 },
@@ -42,7 +43,10 @@
     FC: { l: "Fielder's choice", short: 'FC', ab: 1, bat: 1 },
     SAC: { l: 'Sacrifice bunt', short: 'SAC', ab: 0, bat: 0 },
     SF: { l: 'Sacrifice fly', short: 'SF', ab: 0, bat: 0 },
-    DP: { l: 'Double play', short: 'DP', ab: 1, bat: 0 }
+    DP: { l: 'Double play', short: 'DP', ab: 1, bat: 0 },
+    TP: { l: 'Triple play', short: 'TP', ab: 1, bat: 0 },
+    KD: { l: 'Dropped 3rd strike, safe', short: 'K', ab: 1, bat: 1, k: 1, force: 1 }, // a strikeout for both, but the batter reaches
+    CI: { l: "Catcher's interference", short: 'CI', ab: 0, bat: 1, force: 1, err: 1 }
   };
   // Running plays between pitches
   const RUNS = {
@@ -104,7 +108,7 @@
     return { r };
   };
   // Runs batted in, by default: runs scored, except on an error or a double play.
-  const defaultRbi = (code, moves) => ['E', 'DP', 'K', 'KL'].includes(code) ? 0
+  const defaultRbi = (code, moves) => ['E', 'DP', 'TP', 'K', 'KL', 'KD', 'CI'].includes(code) ? 0
     : (moves.r || []).filter(d => d === 4).length + (moves.b === 4 ? 1 : 0);
 
   // Moves runners (and the batter, for a plate appearance). Returns the bases after, the runs and the outs.
