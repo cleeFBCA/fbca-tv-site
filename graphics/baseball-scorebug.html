@@ -1031,9 +1031,9 @@
       ph.classList.toggle('haspic', !!g.photo); // the stand-in logo fades (it doesn't move)
       if (g.photo) {
         pic.animate([{ opacity: 0, transform: 'translateX(110px) scale(1.05)', filter: 'blur(8px) brightness(1.6)' }, { opacity: 1, offset: .45, filter: 'blur(0) brightness(1.25)' }, { opacity: 1, transform: 'none', filter: 'blur(0) brightness(1)' }],
-          { duration: 520, delay: had ? 160 : 60, easing: ease, fill: 'backwards' });
+          { duration: 520, delay: had ? 320 : 60, easing: ease, fill: 'backwards' }); // after the old photo is fully gone (280ms), so only one shows at a time
         // a light passes over the new player as he lands
-        const sh = ph.querySelector('.shine'); if (sh) sh.animate([{ opacity: 1, transform: 'translateX(-100%)' }, { opacity: 1, transform: 'translateX(100%)' }], { duration: 750, delay: had ? 520 : 420, easing: 'ease-in-out', fill: 'backwards' });
+        const sh = ph.querySelector('.shine'); if (sh) sh.animate([{ opacity: 1, transform: 'translateX(-100%)' }, { opacity: 1, transform: 'translateX(100%)' }], { duration: 750, delay: had ? 680 : 420, easing: 'ease-in-out', fill: 'backwards' });
       }
       // The name plate wipes off and on with the new name
       const h = g.hi, setPlate = () => {
