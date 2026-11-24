@@ -795,6 +795,8 @@
         // Batter (batting team's color) over pitcher (fielding team's color)
         const bt = s.teams[L.bat.side], pt = s.teams[L.pit.side];
         paint($('rBat'), bt); paint($('rPit'), pt);
+        // Stripes run the same way as that team's half of the bug: visitors \, home /
+        $('rBat').style.setProperty('--stripe', L.bat.side === 'away' ? '65deg' : '115deg'); $('rPit').style.setProperty('--stripe', L.pit.side === 'away' ? '65deg' : '115deg');
         $('rBat').firstChild.textContent = L.bat.name || ''; $('rBat').lastChild.textContent = L.bat.stat || '';
         $('rPit').firstChild.textContent = L.pit.name || ''; $('rPit').lastChild.textContent = L.pit.name ? 'P: ' + L.pit.np : '';
         $('tabSp').textContent = s.pitch ? (s.pitch.type ? s.pitch.type + ' - ' : '') + s.pitch.mph + ' MPH' : '';
