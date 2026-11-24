@@ -921,6 +921,152 @@
   body.ctl .fv-chip.on { background: var(--cue); color: #fff; border-color: var(--cue); }
   body.ctl .fv-tally .f { background: var(--cue); }
   body.ctl #btnClockShow.active { background: linear-gradient(color-mix(in srgb, var(--wait) 85%, #fff), var(--wait)); color: var(--wait-ink); border-color: var(--wait); box-shadow: none; }
+
+  /* ---------- Landscape layout (control page only) ----------
+     Fits one laptop screen with no page scrolling: a top bar with tabs, then Live in three columns
+     (clock, score, scoreboard feed | preview, score bug, graphics tiles | the picked graphic's details).
+     Tried out first in lab/scorebug-landscape.html. */
+  html:has(body.ctl), body.ctl { height: 100%; }
+  body.ctl { display: flex; flex-direction: column; overflow: hidden; font-size: 14px; line-height: 1.35; --edge-soft: #2C2E33; --gold: #F2C14E; }
+  @media (max-width: 1199px), (max-height: 699px) { body.ctl { overflow: auto; } } /* smaller than a laptop screen: let it scroll */
+  body.ctl #control { max-width: none; margin: 0; padding: 0; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  body.ctl button { font-size: 14px; min-height: 34px; padding: 6px 10px; border-radius: 7px; white-space: nowrap; }
+  body.ctl button.primary { font-size: 14px; }
+  body.ctl button.sm { min-height: 28px; padding: 3px 8px; font-size: 13px; }
+  body.ctl input:not([type=checkbox]):not([type=range]):not([type=color]):not([type=file]), body.ctl select { font-size: 14px; padding: 7px 9px; min-height: 34px; }
+  body.ctl input[type=color] { height: 34px; }
+  body.ctl input[type=file] { font-size: 13px; padding: 5px; }
+  body.ctl label { font-size: 12px; margin: 8px 0 3px; }
+  body.ctl label.check, body.ctl label.switch { font-size: 13px; margin-top: 8px; }
+  body.ctl .hint, body.ctl .warn { font-size: 12px; line-height: 1.4; margin-top: 6px; }
+  body.ctl .two { gap: 8px; }
+  body.ctl .row-btns { gap: 6px; margin-bottom: 6px; }
+  body.ctl .set-row { gap: 6px; margin-top: 6px; }
+  body.ctl .set-row button { padding: 3px 10px; }
+  body.ctl .row { display: flex; gap: 6px; margin-top: 8px; }
+  body.ctl .row > * { flex: 1 1 0; }
+  body.ctl .pane-h { font-size: 15px; margin: 0 0 6px; }
+  body.ctl #control a { color: var(--cue); }
+
+  /* Top bar */
+  body.ctl .bar { flex: none; height: 52px; display: flex; align-items: center; gap: 14px; padding: 0 14px; background: #141518; border-bottom: 1px solid var(--edge-soft); }
+  body.ctl .bar h1 { margin: 0; font: 800 20px var(--font-display); letter-spacing: .05em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+  body.ctl .views { display: flex; gap: 4px; margin-left: 8px; }
+  body.ctl .views button { min-height: 32px; padding: 4px 14px; }
+  body.ctl .views button.cur { background: #3A3D44; border-color: #6B7079; box-shadow: inset 0 -3px 0 #fff; color: #fff; }
+  body.ctl .lights { display: flex; gap: 6px; margin-left: auto; }
+  body.ctl .light { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--chalk-dim); padding: 3px 9px; border: 1px solid var(--edge-soft); border-radius: 999px; white-space: nowrap; }
+  body.ctl .light::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #5A5E66; }
+  body.ctl .light.ok::before { background: var(--on); box-shadow: 0 0 6px rgba(34,216,101,.7); }
+  body.ctl .light.wait::before { background: var(--wait); }
+  body.ctl .light.bad::before { background: var(--off); }
+  body.ctl .bar .panel-note { flex: 0 1 auto; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+  body.ctl .bar #btnPanelHide { flex: none; }
+
+  /* Views and panels */
+  body.ctl .view { flex: 1; min-height: 0; padding: 12px; }
+  body.ctl .view[hidden] { display: none !important; }
+  body.ctl .panel { background: linear-gradient(#1D1E22, #17181B); border: 1px solid var(--edge-soft); border-radius: 10px; padding: 12px; min-height: 0;
+                    box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 6px 18px rgba(0,0,0,.35); }
+  body.ctl .panel h2 { margin: 0 0 8px; font: 800 15px var(--font-display); letter-spacing: .09em; text-transform: uppercase; color: var(--head); display: flex; align-items: center; gap: 8px; }
+  body.ctl .panel h2 small { margin-left: auto; font: 600 12px var(--font-body); letter-spacing: 0; text-transform: none; color: var(--chalk-dim); }
+  body.ctl .panel h2 small.near { margin-left: 4px; }
+  body.ctl #vLive { display: grid; grid-template-columns: minmax(300px, 25%) minmax(0, 1fr) minmax(320px, 26%); gap: 12px; }
+  body.ctl .col { display: flex; flex-direction: column; gap: 12px; min-height: 0; min-width: 0; }
+  body.ctl #vLive > .col:first-child { overflow-y: auto; } /* short screens only: the left column scrolls before anything gets cut off */
+  body.ctl #vLive > .col > .panel { flex-shrink: 0; }
+  body.ctl .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  body.ctl .cols .panel { overflow: auto; }
+
+  /* Clock: game clock left, shot clock middle (when on), period right. Fixed-width digit slots. */
+  body.ctl .clk { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 8px; }
+  body.ctl .clk .time { font: 800 64px/.95 var(--font-display); }
+  body.ctl .clk .shot { grid-column: 2; justify-self: center; text-align: center; font: 800 34px/1 var(--font-display); color: var(--chalk-dim); }
+  body.ctl .clk .shot[hidden] { display: none; }
+  body.ctl .clk .shot small { display: block; font: 700 11px var(--font-body); letter-spacing: .08em; }
+  body.ctl .clk .perbox { grid-column: 3; align-self: start; text-align: right; }
+  body.ctl .clk .perbox small { display: block; margin-bottom: 3px; font: 700 11px var(--font-body); letter-spacing: .08em; color: var(--chalk-dim); }
+  body.ctl .clk .per { font: 800 26px/1 var(--font-display); letter-spacing: .1em; color: var(--gold); }
+  body.ctl .dg, body.ctl .sep { display: inline-block; text-align: center; }
+  body.ctl .dg { width: .5em; } body.ctl .sep { width: .26em; }
+  body.ctl #shotCtl[hidden] { display: none; }
+  body.ctl .periods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 8px; }
+  body.ctl .periods button.active { color: #fff; }
+
+  /* Score: the two team cards side by side */
+  body.ctl .teams { gap: 10px; }
+  body.ctl .team-ctl .tname { display: block; font-size: 20px; padding: 2px 8px; }
+  body.ctl .team-ctl .tscore { font-size: 54px; line-height: 1.05; }
+  body.ctl .team-ctl .row-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 0; }
+  body.ctl .team-ctl .row-btns button { font-size: 15px; font-weight: 700; padding: 4px 0; }
+  body.ctl .team-ctl .row-btns:has([data-to]) { grid-template-columns: 1fr; margin-top: 6px; }
+  body.ctl .stat-ctl { justify-content: space-between; gap: 4px; margin: 6px 0 0; font-size: 12px; }
+  body.ctl .stat-ctl b { font-size: 16px; min-width: 18px; text-align: center; }
+  body.ctl .stat-ctl button { min-height: 26px; padding: 2px 9px; font-size: 14px; }
+  body.ctl .stat-ctl:has(.possb) { display: block; }
+  body.ctl .stat-ctl .possb { width: 100%; }
+  body.ctl .team-ctl .bon { justify-content: center; min-height: 15px; font-size: 11px; font-weight: 800; letter-spacing: .06em; color: var(--wait) !important; margin-top: 2px; }
+  body.ctl .sidenote { text-align: center; font-size: 12px; color: var(--chalk-dim); margin: 8px 0 0; }
+
+  /* Scoreboard feed: look only */
+  body.ctl .feed h2 .light { margin-left: auto; font: 600 11px var(--font-body); letter-spacing: 0; text-transform: none; padding: 2px 8px; }
+  body.ctl .fd { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+  body.ctl .fdt { border-collapse: collapse; width: 100%; }
+  body.ctl .fdt th { font: 700 10.5px var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--chalk-dim); text-align: center; padding: 0 4px 2px; }
+  body.ctl .fdt td { text-align: center; font: 800 19px/1.25 var(--font-display); padding: 0 4px; font-variant-numeric: tabular-nums; }
+  body.ctl .fdt td:first-child { text-align: left; font: 600 12px var(--font-body); color: var(--chalk-dim); white-space: nowrap; }
+  body.ctl .fdt td:first-child b { color: var(--head); font-weight: 700; }
+  body.ctl .fdc { display: flex; flex-direction: column; align-items: flex-end; padding-left: 12px; border-left: 1px solid var(--edge-soft); }
+  body.ctl .fdc small { font: 700 10.5px var(--font-body); letter-spacing: .06em; color: var(--chalk-dim); }
+  body.ctl .fdc b { font: 800 30px/1 var(--font-display); }
+  body.ctl .fdc i { font: 800 17px var(--font-display); font-style: normal; }
+
+  /* Middle: preview, score bug row, graphics tiles */
+  body.ctl .mid { container-type: inline-size; }
+  body.ctl .preview { width: min(100%, calc(54vh * 16 / 9)); margin: 0 auto; }
+  body.ctl .bugrow { display: flex; gap: 6px; margin-top: 10px; }
+  body.ctl .bugrow > * { flex: 1 1 0; }
+  body.ctl .bugrow > [hidden] { display: none; }
+  body.ctl .tiles-panel { flex: none; }
+  body.ctl .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 54px; gap: 6px; }
+  @container (max-width: 620px) { body.ctl .bugrow { display: grid; grid-template-columns: 1fr 1fr; } body.ctl .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @container (max-width: 440px) { body.ctl .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @container (max-width: 260px) { body.ctl .bugrow, body.ctl .tiles { grid-template-columns: 1fr; } }
+  body.ctl .tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; text-align: center; padding: 4px 8px; white-space: normal; overflow: hidden; }
+  body.ctl .tile b { max-width: 100%; font-size: 16px; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* a long team name is cut with … (full name in the panel title) */
+  body.ctl .tile small { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--chalk-dim); }
+  body.ctl .tile.pick { outline: 2px solid #fff; outline-offset: 1px; }
+  body.ctl .tile.onair::before { display: none; }
+  body.ctl .tile.onair small { color: inherit; opacity: .8; }
+  body.ctl .tile kbd { font: 700 10px var(--font-body); color: var(--chalk-dim); background: var(--pine); border: 1px solid #3A3D44; border-radius: 3px; padding: 0 4px; }
+  body.ctl .tile.onair kbd { color: inherit; background: transparent; border-color: currentColor; }
+
+  /* Right: the picked graphic, with Show / Take down always at the top */
+  body.ctl .det { flex: 1; display: flex; flex-direction: column; }
+  body.ctl .det .foot { flex: none; display: flex; gap: 6px; padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--edge-soft); }
+  body.ctl .det .foot button { flex: 1; min-width: 0; min-height: 42px; font-size: 15px; white-space: normal; line-height: 1.15; }
+  body.ctl .det .body { flex: 1; min-height: 0; overflow: auto; padding-right: 2px; }
+  body.ctl .lu-row { grid-template-columns: 18px 1fr 96px 56px; gap: 6px; margin: 4px 0 0; }
+  body.ctl .lu-row > b { font-size: 17px; }
+  body.ctl .lu-row > span { font-size: 11px; }
+  body.ctl .sp-fit { grid-template-columns: 96px 1fr; gap: 10px; }
+  body.ctl .sp-fit canvas { width: 96px; height: 115px; }
+  body.ctl .l3-list li { padding: 6px 0; font-size: 13px; }
+  body.ctl .l3-list .txt span { font-size: 12px; }
+  body.ctl .popstats { display: grid; grid-template-columns: repeat(3, 1fr); }
+  body.ctl .fv-tally li { font-size: 13px; }
+  body.ctl table.src { font-size: 13px; }
+  body.ctl table.src td { padding: 5px 4px; }
+  body.ctl .keys { font-size: 13px; line-height: 1.5; }
+  body.ctl .keys li { padding: 4px 0; border-top: 1px solid var(--edge-soft); }
+  body.ctl .keys li:first-child { border-top: 0; }
+  body.ctl .stn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  body.ctl .stn-row select { width: auto; }
+  body.ctl .stn-row .op { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--chalk-dim); }
+  body.ctl .stn-row .op input { width: 110px; }
+  body.ctl .fv-nom { grid-template-columns: 80px 48px 1fr 84px auto; gap: 4px; }
+  body.ctl .pph-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+  body.ctl .logo-fit { grid-template-columns: 1fr; }
 </style>
 </head>
 <body>
@@ -1009,380 +1155,379 @@
 </div>
 
 <div id="control">
-  <h1>Basketball Scorebug</h1>
+  <!-- Control layout: one landscape screen. Live (clock, score, scoreboard feed | preview, score bug, graphics tiles |
+       the picked graphic's details), with setup on the other tabs. Every control keeps the id the code below uses. -->
+  <header class="bar">
+    <h1>Basketball Scorebug</h1>
+    <nav class="views" id="views">
+      <button data-vp="live" class="cur">Live</button>
+      <button data-vp="game">Game setup</button>
+      <button data-vp="gfx">Graphics setup</button>
+      <button data-vp="conn" data-tab="storage">Connections</button>
+    </nav>
+    <div class="lights">
+      <span class="light" id="ltSb">Scoreboard</span>
+      <span class="light" id="ltSk">Stat keeper</span>
+    </div>
+    <p class="panel-note airnote" id="panelNote"></p>
+    <button class="take" id="btnPanelHide">Take down</button>
+  </header>
 
-  <div class="grid">
-    <div class="stack">
-      <div class="card">
-        <h2>Clock</h2>
-        <div class="big-clock"><small id="cPeriod">1Q</small><span id="cClock">8:00</span><span class="shot-ctl" id="cShot"></span></div>
-        <div class="row-btns"><button class="primary" id="btnRun">Start clock</button></div>
-        <div class="row-btns">
-          <button data-adj="-1000">&minus;1 sec</button><button data-adj="-100">&minus;0.1</button>
-          <button data-adj="100">+0.1</button><button data-adj="1000">+1 sec</button>
+  <!-- ================= LIVE ================= -->
+  <section class="view" id="vLive" data-vpane="live">
+    <div class="col">
+      <div class="panel">
+        <h2>Clock <small class="near">Space starts / stops</small></h2>
+        <div class="clk">
+          <div class="time" id="cClock">8:00</div>
+          <div class="shot" id="cShotBox" hidden><span id="cShot"></span><small>SHOT</small></div>
+          <div class="perbox"><small>PERIOD</small><div class="per" id="cPeriod">1ST</div></div>
         </div>
-        <div class="set-row"><input id="setClock" placeholder="Set clock, e.g. 5:41 or 12.4" inputmode="decimal"><button id="btnSet">Set</button></div>
+        <div class="row"><button class="primary" id="btnRun">Start clock</button></div>
+        <div class="row"><button class="sm" data-adj="-1000">&minus;1 sec</button><button class="sm" data-adj="-100">&minus;0.1</button><button class="sm" data-adj="100">+0.1</button><button class="sm" data-adj="1000">+1 sec</button></div>
+        <div class="set-row setclk"><input id="setClock" placeholder="Set clock, e.g. 5:41 or 12.4" inputmode="decimal"><button class="sm" id="btnSet">Set</button></div>
         <div id="shotCtl">
-          <label>Shot clock</label>
-          <div class="row-btns" style="margin:0">
-            <button id="btnShotFull">Reset <span id="shotFullLbl">35</span></button>
-            <button id="btnShotShort">Reset <span id="shotShortLbl">25</span></button>
-            <button id="btnShotOff">Hide</button>
-          </div>
+          <div class="row"><button class="sm" id="btnShotFull">Reset <span id="shotFullLbl">35</span></button><button class="sm" id="btnShotShort">Reset <span id="shotShortLbl">25</span></button><button class="sm" id="btnShotOff">Hide</button></div>
         </div>
-        <label>Period (picking one resets the clock and stops it)</label>
-        <div class="row-btns" id="periods" style="margin:0">
-          <button data-p="1Q">1st</button><button data-p="2Q">2nd</button><button data-p="HALF">Half</button>
-          <button data-p="3Q">3rd</button><button data-p="4Q">4th</button>
-        </div>
-        <div class="row-btns" id="periods2" style="margin-top:8px">
-          <button data-p="OT">OT</button><button data-p="2OT">2OT</button><button data-p="3OT">3OT</button><button data-p="FINAL">Final</button>
+        <div class="periods" id="periods" title="Picking a period resets the clock and stops it">
+          <button class="sm" data-p="1Q">1st</button><button class="sm" data-p="2Q">2nd</button><button class="sm" data-p="HALF">Half</button><button class="sm" data-p="3Q">3rd</button><button class="sm" data-p="4Q">4th</button>
+          <button class="sm" data-p="OT">OT</button><button class="sm" data-p="2OT">2OT</button><button class="sm" data-p="3OT">3OT</button><button class="sm" data-p="4OT">4OT</button><button class="sm" data-p="FINAL">Final</button>
         </div>
       </div>
-
-      <div class="card">
-        <h2>Score</h2>
+      <div class="panel">
+        <h2>Score <small><button class="sm" id="btnSwap">Swap sides &#8644;</button></small></h2>
         <div class="teams" id="teams"></div>
-        <div class="row-btns" style="margin-top:12px"><button id="btnSwap">Swap sides &#8644;</button></div>
-        <p class="hint" id="sideNote"></p>
+        <p class="sidenote" id="sideNote"></p>
       </div>
-
-      <div class="card">
-        <h2>Data sources</h2>
-        <div class="row-btns"><button id="btnSb">Connect scoreboard</button></div>
-        <p class="hint" id="sbStatus">Run the clock, score and fouls from the gym scoreboard. Pick the file Scorebridge writes.</p>
-        <p class="hint" id="sbRate" hidden></p>
-        <label for="statFrom">Stats come from</label>
-        <select id="statFrom">
-          <option value="keeper">Stat keeper page (live, fbca.tv/graphics/basketball-stats.html)</option>
-          <option value="sheet">Excel stat sheet on OneDrive (deprecated)</option>
-        </select>
-        <div id="keeperBox"><div class="row-btns" style="margin:8px 0 0"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
-        <input type="checkbox" id="clockShare" checked hidden>
-        <p class="hint" style="margin-bottom:0">This clock is always shared with the stat keeper: every play is stamped with the game time the moment it's tapped, and the fbca.tv box score shows it.</p>
-        <div class="set-row" id="skKeyRow" hidden><input id="skKey" type="password" autocomplete="off" placeholder="Stat keeper key (the same one the stat crew uses)"><button id="skKeySave">Save key</button></div>
-        <p class="hint" id="clockShareStatus"></p>
-        <div id="sheetBox">
-        <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
-        <div class="set-row"><input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…"><button id="btnSheet">Connect</button></div>
-        <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
+      <div class="panel feed" title="Exactly what the scoreboard file says, before anything on this page changes it. Look only: nothing here can be changed.">
+        <h2>Scoreboard feed <span class="light" id="fdState">Not connected</span></h2>
+        <div class="fd">
+          <table class="fdt"><thead><tr><th></th><th>Score</th><th>TOL</th><th>Fouls</th></tr></thead><tbody id="fdTeams"></tbody></table>
+          <div class="fdc"><small>CLOCK</small><b id="fdClock">–</b><span><small>PER</small> <i id="fdPer">–</i><span id="fdShotW" hidden> <small>SHOT</small> <i id="fdShot">–</i></span></span></div>
         </div>
-        <p class="hint" id="sheetStatus">Not connected.</p>
-        <table class="src">
-          <thead><tr><th>Item</th><th>Scoreboard</th><th>Stats</th></tr></thead>
-          <tbody id="srcRows"></tbody>
-        </table>
-        <p class="hint">Tick where each item comes from. Unticked items run from the buttons on this page. Pairs show left–right as on screen. Stats arrive as the stat crew enters them, a moment after the play, so the clock and score are best from the scoreboard.</p>
-        <p class="hint" id="sbKeys" hidden></p>
       </div>
-
     </div>
 
-    <div class="stack">
-      <div class="card">
-        <h2>Output</h2>
+    <div class="col mid">
+      <div class="panel">
         <div class="preview"><iframe id="preview" title="Graphics preview" tabindex="-1"></iframe></div>
-        <div class="row-btns" style="margin-top:10px">
-          <button id="btnShow">Hide bug</button>
+        <div class="bugrow">
+          <button id="btnShow">Hide score bug</button>
+          <button id="btnStn" title="Station bug on / off (settings in Graphics setup)">Station bug</button>
           <button id="btnOpen">Open output window</button>
           <button id="btnOpenKey" hidden>Open key window</button>
         </div>
-        <div class="row-btns" style="margin:0">
-          <p class="panel-note" id="panelNote"></p>
-          <button class="take" id="btnPanelHide" style="flex:0 0 auto">Take down</button>
-        </div>
       </div>
+      <div class="panel tiles-panel">
+        <h2>Graphics <small>Pick one to set it up on the right. Double-click to show it right away.</small></h2>
+        <div class="tiles" id="tiles"></div>
+      </div>
+    </div>
 
-      <div class="card">
-        <h2>Graphic inserts</h2>
-        <div class="tabs" id="tabs">
-          <button data-tab="pre">Title Card</button>
-          <button data-tab="ann">Announcers</button>
-          <button data-tab="lu">Starting Lineup</button>
-          <button data-tab="spot">Player Spotlight</button>
-          <button data-tab="l3" class="active">Lower third</button>
-          <button data-tab="pop">Pop-up</button>
-          <button data-tab="stats">Team stats</button>
-          <button data-tab="fv">Fan vote</button>
-          <button data-tab="stn">Station Bug</button>
-        </div>
+    <div class="col">
+      <div class="panel det">
+        <h2 id="detTitle">Lower third</h2>
+        <div class="foot"><button class="primary" id="detShow">Show</button><button class="take" id="detTake" disabled>Take down</button></div>
+        <div class="body" id="detBody">
 
-        <div data-pane="l3">
-          <div id="l3Sheet" hidden>
-            <label for="lsPlayer">From the stats: pick a player to fill in tonight's line</label>
+          <div data-pane="l3">
+            <div id="l3Sheet" hidden>
+              <label for="lsPlayer">From the stats: pick a player to fill in tonight's line</label>
+              <div class="two">
+                <select id="lsPlayer"></select>
+                <select id="lsFmt" aria-label="Stat line">
+                  <option value="pts">Points</option>
+                  <option value="ptsfg">PTS · FG</option>
+                  <option value="basic">PTS · REB · AST</option>
+                  <option value="full">PTS · FG · REB · AST (+ STL, BLK)</option>
+                  <option value="shoot">Shooting: FG · 3PT · FT</option>
+                  <option value="reb">Rebounds: total · offensive · defensive</option>
+                  <option value="oreb">Offensive rebounds</option>
+                  <option value="dreb">Defensive rebounds</option>
+                  <option value="blk">Blocks</option>
+                  <option value="stl">Steals</option>
+                  <option value="ft">Free throws</option>
+                </select>
+              </div>
+              <p class="hint" id="lsAge"></p>
+            </div>
+            <label for="lName">Name</label>
+            <input id="lName" maxlength="36" placeholder="#23 Jordan Ellis">
+            <label for="lStat">Stat line</label>
+            <input id="lStat" maxlength="60" placeholder="18 PTS · 6 REB · 4 AST">
             <div class="two">
-              <select id="lsPlayer"></select>
-              <select id="lsFmt" aria-label="Stat line">
-                <option value="pts">Points</option>
-                <option value="ptsfg">PTS · FG</option>
-                <option value="basic">PTS · REB · AST</option>
-                <option value="full">PTS · FG · REB · AST (+ STL, BLK)</option>
-                <option value="shoot">Shooting: FG · 3PT · FT</option>
-                <option value="reb">Rebounds: total · offensive · defensive</option>
-                <option value="oreb">Offensive rebounds</option>
-                <option value="dreb">Defensive rebounds</option>
-                <option value="blk">Blocks</option>
-                <option value="stl">Steals</option>
-                <option value="ft">Free throws</option>
-              </select>
+              <div><label for="lTeam">Colors</label><select id="lTeam"><option value="home"></option><option value="away"></option><option value="none">Neutral</option></select></div>
+              <div><label for="lSecs">Auto-hide after (sec, 0 = stay)</label><input id="lSecs" type="number" min="0" max="120" value="8"></div>
             </div>
-            <p class="hint" id="lsAge"></p>
+            <label class="check"><input type="checkbox" id="lPhoto" checked> Show the player's headshot (from Game setup → Player photos)</label>
+            <div class="row"><button id="btnL3Save">Save to list</button></div>
+            <p class="hint">Save lower thirds before the game (announcers, starters, key players), then show them from the list with one click. Showing one takes down the fan vote QR, since they share a spot.</p>
+            <ul class="l3-list" id="l3List"></ul>
           </div>
-          <label for="lName">Name</label>
-          <input id="lName" maxlength="36" placeholder="#23 Jordan Ellis">
-          <label for="lStat">Stat line</label>
-          <input id="lStat" maxlength="60" placeholder="18 PTS · 6 REB · 4 AST">
-          <div class="two">
-            <div><label for="lTeam">Colors</label><select id="lTeam"><option value="home"></option><option value="away"></option><option value="none">Neutral</option></select></div>
-            <div><label for="lSecs">Auto-hide after (sec, 0 = stay)</label><input id="lSecs" type="number" min="0" max="120" value="8"></div>
-          </div>
-          <label class="check"><input type="checkbox" id="lPhoto" checked> Show the player's headshot (from Setup → Player photos)</label>
-          <div class="row-btns" style="margin-top:14px">
-            <button class="primary" id="btnL3Show">Show lower third</button>
-            <button class="take" id="btnL3Hide">Hide</button>
-            <button id="btnL3Save">Save to list</button>
-          </div>
-          <p class="hint">Save lower thirds before the game (announcers, starters, key players), then show them from the list with one click. Showing one takes down the fan vote QR, since they share a spot.</p>
-          <ul class="l3-list" id="l3List"></ul>
-        </div>
 
-        <div data-pane="pop" hidden>
-          <p class="hint" style="margin-top:0">A strip that rises above the bug. It shares the space with the lower third and the fan vote QR, so showing one takes down the others.</p>
-          <label for="popText">Text</label>
-          <input id="popText" maxlength="70" placeholder="e.g. SENIOR NIGHT · #3 LEE NEEDS 6 FOR 1,000">
-          <div class="two" style="margin-top:8px">
-            <select id="popTeam" aria-label="Team tag"><option value="">No team tag</option><option value="home"></option><option value="away"></option></select>
-            <button class="primary" id="btnPopText">Show text</button>
+          <div data-pane="pop" hidden>
+            <p class="hint" style="margin-top:0">A strip that rises above the bug. It shares the space with the lower third and the fan vote QR, so showing one takes down the others. Show (above) puts up the text.</p>
+            <label for="popText">Text</label>
+            <input id="popText" maxlength="70" placeholder="e.g. SENIOR NIGHT · #3 LEE NEEDS 6 FOR 1,000">
+            <label for="popTeam">Team tag</label>
+            <select id="popTeam"><option value="">No team tag</option><option value="home"></option><option value="away"></option></select>
+            <label>Run</label>
+            <div class="row"><button id="btnPopRun">Show the run</button></div>
+            <p class="hint" id="popRunNote"></p>
+            <label>Team stat (both teams)</label>
+            <div class="row-btns popstats" id="popStats"></div>
+            <p class="hint" id="popStatsNote"></p>
+            <p class="hint" id="popNow"></p>
           </div>
-          <label>Run</label>
-          <div class="row-btns"><button id="btnPopRun">Show the run</button></div>
-          <p class="hint" id="popRunNote"></p>
-          <label>Team stat (both teams)</label>
-          <div class="row-btns" id="popStats"></div>
-          <p class="hint" id="popStatsNote"></p>
-          <div class="two">
-            <div><label for="popSecs">Take it down after (seconds, 0 = stays up)</label><input id="popSecs" type="number" min="0" max="120"></div>
-            <div><label>&nbsp;</label><button class="take" id="btnPopHide" style="width:100%">Take down pop-up</button></div>
-          </div>
-          <p class="hint" id="popNow"></p>
-        </div>
 
-        <div data-pane="ann" hidden>
-          <p class="hint" style="margin-top:0">The announcers' names, as a pop-up strip above the bug or as a lower third in the bug's spot. Showing it takes down any other lower third, pop-up or full-screen graphic. The names are remembered for next time.</p>
-          <label for="annStyle">Show as</label>
-          <select id="annStyle"><option value="pop">Pop-up above the bug</option><option value="l3">Lower third (the bug steps aside, then comes back)</option></select>
-          <label for="annLabel">Label</label>
-          <input id="annLabel" maxlength="24" placeholder="On the call">
-          <label for="ann1">Announcers</label>
-          <input id="ann1" maxlength="30" placeholder="First announcer">
-          <input id="ann2" maxlength="30" placeholder="Second announcer (optional)" style="margin-top:8px">
-          <input id="ann3" maxlength="30" placeholder="Third announcer (optional)" style="margin-top:8px">
-          <div class="two" style="margin-top:14px">
-            <button class="primary" id="btnAnnShow">Show announcers</button>
-            <button class="take" id="btnAnnHide">Take down</button>
+          <div data-pane="ann" hidden>
+            <p class="hint" style="margin-top:0">The announcers' names, as a pop-up strip above the bug or as a lower third in the bug's spot. Showing it takes down any other lower third, pop-up or full-screen graphic. The names are remembered for next time.</p>
+            <label for="annStyle">Show as</label>
+            <select id="annStyle"><option value="pop">Pop-up above the bug</option><option value="l3">Lower third (the bug steps aside, then comes back)</option></select>
+            <label for="annLabel">Label</label>
+            <input id="annLabel" maxlength="24" placeholder="On the call">
+            <label for="ann1">Announcers</label>
+            <input id="ann1" maxlength="30" placeholder="First announcer">
+            <input id="ann2" maxlength="30" placeholder="Second announcer (optional)" style="margin-top:6px">
+            <input id="ann3" maxlength="30" placeholder="Third announcer (optional)" style="margin-top:6px">
+            <p class="hint">It comes down on its own after the pop-up time (Graphics setup, now <span id="annSecs">8</span> seconds; 0 = stays up). As a lower third, the score bug comes back when it goes down, unless Hide score bug was pressed.</p>
+            <p class="hint" id="annNow"></p>
           </div>
-          <p class="hint">It comes down on its own after the pop-up's time (Pop-up tab, now <span id="annSecs">8</span> seconds; 0 = stays up). As a lower third, the bug comes back when it goes down, unless Hide bug was pressed.</p>
-          <p class="hint" id="annNow"></p>
-        </div>
 
-        <div data-pane="pre" hidden>
-          <p class="hint" style="margin-top:0">The matchup card: both teams' logos, names and records (from Setup), with the details below. Picking a game in Setup fills in the title, date and venue.</p>
-          <div class="two">
-            <div><label for="mTitle">Title</label><input id="mTitle" data-match="title" placeholder="Boys Basketball"></div>
-            <div><label for="mSub">Subtitle (optional)</label><input id="mSub" data-match="sub" placeholder="District game"></div>
-          </div>
-          <div class="two">
-            <div><label for="mHomeFull" id="mHomeFullL">FBCA full name</label><input id="mHomeFull" data-match="homeFull" placeholder="Fort Bend Christian Academy"></div>
-            <div><label for="mAwayFull" id="mAwayFullL">AWAY full name</label><input id="mAwayFull" data-match="awayFull" placeholder="The Village School"></div>
-          </div>
-          <p class="hint" style="margin-top:4px">Shown on the title card. Leave blank to use the short name from Setup. Picking a game in Setup fills these in.</p>
-          <div class="two">
-            <div><label for="mWhen">Date and time</label><input id="mWhen" data-match="when" placeholder="Thu, Dec 10 · 6:00 PM"></div>
-            <div><label for="mVenue">Venue</label><input id="mVenue" data-match="venue" placeholder="The Nest"></div>
-          </div>
-          <p class="hint" id="mRecs"></p>
-          <div class="row-btns" style="margin-top:10px"><button class="primary" id="btnPre">Show title card</button></div>
-        </div>
-
-        <div data-pane="spot" hidden>
-          <div class="pane-h">Player spotlight</div>
-          <label for="spRoster">Player (from the stats roster, or Setup → Player photos)</label>
-          <select id="spRoster"></select>
-          <p class="hint" id="spRosterNote" hidden></p>
-          <div class="two">
-            <div><label for="spTeam">Team</label><select id="spTeam"><option value="home"></option><option value="away"></option></select></div>
-            <div><label for="spNum">Number</label><input id="spNum" maxlength="3" inputmode="numeric"></div>
-          </div>
-          <label for="spNameIn">Name</label><input id="spNameIn" maxlength="30" placeholder="Jordan Lee">
-          <div class="two">
-            <div><label for="spPos">Position</label><input id="spPos" maxlength="20" placeholder="Guard"></div>
-            <div><label for="spYear">Class</label><input id="spYear" maxlength="20" placeholder="Senior"></div>
-          </div>
-          <label>Stats (number, then what it is)</label>
-          <div class="spot-stats">
-            <input id="spV1" maxlength="6" placeholder="18.4"><input id="spL1" maxlength="20" placeholder="PPG">
-            <input id="spV2" maxlength="6" placeholder="7.2"><input id="spL2" maxlength="20" placeholder="RPG">
-            <input id="spV3" maxlength="6" placeholder="3.1"><input id="spL3" maxlength="20" placeholder="APG">
-          </div>
-          <div id="spFromStats" hidden>
-            <label for="spPick">Or fill tonight's numbers from the stats</label>
-            <div class="two"><select id="spPick"></select><button id="spFill">Fill PTS · REB · AST</button></div>
-          </div>
-          <label for="spFile">Photo (optional; without one, the jersey number shows)</label>
-          <div class="set-row"><input type="file" id="spFile" accept="image/*"><button id="spPhotoClear">Remove</button></div>
-          <p class="hint">Best: a PNG cutout with a transparent background, waist up. It's sized from the player's outline so the top of the head lands on the dashed line, with the team color behind. Use Size and Up / down to adjust.</p>
-          <div class="sp-fit" id="spFit" hidden>
-            <canvas id="spPrev" width="440" height="528"></canvas>
-            <div>
-              <label for="spZoom">Size</label><input type="range" id="spZoom" min="60" max="160" value="100">
-              <label for="spShift">Up / down</label><input type="range" id="spShift" min="-150" max="150" value="0">
-              <button id="spFitReset" style="margin-top:10px">Reset fit</button>
+          <div data-pane="pre" hidden>
+            <p class="hint" style="margin-top:0">The matchup card: both teams' logos, names and records (from Game setup), with the details below. Picking a game in Game setup fills in the title, date and venue.</p>
+            <div class="two">
+              <div><label for="mTitle">Title</label><input id="mTitle" data-match="title" placeholder="Boys Basketball"></div>
+              <div><label for="mSub">Subtitle (optional)</label><input id="mSub" data-match="sub" placeholder="District game"></div>
             </div>
-          </div>
-          <div class="row-btns" style="margin-top:12px">
-            <button class="primary" id="btnSpShow">Show spotlight</button>
-            <button id="btnSpSave">Save to list</button>
-          </div>
-          <ul class="l3-list" id="spList"></ul>
-        </div>
-
-        <div data-pane="lu" hidden>
-          <div class="row-btns" id="luTeams"></div>
-          <p class="hint" style="margin-top:0">The starters fill in from the stat keeper page when its keeper sets them (with stats from the stat keeper). Or pick each one from the roster or type one like <b>#3 Jordan Lee</b>. Headshots come from Setup → Player photos (a number shows where there isn't one).</p>
-          <div id="luRows"></div>
-          <label for="luCoach">Head coach</label><input id="luCoach" maxlength="40" placeholder="Coach Smith">
-          <div class="row-btns" style="margin-top:12px">
-            <button class="primary" id="btnLuFull">Show full screen</button>
-            <button class="primary" id="btnLuL3">Show lower third</button>
-          </div>
-          <datalist id="luRoster"></datalist>
-        </div>
-
-        <div data-pane="stats" hidden>
-          <label for="statsLabel">Title</label>
-          <select id="statsLabel">
-            <option value="auto">Automatic (Halftime, Final, or the quarter)</option>
-            <option value="HALFTIME">Halftime</option><option value="FINAL">Final</option><option value="">No title</option>
-          </select>
-          <div class="row-btns" style="margin-top:12px"><button class="primary" id="btnStats">Show team stats</button></div>
-          <p class="hint" id="statsNote"></p>
-          <table class="mini" id="statsPreview"></table>
-        </div>
-
-        <div data-pane="fv" hidden>
-          <div class="pane-h">Player of the Game fan vote</div>
-          <p class="hint">Fans vote at fbca.tv/vote, one vote per phone or computer. Pick the nominees, open voting, put up the QR lower third a few times, then close voting and show the results. This is the same vote the soccer page runs, so only one game can have a vote at a time.</p>
-          <label>Pick nominees: tap up to 4 players (tap again to take one off)</label>
-          <div class="fv-pick" id="fvPick"></div>
-          <p class="hint" id="fvPickNote" style="margin-top:0"></p>
-          <label>Nominees (2–4): team, number, name, position, and a headshot for the results (optional). Picking above fills these in.</label>
-          <div class="fv-noms" id="fvNoms"></div>
-          <div class="row-btns" style="margin-top:12px">
-            <button class="primary" id="fvOpen">Open voting</button>
-            <button id="fvClose">Close voting</button>
-            <button class="danger" id="fvClear">Clear vote</button>
-          </div>
-          <p class="hint" id="fvStatus"></p>
-          <ul class="fv-tally" id="fvTally"></ul>
-          <div class="row-btns" style="margin-top:10px">
-            <button class="primary" id="fvShowQr">Show QR lower third</button>
-            <button class="primary" id="fvShowRes">Show results</button>
-          </div>
-          <label for="fvKey">Admin key (saved on this computer only)</label>
-          <div class="set-row"><input id="fvKey" type="password" autocomplete="off" spellcheck="false"><button id="fvKeySave">Save key</button></div>
-        </div>
-
-        <div data-pane="stn" hidden>
-          <div class="pane-h">Station bug</div>
-          <div class="stn-row">
-            <label class="switch"><input type="checkbox" id="stnOn" role="switch"><span class="track"></span><span>Station bug</span></label>
-            <select id="stnCorner" aria-label="Station bug corner"><option value="tr">Top right</option><option value="tl">Top left</option></select>
-            <select id="stnColor" aria-label="Station bug color"><option value="gold">Gold</option><option value="white">White</option><option value="black">Black</option></select>
-            <span class="op">Opacity <input type="range" id="stnOp" min="20" max="100" step="5"><b id="stnOpV"></b></span>
-          </div>
-          <p class="hint" id="stnNote"></p>
-        </div>
-      </div>
-
-
-      <div class="card">
-        <div class="tabs">
-          <button data-tab="setup" class="active">Setup</button>
-          <button data-tab="rules">Rules</button>
-          <button data-tab="keys">Keys</button>
-          <button data-tab="storage">Storage</button>
-        </div>
-
-        <div data-pane="setup">
-          <label for="game">Load from schedule</label>
-          <select id="game"><option value="">Schedule not loaded. Type teams below.</option></select>
-          <div id="teamSetup"></div>
-          <div class="pane-h">Output signal</div>
-          <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
-            <span>Fill + key (alpha channel)<small id="alphaHint"></small></span></label>
-          <p class="hint" style="margin-top:4px">Set this before the broadcast, to match how the ATEM is wired. Changing it asks first, because it changes what goes out to the ATEM.</p>
-          <p class="hint" id="atemNote" style="margin-top:4px"></p>
-          <div id="chromaOpts">
-            <label for="keyColor">Key color (the background the ATEM keys out)</label>
-            <div class="set-row">
-              <input id="keyColor" type="color" style="flex:0 0 90px">
-              <button data-keypreset="#FF00FF">Magenta</button>
-              <button data-keypreset="#00FF00">Green</button>
-              <button data-keypreset="#0000FF">Blue</button>
+            <div class="two">
+              <div><label for="mHomeFull" id="mHomeFullL">FBCA full name</label><input id="mHomeFull" data-match="homeFull" placeholder="Fort Bend Christian Academy"></div>
+              <div><label for="mAwayFull" id="mAwayFullL">AWAY full name</label><input id="mAwayFull" data-match="awayFull" placeholder="The Village School"></div>
             </div>
-            <p class="warn" id="keyWarn"></p>
+            <p class="hint">Shown on the title card. Leave blank to use the short name from Game setup.</p>
+            <div class="two">
+              <div><label for="mWhen">Date and time</label><input id="mWhen" data-match="when" placeholder="Thu, Dec 10 · 6:00 PM"></div>
+              <div><label for="mVenue">Venue</label><input id="mVenue" data-match="venue" placeholder="The Nest"></div>
+            </div>
+            <p class="hint" id="mRecs"></p>
           </div>
-          <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (above), so there is no key color.</p>
-          <div class="row-btns" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, fouls, timeouts, clock)</button></div>
-        </div>
 
-        <div data-pane="storage" hidden>
-          <div class="pane-h" id="storeHead">Storage on this computer</div>
-          <p class="hint" style="margin-top:0">Everything below stays in this browser on this computer (it's still there after a restart). Clearing something here can't be undone.</p>
-          <ul class="l3-list" id="storeList"><li><div class="txt"><span>Open this tab to check.</span></div></li></ul>
-        </div>
+          <div data-pane="spot" hidden>
+            <label for="spRoster">Player (from the stats roster, or Game setup → Player photos)</label>
+            <select id="spRoster"></select>
+            <p class="hint" id="spRosterNote" hidden></p>
+            <div class="two">
+              <div><label for="spTeam">Team</label><select id="spTeam"><option value="home"></option><option value="away"></option></select></div>
+              <div><label for="spNum">Number</label><input id="spNum" maxlength="3" inputmode="numeric"></div>
+            </div>
+            <label for="spNameIn">Name</label><input id="spNameIn" maxlength="30" placeholder="Jordan Lee">
+            <div class="two">
+              <div><label for="spPos">Position</label><input id="spPos" maxlength="20" placeholder="Guard"></div>
+              <div><label for="spYear">Class</label><input id="spYear" maxlength="20" placeholder="Senior"></div>
+            </div>
+            <label>Stats (number, then what it is)</label>
+            <div class="spot-stats">
+              <input id="spV1" maxlength="6" placeholder="18.4"><input id="spL1" maxlength="20" placeholder="PPG">
+              <input id="spV2" maxlength="6" placeholder="7.2"><input id="spL2" maxlength="20" placeholder="RPG">
+              <input id="spV3" maxlength="6" placeholder="3.1"><input id="spL3" maxlength="20" placeholder="APG">
+            </div>
+            <div id="spFromStats" hidden>
+              <label for="spPick">Or fill tonight's numbers from the stats</label>
+              <div class="two"><select id="spPick"></select><button id="spFill">Fill PTS · REB · AST</button></div>
+            </div>
+            <label for="spFile">Photo (optional; without one, the jersey number shows)</label>
+            <div class="set-row"><input type="file" id="spFile" accept="image/*"><button class="sm" id="spPhotoClear">Remove</button></div>
+            <p class="hint">Best: a PNG cutout with a transparent background, waist up. It's sized from the player's outline so the top of the head lands on the dashed line, with the team color behind. Use Size and Up / down to adjust.</p>
+            <div class="sp-fit" id="spFit" hidden>
+              <canvas id="spPrev" width="440" height="528"></canvas>
+              <div>
+                <label for="spZoom">Size</label><input type="range" id="spZoom" min="60" max="160" value="100">
+                <label for="spShift">Up / down</label><input type="range" id="spShift" min="-150" max="150" value="0">
+                <button class="sm" id="spFitReset" style="margin-top:8px">Reset fit</button>
+              </div>
+            </div>
+            <div class="row"><button id="btnSpSave">Save to list</button></div>
+            <ul class="l3-list" id="spList"></ul>
+          </div>
 
-        <div data-pane="rules" hidden>
-          <div class="two">
-            <div><label for="qMin">Quarter length (min)</label><input id="qMin" type="number" min="1" max="20"></div>
-            <div><label for="otMin">OT length (min)</label><input id="otMin" type="number" min="1" max="10"></div>
+          <div data-pane="lu" hidden>
+            <p class="hint" style="margin-top:0">The starters fill in from the stat keeper page when its keeper sets them (with stats from the stat keeper). Or pick each one from the roster or type one like <b>#3 Jordan Lee</b>. Headshots come from Game setup → Player photos (a number shows where there isn't one).</p>
+            <div id="luRows"></div>
+            <label for="luCoach">Head coach</label><input id="luCoach" maxlength="40" placeholder="Coach Smith">
+            <datalist id="luRoster"></datalist>
           </div>
-          <div class="two">
-            <div><label for="toMax">Timeouts per game</label><input id="toMax" type="number" min="0" max="8"></div>
-            <div><label for="bonusAt">Bonus at team foul #</label><input id="bonusAt" type="number" min="1" max="15"></div>
-          </div>
-          <div class="two">
-            <div><label for="foulReset">Team fouls reset</label>
-              <select id="foulReset"><option value="quarter">Every quarter</option><option value="half">Every half</option></select></div>
-            <div><label for="shotOn">Shot clock</label>
-              <select id="shotOn"><option value="0">Off (TAPPS: no shot clock)</option><option value="1">On</option></select></div>
-          </div>
-          <div class="two">
-            <div><label for="shotFull">Shot clock full reset (sec)</label><input id="shotFull" type="number" min="5" max="60"></div>
-            <div><label for="shotShort">Short reset (sec)</label><input id="shotShort" type="number" min="5" max="60"></div>
-          </div>
-          <label class="check"><input type="checkbox" id="toAuto"> Flash the timeout graphic when the scoreboard's timeouts-left drops</label>
-          <p class="hint">Defaults follow NFHS: four 8-minute quarters and 4-minute overtimes; 5 timeouts (three 60-second, two 30-second), plus one more for each team at the start of each overtime; two free throws starting with the 5th team foul of each quarter (no one-and-one), with fouls carrying from the 4th quarter into overtime; shot clock off, since TAPPS doesn't use one. If a game does, NFHS uses 35 seconds; the 20-second short reset is a common state option.</p>
-          <p class="hint">BONUS shows on the team that shoots the free throws: the one whose opponent has reached the bonus foul number.</p>
-        </div>
 
-        <div data-pane="keys" hidden>
-          <ul class="keys">
-            <li><kbd>Space</kbd> start / stop the clock</li>
-            <li><kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> left team +1 / +2 / +3, <kbd>A</kbd> left &minus;1</li>
-            <li><kbd>I</kbd> <kbd>O</kbd> <kbd>P</kbd> right team +1 / +2 / +3, <kbd>L</kbd> right &minus;1</li>
-            <li><kbd>S</kbd> / <kbd>K</kbd> foul on the left / right team</li>
-            <li><kbd>R</kbd> shot clock full reset, <kbd>T</kbd> short reset (when the shot clock is on)</li>
-            <li><kbd>X</kbd> flip the possession arrow, <kbd>H</kbd> hide / show the bug</li>
-            <li><kbd>N</kbd> show / hide the lower third in the form</li>
-            <li><kbd>U</kbd> pop-up: show the last one again / take it down</li>
-            <li><kbd>B</kbd> station bug on / off</li>
-            <li><kbd>V</kbd> fan vote QR lower third, <kbd>Esc</kbd> take down the results</li>
-          </ul>
-          <p class="hint">Left and right follow the screen, so they stay under your hands after a swap.</p>
+          <div data-pane="stats" hidden>
+            <label for="statsLabel">Title</label>
+            <select id="statsLabel">
+              <option value="auto">Automatic (Halftime, Final, or the quarter)</option>
+              <option value="HALFTIME">Halftime</option><option value="FINAL">Final</option><option value="">No title</option>
+            </select>
+            <p class="hint" id="statsNote"></p>
+            <table class="mini" id="statsPreview"></table>
+          </div>
+
+          <div data-pane="fv" hidden>
+            <p class="hint" style="margin-top:0">Fans vote at fbca.tv/vote. Pick the nominees in Graphics setup, open voting, put up the QR lower third a few times, then close voting and show the results. This is the same vote the soccer page runs, so only one game can have a vote at a time.</p>
+            <div class="row">
+              <button class="primary" id="fvOpen">Open voting</button>
+              <button id="fvClose">Close voting</button>
+              <button class="danger" id="fvClear">Clear vote</button>
+            </div>
+            <p class="hint" id="fvStatus"></p>
+            <ul class="fv-tally" id="fvTally"></ul>
+          </div>
+
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- ================= GAME SETUP ================= -->
+  <section class="view cols" id="vGame" data-vpane="game" hidden>
+    <div class="panel">
+      <h2>Game</h2>
+      <label for="game">Load from schedule</label>
+      <select id="game"><option value="">Schedule not loaded. Type teams below.</option></select>
+      <h2 style="margin-top:16px">Rules</h2>
+      <div class="two">
+        <div><label for="qMin">Quarter length (min)</label><input id="qMin" type="number" min="1" max="20"></div>
+        <div><label for="otMin">OT length (min)</label><input id="otMin" type="number" min="1" max="10"></div>
+      </div>
+      <div class="two">
+        <div><label for="toMax">Timeouts per game</label><input id="toMax" type="number" min="0" max="8"></div>
+        <div><label for="bonusAt">Bonus at team foul #</label><input id="bonusAt" type="number" min="1" max="15"></div>
+      </div>
+      <div class="two">
+        <div><label for="foulReset">Team fouls reset</label>
+          <select id="foulReset"><option value="quarter">Every quarter</option><option value="half">Every half</option></select></div>
+        <div><label for="shotOn">Shot clock</label>
+          <select id="shotOn"><option value="0">Off (TAPPS: no shot clock)</option><option value="1">On</option></select></div>
+      </div>
+      <div class="two">
+        <div><label for="shotFull">Shot clock full reset (sec)</label><input id="shotFull" type="number" min="5" max="60"></div>
+        <div><label for="shotShort">Short reset (sec)</label><input id="shotShort" type="number" min="5" max="60"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="toAuto"> Flash the timeout graphic when the scoreboard's timeouts-left drops</label>
+      <p class="hint">Defaults follow NFHS: four 8-minute quarters and 4-minute overtimes; 5 timeouts (three 60-second, two 30-second), plus one more for each team at the start of each overtime; two free throws starting with the 5th team foul of each quarter (no one-and-one), with fouls carrying from the 4th quarter into overtime; shot clock off, since TAPPS doesn't use one. If a game does, NFHS uses 35 seconds; the 20-second short reset is a common state option.</p>
+      <p class="hint">BONUS shows on the team that shoots the free throws: the one whose opponent has reached the bonus foul number.</p>
+      <div class="row" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, fouls, timeouts, clock)</button></div>
+    </div>
+    <div class="panel" id="setupAway"></div>
+    <div class="panel" id="setupHome"></div>
+    <div id="teamSetup" hidden></div>
+  </section>
+
+  <!-- ================= GRAPHICS SETUP ================= -->
+  <section class="view cols" id="vGfx" data-vpane="gfx" hidden>
+    <div class="panel">
+      <h2>Fan vote: Player of the Game</h2>
+      <p class="hint" style="margin-top:0">Fans vote at fbca.tv/vote, one vote per phone or computer. Open and close voting, and show the QR and results, from the Fan vote tiles on Live.</p>
+      <label>Pick nominees: tap up to 4 players (tap again to take one off)</label>
+      <div class="fv-pick" id="fvPick"></div>
+      <p class="hint" id="fvPickNote" style="margin-top:0"></p>
+      <label>Nominees (2–4): team, number, name, position, and a headshot for the results (optional). Picking above fills these in.</label>
+      <div class="fv-noms" id="fvNoms"></div>
+      <label for="fvKey">Admin key (saved on this computer only)</label>
+      <div class="set-row"><input id="fvKey" type="password" autocomplete="off" spellcheck="false"><button class="sm" id="fvKeySave">Save key</button></div>
+    </div>
+    <div class="panel">
+      <h2>Station bug</h2>
+      <div class="stn-row">
+        <label class="switch"><input type="checkbox" id="stnOn" role="switch"><span class="track"></span><span>Station bug</span></label>
+        <select id="stnCorner" aria-label="Station bug corner"><option value="tr">Top right</option><option value="tl">Top left</option></select>
+        <select id="stnColor" aria-label="Station bug color"><option value="gold">Gold</option><option value="white">White</option><option value="black">Black</option></select>
+        <span class="op">Opacity <input type="range" id="stnOp" min="20" max="100" step="5"><b id="stnOpV"></b></span>
+      </div>
+      <p class="hint" id="stnNote"></p>
+      <h2 style="margin-top:16px">Pop-ups</h2>
+      <label for="popSecs">Take a pop-up down after (seconds, 0 = stays up)</label>
+      <input id="popSecs" type="number" min="0" max="120" style="max-width:140px">
+      <p class="hint">Also how long the announcers stay up.</p>
+    </div>
+  </section>
+
+  <!-- ================= CONNECTIONS ================= -->
+  <section class="view cols" id="vConn" data-vpane="conn" hidden>
+    <div class="panel">
+      <h2>Data sources</h2>
+      <div class="row"><button id="btnSb">Connect scoreboard</button></div>
+      <p class="hint" id="sbStatus">Run the clock, score and fouls from the gym scoreboard. Pick the file Scorebridge writes.</p>
+      <p class="hint" id="sbRate" hidden></p>
+      <label for="statFrom">Stats come from</label>
+      <select id="statFrom">
+        <option value="keeper">Stat keeper page (live, fbca.tv/graphics/basketball-stats.html)</option>
+        <option value="sheet">Excel stat sheet on OneDrive (deprecated)</option>
+      </select>
+      <div id="keeperBox"><div class="row"><button id="btnKeeper">Connect to the stat keeper</button></div></div>
+      <input type="checkbox" id="clockShare" checked hidden>
+      <p class="hint">This clock is always shared with the stat keeper: every play is stamped with the game time the moment it's tapped, and the fbca.tv box score shows it.</p>
+      <div class="set-row" id="skKeyRow" hidden><input id="skKey" type="password" autocomplete="off" placeholder="Stat keeper key (the same one the stat crew uses)"><button class="sm" id="skKeySave">Save key</button></div>
+      <p class="hint" id="clockShareStatus"></p>
+      <div id="sheetBox">
+        <label for="sheetUrl">Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
+        <div class="set-row"><input id="sheetUrl" placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…"><button class="sm" id="btnSheet">Connect</button></div>
+        <div class="set-row"><label for="sheetEvery" style="margin:auto 0;flex:0 0 auto">Read the sheet every</label><select id="sheetEvery" style="flex:1"><option value="1">1 second</option><option value="5">5 seconds</option><option value="20">20 seconds</option></select></div>
+      </div>
+      <p class="hint" id="sheetStatus">Not connected.</p>
+      <table class="src">
+        <thead><tr><th>Item</th><th>Scoreboard</th><th>Stats</th></tr></thead>
+        <tbody id="srcRows"></tbody>
+      </table>
+      <p class="hint">Tick where each item comes from. Unticked items run from the buttons on this page. Pairs show left–right as on screen. Stats arrive as the stat crew enters them, a moment after the play, so the clock and score are best from the scoreboard.</p>
+      <p class="hint" id="sbKeys" hidden></p>
+    </div>
+    <div class="panel">
+      <h2>Output signal</h2>
+      <label class="switch"><input type="checkbox" id="alphaKey" role="switch"><span class="track"></span>
+        <span>Fill + key (alpha channel)<small id="alphaHint"></small></span></label>
+      <p class="hint">Set this before the broadcast, to match how the ATEM is wired. Changing it asks first, because it changes what goes out to the ATEM.</p>
+      <p class="hint" id="atemNote"></p>
+      <div id="chromaOpts">
+        <label for="keyColor">Key color (the background the ATEM keys out)</label>
+        <div class="set-row">
+          <input id="keyColor" type="color" style="flex:0 0 90px">
+          <button class="sm" data-keypreset="#FF00FF">Magenta</button>
+          <button class="sm" data-keypreset="#00FF00">Green</button>
+          <button class="sm" data-keypreset="#0000FF">Blue</button>
+        </div>
+        <p class="warn" id="keyWarn"></p>
+      </div>
+      <p class="hint" id="alphaSetupNote" hidden>Fill + key is on (above), so there is no key color.</p>
+      <h2 style="margin-top:16px" id="storeHead">Storage on this computer</h2>
+      <p class="hint" style="margin-top:0">Everything below stays in this browser on this computer (it's still there after a restart). Clearing something here can't be undone.</p>
+      <ul class="l3-list" id="storeList"><li><div class="txt"><span>Open this tab to check.</span></div></li></ul>
+    </div>
+    <div class="panel">
+      <h2>Keyboard</h2>
+      <ul class="keys">
+        <li><kbd>Space</kbd> start / stop the clock</li>
+        <li><kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> left team +1 / +2 / +3, <kbd>A</kbd> left &minus;1</li>
+        <li><kbd>I</kbd> <kbd>O</kbd> <kbd>P</kbd> right team +1 / +2 / +3, <kbd>L</kbd> right &minus;1</li>
+        <li><kbd>S</kbd> / <kbd>K</kbd> foul on the left / right team</li>
+        <li><kbd>R</kbd> shot clock full reset, <kbd>T</kbd> short reset (when the shot clock is on)</li>
+        <li><kbd>X</kbd> flip the possession arrow, <kbd>H</kbd> hide / show the score bug</li>
+        <li><kbd>N</kbd> show / hide the lower third in the form</li>
+        <li><kbd>U</kbd> pop-up: show the last one again / take it down</li>
+        <li><kbd>B</kbd> station bug on / off</li>
+        <li><kbd>V</kbd> fan vote QR lower third, <kbd>Esc</kbd> take down the full-screen graphic</li>
+      </ul>
+      <p class="hint">Left and right follow the screen, so they stay under your hands after a swap.</p>
+      <p class="hint">The old layout is still at <a href="basketball-scorebug-OLD.html">basketball-scorebug-OLD.html</a> as a backup. It runs the same outputs with the same saved game.</p>
+    </div>
+  </section>
+
+  <!-- The graphics' own Show / Take down buttons. The code below runs them; on screen, the Show and Take down at the
+       top of the details panel press them, so they're kept here out of sight. -->
+  <div hidden id="engineBtns">
+    <button id="btnL3Show">Show lower third</button><button id="btnL3Hide">Hide</button>
+    <button id="btnPopText">Show text</button><button id="btnPopHide">Take down pop-up</button>
+    <button id="btnAnnShow">Show announcers</button><button id="btnAnnHide">Take down</button>
+    <button id="btnPre">Show title card</button>
+    <button id="btnSpShow">Show spotlight</button>
+    <div id="luTeams"></div><button id="btnLuFull">Show full screen</button><button id="btnLuL3">Show lower third</button>
+    <button id="btnStats">Show team stats</button>
+    <button id="fvShowQr">Show QR lower third</button><button id="fvShowRes">Show results</button>
   </div>
 </div>
 
@@ -1558,7 +1703,7 @@
   };
   const fmtShot = ms => ms < 5000 && ms > 0 ? (Math.floor(ms / 100) / 10).toFixed(1) : String(Math.ceil(ms / 1000));
   const clockOff = () => s.period === 'HALF' || s.period === 'FINAL';
-  const periodLabel = p => ({ '1Q': '1ST', '2Q': '2ND', '3Q': '3RD', '4Q': '4TH', OT: 'OT', '2OT': '2OT', '3OT': '3OT', HALF: 'HALF', FINAL: 'FINAL' })[p] || p;
+  const periodLabel = p => ({ '1Q': '1ST', '2Q': '2ND', '3Q': '3RD', '4Q': '4TH', OT: 'OT', '2OT': '2OT', '3OT': '3OT', '4OT': '4OT', HALF: 'HALF', FINAL: 'FINAL' })[p] || p;
   const inBonus = side => s[other(side)].fouls >= s.bonusAt;
   // Shot clock is shown when it's on, not hidden by the operator, and the game clock has more time than it.
   const shotShown = now => s.shotOn && s.shot.show && !clockOff() && remaining(now) > shotLeft(now);
@@ -1578,7 +1723,7 @@
   // lead is the most it was ahead by at any point. Percent led is the share of the game time played that a team was
   // ahead, timed by the game clock each play is stamped with (the stat page stamps plays while the scorebug shares its
   // clock). If any scoring play has no stamp, percent led stays blank rather than guess.
-  const LEAD_PTS = { m2: 2, m3: 3, mft: 1 }, LEAD_PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3'];
+  const LEAD_PTS = { m2: 2, m3: 3, mft: 1 }, LEAD_PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3', 'OT4'];
   // Game time in seconds from the opening tip to `left` seconds left in period p (the stat keeper's period names).
   const leadClock = (qMin, otMin) => {
     const q = (qMin || 8) * 60, ot = (otMin || 4) * 60, len = i => i < 4 ? q : ot;
@@ -1609,7 +1754,7 @@
     return end > 0 ? { home: led.home / end, away: led.away / end } : { home: 0, away: 0 };
   };
   // Lead stats to now on the bug's own clock (end of the half at halftime, end of the last period at the final).
-  const LEAD_PER = { '1Q': '1Q', '2Q': '2Q', '3Q': '3Q', '4Q': '4Q', OT: 'OT', '2OT': 'OT2', '3OT': 'OT3' };
+  const LEAD_PER = { '1Q': '1Q', '2Q': '2Q', '3Q': '3Q', '4Q': '4Q', OT: 'OT', '2OT': 'OT2', '3OT': 'OT3', '4OT': 'OT4' };
   const leadNow = () => {
     const L = s.sheet.lead; if (!L) return null;
     const c = leadClock(s.qMin, s.otMin), per = LEAD_PER[s.period];
@@ -2293,7 +2438,7 @@
       const go = el('button', 'small', 'Open Storage');
       go.style.marginLeft = '12px';
       go.onclick = () => { const t = document.querySelector('button[data-tab="storage"]'); if (t) t.click(); $('storeHead').scrollIntoView({ block: 'start' }); };
-      bar.append("This browser's storage is full, so changes aren't being saved. They still go to air, but a reload or a new output window will bring back older settings. Free up space in Setup → Storage.", go);
+      bar.append("This browser's storage is full, so changes aren't being saved. They still go to air, but a reload or a new output window will bring back older settings. Free up space in Connections → Storage.", go);
       document.body.append(bar);
     }
     bar.hidden = ok;
@@ -2698,6 +2843,7 @@
   let l3Hook = null; // lower third list and form labels (set up below)
   let popHook = null; // pop-up tab (set up below)
   let preHook = null; // pregame tab (set up below)
+  let shellHook = null; // the landscape layout: tiles, details panel, lights (set up at the end)
   let sheetHook = null; // data sources table, stat sheet status, sheet players, team stats tab (set up below)
   // How a name fits its 350px strip on the bug (same math as the output's fitName).
   const fitCanvas = document.createElement('canvas').getContext('2d');
@@ -2712,7 +2858,10 @@
     if (k >= .7) return `Long: letters narrowed to ${Math.round(k * 100)}% to fit.`;
     return `Very long: letters narrowed and shrunk to ${Math.round(k / .7 * 100)}% size. A shorter name will read better.`;
   };
+  const bugWaits = () => s.visible && (!!s.panel || (s.l3.on && !!s.l3.ann));
+  const bugText = () => !s.visible ? 'Show score bug' : bugWaits() ? 'Score bug returns after' : 'Hide score bug';
   const renderCtl = () => {
+    if (shellHook) shellHook();
     if (fvRenderHook) fvRenderHook();
     if (l3Hook) l3Hook();
     if (popHook) popHook();
@@ -2724,7 +2873,7 @@
     $('btnRun').textContent = s.running ? 'Stop clock' : 'Start clock';
     $('btnRun').classList.toggle('running', s.running);
     document.querySelectorAll('[data-p]').forEach(b => b.classList.toggle('active', b.dataset.p === s.period));
-    $('btnShow').textContent = s.visible ? 'Hide bug' : 'Show bug';
+    $('btnShow').textContent = bugText();
     $('shotCtl').hidden = !s.shotOn;
     $('shotFullLbl').textContent = s.shotFull; $('shotShortLbl').textContent = s.shotShort;
     $('btnShotOff').textContent = s.shot.show ? 'Hide' : 'Show';
@@ -2764,17 +2913,24 @@
     // How the ATEM takes it: an upstream key, Luma with Pre Multiplied Key on for fill + key (the fill is
     // drawn over black, so it's already premultiplied); a chroma upstream key on the key color otherwise.
     $('atemNote').textContent = alpha
-      ? 'On the ATEM: Upstream Key, type Luma. Fill Source = the fill window\'s input, Key Source = the key window\'s input, Pre Multiplied Key on. Open both windows below the preview and make each full screen on the display that feeds its input.'
+      ? 'On the ATEM: Upstream Key, type Luma. Fill Source = the fill window\'s input, Key Source = the key window\'s input, Pre Multiplied Key on. Open both windows (the buttons under the preview) and make each full screen on the display that feeds its input.'
       : 'On the ATEM: Upstream Key, type Chroma, keying out ' + s.keyColor.toUpperCase() + '. Open the output window and make it full screen on the display that feeds the ATEM.';
     const clash = [['#063E0C', 'green'], ['#F2D54C', 'gold']].filter(([c]) => nearKey(c)).map(([, n]) => n);
     $('keyWarn').textContent = !alpha && clash.length ? `FBCA ${clash.join(' and ')} is close to this key color. Magenta is the safe choice for FBCA's colors.` : '';
   };
 
+  // The clock font's digits aren't all the same width (a 1 is half as wide), so each character gets a fixed-width
+  // slot and the clocks don't jump as they count.
+  const digits = (node, str) => {
+    str = String(str); if (node.dataset.shown === str) return; node.dataset.shown = str;
+    node.replaceChildren(...[...str].map(c => el('span', /\d/.test(c) ? 'dg' : 'sep', c)));
+  };
   // Live clock readout on the control page.
   const ctlTick = () => {
     const now = Date.now();
-    $('cClock').textContent = clockOff() ? '—' : fmtClock(remaining(now));
-    $('cShot').textContent = s.shotOn ? (shotShown(now) ? 'Shot ' + fmtShot(shotLeft(now)) : 'Shot clock hidden') : '';
+    digits($('cClock'), clockOff() ? '—' : fmtClock(remaining(now)));
+    $('cShotBox').hidden = !s.shotOn;
+    if (s.shotOn) digits($('cShot'), shotShown(now) ? fmtShot(shotLeft(now)) : '–');
     if (s.running && remaining(now) === 0) startStop(); // the horn: stop at 0.0
     // Pop-up: take it down when its time is up (the outputs also hide it on time by themselves).
     if (s.pop.on && s.pop.until && now >= s.pop.until) { s.pop = { ...s.pop, on: false }; save(); }
@@ -2809,8 +2965,9 @@
     on('btnL3Show', s.l3.on && !s.l3.ann);
     $('btnL3Hide').disabled = !s.l3.on; // red only when there's something to take down
     on('btnPopText', s.pop.on && s.pop.kind === 'text'); on('btnPopRun', s.pop.on && s.pop.kind === 'run');
-    const bugQ = s.visible && (!!s.panel || (s.l3.on && !!s.l3.ann));
-    on('btnShow', s.visible && !bugQ); $('btnShow').classList.toggle('queued', bugQ);
+    const bugQ = bugWaits();
+    on('btnShow', s.visible && !bugQ); $('btnShow').classList.toggle('queued', bugQ); $('btnShow').textContent = bugText();
+    $('btnShow').title = bugQ ? 'The score bug comes back when the graphic over it goes down. Click to keep it hidden.' : '';
   };
   tally(); setInterval(tally, 250);
   $('btnSwap').onclick = () => { s.swap = !s.swap; save(); };
@@ -2843,13 +3000,7 @@
     for (const side of SIDES) Object.assign(s[side], { score: 0, fouls: 0, to: s.toMax });
     s.poss = ''; s.l3.on = false; s.fv.l3 = false; s.panel = ''; s.foulBase = { home: 0, away: 0 }; s.pop.on = false; s.scoreLog = []; setPeriod('1Q');
   };
-  // Two tab bars: graphics (right column) and Setup / Rules / Keys (left column). Each runs the panes in its own card.
-  const showTab = name => {
-    const btn = document.querySelector(`.tabs button[data-tab="${name}"]`), card = btn.closest('.card');
-    card.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b === btn));
-    card.querySelectorAll('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== name);
-  };
-  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  // Tabs (Live / Game setup / Graphics setup / Connections) and the graphics tiles are wired at the end (shellHook).
 
   document.addEventListener('keydown', e => {
     if (e.target.closest('input, select, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -2878,7 +3029,7 @@
     $('stnOn').checked = s.stn.on; $('stnCorner').value = s.stn.corner; $('stnColor').value = s.stn.color || 'gold'; setField($('stnOp'), s.stn.opacity); $('stnOpV').textContent = s.stn.opacity + '%';
     // See-through only keys cleanly with fill + key; over a chroma color it would tint.
     $('stnNote').textContent = s.stn.on && s.keyMode !== 'alpha' && s.stn.opacity < 100
-      ? 'See-through needs Fill + key (Setup → Output signal). On a chroma key it shows tinted, so use 100% there.' : '';
+      ? 'See-through needs Fill + key (Connections → Output signal). On a chroma key it shows tinted, so use 100% there.' : '';
   };
 
   // --- Pregame ---
@@ -2888,7 +3039,7 @@
     document.querySelectorAll('[data-match]').forEach(inp => setField(inp, s.match[inp.dataset.match] || ''));
     $('mHomeFullL').textContent = s.home.name + ' full name'; $('mAwayFullL').textContent = s.away.name + ' full name';
     $('btnPre').textContent = s.panel === 'match' ? 'Take down title card' : 'Show title card';
-    $('mRecs').textContent = 'Records: ' + SIDES.map(side => s[side].name + ' ' + (s[side].rec || '(none)')).join(', ') + '. Set them in Setup → Record.';
+    $('mRecs').textContent = 'Records: ' + SIDES.map(side => s[side].name + ' ' + (s[side].rec || '(none)')).join(', ') + '. Set them in Game setup.';
   };
 
   // --- Player photos: headshots per team (by team name), kept in IndexedDB on this computer ---
@@ -3019,7 +3170,7 @@
       tile.append(ph, el('b', null, (x.num ? '#' + x.num + ' ' : '') + x.name), acts, file);
       return tile;
     }));
-    if (!list.length) grid.append(el('p', 'hint', 'No players yet. Connect the stats (Data sources) to list the roster, or add players below.'));
+    if (!list.length) grid.append(el('p', 'hint', 'No players yet. Connect the stats (Connections → Data sources) to list the roster, or add players below.'));
   };
 
   // A saved list is rebuilt only when what it shows changes. The page saves often (the scoreboard feed several
@@ -3179,7 +3330,7 @@
     clearPhoto();
     const note = $('spRosterNote');
     note.hidden = !!photo;
-    note.textContent = photo ? '' : 'No headshot for ' + (num ? '#' + num + ' ' : '') + name + ' yet. Add one in Setup → Player photos, or upload a photo below.';
+    note.textContent = photo ? '' : 'No headshot for ' + (num ? '#' + num + ' ' : '') + name + ' yet. Add one in Game setup → Player photos, or upload a photo below.';
     if (!photo) return;
     const img = new Image();
     img.onload = () => { photoImg = img; photoBox = subjectBox(img); resetFit(); $('spFit').hidden = false; refitPhoto(); };
@@ -3214,7 +3365,7 @@
         l.forEach((p, i) => g.append(new Option((p.num ? '#' + p.num + ' ' : '') + p.name, side + ':' + i)));
         sel.append(g);
       }
-      if (!lists.some(([, l]) => l.length)) sel.append(new Option('No players yet: connect the stats (Data sources) or add them in Setup → Player photos', ''));
+      if (!lists.some(([, l]) => l.length)) sel.append(new Option('No players yet: connect the stats (Connections) or add them in Game setup → Player photos', ''));
     }
     const live = sheetLive();
     $('spFromStats').hidden = !live;
@@ -3337,7 +3488,7 @@
       b.disabled = b.dataset.needs === '1' && !live;
       b.classList.toggle('onair', s.pop.on && s.pop.kind === 'stat' && s.pop.stat === b.textContent);
     });
-    $('popStatsNote').textContent = live ? '' : 'Shooting, rebounds and the rest need the stats connected (Setup → Data sources). Team fouls and timeouts work any time.';
+    $('popStatsNote').textContent = live ? '' : 'Shooting, rebounds and the rest need the stats connected (Connections → Data sources). Team fouls and timeouts work any time.';
     const run = currentRun();
     $('btnPopRun').disabled = !run;
     $('btnPopRun').textContent = run ? `Show: ${s[run.side].name} on a ${run.pts}–0 run` : 'Show the run';
@@ -3457,7 +3608,7 @@
   };
   const fvAdmin = async body => {
     const key = fvKey();
-    if (!key) { fvSay('Enter the admin key at the bottom of this tab first.'); return null; }
+    if (!key) { fvSay('Enter the admin key in Graphics setup → Fan vote first.'); return null; }
     fvBusy = true; renderFv();
     try {
       const r = await fetch(FV_API + '/admin', { method: 'POST', body: JSON.stringify(body),
@@ -3592,7 +3743,7 @@
     if (sig === fvPickSig) return;
     fvPickSig = sig;
     const anyone = rosters.some(([, r]) => r.length);
-    $('fvPickNote').textContent = anyone ? '' : "Connect the stats (Data sources) or add players in Setup → Player photos, and they'll show here to tap.";
+    $('fvPickNote').textContent = anyone ? '' : "Connect the stats (Connections → Data sources) or add players in Game setup → Player photos, and they'll show here to tap.";
     $('fvPick').replaceChildren(...rosters.map(([side, roster]) => {
       const col = el('div'), c = colorsFv(side), chips = el('div', 'chips');
       col.append(el('h4', null, teamNameFv(side)));
@@ -3642,7 +3793,7 @@
     $('fvShowRes').textContent = s.panel === 'vote' ? 'Take down results' : 'Show results';
     const base = !v.poll ? 'No vote yet.' : (v.open ? 'Voting is open. ' : 'Voting is closed. ')
       + (v.totals.length ? total.toLocaleString('en-US') + (total === 1 ? ' vote' : ' votes') + ' (only you see the count).' : '');
-    $('fvStatus').textContent = fvMsg || base + (fvKey() ? '' : ' Enter the admin key at the bottom of this tab to run a vote.');
+    $('fvStatus').textContent = fvMsg || base + (fvKey() ? '' : ' Enter the admin key in Graphics setup → Fan vote to run a vote.');
     $('fvStatus').classList.toggle('warn', !!fvMsg);
     $('fvTally').replaceChildren(...(v.nominees || []).map((n, i) => {
       const pct = (v.pct || [])[i] || 0, count = v.totals.length ? v.totals[i] + ' · ' : '';
@@ -3828,7 +3979,7 @@
   // the game clock and stamps each play with it, and fbca.tv's box score shows it.
   const SK_KEY_LS = 'eota-stats-key'; // same key storage as the stat keeper page on this site
   const skKey = () => { try { return JSON.parse(localStorage.getItem(SK_KEY_LS) || '""'); } catch (e) { return ''; } };
-  const STAT_PER = { '1Q': '1Q', '2Q': '2Q', '3Q': '3Q', '4Q': '4Q', OT: 'OT', '2OT': 'OT2', '3OT': 'OT3' };
+  const STAT_PER = { '1Q': '1Q', '2Q': '2Q', '3Q': '3Q', '4Q': '4Q', OT: 'OT', '2OT': 'OT2', '3OT': 'OT3', '4OT': 'OT4' };
   let shareSig = '', shareAt = 0, shareBusy = false, shareMsg = '', shareAnchor = null, shareGame = null, shareGameAt = 0;
   // When the gym scoreboard runs the clock, the page sets the time from each reading (whole seconds) and never marks
   // it as running. It counts as running while the reading keeps falling at clock speed.
@@ -4126,10 +4277,11 @@
     const t = String(v).toUpperCase();
     if (/HALF|^HT$/.test(t)) return 'HALF';
     if (/FIN/.test(t)) return 'FINAL';
+    if (/4\s*OT|OT\s*4/.test(t)) return '4OT';
     if (/3\s*OT|OT\s*3/.test(t)) return '3OT';
     if (/2\s*OT|OT\s*2/.test(t)) return '2OT';
     if (/OT/.test(t)) return 'OT';
-    return { 1: '1Q', 2: '2Q', 3: '3Q', 4: '4Q', 5: 'OT', 6: '2OT', 7: '3OT' }[parseInt(t, 10)] || null;
+    return { 1: '1Q', 2: '2Q', 3: '3Q', 4: '4Q', 5: 'OT', 6: '2OT', 7: '3OT', 8: '4OT' }[parseInt(t, 10)] || null;
   };
   let sbHandle = null, sbWorker = null, sbTimer = 0, sbLastText = '', sbRaw = '', sbReadAt = 0, sbFailSince = 0, sbErr = '', sbSeen = {}, sbLatest = {};
   const sbStatus = (text, bad) => { $('sbStatus').textContent = text; $('sbStatus').classList.toggle('warn', !!bad); };
@@ -4315,6 +4467,105 @@
     if (await h.queryPermission({ mode: 'read' }) === 'granted') sbStart(h);
     else sbStatus('Scoreboard: click Connect scoreboard to allow ' + h.name + ' again.');
   }).catch(() => {});
+
+  // ---------- Landscape layout: tabs, graphics tiles, details panel, status lights, scoreboard feed ----------
+  // Tabs. The page always opens on Live.
+  const showView = v => {
+    document.querySelectorAll('#views button').forEach(b => b.classList.toggle('cur', b.dataset.vp === v));
+    document.querySelectorAll('[data-vpane]').forEach(p => p.hidden = p.dataset.vpane !== v);
+  };
+  document.querySelectorAll('#views button').forEach(b => b.addEventListener('click', () => showView(b.dataset.vp)));
+  // Each team's setup gets its own column in Game setup.
+  $('setupAway').append(setupFor.away); $('setupHome').append(setupFor.home);
+
+  // The graphics, four to a row: openers and quick inserts / lineups (full screen, then lower third) / the rest.
+  // Each tile opens its panel on the right; Show and Take down at the top of that panel press the graphic's own buttons.
+  const lineupOn = (side, l3) => l3 ? s.lu.l3 && s.lu.show === side : s.panel === 'lu' && s.lu.show === side;
+  const lineup = (side, l3) => ({
+    id: (l3 ? 'luL3' : 'lu') + side, pane: 'lu', side, kind: l3 ? 'low' : 'full',
+    name: () => 'Lineup: ' + s[side].name, short: () => 'Lineup: ' + initials(s[side].name), title: () => (l3 ? 'Lineup lower third: ' : 'Lineup: ') + s[side].name,
+    showText: () => (l3 ? 'Show lineup lower third: ' : 'Show lineup: ') + s[side].name,
+    on: () => lineupOn(side, l3),
+    show: () => { s.lu.edit = side; $(l3 ? 'btnLuL3' : 'btnLuFull').click(); },
+    take: () => { if (l3) { s.lu.l3 = false; save(); } else setPanel(''); }
+  });
+  const takeFull = () => setPanel('');
+  const GFX = [
+    { id: 'pre', pane: 'pre', kind: 'full', name: () => 'Title card', on: () => s.panel === 'match', show: () => $('btnPre').click(), take: takeFull },
+    { id: 'ann', pane: 'ann', kind: 'low', name: () => 'Announcers', on: () => (s.pop.on && s.pop.kind === 'ann') || (s.l3.on && !!s.l3.ann),
+      show: () => $('btnAnnShow').click(), take: () => $('btnAnnHide').click() },
+    { id: 'l3', pane: 'l3', kind: 'low', key: 'N', name: () => 'Lower third', on: () => s.l3.on && !s.l3.ann,
+      show: () => $('btnL3Show').click(), take: () => $('btnL3Hide').click(), again: 'Update lower third' },
+    { id: 'pop', pane: 'pop', kind: 'pop', key: 'U', name: () => 'Pop-up', showText: () => 'Show pop-up text', on: () => s.pop.on && s.pop.kind !== 'ann',
+      show: () => $('btnPopText').click(), take: () => $('btnPopHide').click(), again: 'Show this text instead' },
+    lineup('home', false), lineup('away', false), lineup('home', true), lineup('away', true),
+    { id: 'spot', pane: 'spot', kind: 'full', name: () => 'Player spotlight', showText: () => 'Show spotlight', on: () => s.panel === 'spot', show: () => $('btnSpShow').click(), take: takeFull },
+    { id: 'stats', pane: 'stats', kind: 'full', name: () => 'Team stats', on: () => s.panel === 'stats', show: () => $('btnStats').click(), take: takeFull, off: () => $('btnStats').disabled },
+    { id: 'qr', pane: 'fv', kind: 'low', key: 'V', name: () => 'Fan vote QR', showText: () => 'Show QR lower third', on: () => !!s.fv.l3,
+      show: () => $('fvShowQr').click(), take: () => { s.fv.l3 = false; save(); } },
+    { id: 'vote', pane: 'fv', kind: 'full', name: () => 'Vote results', on: () => s.panel === 'vote', show: () => $('fvShowRes').click(), take: takeFull },
+  ];
+  const KIND = { full: 'Full screen', low: 'Lower third', pop: 'Pop-up' };
+  const gTitle = g => g.title ? g.title() : g.name();
+  const gShow = g => { if (g.on() && !g.again) return; if (g.off && g.off()) return; g.show(); };
+  let pick = 'l3';
+  const tileEls = {};
+  $('tiles').replaceChildren(...GFX.map(g => {
+    const b = el('button', 'tile'), top = el('b'), name = document.createTextNode(''), small = el('small');
+    top.append(name); if (g.key) top.append(' ', el('kbd', null, g.key));
+    b.append(top, small);
+    b.onclick = () => { pick = g.id; if (g.side && s.lu.edit !== g.side) { s.lu.edit = g.side; save(); } else renderShell(); };
+    b.ondblclick = () => { if (g.on()) g.take(); else gShow(g); };
+    tileEls[g.id] = { b, name, small };
+    return b;
+  }));
+  $('detShow').onclick = () => gShow(GFX.find(g => g.id === pick));
+  $('detTake').onclick = () => { const g = GFX.find(x => x.id === pick); if (g.on()) g.take(); };
+  $('btnStn').onclick = () => { s.stn = { ...s.stn, on: !s.stn.on }; save(); };
+  const renderShell = () => {
+    for (const g of GFX) {
+      const { b, name, small } = tileEls[g.id], on = g.on();
+      // A team name too long for the tile drops to its initials (EMERY WEINER -> EW); the panel title keeps the full name.
+      name.textContent = g.name();
+      if (g.short && name.parentNode.scrollWidth > name.parentNode.clientWidth) name.textContent = g.short();
+      small.textContent = on ? 'On air' : KIND[g.kind];
+      b.classList.toggle('onair', on); b.classList.toggle('pick', g.id === pick);
+    }
+    const g = GFX.find(x => x.id === pick), on = g.on();
+    $('detTitle').textContent = gTitle(g);
+    document.querySelectorAll('#detBody > [data-pane]').forEach(p => p.hidden = p.dataset.pane !== g.pane);
+    const sh = $('detShow');
+    sh.textContent = on ? (g.again || 'On air') : g.showText ? g.showText() : 'Show ' + gTitle(g).replace(/^[A-Z]/, c => c.toLowerCase());
+    sh.className = on ? 'onair' : 'primary';
+    sh.disabled = !on && !!(g.off && g.off());
+    $('detTake').disabled = !on;
+    $('btnStn').classList.toggle('onair', !!s.stn.on);
+  };
+  shellHook = renderShell;
+
+  // Status lights (top bar) and the scoreboard feed: what the scoreboard file says right now, before any change here.
+  const setLight = (node, cls, text, tip) => { node.className = 'light' + (cls ? ' ' + cls : ''); if (text != null) node.textContent = text; node.title = tip || ''; };
+  const renderFeed = () => {
+    const now = Date.now();
+    const sb = !sbHandle ? ['', 'Not connected', 'Not connected: the buttons on this page run the clock and score (Connections → Data sources).']
+      : sbFailSince && now - sbFailSince > 3000 ? ['bad', "Can't read the file", "Can't read the scoreboard file. Is Scorebridge running?"]
+      : sbReadAt && now - sbReadAt < 2000 ? ['ok', 'Live', 'Reading the scoreboard file.']
+      : ['wait', sbReadAt ? 'No new data for ' + Math.round((now - sbReadAt) / 1000) + ' s' : 'Waiting for data', 'Connected, but the file has not been read lately.'];
+    setLight($('ltSb'), sb[0], null, 'Scoreboard: ' + sb[2]);
+    setLight($('fdState'), sb[0], sb[1], sb[2]);
+    const sk = !s.sheetOn ? ['', 'Not connected (Connections → Data sources).'] : s.sheet.err ? ['bad', s.sheet.err] : sheetLive() ? ['ok', 'Connected.'] : ['wait', 'Connecting…'];
+    setLight($('ltSk'), sk[0], null, 'Stat keeper: ' + sk[1]);
+    const f = sbHandle ? sbLatest : {}, v = x => x == null || x === '' ? '–' : String(x);
+    digits($('fdClock'), v(f.clock)); $('fdPer').textContent = v(f.period);
+    $('fdShotW').hidden = f.shot == null; if (f.shot != null) digits($('fdShot'), v(f.shot));
+    // The scoreboard calls them Guest and Home; the names are this page's teams.
+    const rows = [['Guest', 'away'], ['Home', 'home']].map(([who, side]) =>
+      `<tr><td>${who} · <b></b></td><td>${v(f[side])}</td><td>${v(f[side + 'TO'])}</td><td>${v(f[side + 'Fouls'])}</td></tr>`).join('');
+    if ($('fdTeams').dataset.shown !== rows) { $('fdTeams').dataset.shown = rows; $('fdTeams').innerHTML = rows; }
+    $('fdTeams').querySelectorAll('b').forEach((b, i) => b.textContent = s[i ? 'home' : 'away'].name);
+  };
+  setInterval(() => { renderShell(); renderFeed(); }, 250);
+  renderFeed();
 
   $('preview').src = freshUrl('#bug');
   // Set up last: it draws the data sources table, which is built in the scoreboard section above.

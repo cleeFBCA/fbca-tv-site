@@ -157,9 +157,9 @@
   const API = (qs.get('api') || 'https://eota-stat-keeper.clee-625.workers.dev').replace(/\/$/, '');
   const GAME = 'basketball';
   const SIDES = ['home', 'away'];
-  const PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3'];
-  const PER_LABEL = { '1Q': '1st quarter', '2Q': '2nd quarter', '3Q': '3rd quarter', '4Q': '4th quarter', OT: 'overtime', OT2: '2nd overtime', OT3: '3rd overtime' };
-  const PER_SHORT = { '1Q': '1st', '2Q': '2nd', '3Q': '3rd', '4Q': '4th', OT: 'OT', OT2: '2OT', OT3: '3OT' };
+  const PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3', 'OT4'];
+  const PER_LABEL = { '1Q': '1st quarter', '2Q': '2nd quarter', '3Q': '3rd quarter', '4Q': '4th quarter', OT: 'overtime', OT2: '2nd overtime', OT3: '3rd overtime', OT4: '4th overtime' };
+  const PER_SHORT = { '1Q': '1st', '2Q': '2nd', '3Q': '3rd', '4Q': '4th', OT: 'OT', OT2: '2OT', OT3: '3OT', OT4: '4OT' };
   const KEYS = ['m2', 'x2', 'm3', 'x3', 'mft', 'xft', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf'];
   const PLAY = { m2: 'made a 2', x2: 'missed a 2', m3: 'made a 3', x3: 'missed a 3', mft: 'made a free throw', xft: 'missed a free throw',
                  oreb: 'offensive rebound', dreb: 'defensive rebound', ast: 'assist', stl: 'steal', blk: 'block', to: 'turnover', pf: 'foul' };

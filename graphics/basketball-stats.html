@@ -307,7 +307,7 @@
   const API = (qs.get('api') || 'https://eota-stat-keeper.clee-625.workers.dev').replace(/\/$/, '');
   const GAME = 'basketball';
   const SIDES = ['home', 'away'];
-  const PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3'];
+  const PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3', 'OT4'];
   const TYPES = { m2: '2 PT made', x2: '2 PT missed', m3: '3 PT made', x3: '3 PT missed', mft: 'Free throw made', xft: 'Free throw missed',
                   oreb: 'Off. rebound', dreb: 'Def. rebound', ast: 'Assist', stl: 'Steal', blk: 'Block', to: 'Turnover', pf: 'Foul' };
   // The play buttons, in pad order: [type, label, style]
@@ -387,7 +387,7 @@
   };
 
   // Game time for minutes: the same clock math as the box score's lead stats (boxscore/live.js).
-  const LEAD_PTS = { m2: 2, m3: 3, mft: 1 }, LEAD_PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3'];
+  const LEAD_PTS = { m2: 2, m3: 3, mft: 1 }, LEAD_PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3', 'OT4'];
   // Game time in seconds from the opening tip to `left` seconds left in period p (the stat keeper's period names).
   const leadClock = (qMin, otMin) => {
     const q = (qMin || 8) * 60, ot = (otMin || 4) * 60, len = i => i < 4 ? q : ot;

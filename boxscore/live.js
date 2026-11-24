@@ -58,7 +58,7 @@
   // lead is the most it was ahead by at any point. Percent led is the share of the game time played that a team was
   // ahead, timed by the game clock each play is stamped with (the stat page stamps plays while the scorebug shares its
   // clock). If any scoring play has no stamp, percent led stays blank rather than guess.
-  const LEAD_PTS = { m2: 2, m3: 3, mft: 1 }, LEAD_PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3'];
+  const LEAD_PTS = { m2: 2, m3: 3, mft: 1 }, LEAD_PERIODS = ['1Q', '2Q', '3Q', '4Q', 'OT', 'OT2', 'OT3', 'OT4'];
   // Game time in seconds from the opening tip to `left` seconds left in period p (the stat keeper's period names).
   const leadClock = (qMin, otMin) => {
     const q = (qMin || 8) * 60, ot = (otMin || 4) * 60, len = i => i < 4 ? q : ot;
@@ -246,9 +246,9 @@
                    oreb: 'offensive rebound', dreb: 'defensive rebound', ast: 'assist', stl: 'steal', blk: 'block', to: 'turnover', pf: 'foul', timeout: 'timeout' };
   const S_PLAY = { goal: 'GOAL', ast: 'assist', sog: 'shot on target', shot: 'shot off target', save: 'save', corner: 'corner kick', foul: 'foul', offside: 'offside', yc: 'yellow card', rc: 'red card', og: 'OWN GOAL',
                    throw: 'throw-in', fk: 'free kick', hand: 'handball', pkm: 'missed penalty kick' };
-  const PERIOD = { '1Q': '1st quarter', '2Q': '2nd quarter', '3Q': '3rd quarter', '4Q': '4th quarter', OT: 'Overtime', OT2: '2nd overtime', OT3: '3rd overtime',
+  const PERIOD = { '1Q': '1st quarter', '2Q': '2nd quarter', '3Q': '3rd quarter', '4Q': '4th quarter', OT: 'Overtime', OT2: '2nd overtime', OT3: '3rd overtime', OT4: '4th overtime',
                    '1H': '1st half', '2H': '2nd half', OT1: 'Overtime', };
-  const PER_SHORT = { '1Q': '1Q', '2Q': '2Q', '3Q': '3Q', '4Q': '4Q', OT: 'OT', OT2: '2OT', OT3: '3OT', '1H': '1H', '2H': '2H', OT1: 'OT', };
+  const PER_SHORT = { '1Q': '1Q', '2Q': '2Q', '3Q': '3Q', '4Q': '4Q', OT: 'OT', OT2: '2OT', OT3: '3OT', OT4: '4OT', '1H': '1H', '2H': '2H', OT1: 'OT', };
   const playerName = (g, side, id) => {
     if (id === 'team' || !id) return g.sides[side].name;
     const p = ((g.meta.rosters && g.meta.rosters[side]) || []).find(x => x.id === id);
@@ -579,7 +579,7 @@
   };
   // "Jordan Lee" → "J. Lee"
   const shortName = p => { const w = String(p.name || '').trim().split(/\s+/); return w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : p.name || '#' + p.num; };
-  const PERIOD_ORD = { '1Q': '1st', '2Q': '2nd', '3Q': '3rd', '4Q': '4th', OT: 'OT', OT2: '2OT', OT3: '3OT' };
+  const PERIOD_ORD = { '1Q': '1st', '2Q': '2nd', '3Q': '3rd', '4Q': '4th', OT: 'OT', OT2: '2OT', OT3: '3OT', OT4: '4OT' };
   const TITLE = { m2: '+2 Points', m3: '+3 Points', mft: '+1 Point', x2: 'Missed 2PT', x3: 'Missed 3PT', xft: 'Missed FT', oreb: 'Offensive Rebound',
                   dreb: 'Defensive Rebound', ast: 'Assist', stl: 'Steal', blk: 'Block', to: 'Turnover', pf: 'Foul', timeout: 'Timeout', in: 'Substitution', out: 'Substitution' };
   const DESC = { m2: 'makes a 2-pointer', m3: 'makes a 3-pointer', mft: 'makes a free throw', x2: 'misses a 2-pointer', x3: 'misses a 3-pointer',
@@ -685,7 +685,7 @@
   const PER_SEQ = { soccer: ['1H', '2H', 'OT1', 'OT2'], basketball: LEAD_PERIODS };
   const END_OF = {
     soccer: { '1H': 'Halftime', '2H': 'End of regulation', OT1: 'End of 1st overtime', OT2: 'End of 2nd overtime' },
-    basketball: { '1Q': 'End of 1st', '2Q': 'Halftime', '3Q': 'End of 3rd', '4Q': 'End of regulation', OT: 'End of OT', OT2: 'End of 2OT', OT3: 'End of 3OT' }
+    basketball: { '1Q': 'End of 1st', '2Q': 'Halftime', '3Q': 'End of 3rd', '4Q': 'End of regulation', OT: 'End of OT', OT2: 'End of 2OT', OT3: 'End of 3OT', OT4: 'End of 4OT' }
   };
   const periodMarks = g => {
     const seq = PER_SEQ[g.sport], m = g.meta, evs = (g.events || []).filter(e => seq.includes(e.period)), marks = new Map();
