@@ -270,6 +270,57 @@
   .hr[data-st="4"] .nm, .hr[data-st="5"] .nm { clip-path: inset(0 0 0 0); }
   .hr[data-st="5"] .ss { clip-path: inset(0 0 0 0); }
 
+  /* ---- Batting order: full screen. Header, matchup line, the featured player (photo, or the team logo) beside the nine ---- */
+  .lu { position: absolute; left: 210px; top: 136px; width: 1500px; height: 808px; }
+  .lu .hd { position: absolute; left: 0; right: 0; top: 0; height: 94px; background: linear-gradient(#2A2C31, #08090A); border-radius: 12px 12px 0 0; box-shadow: var(--hl);
+            display: grid; place-items: center; font-size: 68px; font-weight: 800; letter-spacing: .04em; white-space: nowrap; clip-path: inset(0 50% 0 50%); transition: clip-path .45s cubic-bezier(.22,1,.36,1); }
+  .lu .hd .logo { position: absolute; right: 24px; top: 16px; width: 108px; }
+  .lu .vs { position: absolute; left: 0; right: 0; top: 94px; height: 54px; display: grid; place-items: center; font-size: 36px; font-weight: 700; letter-spacing: .1em; color: var(--f);
+            box-shadow: inset 0 -2px 0 rgba(0,0,0,.35); clip-path: inset(0 0 100% 0); transition: clip-path .35s cubic-bezier(.22,1,.36,1) .1s; }
+  .lu .ph { position: absolute; left: 0; top: 148px; width: 500px; bottom: 60px; overflow: hidden; clip-path: inset(0 0 100% 0); transition: clip-path .55s cubic-bezier(.22,1,.36,1); }
+  .lu .ph::after { content: ''; position: absolute; inset: 0; box-shadow: inset -2px 0 0 rgba(255,255,255,.25), inset 0 0 60px rgba(0,0,0,.45); pointer-events: none; }
+  .lu .ph .wm { position: absolute; left: -70px; right: -70px; top: -30px; bottom: 60px; opacity: .13; transform: scale(1.15) rotate(-8deg); }
+  .lu .ph .big { position: absolute; left: 70px; right: 70px; top: 70px; bottom: 170px; opacity: 0; transform: scale(.7); transition: opacity .3s, transform .6s cubic-bezier(.3,1.4,.5,1); }
+  .lu .ph .wm .ini { font-size: 260px; } .lu .ph .big .ini { font-size: 150px; }
+  .lu .ph .pic { position: absolute; left: 0; right: 0; top: 24px; bottom: 0; background: center top / cover no-repeat; opacity: 0; transform: translateY(50px) scale(1.06);
+                 transition: opacity .35s, transform .8s cubic-bezier(.22,1,.36,1); }
+  .lu .ph .plate { position: absolute; left: 0; right: 0; bottom: 0; height: 170px; padding: 0 26px 18px; display: flex; flex-direction: column; justify-content: flex-end;
+                   background: linear-gradient(transparent, rgba(0,0,0,.55) 40%, rgba(0,0,0,.8)); line-height: .95; clip-path: inset(0 100% 0 0); transition: clip-path .5s cubic-bezier(.22,1,.36,1) .15s; }
+  .lu .ph .plate .f { font-size: 36px; font-weight: 700; color: #fff; } .lu .ph .plate .f i { font-style: normal; color: var(--gold-hi); margin-right: 12px; }
+  .lu .ph .plate .l { font-size: 76px; font-weight: 800; color: #fff; white-space: nowrap; transform-origin: left center; }
+  .lu .ls { position: absolute; left: 500px; right: 0; top: 148px; bottom: 60px; padding: 12px 28px; display: flex; flex-direction: column; clip-path: inset(0 0 100% 0); transition: clip-path .55s cubic-bezier(.22,1,.36,1) .06s; }
+  .lu .ls::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.42), rgba(0,0,0,.22)); pointer-events: none; }
+  .lu .r { position: relative; flex: 1; display: grid; grid-template-columns: 58px 92px 1fr 150px; align-items: center; font-size: 46px; font-weight: 800; color: #fff;
+           opacity: 0; transform: translateX(60px); transition: opacity .3s, transform .5s cubic-bezier(.22,1,.36,1); transition-delay: calc(.12s + var(--i) * 55ms); }
+  .lu .r + .r { border-top: 2px solid rgba(255,255,255,.2); }
+  .lu .r .o { font-size: 34px; font-weight: 700; color: rgba(255,255,255,.65); }
+  .lu .r .p { font-size: 36px; font-weight: 700; color: var(--gold-hi); letter-spacing: .03em; }
+  .lu .r .nm { white-space: nowrap; transform-origin: left center; }
+  .lu .r .a { text-align: right; font-variant-numeric: tabular-nums; }
+  .lu .r .hl { position: absolute; left: -14px; right: -14px; top: 3px; bottom: 3px; border: 3px solid var(--gold); border-radius: 8px; background: rgba(234,175,15,.14);
+               box-shadow: 0 0 18px rgba(234,175,15,.5), inset 0 0 14px rgba(234,175,15,.25); clip-path: inset(0 100% 0 0); transition: clip-path .5s cubic-bezier(.22,1,.36,1); pointer-events: none; }
+  .lu .r.hi .nm { color: var(--gold-hi); transition: color .3s .2s; }
+  .lu .ft { position: absolute; left: 0; right: 0; bottom: 0; height: 60px; background: linear-gradient(#1D1E22, #050606); border-radius: 0 0 12px 12px; box-shadow: var(--hl);
+            display: grid; place-items: center; clip-path: inset(0 0 100% 0); transition: clip-path .35s cubic-bezier(.22,1,.36,1) .1s; }
+  .lu .ft span { font-size: 36px; font-weight: 700; letter-spacing: .05em; color: var(--gold-hi); white-space: nowrap; clip-path: inset(0 50% 0 50%); transition: clip-path .5s cubic-bezier(.22,1,.36,1); }
+  :is(.lu[data-st="1"], .lu[data-st="2"], .lu[data-st="3"]) .hd { clip-path: inset(0 0 0 0); }
+  :is(.lu[data-st="1"], .lu[data-st="2"], .lu[data-st="3"]) .vs, :is(.lu[data-st="1"], .lu[data-st="2"], .lu[data-st="3"]) .ft { clip-path: inset(0 0 0 0); }
+  :is(.lu[data-st="2"], .lu[data-st="3"]) .ph, :is(.lu[data-st="2"], .lu[data-st="3"]) .ls { clip-path: inset(0 0 0 0); }
+  :is(.lu[data-st="2"], .lu[data-st="3"]) .r { opacity: 1; transform: none; }
+  :is(.lu[data-st="2"], .lu[data-st="3"]) .ph:not(.haspic) .big { opacity: 1; transform: none; transition-delay: .2s; }
+  .lu[data-st="3"] .ph.haspic .pic { opacity: 1; transform: none; }
+  .lu[data-st="3"] .plate.has { clip-path: inset(0 0 0 0); }
+  .lu[data-st="3"] .r.hi .hl { clip-path: inset(0 0 0 0); transition-delay: .25s; }
+  .lu[data-st="3"] .ft span { clip-path: inset(0 0 0 0); transition-delay: .3s; }
+  .lu[data-st="3"] .r.hi { animation: luPulse .6s ease-out .7s; }
+  @keyframes luPulse { 30% { transform: scale(1.03); filter: brightness(1.25); } 100% { transform: none; filter: none; } }
+  /* Out: the content clears, then the frame folds up */
+  .lu[data-dir="out"] .r { transition: opacity .2s, transform .25s ease-in; transition-delay: calc(var(--i) * 18ms); }
+  .lu[data-dir="out"] .pic, .lu[data-dir="out"] .big { transition: opacity .2s, transform .25s ease-in; }
+  .lu[data-dir="out"] .plate, .lu[data-dir="out"] .hl, .lu[data-dir="out"] .ft span { transition: clip-path .2s ease-in; }
+  .lu[data-dir="out"] .ph, .lu[data-dir="out"] .ls, .lu[data-dir="out"] .vs, .lu[data-dir="out"] .ft { transition: clip-path .35s cubic-bezier(.6,0,.4,1); }
+  .lu[data-dir="out"] .hd { transition: clip-path .35s cubic-bezier(.6,0,.4,1) .12s; }
+
   /* ---- Depth: a white highlight on each panel's edge (brightest along the top) and a little shade at the bottom ---- */
   :root { --hl: inset 0 2px 0 rgba(255,255,255,.5), inset 0 0 0 1.5px rgba(255,255,255,.2), inset 0 -12px 16px -10px rgba(0,0,0,.5); }
   .sb .half, .sb .strip, .bp .tab, .ln .bg, .tc .bgL, .tc .bgR, .tc .mid, .tc .ven, .ln .cap { box-shadow: var(--hl); }
@@ -395,6 +446,7 @@
   body.ctl .sum { font-size: 13px; line-height: 1.5; margin-top: 8px; padding: 8px; border: 1px solid var(--edge-soft); border-radius: 6px; }
   body.ctl .sum b { color: #fff; }
   body.ctl .logo-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+  body.ctl #luThumb { width: 58px; height: 74px; background-size: cover; background-position: center top; }
   body.ctl .logo-row .thumb { width: 72px; height: 52px; border-radius: 4px; background: #000 center / contain no-repeat; border: 1px solid #3A3D44; flex: none; }
 </style>
 </head>
@@ -445,6 +497,15 @@
     <div class="word" id="hrWord"></div>
     <div class="tag" id="hrTag"></div>
     <div class="crest lg" id="hrLg"></div>
+  </div>
+
+  <div class="lu shadow" id="lu" data-st="0">
+    <div class="hd"><span id="luHd"></span><i class="logo"></i></div>
+    <div class="vs tm" id="luVs"></div>
+    <div class="ph tm" id="luPh"><div class="crest wm" id="luWm"></div><div class="crest big" id="luBig"></div><div class="pic" id="luPic"></div>
+      <div class="plate" id="luPlate"><span class="f" id="luF"></span><span class="l" id="luL"></span></div></div>
+    <div class="ls tm" id="luLs"></div>
+    <div class="ft"><span id="luFt"></span></div>
   </div>
 </div>
 
@@ -526,7 +587,7 @@
           </div>
           <div data-pane="hr">
             <div class="sum" id="hrSum"></div>
-            <p class="hint">Runs by itself, about 12 seconds: the batter's name, his home runs and RBI this season, then HOME RUN (solo, 2-run, 3-run or grand slam). The score bug comes back after.</p>
+            <p class="hint">Runs by itself, about 11 seconds: HOME RUN (solo, 2-run, 3-run or grand slam), then the batter's name with their home runs and RBI this season. The score bug comes back after.</p>
           </div>
           <div data-pane="pitch">
             <label for="spMph">Pitch speed (MPH): type it, then Enter or Show</label><input id="spMph" inputmode="numeric" placeholder="86">
@@ -550,6 +611,16 @@
             <label for="l3Name">Name</label><input id="l3Name" placeholder="Jordan Lee">
             <label for="l3Title">Second line</label><input id="l3Title" placeholder="Play-by-play">
             <label for="l3Logo">Logo</label><select id="l3Logo"><option value="eota">Eagles on the Air</option><option value="home">Home team</option><option value="away">Visitors</option></select>
+          </div>
+          <div data-pane="lineup">
+            <label>Team</label><div class="chips"><button data-lu="away" id="luAway">Visitors</button><button data-lu="home" id="luHome">Home</button></div>
+            <label for="luWho">Featured player (highlighted in the order, with their photo)</label><select id="luWho"></select>
+            <label>Photo of the featured player</label>
+            <div class="logo-row"><div class="thumb" id="luThumb"></div><button class="sm" id="luNoPic">Remove photo</button></div>
+            <input type="file" id="luFile" accept="image/*">
+            <label for="luCap">Bottom line (blank = the featured player's season, or Eagles on the Air)</label><input id="luCap" placeholder="">
+            <div class="sum" id="luSum"></div>
+            <p class="hint">The order and positions come from the stat keeper's Lineups tab, with season averages. Photos stay on this computer, saved by team and player, so they're there next game. A portrait, or a cut-out PNG on a clear background, works best. Picking another player while it's up swaps them on air.</p>
           </div>
         </div>
       </div>
@@ -628,12 +699,12 @@
     teams: { away: team('', '', '', '#1F3A93', '#FFFFFF'), home: team('Fort Bend Christian', 'Eagles', 'FBCA', FBCA.bg, FBCA.fg) },
     venue: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70 },
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
-    gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: ''
+    gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }
   });
   const merge = raw => {
     const d = defaults(), out = { ...d, ...raw };
     out.teams = { away: { ...d.teams.away, ...(raw.teams || {}).away }, home: { ...d.teams.home, ...(raw.teams || {}).home } };
-    out.stn = { ...d.stn, ...(raw.stn || {}) }; out.man = { ...d.man, ...(raw.man || {}) }; out.l3 = { ...d.l3, ...(raw.l3 || {}) };
+    out.stn = { ...d.stn, ...(raw.stn || {}) }; out.man = { ...d.man, ...(raw.man || {}) }; out.l3 = { ...d.l3, ...(raw.l3 || {}) }; out.lu = { ...d.lu, ...(raw.lu || {}) };
     return out;
   };
   let s = (() => { try { const r = localStorage.getItem(STORE); if (r) return merge(JSON.parse(r)); } catch (e) {} return defaults(); })();
@@ -648,6 +719,8 @@
     if (t.logo) { const i = new Image(); i.src = t.logo; i.alt = ''; node.replaceChildren(i); }
     else node.replaceChildren(el('span', 'ini', t.abbr || (t.name || '').slice(0, 4) || '?'));
   };
+  // Stripes run one way for the visitors (\) and the other for home (/), as on the bug's two halves
+  const stripe = (node, side) => { node.style.setProperty('--stripe', side === 'away' ? '65deg' : '115deg'); return node; };
   const paint = (node, t) => { node.style.setProperty('--c', hex(t.bg, '#333')); node.style.setProperty('--f', hex(t.fg, '#fff')); return node; };
   const ordinal = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
   // Squeezes a line that's too long for its space (narrower first, then smaller)
@@ -672,7 +745,7 @@
     // ---- Filling each graphic from its payload (taken when it was shown) ----
     const fillLn = g => {
       const t = g.side ? s.teams[g.side] : { bg: FBCA.bg, fg: '#FFFFFF', logo: '', abbr: '' };
-      paint($('ln'), t);
+      paint($('ln'), t); stripe($('ln'), g.side);
       const lg = $('lnLg');
       if (g.side) crest(lg, t); else { lg.dataset.sig = 'eota'; lg.replaceChildren(el('i', 'logo')); }
       const txt = $('lnTxt'), parts = [];
@@ -692,7 +765,7 @@
     const fillTc = g => {
       for (const [side, L] of [['away', 'L'], ['home', 'R']]) {
         const t = s.teams[side];
-        paint($('tcBg' + L), t); paint($('tcTx' + L), t); crest($('tcLg' + L), t);
+        paint($('tcBg' + L), t); stripe($('tcBg' + L), side); paint($('tcTx' + L), t); crest($('tcLg' + L), t);
         const s2 = el('span', 's2', t.name || g.names[side] || '');
         const s1 = el('span', 's1', t.school || '');
         $('tcTx' + L).replaceChildren(s1, s2, el('span', 's3', t.rec || ''));
@@ -704,7 +777,7 @@
     const fillBx = g => {
       $('bxHd').replaceChildren(el('span', null, g.head), ...['R', 'H', 'E', 'LOB'].map(x => el('span', null, x)));
       $('bxRows').replaceChildren(...SIDES.map(side => {
-        const t = s.teams[side], r = paint(el('div', 'rw tm'), t), c = el('div', 'crest'); if (t.logo) crest(c, t);
+        const t = s.teams[side], r = stripe(paint(el('div', 'rw tm'), t), side), c = el('div', 'crest'); if (t.logo) crest(c, t);
         const v = g.rows[side];
         r.append(c, el('div', 'ab', t.abbr || (t.name || '').slice(0, 4)), el('div', 'n r', String(v.R)), el('div', 'n', String(v.H)), el('div', 'n', String(v.E)), el('div', 'n', String(v.LOB)));
         return r;
@@ -712,25 +785,44 @@
       const du = $('bxDu'); du.classList.toggle('has', !!(g.due && g.due.list.length));
       if (g.due) {
         $('duHd').replaceChildren(el('span', null, g.due.head));
-        paint($('duList'), s.teams[g.due.side]);
+        stripe(paint($('duList'), s.teams[g.due.side]), g.due.side);
         $('duList').replaceChildren(...g.due.list.map(d => { const r = el('div', 'dr'); r.append(el('b', null, d.name), el('span', null, d.line)); return r; }));
       }
     };
     const fillHr = g => {
       const t = s.teams[g.side];
-      paint($('hr'), t); crest($('hrLg'), t);
+      paint($('hr'), t); stripe($('hr'), g.side); crest($('hrLg'), t);
       $('hrNm').replaceChildren(el('span', 'f', g.first || ''), el('span', 'l', g.last || ''));
       $('hrSs').replaceChildren(...g.stats.map(([v, k]) => { const d = el('div'); d.append(el('b', null, String(v)), k); return d; }));
       let i = 0;
       $('hrWord').replaceChildren(...[...'HOME RUN'].map(ch => { const sp = el('span', ch === ' ' ? 'gap' : '', ch === ' ' ? '' : ch); sp.style.setProperty('--i', i++); return sp; }));
       $('hrTag').textContent = g.tag || '';
     };
-    const NODE = { bstat: 'ln', pstat: 'ln', l3: 'ln', title: 'tc', brk: 'bx', hr: 'hr' };
-    const FILL = { bstat: fillLn, pstat: fillLn, l3: fillLn, title: fillTc, brk: fillBx, hr: fillHr };
+    const fillLu = g => {
+      const t = s.teams[g.side] || s.teams.home, lu = $('lu');
+      stripe(paint(lu, t), g.side);
+      $('luHd').textContent = g.head || ''; fit($('luHd'), 1200);
+      $('luVs').textContent = g.vs || '';
+      crest($('luWm'), t); crest($('luBig'), t);
+      $('luPh').classList.toggle('haspic', !!g.photo);
+      $('luPic').style.backgroundImage = g.photo ? `url("${g.photo}")` : 'none';
+      const h = g.hi; $('luPlate').classList.toggle('has', !!h);
+      $('luF').replaceChildren(...(h ? [...(h.num ? [el('i', null, '#' + h.num)] : []), h.first || ''] : []));
+      $('luL').textContent = h ? h.last : ''; if (h) fit($('luL'), 450);
+      $('luLs').replaceChildren(...(g.rows || []).map((r, i) => {
+        const d = el('div', 'r' + (r.hi ? ' hi' : '')); d.style.setProperty('--i', i);
+        const nm = el('span', 'nm', r.name);
+        d.append(el('span', 'o', String(r.o)), el('span', 'p', r.pos), nm, el('span', 'a', r.avg), el('i', 'hl'));
+        fit(nm, 590); return d;
+      }));
+      $('luFt').textContent = g.cap || '';
+    };
+    const NODE = { bstat: 'ln', pstat: 'ln', l3: 'ln', title: 'tc', brk: 'bx', hr: 'hr', lu: 'lu' };
+    const FILL = { bstat: fillLn, pstat: fillLn, l3: fillLn, title: fillTc, brk: fillBx, hr: fillHr, lu: fillLu };
     // Steps in and out: [ms, stage]
     // Each step starts while the one before it is still moving, so nothing stops partway.
-    const IN = { ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]] };
-    const OUT = { ln: [[0, 2], [180, 0], [600]], tc: [[0, 1], [170, 0], [620]], bx: [[0, 2], [130, 0], [560]], hr: [[0, 6], [300, 7], [500, 0], [520]] };
+    const IN = { ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]], lu: [[0, 1], [260, 2], [1000, 3]] };
+    const OUT = { ln: [[0, 2], [180, 0], [600]], tc: [[0, 1], [170, 0], [620]], bx: [[0, 2], [130, 0], [560]], lu: [[0, 1], [260, 0], [760]], hr: [[0, 6], [300, 7], [500, 0], [520]] };
     const HR_STEPS = [[0, 1], [190, 2], [3900, 3], [4500, 4], [4900, 5], [10600, 6], [10920, 7], [11150, 0]];
     const run = (node, steps, done) => { for (const [ms, st] of steps) later(ms, () => { if (st != null) $(node).dataset.st = st; else if (done) done(); }); };
 
@@ -758,6 +850,7 @@
       } else if (want && s.gAt !== enter.at) { // the same graphic again, with new content
         enter.at = s.gAt;
         if (want === 'hr') { clearTimers(); enter(want); }
+        else if (want === 'lu') { clearTimers(); $('lu').dataset.st = 2; later(320, () => FILL.lu(s.gp || {})); later(380, () => $('lu').dataset.st = 3); } // a new featured player: the old one clears, then the new one comes in
         else { FILL[want](s.gp || {}); }
         return;
       }
@@ -795,8 +888,7 @@
         // Batter (batting team's color) over pitcher (fielding team's color)
         const bt = s.teams[L.bat.side], pt = s.teams[L.pit.side];
         paint($('rBat'), bt); paint($('rPit'), pt);
-        // Stripes run the same way as that team's half of the bug: visitors \, home /
-        $('rBat').style.setProperty('--stripe', L.bat.side === 'away' ? '65deg' : '115deg'); $('rPit').style.setProperty('--stripe', L.pit.side === 'away' ? '65deg' : '115deg');
+        stripe($('rBat'), L.bat.side); stripe($('rPit'), L.pit.side);
         $('rBat').firstChild.textContent = L.bat.name || ''; $('rBat').lastChild.textContent = L.bat.stat || '';
         $('rPit').firstChild.textContent = L.pit.name || ''; $('rPit').lastChild.textContent = L.pit.name ? 'P: ' + L.pit.np : '';
         $('tabSp').textContent = s.pitch ? (s.pitch.type ? s.pitch.type + ' - ' : '') + s.pitch.mph + ' MPH' : '';
@@ -968,6 +1060,39 @@
     }
     return { head, rows, due };
   };
+  // ---- Batting order: the stat keeper's lineup, season averages, and a featured player with a photo ----
+  const photos = {}; // on this computer, by team and player
+  const photoKey = (side, name) => 'photo|' + BB.nameKey(seasonName(side) || s.teams[side].name || side) + '|' + BB.nameKey(name);
+  const photoDb = (mode, fn) => new Promise((ok, fail) => {
+    let open; try { open = indexedDB.open('eota-baseball-media', 1); } catch (e) { fail(e); return; }
+    open.onupgradeneeded = () => { for (const n of ['spot', 'logos']) if (!open.result.objectStoreNames.contains(n)) open.result.createObjectStore(n); };
+    open.onerror = () => fail(open.error);
+    open.onsuccess = () => { const d = open.result; try { const tx = d.transaction('spot', mode), out = fn(tx.objectStore('spot')); tx.oncomplete = () => { d.close(); ok(out); }; tx.onerror = () => { d.close(); fail(tx.error); }; } catch (e) { d.close(); fail(e); } };
+  });
+  photoDb('readonly', st => ({ k: st.getAllKeys(), v: st.getAll() })).then(({ k, v }) => { k.result.forEach((key, i) => { if (String(key).startsWith('photo|') && typeof v.result[i] === 'string') photos[key] = v.result[i]; }); renderShell(); }).catch(() => {});
+  const shrinkPhoto = file => new Promise((ok, fail) => {
+    const img = new Image(); img.onload = () => {
+      const k = Math.min(1, 640 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      ok(c.toDataURL('image/webp', .88)); // keeps a cut-out's clear background
+    }; img.onerror = fail; img.src = URL.createObjectURL(file);
+  });
+  const luFeatured = () => { if (!kg) return null; const side = s.lu.side; return BB.orderOf(kg.meta, side).some(o => o.id === s.lu.hi) ? playerOf(side, s.lu.hi) : null; };
+  const luGp = () => {
+    if (!kg || !stats) return null;
+    const side = s.lu.side, opp = BB.other(side), ord = BB.orderOf(kg.meta, side); if (!ord.length) return { err: 'No batting order for ' + kg.meta.names[side] + ' yet: set it on the stat keeper\'s Lineups tab.' };
+    const sea = seasonMap(side), tn = s.teams[side], on = s.teams[opp], fp = luFeatured();
+    const rows = ord.map((o, i) => { const p = playerOf(side, o.id) || {}, t = BB.seasonFor(sea, p.name); return { o: i + 1, pos: o.pos || '', name: (p.name || '').toUpperCase(), avg: t && t.bat.AB ? BB.avg(t.bat) : '', hi: !!fp && o.id === fp.id }; });
+    let hi = null, auto = 'Eagles on the Air';
+    if (fp) {
+      hi = { num: fp.num || '', first: firstName(fp.name), last: lastName(fp.name).toUpperCase() };
+      const t = BB.seasonFor(sea, fp.name), b = t && t.bat;
+      if (b && b.AB) auto = `${lastName(fp.name)}: ${BB.avg(b)} AVG · ${b.HR} HR · ${b.RBI} RBI · ${opsOf(b)} OPS`;
+    }
+    return { side, head: ((tn.name || kg.meta.names[side] || '') + ' Batting Order').toUpperCase(), vs: ('Today vs ' + (on.name || kg.meta.names[opp] || '')).toUpperCase(),
+             rows, hi, photo: fp ? photos[photoKey(side, fp.name)] || '' : '', cap: ($('luCap').value.trim() || auto).toUpperCase() };
+  };
+  const showLu = () => { const g = luGp(); if (!g) { note('Needs the stat keeper (Connections).'); return; } if (g.err) { note(g.err); return; } show('lu', g); };
   const PITCH_TYPES = () => s.game === 'softball' ? ['Fastball', 'Changeup', 'Drop', 'Rise', 'Curve', 'Screwball'] : ['Fastball', '4-Seam FB', 'Sinker', 'Cutter', 'Slider', 'Curveball', 'Changeup', 'Splitter'];
   let pitchType = '';
   const showPitch = () => { const v = parseInt($('spMph').value, 10); if (!(v > 20 && v < 130)) { $('spMph').focus(); return; } s.pitch = { mph: v, type: pitchType, at: Date.now(), until: Date.now() + 15000 }; $('spMph').value = ''; save(); };
@@ -984,9 +1109,10 @@
     { id: 'exit', name: 'Exit velo', kind: 'On the bug', on: () => !!(s.exit && Date.now() < s.exit.until), show: showExit, take: () => { s.exit = null; save(); } },
     { id: 'flash', name: 'BB / K / HBP', kind: 'On the bug', on: () => !!(s.flash && Date.now() < s.flash.until), show: () => flashNow('K'), take: () => { s.flash = null; save(); } },
     { id: 'brk', name: 'Box score + due up', kind: 'Break', on: () => s.gfx === 'brk', show: () => { const g = breakGp(); if (g) show('brk', g); } },
+    { id: 'lu', name: 'Batting order', kind: 'Full screen', on: () => s.gfx === 'lu', show: showLu },
     { id: 'l3', name: 'Lower third', kind: 'Name and title', on: () => s.gfx === 'l3', show: () => { const n = $('l3Name').value.trim(); if (!n) { $('l3Name').focus(); return; } show('l3', { side: s.l3.logo === 'eota' ? '' : s.l3.logo, last: n.toUpperCase(), sub: $('l3Title').value.trim() }); } }
   ];
-  const PANE = { title: 'title', bstat: 'bstat', pstat: 'pstat', hr: 'hr', pitch: 'pitch', exit: 'exit', flash: 'flash', brk: 'break', l3: 'l3' };
+  const PANE = { title: 'title', bstat: 'bstat', pstat: 'pstat', hr: 'hr', pitch: 'pitch', exit: 'exit', flash: 'flash', brk: 'break', l3: 'l3', lu: 'lineup' };
   let pick = 'bstat', noteText = '', noteAt = 0;
   const note = t => { noteText = t; noteAt = Date.now(); renderShell(); };
   const tileEls = {};
@@ -1006,6 +1132,16 @@
   $('l3Name').addEventListener('input', e => { s.l3.name = e.target.value; save(); });
   $('l3Title').addEventListener('input', e => { s.l3.title = e.target.value; save(); });
   $('l3Logo').addEventListener('change', e => { s.l3.logo = e.target.value; save(); });
+  document.querySelectorAll('[data-lu]').forEach(b => b.onclick = () => { s.lu.side = b.dataset.lu; s.lu.hi = ''; save(); if (s.gfx === 'lu') showLu(); });
+  $('luWho').onchange = () => { s.lu.hi = $('luWho').value; save(); if (s.gfx === 'lu') showLu(); };
+  $('luCap').addEventListener('input', e => { s.lu.cap = e.target.value; });
+  $('luFile').onchange = async () => {
+    const f = $('luFile').files[0], fp = luFeatured(); $('luFile').value = '';
+    if (!f) return; if (!fp) { note('Pick the featured player first.'); return; }
+    try { const url = await shrinkPhoto(f), key = photoKey(s.lu.side, fp.name); photos[key] = url; await photoDb('readwrite', st => st.put(url, key)); renderShell(); if (s.gfx === 'lu') showLu(); }
+    catch (e) { note("Couldn't save that photo."); }
+  };
+  $('luNoPic').onclick = () => { const fp = luFeatured(); if (!fp) return; const key = photoKey(s.lu.side, fp.name); delete photos[key]; photoDb('readwrite', st => st.delete(key)).catch(() => {}); renderShell(); if (s.gfx === 'lu') showLu(); };
   $('bxDue').addEventListener('change', e => { s.bxDue = e.target.checked; save(); });
   $('bxHead').addEventListener('input', e => { s.bxHead = e.target.value; });
   $('btnBug').onclick = () => { s.visible = !s.visible; save(); };
@@ -1153,6 +1289,18 @@
       if (pick === 'pstat') { const [sd, id] = $('psWho').value.split('|'); sumLines($('psSum'), id ? pitcherGp(sd, id) : null); }
       if (pick === 'hr') { const h = hrGp(), e = lastHr(); $('hrSum').replaceChildren(...(h ? ['Last home run: ', el('b', null, h.first + ' ' + h.last), ' (' + kg.meta.names[h.side] + ', ' + (h.tag || '').toLowerCase() + ', ' + e.e.period.replace('T', 'top ').replace('B', 'bottom ') + ')', el('br'), h.stats.map(([v, k]) => v + ' ' + k).join(' · ')] : ['No home run recorded yet this game.'])); }
     } else { $('bsSum').textContent = $('psSum').textContent = $('hrSum').textContent = 'Needs the stat keeper (Connections).'; }
+    if (pick === 'lu') {
+      document.querySelectorAll('[data-lu]').forEach(b => { b.className = 'sm' + (b.dataset.lu === s.lu.side ? ' active' : ''); b.textContent = (kg && kg.meta.names[b.dataset.lu]) || (b.dataset.lu === 'home' ? 'Home' : 'Visitors'); });
+      const ord = kg ? BB.orderOf(kg.meta, s.lu.side) : [], opts = [['', 'No featured player'], ...ord.map((o, i) => { const p = playerOf(s.lu.side, o.id) || {}; return [o.id, (i + 1) + '. ' + (o.pos ? o.pos + ' ' : '') + (p.num ? '#' + p.num + ' ' : '') + (p.name || '') + (photos[photoKey(s.lu.side, p.name)] ? ' · photo' : '')]; })];
+      const sig = opts.map(o => o.join(':')).join('|');
+      if ($('luWho').dataset.sig !== sig) { $('luWho').dataset.sig = sig; $('luWho').replaceChildren(...opts.map(([v, l]) => new Option(l, v))); }
+      $('luWho').value = ord.some(o => o.id === s.lu.hi) ? s.lu.hi : '';
+      setField($('luCap'), s.lu.cap || '');
+      const fp = luFeatured(), pic = fp ? photos[photoKey(s.lu.side, fp.name)] : '';
+      $('luThumb').style.backgroundImage = pic ? `url("${pic}")` : 'none'; $('luNoPic').disabled = !pic; $('luFile').disabled = !fp;
+      const g = luGp();
+      $('luSum').replaceChildren(...(!g ? ['Needs the stat keeper (Connections).'] : g.err ? [g.err] : [el('b', null, g.head), el('br'), g.vs, el('br'), g.hi ? 'Featuring ' + g.hi.first + ' ' + g.hi.last + (g.photo ? ' (with photo)' : ' (no photo: shows the team logo)') : 'No featured player: the team logo fills the left side', el('br'), 'Bottom: ' + g.cap]));
+    }
     if (pick === 'brk') { const b = breakGp(); $('bxSum').replaceChildren(...(b ? [el('b', null, b.head), el('br'), SIDES.map(sd => (s.teams[sd].abbr || sd) + ' ' + b.rows[sd].R + ' R ' + b.rows[sd].H + ' H ' + b.rows[sd].E + ' E').join(' · '), ...(b.due ? [el('br'), b.due.head + ': ' + b.due.list.map(d => d.name).join(', ')] : [])] : ['No game yet.'])); }
     if (pick === 'pitch') {
       const types = PITCH_TYPES();
