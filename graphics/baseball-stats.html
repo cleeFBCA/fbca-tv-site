@@ -162,6 +162,9 @@
   .lm h3 { display: flex; align-items: center; gap: 8px; }
   .lm h3 small { margin-left: auto; color: var(--chalk-dim); font-weight: 600; }
   .lm .chip { width: 14px; height: 14px; border-radius: 3px; flex: none; display: inline-block; }
+  .lm button.r { width: 100%; text-align: left; background: none; box-shadow: none; color: inherit; font: inherit; cursor: pointer; min-height: 0; }
+  .lm button.r:hover { background: rgba(255,255,255,.05); }
+  .lm .lmh { margin: 6px 0 0; font-size: 12px; }
   .lm .r { display: grid; grid-template-columns: 26px 40px 1fr auto; align-items: center; gap: 8px; padding: 7px 10px; margin: 3px 0; border: 2px solid transparent; border-radius: 8px; font-size: 16px; }
   .lm .r .n { font-weight: 800; color: var(--chalk-dim); text-align: right; }
   .lm .r .p { font-size: 13px; font-weight: 700; color: var(--chalk-dim); }
@@ -748,10 +751,12 @@
     const chip = side => { const c = el('i', 'chip'); c.style.background = colorOf(v, side); return c; };
     $('lmHead').replaceChildren(chip(M.bat), nm(M.bat) + ' batting', el('small', null, (M.top ? 'Top ' : 'Bottom ') + ordinal(M.inn)));
     $('lmList').replaceChildren(...(M.rows.length ? M.rows.map(r => {
-      const d = el('div', 'r' + (r.up ? ' up' : '') + (r.deck ? ' deck' : ''));
+      const d = el('button', 'r' + (r.up ? ' up' : '') + (r.deck ? ' deck' : '')); d.type = 'button'; d.title = 'Put in a sub for ' + r.name;
       d.append(el('span', 'n', String(r.slot)), el('span', 'p', r.pos), el('b', null, (r.num ? '#' + r.num + ' ' : '') + r.name), el('span', 'l', r.line));
+      d.onclick = () => openSub(v, M.bat, r);
       flash(d, r.slot); return d;
     }) : [el('p', 'hint warn', 'No batting order for ' + nm(M.bat) + ' yet: set it on the Lineups tab.')]));
+    if (M.rows.length) $('lmList').append(el('p', 'hint lmh', 'Tap a spot to put in a sub, like a pinch hitter on deck: the scorebug has him ready when he comes up.'));
     if (M.sub) { const d = el('div', 'r up'); d.append(el('span', 'n', '–'), el('span', 'p', 'PH'), el('b', null, (M.sub.num ? '#' + M.sub.num + ' ' : '') + M.sub.name), el('span', 'l', '')); $('lmList').append(d); }
     const k = el('span', 'k'); k.append(chip(M.fld), 'P');
     const pw = el('div'); pw.append(el('b', null, M.pit ? (M.pit.num ? '#' + M.pit.num + ' ' : '') + M.pit.name : 'No pitcher set'), el('small', null, M.pit ? M.pit.line : ''));
@@ -759,6 +764,31 @@
     const lp = $('lmPit'); lp.className = 'lmp'; lp.style.animationDelay = ''; lp.replaceChildren(k, pw, np); flash(lp, 'P');
   };
   setInterval(() => { if (tab === 'plays' && Object.values(lmChg).some(t => Date.now() - t < 4600)) render(); }, 1000);
+  // A sub in one spot of the batting order (a pinch hitter, a pinch runner, a defensive change), saved to the lineup
+  const openSub = (v, side, r) => {
+    const roster = (v.meta.rosters[side] || []).slice().sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
+    const inOrder = new Set(BB.orderOf(v.meta, side).map(o => o.id));
+    const who = el('select'), pos = el('select');
+    who.append(new Option('Pick the player coming in', ''), ...roster.filter(p => !inOrder.has(p.id)).map(p => new Option((p.num ? '#' + p.num + ' ' : '') + p.name, p.id)));
+    pos.append(...['PH', 'PR', ...BB.POSITIONS].map(x => new Option(x, x))); pos.value = 'PH';
+    $('subBody').replaceChildren(
+      el('p', 'hint', v.meta.names[side] + ', batting ' + ordinal(r.slot) + ': ' + (r.num ? '#' + r.num + ' ' : '') + r.name + (r.pos ? ' (' + r.pos + ')' : '') + '. Their stats stay with them.'),
+      el('label', null, 'Coming in'), who, el('label', null, 'Position'), pos);
+    if (who.options.length < 2) $('subBody').append(el('p', 'hint warn', 'Everyone on the roster is already in the order. Add the player in Setup first.'));
+    $('subOk').onclick = () => {
+      if (!who.value) { who.focus(); return; }
+      const now = view() || v; // the lineup as it stands now (with any change not sent yet)
+      const list = BB.orderOf(now.meta, side).map(o => ({ ...o }));
+      const i = list.findIndex(o => o.id === r.id); if (i < 0) { toast('That spot changed; try again.'); $('subDlg').close(); return; }
+      list[i] = { id: who.value, pos: pos.value };
+      enqueue('meta', { meta: { order: { [side]: list } } });
+      orderDraft = null; $('subDlg').close();
+      const p = roster.find(x => x.id === who.value);
+      toast((p ? p.name : 'Sub') + ' in for ' + r.name + ', batting ' + ordinal(r.slot));
+    };
+    $('subCancel').onclick = () => $('subDlg').close();
+    $('subDlg').showModal();
+  };
 
   // ---- Lineups ----
   let orderDraft = null; // edits not saved yet
@@ -1080,6 +1110,11 @@
   showTab(); connect(); loadLibrary(); loadSeasons();
 })();
 </script>
+<dialog class="dec" id="subDlg">
+  <h3>Sub in the batting order</h3>
+  <div id="subBody"></div>
+  <div class="set-row"><button class="primary" id="subOk">Make the change</button><button id="subCancel">Cancel</button></div>
+</dialog>
 <dialog class="dec" id="decDlg">
   <h3>Pitching decisions</h3>
   <div id="decBody"></div>
