@@ -700,6 +700,8 @@
         <h2>The game comes from</h2>
         <div class="row" style="margin-top:0"><button data-src="keeper">Stat keeper page</button><button data-src="hand">By hand</button></div>
         <p class="hint" id="skNote"></p>
+        <p class="hint" id="logoNote"></p>
+        <div class="set-row" id="skKeyRow" hidden style="display:flex;gap:6px;margin-top:6px"><input id="skKey" type="password" autocomplete="off" placeholder="Stat keeper key (the same one the stat crew uses)"><button id="skKeySave">Save key</button></div>
         <p class="hint">The stat crew uses <a id="skLink" href="baseball-stats.html" target="_blank" rel="noopener">fbca.tv/graphics/baseball-stats.html</a>. Every pitch they record updates the bug, the count, the runners and the stats here.</p>
       </div>
       <div class="panel">
@@ -958,6 +960,7 @@
     try { localStorage.setItem(STORE, text); } catch (e) {}
     if (bc) bc.postMessage(s);
     renderCtl();
+    queueLogoShare();
   };
   const SPORT = () => s.game === 'softball' ? 'Softball' : 'Baseball';
   const lastName = n => { const w = String(n || '').trim().split(/\s+/); return w.length > 1 ? w[w.length - 1] : w[0] || ''; };
@@ -1044,6 +1047,53 @@
     if (s.src === 'keeper') s.live = buildLive();
     save();
   };
+
+  // ---- Team logos to the stat keeper, for fbca.tv's box score (as the basketball and soccer scorebugs do) ----
+  // Needs the stat keeper key on this computer (the stat keeper page saves it here too, or paste it in Connections).
+  const SK_KEY_LS = 'eota-stats-key', LOGO_SENT_LS = 'eota-baseball-logos-shared';
+  const skKey = () => { try { return JSON.parse(localStorage.getItem(SK_KEY_LS) || '""'); } catch (e) { return ''; } };
+  let logoShareTimer = 0, logoShareMsg = '';
+  const logoForShare = src => new Promise(ok => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const w = img.naturalWidth, h = img.naturalHeight, c = Object.assign(document.createElement('canvas'), { width: w, height: h });
+        const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0);
+        const a = ctx.getImageData(0, 0, w, h).data;
+        let x0 = w, y0 = h, x1 = -1, y1 = -1;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (a[(y * w + x) * 4 + 3] > 16) {
+          if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        }
+        if (x1 < 0) { x0 = 0; y0 = 0; x1 = w - 1; y1 = h - 1; }
+        const cw = x1 - x0 + 1, ch = y1 - y0 + 1, k = Math.min(1, 320 / cw, 160 / ch);
+        const out = Object.assign(document.createElement('canvas'), { width: Math.max(1, Math.round(cw * k)), height: Math.max(1, Math.round(ch * k)) });
+        const o = out.getContext('2d'); o.imageSmoothingQuality = 'high'; o.drawImage(c, x0, y0, cw, ch, 0, 0, out.width, out.height);
+        ok(out.toDataURL('image/png'));
+      } catch (e) { ok(''); }
+    };
+    img.onerror = () => ok('');
+    img.src = src;
+  });
+  const shareLogos = async () => {
+    if (s.src !== 'keeper' || !kg || !kg.meta) return;
+    const key = skKey(); if (!key) { logoShareMsg = 'key'; renderCtl(); return; }
+    let sent = {}; try { sent = JSON.parse(localStorage.getItem(LOGO_SENT_LS) || '{}'); } catch (e) {}
+    for (const side of SIDES) {
+      // Sent again for each new game (it starts without the last one's), and whenever the game doesn't have it
+      const t = s.teams[side], src = t.logo || '', name = String(t.name || t.school || kg.meta.names[side] || '');
+      const sig = s.game + '|' + kg.meta.gameId + '|' + name + '|' + src.length + '|' + src.slice(-60), has = !!(kg.meta.logos || {})[side];
+      if (sent[side] === sig && !!src === has) continue;
+      const png = src ? await logoForShare(src) : '';
+      if (src && !png) continue;
+      try {
+        const r = await fetch(SK_API + '/logo?game=' + s.game, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key }, body: JSON.stringify({ side, name, png }) });
+        if (r.ok) { sent[side] = sig; logoShareMsg = 'ok'; try { localStorage.setItem(LOGO_SENT_LS, JSON.stringify(sent)); } catch (e) {} }
+        else logoShareMsg = r.status === 401 || r.status === 403 ? 'badkey' : 'err';
+      } catch (e) { logoShareMsg = 'err'; } // offline: tried again on the next change
+    }
+    renderCtl();
+  };
+  const queueLogoShare = () => { clearTimeout(logoShareTimer); logoShareTimer = setTimeout(shareLogos, 1500); };
 
   // ---- Graphics ----
   const show = (name, gp) => { s.gfx = name; s.gp = gp; s.gAt = Date.now(); save(); };
@@ -1206,6 +1256,7 @@
   $('annSecs').addEventListener('input', () => { s.ann.secs = Math.max(0, Math.min(120, parseInt($('annSecs').value, 10) || 0)); save(); });
   $('bxDue').addEventListener('change', e => { s.bxDue = e.target.checked; save(); });
   $('bxHead').addEventListener('input', e => { s.bxHead = e.target.value; });
+  $('skKeySave').onclick = () => { const k = $('skKey').value.trim(); if (!k) return; try { localStorage.setItem(SK_KEY_LS, JSON.stringify(k)); } catch (e) {} $('skKey').value = ''; logoShareMsg = ''; shareLogos(); };
   $('btnBug').onclick = () => { s.visible = !s.visible; save(); };
   $('btnBox').onclick = () => { s.boxOn = !s.boxOn; save(); };
   $('btnFlashAuto').onclick = () => { s.autoFlash = !s.autoFlash; save(); };
@@ -1402,6 +1453,10 @@
     const recs = SIDES.map(sd => (seasons || []).find(t => kg && t.name.toLowerCase() === String(seasonName(sd)).toLowerCase())).filter(Boolean);
     setLight($('ltSea'), seaErr ? 'bad' : !seasons ? 'wait' : recs.length ? 'ok' : 'wait', 'Season stats' + (seasons && !seaErr ? ' (' + recs.length + '/2)' : ''));
     $('seaNote').textContent = seaErr ? "Couldn't load season stats: " + seaErr : !kg ? 'Waiting for the stat keeper.' : SIDES.map(sd => seasonName(sd) + ': ' + ((seasons || []).find(t => t.name.toLowerCase() === String(seasonName(sd)).toLowerCase()) ? 'season stats found' : 'no season stats yet (today\'s game only)')).join(' · ');
+    $('logoNote').textContent = s.src !== 'keeper' ? '' : logoShareMsg === 'ok' ? 'Team logos are shared with the stat keeper for the fbca.tv box score.'
+      : logoShareMsg === 'key' ? 'To show the team logos on the fbca.tv box score, paste the stat keeper key here once.' : logoShareMsg === 'badkey' ? "That key didn't work. Paste the stat keeper key again."
+      : logoShareMsg === 'err' ? "Couldn't share the team logos with the stat keeper right now; it tries again on the next change." : '';
+    $('skKeyRow').hidden = !(s.src === 'keeper' && (logoShareMsg === 'key' || logoShareMsg === 'badkey'));
     $('skNote').textContent = s.src === 'hand' ? 'By hand: the Live tab has buttons for the score, inning, count, outs and runners.'
       : !kOpen ? 'Connecting to the stat keeper…' : !kg ? 'Connected, waiting for the game…'
       : 'Live: ' + kg.meta.names.away + ' at ' + kg.meta.names.home + ', ' + kg.events.length + ' plays.';
