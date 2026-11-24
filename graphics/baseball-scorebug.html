@@ -401,6 +401,7 @@
   body.ctl .views button.cur { background: #3A3D44; border-color: #6B7079; box-shadow: inset 0 -3px 0 #fff; color: #fff; }
   body.ctl .lights { display: flex; gap: 6px; margin-left: auto; }
   body.ctl .light { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--chalk-dim); padding: 3px 9px; border: 1px solid var(--edge-soft); border-radius: 999px; white-space: nowrap; }
+  body.ctl button.light { background: none; min-height: 0; height: auto; box-shadow: none; cursor: pointer; font-family: inherit; text-transform: none; letter-spacing: 0; }
   body.ctl .light::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #5A5E66; }
   body.ctl .light.ok::before { background: var(--on); box-shadow: 0 0 6px rgba(34,216,101,.7); }
   body.ctl .light.wait::before { background: var(--wait); } body.ctl .light.bad::before { background: var(--off); }
@@ -537,7 +538,7 @@
       <button data-vp="gfx">Graphics setup</button>
       <button data-vp="conn">Connections</button>
     </nav>
-    <div class="lights"><span class="light" id="ltSk">Stat keeper</span><span class="light" id="ltSea">Season stats</span></div>
+    <div class="lights"><span class="light" id="ltSk">Stat keeper</span><span class="light" id="ltSea">Season stats</span><button class="light" id="ltLogo" type="button" title="Team logos on the fbca.tv box score">Box score logos</button></div>
     <span class="panel-note" id="panelNote"></span>
     <button class="take" id="btnTakeAll">Take down graphic</button>
   </header>
@@ -1256,6 +1257,7 @@
   $('annSecs').addEventListener('input', () => { s.ann.secs = Math.max(0, Math.min(120, parseInt($('annSecs').value, 10) || 0)); save(); });
   $('bxDue').addEventListener('change', e => { s.bxDue = e.target.checked; save(); });
   $('bxHead').addEventListener('input', e => { s.bxHead = e.target.value; });
+  $('ltLogo').onclick = () => { const b = document.querySelector('[data-vp="conn"]'); if (b) b.click(); setTimeout(() => $('skKey').focus(), 50); };
   $('skKeySave').onclick = () => { const k = $('skKey').value.trim(); if (!k) return; try { localStorage.setItem(SK_KEY_LS, JSON.stringify(k)); } catch (e) {} $('skKey').value = ''; logoShareMsg = ''; shareLogos(); };
   $('btnBug').onclick = () => { s.visible = !s.visible; save(); };
   $('btnBox').onclick = () => { s.boxOn = !s.boxOn; save(); };
@@ -1453,6 +1455,8 @@
     const recs = SIDES.map(sd => (seasons || []).find(t => kg && t.name.toLowerCase() === String(seasonName(sd)).toLowerCase())).filter(Boolean);
     setLight($('ltSea'), seaErr ? 'bad' : !seasons ? 'wait' : recs.length ? 'ok' : 'wait', 'Season stats' + (seasons && !seaErr ? ' (' + recs.length + '/2)' : ''));
     $('seaNote').textContent = seaErr ? "Couldn't load season stats: " + seaErr : !kg ? 'Waiting for the stat keeper.' : SIDES.map(sd => seasonName(sd) + ': ' + ((seasons || []).find(t => t.name.toLowerCase() === String(seasonName(sd)).toLowerCase()) ? 'season stats found' : 'no season stats yet (today\'s game only)')).join(' · ');
+    $('ltLogo').hidden = s.src !== 'keeper';
+    setLight($('ltLogo'), logoShareMsg === 'ok' ? 'ok' : logoShareMsg ? 'bad' : 'wait', logoShareMsg === 'key' || logoShareMsg === 'badkey' ? 'Box score logos: needs the key' : 'Box score logos');
     $('logoNote').textContent = s.src !== 'keeper' ? '' : logoShareMsg === 'ok' ? 'Team logos are shared with the stat keeper for the fbca.tv box score.'
       : logoShareMsg === 'key' ? 'To show the team logos on the fbca.tv box score, paste the stat keeper key here once.' : logoShareMsg === 'badkey' ? "That key didn't work. Paste the stat keeper key again."
       : logoShareMsg === 'err' ? "Couldn't share the team logos with the stat keeper right now; it tries again on the next change." : '';
