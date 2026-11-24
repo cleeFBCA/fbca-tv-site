@@ -1014,28 +1014,30 @@
     const sameOrder = (a, b) => !!a && !!b && a.side === b.side && JSON.stringify((a.rows || []).map(r => [r.name, r.pos, r.avg])) === JSON.stringify((b.rows || []).map(r => [r.name, r.pos, r.avg]))
       && JSON.stringify(a.sp && [a.sp.name, a.sp.v]) === JSON.stringify(b.sp && [b.sp.name, b.sp.v]);
     const swapLu = g => {
-      const ph = $('luPh'), plate = $('luPlate'), oldPic = $('luPic'), had = !!(luCur && luCur.photo), ease = 'cubic-bezier(.22,1,.36,1)';
+      const ph = $('luPh'), plate = $('luPlate'), had = !!(luCur && luCur.photo), ease = 'cubic-bezier(.22,1,.36,1)';
       // The gold outline leaves the old row and draws on the new one (the row pulses as it lands)
       const rows = [...$('luLs').children];
       (g.rows || []).forEach((r, i) => rows[i] && rows[i].classList.toggle('hi', !!r.hi));
       const spRow = rows.find(d => d.classList.contains('spr')); if (spRow) spRow.classList.toggle('hi', !!(g.sp && g.sp.hi));
-      // The photo: the old one slides off to the left and blurs away; the new one comes in from the right and settles
-      if (had) {
-        oldPic.removeAttribute('id');
-        // gone by 70% of the way, so there's a clean beat before the next one comes in
-        oldPic.animate([{ opacity: 1, transform: 'none', filter: 'blur(0)' }, { opacity: 0, transform: 'translateX(-70px) scale(.97)', filter: 'blur(8px)', offset: .7 }, { opacity: 0, transform: 'translateX(-90px) scale(.97)', filter: 'blur(8px)' }],
-          { duration: 260, easing: 'cubic-bezier(.4,0,.7,.2)', fill: 'forwards' }).finished.then(() => oldPic.remove());
-      } else oldPic.removeAttribute('id');
-      const pic = el('div', 'pic'); pic.id = 'luPic'; pic.style.backgroundImage = g.photo ? `url("${g.photo}")` : 'none';
-      ph.insertBefore(pic, plate);
-      if (!had) oldPic.remove();
-      ph.classList.toggle('haspic', !!g.photo); // the stand-in logo fades (it doesn't move)
-      if (g.photo) {
+      // The photo: one picture element only, so two players can never show at once. The current player slides off
+      // to the left and blurs away; only when that has finished does the picture change, and the new player comes in
+      // from the right and settles, with a light passing over him.
+      const pic = $('luPic'), token = (swapLu.n = (swapLu.n || 0) + 1);
+      pic.getAnimations().forEach(a => a.cancel());
+      const showNew = () => {
+        if (token !== swapLu.n) return; // a newer pick took over
+        pic.getAnimations().forEach(a => a.cancel());
+        pic.style.backgroundImage = g.photo ? `url("${g.photo}")` : 'none';
+        ph.classList.toggle('haspic', !!g.photo); // the stand-in logo fades (it doesn't move)
+        if (!g.photo) return;
         pic.animate([{ opacity: 0, transform: 'translateX(110px) scale(1.05)', filter: 'blur(8px) brightness(1.6)' }, { opacity: 1, offset: .45, filter: 'blur(0) brightness(1.25)' }, { opacity: 1, transform: 'none', filter: 'blur(0) brightness(1)' }],
-          { duration: 520, delay: had ? 400 : 60, easing: ease, fill: 'backwards' }); // the old photo is gone by ~180ms: a clear beat, then the new one
-        // a light passes over the new player as he lands
-        const sh = ph.querySelector('.shine'); if (sh) sh.animate([{ opacity: 1, transform: 'translateX(-100%)' }, { opacity: 1, transform: 'translateX(100%)' }], { duration: 750, delay: had ? 760 : 420, easing: 'ease-in-out', fill: 'backwards' });
-      }
+          { duration: 520, delay: 120, easing: ease, fill: 'backwards' });
+        const sh = ph.querySelector('.shine'); if (sh) sh.animate([{ opacity: 1, transform: 'translateX(-100%)' }, { opacity: 1, transform: 'translateX(100%)' }], { duration: 750, delay: 480, easing: 'ease-in-out', fill: 'backwards' });
+      };
+      if (had && pic.style.backgroundImage && pic.style.backgroundImage !== 'none') {
+        pic.animate([{ opacity: 1, transform: 'none', filter: 'blur(0)' }, { opacity: 0, transform: 'translateX(-70px) scale(.97)', filter: 'blur(8px)', offset: .7 }, { opacity: 0, transform: 'translateX(-90px) scale(.97)', filter: 'blur(8px)' }],
+          { duration: 260, easing: 'cubic-bezier(.4,0,.7,.2)', fill: 'forwards' }).finished.then(showNew, () => {});
+      } else showNew();
       // The name plate wipes off and on with the new name
       const h = g.hi, setPlate = () => {
         $('luF').replaceChildren(...(h ? [...(h.num ? [el('i', null, '#' + h.num)] : []), h.first || ''] : []));
@@ -1132,6 +1134,7 @@
       } else if (want && s.gAt !== enter.at) { // the same graphic again, with new content
         enter.at = s.gAt;
         if (want === 'hr') { clearTimers(); enter(want); }
+        else if (want === 'lu' && luCur && JSON.stringify(luCur) === JSON.stringify(s.gp || {})) { /* sent again unchanged (Update after a pick): nothing to animate */ }
         else if (want === 'lu' && $('lu').dataset.st === '3' && sameOrder(luCur, s.gp)) swapLu(s.gp || {}); // a new featured player, same order: swap him in place
         else if (want === 'lu') { clearTimers(); $('lu').dataset.st = 2; later(460, () => FILL.lu(s.gp || {})); later(520, () => $('lu').dataset.st = 3); } // the old photo fades all the way first // a new featured player: the old one clears, then the new one comes in
         else { FILL[want](s.gp || {}); }
