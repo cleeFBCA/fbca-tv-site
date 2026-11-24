@@ -716,7 +716,10 @@
         <div class="foot"><button class="primary" id="detShow">Show</button><button class="take" id="detTake">Take down</button></div>
         <div class="body" id="detBody">
           <div data-pane="match">
-            <label for="mtSub">Line beside the sport at the top (optional)</label><input id="mtSub" maxlength="40" placeholder="District game">
+            <div class="two">
+              <div><label for="mtTitle">Top line (blank = the sport)</label><input id="mtTitle" maxlength="40" placeholder="Baseball"></div>
+              <div><label for="mtSub">Beside it (optional)</label><input id="mtSub" maxlength="40" placeholder="District game"></div>
+            </div>
             <p class="hint">Full screen: each team's logo, school, name and record (from Game setup), VS, and a box under it with the date, time and venue. The date, time and venue are the same as the lower-third title card's (on its tile). The score bug steps aside while it's up.</p>
             <p class="hint" id="mtNow"></p>
           </div>
@@ -862,7 +865,7 @@
   const defaults = () => ({
     game: 'baseball', src: 'keeper', visible: true, boxOn: true, autoFlash: true, batShow: 'auto',
     teams: { away: team('', '', '', '#1F3A93', '#FFFFFF'), home: team('Fort Bend Christian', 'Eagles', 'FBCA', FBCA.bg, FBCA.fg) },
-    venue: '', when: '', mtSub: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70 },
+    venue: '', when: '', mtTitle: '', mtSub: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70 },
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
     gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }, ann: { names: ['', '', ''], label: 'On the call', secs: 8 }
   });
@@ -997,7 +1000,7 @@
       $('luFt').textContent = g.cap || '';
     };
     const fillMt = g => {
-      $('mtTtl').textContent = g.title || ''; $('mtSub').textContent = g.sub || '';
+      $('mtTtl').textContent = g.title || ''; $('mtSub').textContent = g.sub || ''; fit($('mtTtl'), 900); fit($('mtSub'), 520); // long lines squeeze to fit the strip
       for (const [side, P] of [['away', 'L'], ['home', 'R']]) {
         const t = s.teams[side], node = stripe(paint($('mt' + P), t), side);
         node.style.setProperty('--wm', t.logo ? `url("${t.logo}")` : 'none');
@@ -1368,7 +1371,7 @@
 
   // Tiles: { id, name, kind, on, show, take }
   const GFX = [
-    { id: 'match', name: 'Title card', kind: 'Full screen', on: () => s.gfx === 'match', show: () => { const sg = schedToday(); show('match', { title: SPORT().toUpperCase(), sub: (s.mtSub || '').trim().toUpperCase(), venue: s.venue.trim() || (sg && sg.location) || '', when: tcWhen(), names: kg ? kg.meta.names : {} }); } },
+    { id: 'match', name: 'Title card', kind: 'Full screen', on: () => s.gfx === 'match', show: () => { const sg = schedToday(); show('match', { title: ((s.mtTitle || '').trim() || SPORT()).toUpperCase(), sub: (s.mtSub || '').trim().toUpperCase(), venue: s.venue.trim() || (sg && sg.location) || '', when: tcWhen(), names: kg ? kg.meta.names : {} }); } },
     { id: 'title', name: 'Title card', kind: 'Lower third', on: () => s.gfx === 'title', show: () => { const sg = schedToday(); show('title', { venue: s.venue.trim() || (sg && sg.location) || '', when: tcWhen(), names: kg ? kg.meta.names : {} }); } },
     { id: 'bstat', name: 'Batter stats', kind: 'Lower third', on: () => s.gfx === 'bstat', show: () => { const [side, id] = $('bsWho').value.split('|'); const g = batterGp(side, id); if (g) show('bstat', g); else note('Pick a batter (the stat keeper needs rosters).'); } },
     { id: 'pstat', name: 'Pitcher stats', kind: 'Lower third', on: () => s.gfx === 'pstat', show: () => { const [side, id] = $('psWho').value.split('|'); const g = pitcherGp(side, id); if (g) show('pstat', g); else note('Pick a pitcher (the stat keeper needs rosters).'); } },
@@ -1400,6 +1403,7 @@
   $('venue').addEventListener('input', e => { s.venue = e.target.value; save(); });
   $('when').addEventListener('input', e => { s.when = e.target.value; save(); });
   $('mtSub').addEventListener('input', e => { s.mtSub = e.target.value; save(); });
+  $('mtTitle').addEventListener('input', e => { s.mtTitle = e.target.value; save(); });
   $('l3Name').addEventListener('input', e => { s.l3.name = e.target.value; save(); });
   $('l3Title').addEventListener('input', e => { s.l3.title = e.target.value; save(); });
   $('l3Logo').addEventListener('change', e => { s.l3.logo = e.target.value; save(); });
@@ -1633,7 +1637,7 @@
     $('gameNote').textContent = kg ? 'Stat keeper teams: ' + kg.meta.names.away + ' at ' + kg.meta.names.home + '. Blank team names here use those.' : '';
     $('alpha').checked = s.keyMode === 'alpha'; $('chromaBox').hidden = s.keyMode === 'alpha'; setField($('keyColor'), hex(s.keyColor, '#FF00FF').toLowerCase());
     $('stnOn').checked = s.stn.on; setField($('stnOp'), s.stn.op);
-    setField($('mtSub'), s.mtSub || ''); if (pick === 'match') { const sg = schedToday(); $('mtNow').textContent = 'Under it: ' + [tcWhen(), s.venue.trim() || (sg && sg.location) || ''].filter(Boolean).join(' · '); }
+    setField($('mtSub'), s.mtSub || ''); setField($('mtTitle'), s.mtTitle || ''); $('mtTitle').placeholder = SPORT(); if (pick === 'match') { const sg = schedToday(); $('mtNow').textContent = 'Under it: ' + [tcWhen(), s.venue.trim() || (sg && sg.location) || ''].filter(Boolean).join(' · '); }
     setField($('venue'), s.venue); setField($('when'), s.when || ''); $('when').placeholder = tcWhen(); if (pick === 'title') { const sg = schedToday(); $('tcNow').textContent = 'Under the card: ' + [tcWhen(), s.venue.trim() || (sg && sg.location) || ''].filter(Boolean).join(' · '); } setField($('l3Name'), s.l3.name); setField($('l3Title'), s.l3.title); $('l3Logo').value = s.l3.logo; $('bxDue').checked = s.bxDue;
     renderTeams();
     renderShell();
