@@ -780,7 +780,7 @@
           </div>
           <div data-pane="hr">
             <div class="sum" id="hrSum"></div>
-            <p class="hint">Runs by itself, about 11 seconds: HOME RUN (solo, 2-run, 3-run or grand slam), then the batter's name with their home runs and RBI this season. The score bug comes back after.</p>
+            <p class="hint">Runs by itself, about 11 seconds: HOME RUN (solo, 2-run, 3-run or grand slam), then the batter's name with their home runs and RBI this season. With no home run recorded on the stat keeper, it plays just HOME RUN in the batting team's colors (about 5 seconds). The score bug comes back after.</p>
           </div>
           <div data-pane="pitch">
             <label for="spMph">Pitch speed (MPH): type it, then Enter or Show</label><input id="spMph" inputmode="numeric" placeholder="86">
@@ -1003,10 +1003,10 @@
       }
     };
     const fillHr = g => {
-      const t = s.teams[g.side];
+      const t = s.teams[g.side] || s.teams.home;
       paint($('hr'), t); stripe($('hr'), g.side); crest($('hrLg'), t);
       $('hrNm').replaceChildren(el('span', 'f', g.first || ''), el('span', 'l', g.last || ''));
-      $('hrSs').replaceChildren(...g.stats.map(([v, k]) => { const d = el('div'); d.append(el('b', null, String(v)), k); return d; }));
+      $('hrSs').replaceChildren(...(g.stats || []).map(([v, k]) => { const d = el('div'); d.append(el('b', null, String(v)), k); return d; }));
       let i = 0;
       $('hrWord').replaceChildren(...[...'HOME RUN'].map(ch => { const sp = el('span', ch === ' ' ? 'gap' : '', ch === ' ' ? '' : ch); sp.style.setProperty('--i', i++); return sp; }));
       $('hrTag').textContent = g.tag || '';
@@ -1124,13 +1124,15 @@
     // Each step starts while the one before it is still moving, so nothing stops partway.
     const IN = { ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]], lu: [[0, 1], [260, 2], [1000, 3]], mt: [[0, 1], [420, 2], [1250, 3]] };
     const OUT = { ln: [[0, 2], [180, 0], [600]], tc: [[0, 1], [170, 0], [620]], bx: [[0, 2], [130, 0], [560]], lu: [[0, 1], [260, 0], [760]], mt: [[0, 1], [260, 0], [760]], hr: [[0, 6], [300, 7], [500, 0], [520]] };
+    const HR_LITE = [[0, 1], [190, 2], [4200, 6], [4520, 7], [4750, 0]];
     const HR_STEPS = [[0, 1], [190, 2], [3900, 3], [4500, 4], [4900, 5], [10600, 6], [10920, 7], [11150, 0]];
     const run = (node, steps, done) => { for (const [ms, st] of steps) later(ms, () => { if (st != null) $(node).dataset.st = st; else if (done) done(); }); };
 
     const enter = name => {
       const node = NODE[name]; shownGfx = name; $(node).dataset.dir = 'in';
       FILL[name](s.gp || {});
-      if (name === 'hr') { const past = Date.now() - (s.gAt || Date.now()); for (const [ms, st] of HR_STEPS) { if (ms >= past) later(ms - past, () => $('hr').dataset.st = st); else $('hr').dataset.st = st; } return; }
+      // No home run recorded: just HOME RUN (no runs tag, no name or stats after), then it goes
+      if (name === 'hr') { const past = Date.now() - (s.gAt || Date.now()); for (const [ms, st] of ((s.gp || {}).lite ? HR_LITE : HR_STEPS)) { if (ms >= past) later(ms - past, () => $('hr').dataset.st = st); else $('hr').dataset.st = st; } return; }
       run(node, IN[node]);
     };
     const leave = (name, done) => { const node = NODE[name]; shownGfx = ''; clearTimers(); // drop any steps of the way in still waiting
@@ -1514,7 +1516,10 @@
     { id: 'title', name: 'Title card', kind: 'Lower third', on: () => s.gfx === 'title', show: () => { const sg = schedToday(); show('title', { venue: s.venue.trim() || (sg && sg.location) || '', when: tcWhen(), names: kg ? kg.meta.names : {} }); } },
     { id: 'bstat', name: 'Batter stats', kind: 'Lower third', on: () => s.gfx === 'bstat', show: () => { const [side, id] = $('bsWho').value.split('|'); const g = batterGp(side, id); if (g) show('bstat', g); else note('Pick a batter (the stat keeper needs rosters).'); } },
     { id: 'pstat', name: 'Pitcher stats', kind: 'Lower third', on: () => s.gfx === 'pstat', show: () => { const [side, id] = $('psWho').value.split('|'); const g = pitcherGp(side, id); if (g) show('pstat', g); else note('Pick a pitcher (the stat keeper needs rosters).'); } },
-    { id: 'hr', name: 'Home run', kind: 'Lower third', on: () => s.gfx === 'hr', show: () => { const g = hrGp(); if (!g) { note('No home run recorded yet.'); return; } show('hr', g); clearTimeout(hrTimer); const at = s.gAt; hrTimer = setTimeout(() => { if (s.gfx === 'hr' && s.gAt === at) take(); }, 11200); } },
+    { id: 'hr', name: 'Home run', kind: 'Lower third', on: () => s.gfx === 'hr', show: () => {
+      // With no home run recorded, it still plays: HOME RUN in the batting team's colors, without the runs or the stats after
+      const g = hrGp() || { lite: true, side: (s.live && s.live.bat && s.live.bat.side) || 'home', tag: '', stats: [] };
+      show('hr', g); clearTimeout(hrTimer); const at = s.gAt; hrTimer = setTimeout(() => { if (s.gfx === 'hr' && s.gAt === at) take(); }, g.lite ? 4800 : 11200); } },
     { id: 'pitch', name: 'Pitch speed', kind: 'On the bug', on: () => !!(s.pitch && Date.now() < s.pitch.until), show: showPitch, take: () => { s.pitch = null; save(); } },
     { id: 'exit', name: 'Exit velo', kind: 'On the bug', on: () => !!(s.exit && Date.now() < s.exit.until), show: showExit, take: () => { s.exit = null; save(); } },
     { id: 'flash', name: 'BB / K / HBP', kind: 'On the bug', on: () => !!(s.flash && Date.now() < s.flash.until), show: () => flashNow('K'), take: () => { s.flash = null; save(); } },
