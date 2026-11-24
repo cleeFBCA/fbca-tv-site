@@ -334,9 +334,10 @@
   :is(.lu[data-st="2"], .lu[data-st="3"]) .ph .wm > * { animation: luKen 16s ease-in-out infinite alternate; }
   @keyframes luKen { from { transform: scale(1.05) translateX(-3%) rotate(-3deg); } to { transform: scale(1.25) translateX(3%) rotate(3deg); } }
   /* The team logo stands in for a photo: scaled up to fill its box (logos are saved small), clear of the name plate */
-  .lu .ph:not(:has(.plate.has)) .big { bottom: 40px; } /* no name plate: centered in the panel */
   .lu .ph .big img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; }
-  .lu .ph .big { position: absolute; left: 34px; right: 34px; top: 40px; bottom: 150px; opacity: 0; transform: scale(.7); transition: opacity .3s, transform .6s cubic-bezier(.3,1.4,.5,1); }
+  /* The team logo stands in for a photo, always in the same spot (clear of the name plate); a photo coming or going only fades it */
+  .lu .ph .big { position: absolute; left: 34px; right: 34px; top: 40px; bottom: 120px; opacity: 0; transform: scale(.7); transition: opacity .3s, transform .6s cubic-bezier(.3,1.4,.5,1); }
+  :is(.lu[data-st="2"], .lu[data-st="3"]) .ph.haspic .big { transform: none; transition: opacity .3s; }
   .lu .ph .wm .ini { font-size: 260px; } .lu .ph .big .ini { font-size: 150px; }
   .lu .ph .pic { position: absolute; left: 0; right: 0; top: 24px; bottom: 0; background: center top / cover no-repeat; opacity: 0; transform: translateY(50px) scale(1.06);
                  transition: opacity .35s, transform .8s cubic-bezier(.22,1,.36,1); }
@@ -998,6 +999,53 @@
       $('hrWord').replaceChildren(...[...'HOME RUN'].map(ch => { const sp = el('span', ch === ' ' ? 'gap' : '', ch === ' ' ? '' : ch); sp.style.setProperty('--i', i++); return sp; }));
       $('hrTag').textContent = g.tag || '';
     };
+    // ---- The batting order's featured player, changed while it's up: the old one goes, the new one comes in ----
+    let luCur = null;
+    const sameOrder = (a, b) => !!a && !!b && a.side === b.side && JSON.stringify((a.rows || []).map(r => [r.name, r.pos, r.avg])) === JSON.stringify((b.rows || []).map(r => [r.name, r.pos, r.avg]))
+      && JSON.stringify(a.sp && [a.sp.name, a.sp.v]) === JSON.stringify(b.sp && [b.sp.name, b.sp.v]);
+    const swapLu = g => {
+      const ph = $('luPh'), plate = $('luPlate'), oldPic = $('luPic'), had = !!(luCur && luCur.photo), ease = 'cubic-bezier(.22,1,.36,1)';
+      // The gold outline leaves the old row and draws on the new one (the row pulses as it lands)
+      const rows = [...$('luLs').children];
+      (g.rows || []).forEach((r, i) => rows[i] && rows[i].classList.toggle('hi', !!r.hi));
+      const spRow = rows.find(d => d.classList.contains('spr')); if (spRow) spRow.classList.toggle('hi', !!(g.sp && g.sp.hi));
+      // The photo: the old one slides off to the left and blurs away; the new one comes in from the right and settles
+      if (had) {
+        oldPic.removeAttribute('id');
+        oldPic.animate([{ opacity: 1, transform: 'none', filter: 'blur(0)' }, { opacity: 0, transform: 'translateX(-90px) scale(.97)', filter: 'blur(8px)' }],
+          { duration: 280, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' }).finished.then(() => oldPic.remove());
+      } else oldPic.removeAttribute('id');
+      const pic = el('div', 'pic'); pic.id = 'luPic'; pic.style.backgroundImage = g.photo ? `url("${g.photo}")` : 'none';
+      ph.insertBefore(pic, plate);
+      if (!had) oldPic.remove();
+      ph.classList.toggle('haspic', !!g.photo); // the stand-in logo fades (it doesn't move)
+      if (g.photo) {
+        pic.animate([{ opacity: 0, transform: 'translateX(110px) scale(1.05)', filter: 'blur(8px) brightness(1.6)' }, { opacity: 1, offset: .45, filter: 'blur(0) brightness(1.25)' }, { opacity: 1, transform: 'none', filter: 'blur(0) brightness(1)' }],
+          { duration: 520, delay: had ? 160 : 60, easing: ease, fill: 'backwards' });
+        // a light passes over the new player as he lands
+        const sh = ph.querySelector('.shine'); if (sh) sh.animate([{ opacity: 1, transform: 'translateX(-100%)' }, { opacity: 1, transform: 'translateX(100%)' }], { duration: 750, delay: had ? 520 : 420, easing: 'ease-in-out', fill: 'backwards' });
+      }
+      // The name plate wipes off and on with the new name
+      const h = g.hi, setPlate = () => {
+        $('luF').replaceChildren(...(h ? [...(h.num ? [el('i', null, '#' + h.num)] : []), h.first || ''] : []));
+        $('luL').textContent = h ? h.last : ''; if (h) fit($('luL'), 450);
+      };
+      const wasPlate = plate.classList.contains('has');
+      if (wasPlate && h) {
+        plate.animate([{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 0 0 100%)' }], { duration: 220, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' }).finished.then(a => {
+          setPlate(); const anim = plate.animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 420, easing: ease });
+          plate.getAnimations().forEach(x => { if (x !== anim) x.cancel(); });
+        });
+      } else if (h) { setPlate(); plate.classList.add('has'); }
+      else plate.classList.remove('has');
+      // The line along the bottom changes with a quick wipe
+      const ft = $('luFt');
+      if (ft.textContent !== (g.cap || '')) ft.animate([{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 50% 0 50%)' }], { duration: 180, easing: 'ease-in', fill: 'forwards' }).finished.then(() => {
+        ft.textContent = g.cap || ''; const a2 = ft.animate([{ clipPath: 'inset(0 50% 0 50%)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 380, easing: ease });
+        ft.getAnimations().forEach(x => { if (x !== a2) x.cancel(); });
+      });
+      luCur = g;
+    };
     const fillLu = g => {
       const t = s.teams[g.side] || s.teams.home, lu = $('lu');
       stripe(paint(lu, t), g.side);
@@ -1024,6 +1072,7 @@
       }
       $('luLs').replaceChildren(...rows);
       $('luFt').textContent = g.cap || '';
+      luCur = g;
     };
     const fillMt = g => {
       $('mtTtl').textContent = g.title || ''; $('mtSub').textContent = g.sub || ''; fit($('mtTtl'), 900); fit($('mtSub'), 520); // long lines squeeze to fit the strip
@@ -1072,6 +1121,7 @@
       } else if (want && s.gAt !== enter.at) { // the same graphic again, with new content
         enter.at = s.gAt;
         if (want === 'hr') { clearTimers(); enter(want); }
+        else if (want === 'lu' && $('lu').dataset.st === '3' && sameOrder(luCur, s.gp)) swapLu(s.gp || {}); // a new featured player, same order: swap him in place
         else if (want === 'lu') { clearTimers(); $('lu').dataset.st = 2; later(320, () => FILL.lu(s.gp || {})); later(380, () => $('lu').dataset.st = 3); } // a new featured player: the old one clears, then the new one comes in
         else { FILL[want](s.gp || {}); }
         return;
