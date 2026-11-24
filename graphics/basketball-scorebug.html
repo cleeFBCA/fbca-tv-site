@@ -576,7 +576,8 @@
   .fvl { position: absolute; left: 300px; bottom: 188px; display: flex; height: 182px; border-radius: 8px; overflow: hidden;
          box-shadow: inset 0 0 0 1px rgba(255,255,255,.16); }
   .fvl.hidden { clip-path: inset(0 100% 0 0 round 8px); }
-  .fvl.wipe:not(.hidden) { clip-path: inset(0 0 0 0 round 8px); transition: clip-path .5s cubic-bezier(.6,0,.3,1); }
+  .fvl.wipe:not(.hidden) { clip-path: inset(0 0 0 0 round 8px); transition: clip-path .5s cubic-bezier(.6,0,.3,1), bottom .45s ease; }
+  .fvl.nobug { bottom: 46px; } /* no bug: the QR sits where the bug was, not floating above an empty spot */
   .fvl .accent { width: 18px; --c: var(--field); }
   .fvl .fbody { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0 46px 5px 34px;
                 background: linear-gradient(#2e2f33, #17181b); overflow: hidden; }
@@ -606,6 +607,24 @@
     clip-path: inset(0 50% 0 50% round 8px); transition: clip-path .5s cubic-bezier(.6,0,.3,1);
   }
   .cp.nobug { top: 540px; }
+  /* ---- Up next (same as the soccer scorebug): a date tile in FBCA's colors, the matchup, and the time in the title card's white pill ---- */
+  #pNext { width: 1260px; }
+  .nx-row { display: grid; grid-template-columns: 186px 1fr auto; align-items: center; height: 118px; box-shadow: inset 0 1px 0 rgba(255,255,255,.07); }
+  .nx-date { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;
+             --c: var(--field); --f: var(--gold-hi); clip-path: polygon(0 0, 100% 0, calc(100% - 22px) 100%, 0 100%); }
+  .nx-date small { font-size: 24px; font-weight: 800; letter-spacing: .2em; color: var(--gold-hi); }
+  .nx-date b { font-size: 48px; font-weight: 800; color: #fff; margin-top: 4px; }
+  .nx-what { padding: 0 24px 0 30px; line-height: 1.05; min-width: 0; }
+  .nx-what small { display: block; font-size: 24px; font-weight: 700; letter-spacing: .14em; color: var(--gold-hi); }
+  .nx-what b { display: block; font-size: 48px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+  .nx-what b em { font-style: normal; color: rgba(255,255,255,.55); margin-right: 12px; }
+  .nx-where { padding-right: 34px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .nx-where span { font-size: 22px; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.6); white-space: nowrap; }
+  .nx-where span:empty { display: none; }
+  .nx-watch { display: flex; align-items: center; justify-content: center; gap: 22px; height: 76px; background: rgba(0,0,0,.35);
+              font-size: 32px; font-weight: 800; letter-spacing: .14em; }
+  .nx-watch .chip { padding: 5px 16px 3px; border-radius: 4px; background: var(--tally); font-size: 26px; letter-spacing: .16em; }
+  .nx-watch .chip::before { content: ''; display: inline-block; width: 12px; height: 12px; margin: 0 10px 3px 0; border-radius: 50%; background: #fff; animation: cpLive 1.4s ease-in-out infinite; }
   .cp:not(.hidden) { clip-path: inset(0 0 0 0 round 8px); }
   .cp::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 5;
                background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.16) 50%, transparent 60%); }
@@ -1036,6 +1055,7 @@
   body.ctl .tile b { max-width: 100%; font-size: 16px; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* a long team name is cut with … (full name in the panel title) */
   body.ctl .tile small { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--chalk-dim); }
   body.ctl .tile.pick { outline: 2px solid #fff; outline-offset: 1px; }
+  body.ctl .tile[data-g="qr"] { grid-column-start: 1; } /* the fan vote pair starts its own row, as on the soccer scorebug */
   body.ctl .tile.onair::before { display: none; }
   body.ctl .tile.onair small { color: inherit; opacity: .8; }
   body.ctl .tile kbd { font: 700 10px var(--font-body); color: var(--chalk-dim); background: var(--pine); border: 1px solid #3A3D44; border-radius: 3px; padding: 0 4px; }
@@ -1067,6 +1087,10 @@
   body.ctl .fv-nom { grid-template-columns: 80px 48px 1fr 84px auto; gap: 4px; }
   body.ctl .pph-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
   body.ctl .logo-fit { grid-template-columns: 1fr; }
+  body.ctl .preview-list { font-size: 13px; color: var(--chalk-dim); line-height: 1.6; margin: 8px 0 0; padding-left: 18px; }
+  /* Four rows of graphics tiles: the preview also stays short enough to leave them room on a short screen */
+  body.ctl .preview { width: min(100%, calc(54vh * 16 / 9), calc((100vh - 450px) * 16 / 9)); }
+  @container (max-width: 620px) { body.ctl .preview { width: min(100%, calc((100vh - 548px) * 16 / 9)); } } /* five rows of tiles (three across) and two rows of bug buttons */
 </style>
 </head>
 <body>
@@ -1140,6 +1164,14 @@
     <div class="st-teams"><div class="slab st-team L a-sl" id="pstL"></div><div class="slab st-team R a-sr" id="pstR"></div></div>
     <div id="pstRows"></div>
     <div class="cp-edge b"><i id="pstEdgeL2"></i><i id="pstEdgeR2"></i></div>
+  </div>
+
+  <div class="cp fx hidden" id="pNext">
+    <div class="cp-head"><span class="t a-up">Next on Eagles on the Air</span><i class="logo a-up" style="--t:.4"></i></div>
+    <div class="cp-edge"></div>
+    <div id="pnRows"></div>
+    <div class="nx-watch a-up" id="pnWatch"><span class="chip">Watch live</span>FBCA.TV · Roku · the App</div>
+    <div class="cp-edge b"></div>
   </div>
 
   <div class="cp fx hidden" id="pVote">
@@ -1367,6 +1399,12 @@
             <table class="mini" id="statsPreview"></table>
           </div>
 
+          <div data-pane="next" hidden>
+            <p class="hint" style="margin-top:0">The next broadcasts of any sport, from the schedule. Anything starting within the next hour is skipped, so tonight's game isn't listed.</p>
+            <div class="row"><button id="btnNextLoad">Refresh from schedule</button></div>
+            <ol class="preview-list" id="nextPreview"></ol>
+          </div>
+
           <div data-pane="fv" hidden>
             <p class="hint" style="margin-top:0">Fans vote at fbca.tv/vote. Pick the nominees in Graphics setup, open voting, put up the QR lower third a few times, then close voting and show the results. This is the same vote the soccer page runs, so only one game can have a vote at a time.</p>
             <div class="row">
@@ -1553,6 +1591,7 @@
     // Where each item comes from: 'board' (scoreboard file), 'sheet' (stat sheet) or '' (buttons on the page).
     src: { clock: 'board', shot: 'board', period: '', score: '', fouls: '', tos: '', players: 'sheet', team: 'sheet' },
     // Stat sheet: the share link, whether it's connected, and the last read (players and totals per side).
+    next: [], // Up next: the next broadcasts from the schedule
     statFrom: 'keeper', statsV: 2, clockShare: true, sheetUrl: '', sheetOn: false, sheetEvery: 1, sheet: { at: 0, err: '', home: null, away: null },
     // The sheet counts fouls for the whole game; the bug shows them since the quarter started.
     foulBase: { home: 0, away: 0 }, statsLabel: 'auto',
@@ -1641,6 +1680,7 @@
     out.fv = Object.assign(defaults().fv, raw.fv); out.l3 = Object.assign(defaults().l3, raw.l3);
     out.pop = Object.assign(defaults().pop, raw.pop); out.stn = Object.assign(defaults().stn, raw.stn); out.match = Object.assign(defaults().match, raw.match);
     out.spot = Object.assign(blankSpot(), raw.spot);
+    if (!Array.isArray(out.next)) out.next = [];
     out.lu = Object.assign(defaults().lu, raw.lu);
     for (const side of ['home', 'away']) {
       const t = Object.assign(blankLu(), out.lu[side]);
@@ -1703,6 +1743,7 @@
   };
   const fmtShot = ms => ms < 5000 && ms > 0 ? (Math.floor(ms / 100) / 10).toFixed(1) : String(Math.ceil(ms / 1000));
   const clockOff = () => s.period === 'HALF' || s.period === 'FINAL';
+  const fmtGame = (iso, opts) => new Date(iso).toLocaleString('en-US', { timeZone: 'America/Chicago', ...opts });
   const periodLabel = p => ({ '1Q': '1ST', '2Q': '2ND', '3Q': '3RD', '4Q': '4TH', OT: 'OT', '2OT': '2OT', '3OT': '3OT', '4OT': '4OT', HALF: 'HALF', FINAL: 'FINAL' })[p] || p;
   const inBonus = side => s[other(side)].fouls >= s.bonusAt;
   // Shot clock is shown when it's on, not hidden by the operator, and the game clock has more time than it.
@@ -2357,12 +2398,35 @@
       if (sig !== luSig) { luSig = sig; luPhotos().then(lib => { luLib = lib; if (luSig === sig) luBuild(); }); }
       show();
     };
+    // Up next (as on the soccer scorebug): one row per game, each sliding in after the one above.
+    let nxSig = '';
+    const renderNextPanel = () => {
+      const sig = JSON.stringify(s.next);
+      if (sig === nxSig) return;
+      nxSig = sig;
+      $('pnRows').replaceChildren(...s.next.map((g, i) => {
+        const row = at(el('div', 'nx-row a-l'), .45 + i * .1);
+        const date = el('div', 'nx-date slab');
+        date.append(el('small', null, fmtGame(g.start, { weekday: 'short' })), el('b', null, fmtGame(g.start, { month: 'short', day: 'numeric' })));
+        const what = el('div', 'nx-what'), vs = el('b');
+        vs.append(el('em', null, g.homeAway === 'away' ? 'at' : 'vs'), g.opponent);
+        what.append(el('small', null, g.sport), vs);
+        const where = el('div', 'nx-where');
+        where.append(el('div', 'pg-pill', fmtGame(g.start, { hour: 'numeric', minute: '2-digit' })), el('span', null, g.location || ''));
+        row.append(date, what, where);
+        return row;
+      }));
+      at($('pnWatch'), .6 + s.next.length * .1);
+    };
     const renderFanVote = () => {
       renderLineup();
+      $('fvl').classList.toggle('nobug', !bugUp());
       fxShow($('fvl'), s.fv.l3 && !s.panel && !s.lu.l3);
       // One full-screen panel at a time; the old content stays while a panel goes out. The bug retracts while one
       // is up, so the panels sit in the middle of the frame.
-      for (const id of ['pVote', 'pStats']) $(id).classList.toggle('nobug', !bugUp());
+      for (const id of ['pVote', 'pStats', 'pNext']) $(id).classList.toggle('nobug', !bugUp());
+      if (s.panel === 'next') renderNextPanel();
+      fxShow($('pNext'), s.panel === 'next');
       if (s.panel === 'vote') renderVotePanel();
       fxShow($('pVote'), s.panel === 'vote');
       if (s.panel === 'stats') renderStatsPanel();
@@ -2848,6 +2912,7 @@
   let l3Hook = null; // lower third list and form labels (set up below)
   let popHook = null; // pop-up tab (set up below)
   let preHook = null; // pregame tab (set up below)
+  let nextHook = null; // the Up next panel's list (set up below)
   let shellHook = null; // the landscape layout: tiles, details panel, lights (set up at the end)
   let sheetHook = null; // data sources table, stat sheet status, sheet players, team stats tab (set up below)
   // How a name fits its 350px strip on the bug (same math as the output's fitName).
@@ -2867,6 +2932,7 @@
   const bugText = () => !s.visible ? 'Show score bug' : bugWaits() ? 'Score bug returns after' : 'Hide score bug';
   const renderCtl = () => {
     if (shellHook) shellHook();
+    if (nextHook) nextHook();
     if (fvRenderHook) fvRenderHook();
     if (l3Hook) l3Hook();
     if (popHook) popHook();
@@ -3453,7 +3519,7 @@
     else showLower('lul', () => { s.lu.show = side; s.lu.l3 = true; });
   };
   // Output card: every graphic insert on air (the bug and station bug stay), and one button to take them all down.
-  const PANEL_NAMES = { match: 'Title card', spot: 'Player spotlight', stats: 'Team stats', vote: 'Fan vote results', lu: 'Starting lineup' };
+  const PANEL_NAMES = { match: 'Title card', spot: 'Player spotlight', stats: 'Team stats', vote: 'Fan vote results', lu: 'Starting lineup', next: 'Up next' };
   function renderOnAir() {
     const onAir = [s.panel && (PANEL_NAMES[s.panel] || 'Full-screen graphic'), s.l3.on && (s.l3.ann ? 'Announcers lower third' : 'Lower third'), s.pop.on && 'Pop-up', s.fv.l3 && 'Fan vote QR', s.lu.l3 && 'Lineup lower third'].filter(Boolean);
     $('panelNote').replaceChildren(...(onAir.length ? [el('b', null, 'ON AIR: '), onAir.join(', ')] : ['No graphic inserts on air']));
@@ -4226,7 +4292,21 @@
     if (!words.length) return name.toUpperCase();
     return words.join(' ');
   };
+  // --- Up next: the next broadcasts of any sport (skipping anything within the hour, so tonight's game isn't listed) ---
+  let allGames = [];
+  const loadNext = () => {
+    const soon = Date.now() + 60 * 60000;
+    s.next = allGames.filter(g => new Date(g.start).getTime() > soon).slice(0, 5)
+      .map(({ start, sport, opponent, homeAway, location }) => ({ start, sport, opponent, homeAway, location }));
+    save();
+  };
+  $('btnNextLoad').onclick = loadNext;
+  const renderNextTab = () => $('nextPreview').replaceChildren(...s.next.map(g => el('li', null,
+    fmtGame(g.start, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' · ' + g.sport + (g.homeAway === 'away' ? ' at ' : ' vs ') + g.opponent)));
+  nextHook = renderNextTab;
   fetch('../schedule.json', { cache: 'no-store' }).then(r => r.json()).then(data => {
+    allGames = (data.games || []).slice().sort((a, b) => a.start.localeCompare(b.start));
+    if (!s.next.length) loadNext();
     const games = (data.games || []).filter(g => /basketball/i.test(g.sport)).sort((a, b) => a.start.localeCompare(b.start));
     if (!games.length) return;
     const sel = $('game');
@@ -4506,6 +4586,7 @@
     lineup('home', false), lineup('away', false), lineup('home', true), lineup('away', true),
     { id: 'spot', pane: 'spot', kind: 'full', name: () => 'Player spotlight', showText: () => 'Show spotlight', on: () => s.panel === 'spot', show: () => $('btnSpShow').click(), take: takeFull },
     { id: 'stats', pane: 'stats', kind: 'full', name: () => 'Team stats', on: () => s.panel === 'stats', show: () => $('btnStats').click(), take: takeFull, off: () => $('btnStats').disabled },
+    { id: 'next', pane: 'next', kind: 'full', name: () => 'Up next', on: () => s.panel === 'next', show: () => setPanel('next'), take: takeFull },
     { id: 'qr', pane: 'fv', kind: 'low', key: 'V', name: () => 'Fan vote QR', showText: () => 'Show QR lower third', on: () => !!s.fv.l3,
       show: () => $('fvShowQr').click(), take: () => { s.fv.l3 = false; save(); } },
     { id: 'vote', pane: 'fv', kind: 'full', name: () => 'Vote results', on: () => s.panel === 'vote', show: () => $('fvShowRes').click(), take: takeFull },
@@ -4518,7 +4599,7 @@
   $('tiles').replaceChildren(...GFX.map(g => {
     const b = el('button', 'tile'), top = el('b'), name = document.createTextNode(''), small = el('small');
     top.append(name); if (g.key) top.append(' ', el('kbd', null, g.key));
-    b.append(top, small);
+    b.append(top, small); b.dataset.g = g.id;
     b.onclick = () => { pick = g.id; if (g.side && s.lu.edit !== g.side) { s.lu.edit = g.side; save(); } else renderShell(); };
     b.ondblclick = () => { if (g.on()) g.take(); else gShow(g); };
     tileEls[g.id] = { b, name, small };
