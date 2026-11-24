@@ -553,6 +553,16 @@
   body.ctl .lm .lmp small { display: block; font-size: 12px; color: var(--chalk-dim); font-weight: 400; }
   body.ctl .lm .lmp .np { font: 800 20px var(--font-display); text-align: right; } body.ctl .lm .lmp .np small { font: 600 11px var(--font-body); }
   body.ctl .lm .lmp.chg { animation: lmChg 4s ease-out; border-radius: 6px; }
+  /* Player photos (Game setup), as on the soccer and basketball scorebugs */
+  body.ctl .pph { margin-top: 8px; }
+  body.ctl .pph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin-top: 8px; }
+  body.ctl .pph-tile { background: #111214; border: 1px solid var(--edge-soft); border-radius: 8px; padding: 6px; text-align: center; font-size: 12px; }
+  body.ctl .pph-tile .ph { aspect-ratio: 5 / 6; border-radius: 5px; overflow: hidden; display: grid; place-items: center; margin-bottom: 4px; background: var(--c); color: var(--f); font: 800 26px var(--font-display); }
+  body.ctl .pph-tile .ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  body.ctl .pph-tile b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+  body.ctl .pph-tile .acts { display: flex; gap: 4px; margin-top: 4px; }
+  body.ctl .pph-tile .acts button { flex: 1; min-height: 0; padding: 5px 4px; font-size: 11px; }
+  body.ctl .pph-tile input[type=file] { display: none; }
   body.ctl .gm { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
   body.ctl .gm .inn { font: 800 40px/1 var(--font-display); text-align: center; }
   body.ctl .gm .inn small, body.ctl .gm .cnt small { display: block; font: 700 11px var(--font-body); letter-spacing: .08em; color: var(--chalk-dim); text-transform: uppercase; }
@@ -1390,6 +1400,37 @@
     open.onsuccess = () => { const d = open.result; try { const tx = d.transaction('spot', mode), out = fn(tx.objectStore('spot')); tx.oncomplete = () => { d.close(); ok(out); }; tx.onerror = () => { d.close(); fail(tx.error); }; } catch (e) { d.close(); fail(e); } };
   });
   photoDb('readonly', st => ({ k: st.getAllKeys(), v: st.getAll() })).then(({ k, v }) => { k.result.forEach((key, i) => { if (String(key).startsWith('photo|') && typeof v.result[i] === 'string') photos[key] = v.result[i]; }); renderShell(); }).catch(() => {});
+  // ---- Player photos in Game setup (as on the soccer and basketball scorebugs) ----
+  const pphSig = { home: '', away: '' };
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} // ask the browser to keep them
+  const setPhoto = async (side, p, file) => {
+    try { const url = await shrinkPhoto(file), key = photoKey(side, p.name); photos[key] = url; await photoDb('readwrite', st => st.put(url, key)); }
+    catch (e) { note("Couldn't save that photo. Try a PNG or JPG."); }
+    pphSig[side] = ''; renderShell(); renderCtl(); if (s.gfx === 'lu') showLu();
+  };
+  const unsetPhoto = (side, p) => { const key = photoKey(side, p.name); delete photos[key]; photoDb('readwrite', st => st.delete(key)).catch(() => {}); pphSig[side] = ''; renderShell(); renderCtl(); if (s.gfx === 'lu') showLu(); };
+  const renderPhotos = side => {
+    const F = teamForms[side]; if (!F) return;
+    const roster = ((kg && kg.meta.rosters[side]) || []).slice().sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
+    const have = roster.filter(p => photos[photoKey(side, p.name)]).length;
+    F.pbtn.textContent = (F.pph.hidden ? 'Player photos' : 'Hide player photos') + (have ? ' (' + have + ')' : '');
+    if (F.pph.hidden) return;
+    const t = s.teams[side], sig = JSON.stringify([t.bg, t.fg, roster.map(p => p.id + p.num + p.name + (photos[photoKey(side, p.name)] || '').length)]);
+    if (sig === pphSig[side]) return; pphSig[side] = sig;
+    const grid = F.pph.querySelector('.pph-grid'); grid.style.setProperty('--c', hex(t.bg, '#333')); grid.style.setProperty('--f', hex(t.fg, '#fff'));
+    if (!roster.length) { grid.replaceChildren(el('p', 'hint warn', kg ? 'No roster for this team on the stat keeper yet (its Setup tab).' : 'Waiting for the stat keeper (its roster lists the players).')); return; }
+    grid.replaceChildren(...roster.map(p => {
+      const photo = photos[photoKey(side, p.name)], tile = el('div', 'pph-tile'), ph = el('div', 'ph');
+      if (photo) ph.append(Object.assign(el('img'), { src: photo, alt: '' })); else ph.textContent = p.num ? '#' + p.num : '?';
+      const file = el('input'); file.type = 'file'; file.accept = 'image/*';
+      file.onchange = () => { const f = file.files[0]; file.value = ''; if (f) setPhoto(side, p, f); };
+      const up = el('button', null, photo ? 'Change' : 'Add photo'); up.type = 'button'; up.onclick = () => file.click();
+      const acts = el('div', 'acts'); acts.append(up);
+      if (photo) { const rm = el('button', null, 'Remove'); rm.type = 'button'; rm.onclick = () => unsetPhoto(side, p); acts.append(rm); }
+      tile.append(ph, el('b', null, (p.num ? '#' + p.num + ' ' : '') + p.name), acts, file);
+      return tile;
+    }));
+  };
   const shrinkPhoto = file => new Promise((ok, fail) => {
     const img = new Image(); img.onload = () => {
       const k = Math.min(1, 640 / Math.max(img.width, img.height)), c = document.createElement('canvas');
@@ -1570,7 +1611,13 @@
     known.onchange = () => { if (known.value && logoLib[known.value]) { s.teams[side].logo = logoLib[known.value]; save(); } known.value = ''; };
     clear.onclick = () => { s.teams[side].logo = ''; save(); };
     restore.onclick = () => { s.teams[side].bg = FBCA.bg; s.teams[side].fg = FBCA.fg; save(); };
-    teamForms[side] = { school, name, abbr, rec, bg, fg, known, thumb };
+    // Player photos: a headshot for each player on the stat keeper's roster, kept on this computer
+    const pbtn = el('button', 'sm pph-btn', 'Player photos'); pbtn.type = 'button';
+    const pph = el('div', 'pph'); pph.hidden = true;
+    pph.append(el('p', 'hint', "Headshots for the batting order's featured player. The players are this team's roster on the stat keeper. Each photo is kept on this computer by team and player, so it's here next game, even after the browser is closed."), el('div', 'pph-grid'));
+    pbtn.onclick = () => { pph.hidden = !pph.hidden; pphSig[side] = ''; renderPhotos(side); };
+    const prow = el('div', 'row'); prow.append(pbtn); box.append(prow, pph);
+    teamForms[side] = { school, name, abbr, rec, bg, fg, known, thumb, pbtn, pph };
   }
   const setField = (node, v) => { if (document.activeElement !== node) node.value = v; };
   let logoSig = '';
@@ -1717,7 +1764,7 @@
       $('gWho').replaceChildren(row('AB', (L.bat.name || '') + (L.bat.stat ? '  ' + L.bat.stat : '')), row('P', L.pit.name ? L.pit.name + '  P: ' + L.pit.np : ''));
       $('gFin').hidden = !L.final;
     }
-    renderMonitor();
+    renderMonitor(); renderPhotos('away'); renderPhotos('home');
     $('gmSrc').textContent = s.src === 'hand' ? 'by hand' : kg ? 'from the stat keeper' : 'waiting for the stat keeper';
     $('gWarn').hidden = !(s.src === 'keeper' && kg && stats && !BB.orderOf(kg.meta, 'home').length && !BB.orderOf(kg.meta, 'away').length);
     $('gWarn').textContent = 'No batting orders yet: the stat keeper sets them on its Lineups tab. Until then the bug has no batter.';
