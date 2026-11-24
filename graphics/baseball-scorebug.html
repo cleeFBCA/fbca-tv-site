@@ -55,15 +55,15 @@
   .sb .half { position: absolute; top: 0; height: 96px; width: 265px; display: grid; align-items: center; overflow: hidden;
                transition: clip-path .32s cubic-bezier(.6,0,.3,1) .12s; clip-path: inset(0 0 0 0); }
   .sb .half.L { --stripe: 65deg; } /* the visitors' stripes run the other way, mirroring the home side */
-  .sb .half.L { left: 0; grid-template-columns: 84px 96px; border-radius: 4px 0 0 4px; }
-  .sb .half.R { right: 0; grid-template-columns: 96px 84px; justify-content: end; border-radius: 0 4px 4px 0; }
+  .sb .half.L { left: 0; grid-template-columns: 84px 96px; border-radius: 12px 0 0 12px; }
+  .sb .half.R { right: 0; grid-template-columns: 96px 84px; justify-content: end; border-radius: 0 12px 12px 0; }
   .sb .half.R .sc { order: 2; }
   .sb .sc { font-size: 72px; font-weight: 800; line-height: 1; text-align: center; color: var(--f); font-variant-numeric: tabular-nums; }
   .sb .sc.flash { animation: scFlash 1.2s ease-out; }
   @keyframes scFlash { 0%, 35% { color: var(--gold-hi); transform: scale(1.12); } 100% { transform: none; } }
   .sb .crest { height: 80px; width: 96px; }
   .sb .crest .ini { font-size: 34px; }
-  .sb .strip { position: absolute; left: 38px; right: 38px; top: 96px; height: 36px; background: linear-gradient(#17181B, #050606); border-radius: 0 0 4px 4px;
+  .sb .strip { position: absolute; left: 38px; right: 38px; top: 96px; height: 36px; background: linear-gradient(#17181B, #050606); border-radius: 0 0 12px 12px;
                 display: grid; grid-template-columns: 1fr 1fr; align-items: center; font-size: 30px; font-weight: 700; letter-spacing: .03em;
                 transition: clip-path .25s ease .3s; clip-path: inset(0 0 0 0); }
   .sb .strip span { text-align: center; }
@@ -91,15 +91,15 @@
 
   /* ---- Batter and pitcher, right side: batting team over pitching team; pitch speed under, exit velo over ---- */
   .bp { position: absolute; right: 88px; bottom: 96px; width: 364px; height: 96px; transition: transform .22s ease .0s; transform-origin: center; }
-  .bp .rows { position: absolute; inset: 0; border-radius: 4px; overflow: hidden; transition: clip-path .28s cubic-bezier(.6,0,.3,1) .18s; clip-path: inset(0 0 0 0); }
+  .bp .rows { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; transition: clip-path .28s cubic-bezier(.6,0,.3,1) .18s; clip-path: inset(0 0 0 0); }
   .bp .row { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 33px; font-weight: 800; letter-spacing: .03em; color: var(--f); white-space: nowrap; }
   .bp .row b { font-weight: 800; overflow: hidden; text-overflow: ellipsis; }
   .bp .row span { flex: none; margin-left: 12px; font-variant-numeric: tabular-nums; }
   .bp .row + .row { border-top: 2px solid rgba(255,255,255,.85); }
   .bp .tab { position: absolute; left: 12px; right: 12px; height: 34px; background: linear-gradient(#17181B, #050606); display: grid; place-items: center;
              font-size: 27px; font-weight: 700; letter-spacing: .04em; transition: clip-path .3s cubic-bezier(.6,0,.3,1); }
-  .bp .tab.ex { top: -34px; border-radius: 4px 4px 0 0; clip-path: inset(100% 0 0 0); }
-  .bp .tab.sp { top: 96px; border-radius: 0 0 4px 4px; clip-path: inset(0 0 100% 0); }
+  .bp .tab.ex { top: -34px; border-radius: 10px 10px 0 0; clip-path: inset(100% 0 0 0); }
+  .bp .tab.sp { top: 96px; border-radius: 0 0 10px 10px; clip-path: inset(0 0 100% 0); }
   .bp .tab.on { clip-path: inset(0 0 0 0); }
   .bp .line { position: absolute; left: 0; right: 0; top: 47px; height: 2px; background: rgba(255,255,255,.85); opacity: 0; }
   .bp.out .rows { clip-path: inset(48% 0 48% 0); transition-delay: 0s; }
@@ -109,7 +109,7 @@
 
   /* ---- Stat line lower third (batter, pitcher, a name): logo box opens, widens, then the text wipes in ---- */
   .ln { position: absolute; left: 425px; bottom: 70px; width: 1070px; height: 108px; }
-  .ln .bg { position: absolute; inset: 0; border-radius: 4px; border-bottom: 4px solid var(--gold); clip-path: inset(0 50% 0 50%); transition: clip-path .42s cubic-bezier(.22,1,.36,1); }
+  .ln .bg { position: absolute; inset: 0; border-radius: 12px; border-bottom: 4px solid var(--gold); clip-path: inset(0 50% 0 50%); transition: clip-path .42s cubic-bezier(.22,1,.36,1); }
   .ln .lg { position: absolute; top: 8px; left: 460px; width: 150px; height: 92px; opacity: 0; transform: scale(.5); transition: left .42s cubic-bezier(.4,0,.2,1), opacity .18s, transform .3s cubic-bezier(.3,1.4,.5,1); }
   .ln .lg .ini { font-size: 46px; }
   .ln .lg .logo { width: 140px; }
@@ -127,7 +127,7 @@
   .ln .sts:has(.st:nth-child(5)) { gap: 8px; } .ln .sts:has(.st:nth-child(5)) .st { width: 96px; }
   .ln .st small { display: block; font-size: 30px; font-weight: 700; padding-bottom: 2px; border-bottom: 2px solid rgba(255,255,255,.75); letter-spacing: .04em; }
   .ln .st b { display: block; font-size: 42px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
-  .ln .cap { position: absolute; left: 150px; top: -32px; height: 32px; padding: 0 16px; display: grid; place-items: center; background: #F1F2F4; color: #111; border-radius: 4px 4px 0 0;
+  .ln .cap { position: absolute; left: 150px; top: -32px; height: 32px; padding: 0 16px; display: grid; place-items: center; background: #F1F2F4; color: #111; border-radius: 10px 10px 0 0;
              font-size: 24px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; clip-path: inset(100% 0 0 0); transition: clip-path .3s cubic-bezier(.22,1,.36,1); }
   .ln[data-st="1"] .bg { clip-path: inset(0 325px 0 325px); transition: clip-path .22s cubic-bezier(.5,0,1,1); }
   .ln[data-st="1"] .lg, .ln[data-st="2"] .lg, .ln[data-st="3"] .lg { opacity: 1; transform: none; }
@@ -146,8 +146,8 @@
   /* ---- Title card: both teams, the EOTA box in the middle, the venue on a tab ---- */
   .tc { position: absolute; left: 40px; bottom: 96px; width: 1840px; height: 200px; }
   .tc .bgL, .tc .bgR { position: absolute; top: 0; bottom: 0; width: 920px; transition: clip-path .5s cubic-bezier(.22,1,.36,1); }
-  .tc .bgL { left: 0; border-radius: 6px 0 0 6px; clip-path: inset(0 0 0 100%); }
-  .tc .bgR { right: 0; border-radius: 0 6px 6px 0; clip-path: inset(0 100% 0 0); }
+  .tc .bgL { left: 0; border-radius: 12px 0 0 12px; clip-path: inset(0 0 0 100%); }
+  .tc .bgR { right: 0; border-radius: 0 12px 12px 0; clip-path: inset(0 100% 0 0); }
   .tc .bgL::after, .tc .bgR::after { content: ''; position: absolute; top: 0; bottom: 0; width: 6px; background: var(--gold); transform: skewX(-22deg); }
   .tc .bgL::after { left: 270px; } .tc .bgR::after { right: 270px; transform: skewX(22deg); }
   .tc .edge { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--gold); clip-path: inset(0 50%); transition: clip-path .5s cubic-bezier(.22,1,.36,1) .08s; }
@@ -159,9 +159,9 @@
   .tc .tx.R { left: 1090px; align-items: flex-start; clip-path: inset(0 100% 0 0); }
   .tc .tx .s1 { font-size: 46px; font-weight: 700; } .tc .tx .s2 { font-size: 92px; font-weight: 800; white-space: nowrap; } .tc .tx .s3 { font-size: 46px; font-weight: 700; margin-top: 4px; }
   .tc .tx.L .s2 { transform-origin: right center; } .tc .tx.R .s2 { transform-origin: left center; }
-  .tc .mid { position: absolute; left: 760px; top: 30px; width: 320px; height: 140px; background: linear-gradient(#1D1E22, #050606); border-radius: 4px; display: grid; place-items: center; transform: scale(0); transition: transform .35s cubic-bezier(.3,1.4,.5,1); }
+  .tc .mid { position: absolute; left: 760px; top: 30px; width: 320px; height: 140px; background: linear-gradient(#1D1E22, #050606); border-radius: 12px; display: grid; place-items: center; transform: scale(0); transition: transform .35s cubic-bezier(.3,1.4,.5,1); }
   .tc .mid .logo { width: 230px; }
-  .tc .ven { position: absolute; left: 50%; top: -48px; transform: translateX(-50%); height: 48px; padding: 0 26px; background: linear-gradient(#1D1E22, #050606); border-radius: 6px 6px 0 0; display: grid; place-items: center;
+  .tc .ven { position: absolute; left: 50%; top: -48px; transform: translateX(-50%); height: 48px; padding: 0 26px; background: linear-gradient(#1D1E22, #050606); border-radius: 10px 10px 0 0; display: grid; place-items: center;
              font-size: 36px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; clip-path: inset(100% 0 0 0); transition: clip-path .35s cubic-bezier(.22,1,.36,1); }
   .tc[data-st="1"] .bgL, .tc[data-st="2"] .bgL, .tc[data-st="1"] .bgR, .tc[data-st="2"] .bgR { clip-path: inset(0 0 0 0); }
   .tc[data-st="1"] .edge, .tc[data-st="2"] .edge { clip-path: inset(0 0); }
@@ -179,9 +179,9 @@
   .bx { position: absolute; left: 140px; bottom: 66px; height: 196px; display: flex; gap: 14px; align-items: stretch; }
   .bx .tb { width: 482px; display: flex; flex-direction: column; }
   .bx .hd, .bx .ft { height: 36px; background: linear-gradient(#1D1E22, #050606); display: grid; align-items: center; font-weight: 700; transition: clip-path .3s cubic-bezier(.22,1,.36,1); }
-  .bx .hd { grid-template-columns: 194px repeat(4, 72px); font-size: 26px; border-radius: 4px 4px 0 0; clip-path: inset(100% 0 0 0); }
+  .bx .hd { grid-template-columns: 194px repeat(4, 72px); font-size: 26px; border-radius: 12px 12px 0 0; clip-path: inset(100% 0 0 0); }
   .bx .hd span { text-align: center; } .bx .hd span:first-child { text-align: left; padding-left: 16px; letter-spacing: .04em; }
-  .bx .ft { font-size: 22px; letter-spacing: .14em; text-align: center; border-radius: 0 0 4px 4px; clip-path: inset(0 0 100% 0); }
+  .bx .ft { font-size: 22px; letter-spacing: .14em; text-align: center; border-radius: 0 0 12px 12px; clip-path: inset(0 0 100% 0); }
   .bx .rws { flex: 1; display: flex; flex-direction: column; clip-path: inset(0 100% 0 0); transition: clip-path .4s cubic-bezier(.22,1,.36,1); }
   .bx .rw { flex: 1; display: grid; grid-template-columns: 64px 130px repeat(4, 72px); align-items: center; font-size: 44px; font-weight: 800; }
   .bx .rw + .rw { border-top: 2px solid rgba(255,255,255,.8); }
@@ -191,8 +191,8 @@
   .bx .rw .n { text-align: center; height: 100%; display: grid; place-items: center; border-left: 2px solid rgba(255,255,255,.35); font-variant-numeric: tabular-nums; }
   .bx .rw .n.r { background: #F1F2F4; color: #111; border-left: 0; }
   .bx .du { width: 430px; display: flex; flex-direction: column; clip-path: inset(0 100% 0 0); transition: clip-path .45s cubic-bezier(.22,1,.36,1); }
-  .bx .du .hd { grid-template-columns: 1fr; clip-path: none; border-radius: 4px 4px 0 0; }
-  .bx .du .dl { flex: 1; display: flex; flex-direction: column; border-radius: 0 0 4px 4px; overflow: hidden; }
+  .bx .du .hd { grid-template-columns: 1fr; clip-path: none; border-radius: 12px 12px 0 0; }
+  .bx .du .dl { flex: 1; display: flex; flex-direction: column; border-radius: 0 0 12px 12px; overflow: hidden; }
   .bx .du .dr { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 32px; font-weight: 800; color: var(--f); white-space: nowrap; }
   .bx .du .dr + .dr { border-top: 2px solid rgba(255,255,255,.6); }
   .bx .du .dr span { font-weight: 700; font-size: 28px; font-variant-numeric: tabular-nums; margin-left: 12px; }
@@ -208,7 +208,7 @@
   /* ---- Home run: HOME RUN in big chrome letters with SOLO / 2-RUN / 3-RUN / GRAND SLAM, then the name with season HR and RBI ---- */
   .hr { position: absolute; left: 75px; bottom: 52px; width: 1770px; height: 128px;
         --hr-depth: drop-shadow(0 2px 0 #C08A0A) drop-shadow(0 2px 0 #8F6A05) drop-shadow(0 2px 0 #5E4503) drop-shadow(0 10px 12px rgba(0,0,0,.6)); }
-  .hr .bg { position: absolute; inset: 0; border-radius: 4px; box-shadow: inset 0 -5px 0 var(--gold); clip-path: inset(0 100% 0 0); transition: clip-path .42s cubic-bezier(.22,1,.36,1); }
+  .hr .bg { position: absolute; inset: 0; border-radius: 12px; box-shadow: var(--hl), inset 0 -5px 0 var(--gold); clip-path: inset(0 100% 0 0); transition: clip-path .42s cubic-bezier(.22,1,.36,1); }
   /* The logo overhangs the bar top and bottom, centered in the box it opens with */
   .hr .lg { position: absolute; left: 15px; top: -46px; width: 220px; height: 220px; opacity: 0; transform: scale(.6); transition: opacity .25s, transform .4s cubic-bezier(.3,1.5,.5,1); }
   .hr .lg .ini { font-size: 84px; }
@@ -269,6 +269,17 @@
   .hr[data-st="3"] .tag, .hr[data-st="6"] .tag { transition: opacity .25s, transform .3s; }
   .hr[data-st="4"] .nm, .hr[data-st="5"] .nm { clip-path: inset(0 0 0 0); }
   .hr[data-st="5"] .ss { clip-path: inset(0 0 0 0); }
+
+  /* ---- Depth: a white highlight on each panel's edge (brightest along the top) and a little shade at the bottom ---- */
+  :root { --hl: inset 0 2px 0 rgba(255,255,255,.5), inset 0 0 0 1.5px rgba(255,255,255,.2), inset 0 -12px 16px -10px rgba(0,0,0,.5); }
+  .sb .half, .sb .strip, .bp .tab, .ln .bg, .tc .bgL, .tc .bgR, .tc .mid, .tc .ven, .ln .cap { box-shadow: var(--hl); }
+  /* Panels made of rows get the highlight on top of the rows */
+  .bp .rows::after, .bx .rws::after, .bx .du .dl::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--hl); pointer-events: none; }
+  .bx .rws, .bx .du .dl { position: relative; }
+  .bx .hd { box-shadow: inset 0 2px 0 rgba(255,255,255,.5), inset 0 0 0 1.5px rgba(255,255,255,.2); }
+  .bx .ft { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.2), inset 0 -12px 16px -10px rgba(0,0,0,.5); }
+  .bx .du .dl::after { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.2), inset 0 -12px 16px -10px rgba(0,0,0,.5); }
+  .bx .rws::after { box-shadow: inset 1.5px 0 0 rgba(255,255,255,.2), inset -1.5px 0 0 rgba(255,255,255,.2); }
 
   /* ---- Station bug ---- */
   .stn { position: absolute; top: 54px; right: 96px; width: 190px; transition: opacity .4s; }
