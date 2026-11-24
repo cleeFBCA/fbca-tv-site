@@ -151,7 +151,7 @@
   .tc .bgL::after, .tc .bgR::after { content: ''; position: absolute; top: 0; bottom: 0; width: 6px; background: var(--gold); transform: skewX(-22deg); }
   .tc .bgL::after { left: 270px; } .tc .bgR::after { right: 270px; transform: skewX(22deg); }
   .tc .edge { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--gold); clip-path: inset(0 50%); transition: clip-path .5s cubic-bezier(.22,1,.36,1) .08s; }
-  .tc .lg { position: absolute; top: -34px; width: 240px; height: 240px; opacity: 0; transition: opacity .25s, transform .45s cubic-bezier(.3,1.3,.5,1); transform: scale(.7); }
+  .tc .lg { position: absolute; top: -34px; width: 240px; height: 240px; opacity: 0; transition: opacity .3s, transform .5s cubic-bezier(.22,1,.36,1); transform: scale(.85); }
   .tc .lg.L { left: 18px; } .tc .lg.R { right: 18px; }
   .tc .lg .ini { font-size: 90px; }
   .tc .tx { position: absolute; top: 0; bottom: 0; width: 410px; display: flex; flex-direction: column; justify-content: center; line-height: 1; color: var(--f); transition: clip-path .5s cubic-bezier(.22,1,.36,1), opacity .3s; }
@@ -159,7 +159,7 @@
   .tc .tx.R { left: 1090px; align-items: flex-start; clip-path: inset(0 100% 0 0); }
   .tc .tx .s1 { font-size: 46px; font-weight: 700; white-space: nowrap; } .tc .tx .s2 { font-size: 92px; font-weight: 800; white-space: nowrap; } .tc .tx .s3 { font-size: 46px; font-weight: 700; margin-top: 4px; }
   .tc .tx.L span { transform-origin: right center; } .tc .tx.R span { transform-origin: left center; } /* lines squeezed to fit stay against the middle */
-  .tc .mid { position: absolute; left: 760px; top: 30px; width: 320px; height: 140px; background: linear-gradient(#1D1E22, #050606); border-radius: 12px; display: grid; place-items: center; transform: scale(0); transition: transform .35s cubic-bezier(.3,1.4,.5,1); }
+  .tc .mid { position: absolute; left: 760px; top: 30px; width: 320px; height: 140px; background: linear-gradient(#1D1E22, #050606); border-radius: 12px; display: grid; place-items: center; transform: scale(0); transition: transform .45s cubic-bezier(.22,1,.36,1); }
   .tc .mid .logo { width: 230px; }
   .tc .ven { position: absolute; left: 50%; top: -48px; transform: translateX(-50%); height: 48px; padding: 0 26px; background: linear-gradient(#1D1E22, #050606); border-radius: 10px 10px 0 0; display: grid; place-items: center;
              font-size: 36px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; clip-path: inset(100% 0 0 0); transition: clip-path .35s cubic-bezier(.22,1,.36,1); }
@@ -170,11 +170,11 @@
   .tc[data-st="2"] .tx { clip-path: inset(0 0 0 0); }
   .tc[data-st="2"] .ven.has { clip-path: inset(0 0 0 0); transition-delay: .2s; }
   /* Production, as on the soccer title card: each team's logo large and faint behind its half (drifting slowly),
-     a light running along the gold line and the top edge, a shine sweeping the card, and a glow breathing behind EOTA */
+     a light running along the gold line and the top edge, a shine sweeping the card, and a soft glow behind EOTA. Only the faint logos move. */
   .tc .wm { position: absolute; top: -170px; width: 540px; height: 540px; background: var(--wm, none) center / contain no-repeat; opacity: 0;
             filter: grayscale(1) brightness(2.4); transition: opacity .8s; animation: pgKen 16s ease-in-out infinite alternate; }
   .tc .bgL .wm { left: -132px; } .tc .bgR .wm { right: -132px; animation-direction: alternate-reverse; }
-  .tc[data-st="2"] .wm { opacity: .11; transition-delay: .2s; }
+  .tc[data-st="2"] .wm { opacity: .14; transition-delay: .2s; }
   @keyframes pgKen { from { transform: scale(1.05) translateX(-3%) rotate(-3deg); } to { transform: scale(1.25) translateX(3%) rotate(3deg); } }
   .tc .edge, .tc .topl { overflow: hidden; }
   .tc .topl { position: absolute; left: 0; right: 0; top: 0; height: 2px; clip-path: inset(0 50%); transition: clip-path .5s cubic-bezier(.22,1,.36,1) .1s; }
@@ -191,8 +191,7 @@
   .tc .gw { position: absolute; left: 0; top: 0; width: 1840px; height: 200px; overflow: hidden; pointer-events: none; } /* keeps the glow on the card */
   .tc .glow { position: absolute; left: 920px; top: 100px; width: 560px; height: 360px; margin: -180px 0 0 -280px; border-radius: 50%; pointer-events: none; opacity: 0;
               background: radial-gradient(closest-side, rgba(255,240,200,.28), rgba(234,175,15,.1) 55%, transparent); transition: opacity .6s; }
-  .tc[data-st="2"] .glow { opacity: 1; animation: pgGlow 3.2s ease-in-out infinite alternate; }
-  @keyframes pgGlow { from { opacity: .45; transform: scale(.9); } to { opacity: 1; transform: scale(1.08); } }
+  .tc[data-st="2"] .glow { opacity: .8; }
   /* The logos land with a little flash */
   .tc[data-st="2"] .lg { animation: tcLand .7s ease-out .25s; }
   @keyframes tcLand { 0% { filter: brightness(1); } 30% { filter: brightness(1.7) drop-shadow(0 0 18px rgba(255,255,255,.6)); } 100% { filter: brightness(1); } }
