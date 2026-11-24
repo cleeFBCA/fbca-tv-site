@@ -96,6 +96,8 @@
   .sb .half { transition-delay: .2s; } .sb .strip { transition-delay: .42s; }
 
   /* ---- Batter and pitcher, right side: batting team over pitching team; pitch speed under, exit velo over ---- */
+  /* Swapped: the score bug on the right, the batter and pitcher on the left (same distances from the edges) */
+  #stage.swap .sb { left: auto; right: 72px; } #stage.swap .bp { right: auto; left: 88px; }
   .bp { position: absolute; right: 88px; bottom: 96px; width: 364px; height: 96px; transition: transform .22s ease .0s; transform-origin: center; }
   .bp .rows { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; transition: clip-path .28s cubic-bezier(.6,0,.3,1) .18s; clip-path: inset(0 0 0 0); }
   .bp .row { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 33px; font-weight: 800; letter-spacing: .03em; color: var(--f); white-space: nowrap; }
@@ -743,6 +745,7 @@
         <div class="bugrow">
           <button id="btnBug"></button>
           <button id="btnBox"></button>
+          <button id="btnSwap"></button>
           <button id="btnFlashAuto"></button>
         </div>
       </div>
@@ -1163,7 +1166,20 @@
       }
       setBug(bugWanted());
     };
-    const setBug = on => { $('bug').classList.toggle('out', !on); renderBox(on); };
+    let sidesOn = null, sidesBusy = false;
+    const setBug = on => {
+      const want = !!s.swapSides;
+      if (sidesOn === null) { sidesOn = want; $('stage').classList.toggle('swap', want); }
+      // Changing sides: both go off, trade places, and come back on (a cut would jump)
+      if (want !== sidesOn && !sidesBusy) {
+        const wasUp = bugUp(); sidesBusy = true;
+        $('bug').classList.add('out'); $('bp').classList.add('out');
+        setTimeout(() => { sidesOn = want; $('stage').classList.toggle('swap', want); sidesBusy = false; setBug(bugWanted()); }, wasUp ? 650 : 0);
+        return;
+      }
+      if (sidesBusy) return;
+      $('bug').classList.toggle('out', !on); renderBox(on);
+    };
     const renderBox = bugOn => {
       const L = s.live, show = bugOn && s.boxOn && L && !L.final && (L.bat.name || L.pit.name);
       $('bp').classList.toggle('out', !show);
@@ -1578,6 +1594,7 @@
   $('skKeySave').onclick = () => { const k = $('skKey').value.trim(); if (!k) return; try { localStorage.setItem(SK_KEY_LS, JSON.stringify(k)); } catch (e) {} $('skKey').value = ''; logoShareMsg = ''; shareLogos(); };
   $('btnBug').onclick = () => { s.visible = !s.visible; save(); };
   $('btnBox').onclick = () => { s.boxOn = !s.boxOn; save(); };
+  $('btnSwap').onclick = () => { s.swapSides = !s.swapSides; save(); };
   $('btnFlashAuto').onclick = () => { s.autoFlash = !s.autoFlash; save(); };
 
   // ---- By hand ----
@@ -1718,6 +1735,7 @@
     $('btnBug').textContent = !s.visible ? 'Show score bug' : s.gfx ? 'Score bug returns after' : 'Hide score bug';
     $('btnBug').className = s.visible ? (s.gfx ? 'queued' : 'onair') : '';
     $('btnBox').textContent = 'Batter & pitcher: ' + (s.boxOn ? 'on' : 'off'); $('btnBox').className = s.boxOn ? 'active' : '';
+    $('btnSwap').textContent = s.swapSides ? 'Score bug right · Swap' : 'Score bug left · Swap'; $('btnSwap').className = s.swapSides ? 'active' : '';
     $('btnFlashAuto').textContent = 'Auto BB / K / HBP: ' + (s.autoFlash ? 'on' : 'off'); $('btnFlashAuto').className = s.autoFlash ? 'active' : '';
     $('panelNote').replaceChildren(...(Date.now() - noteAt < 6000 && noteText ? [noteText] : s.gfx ? ['On air: ', el('b', null, (GFX.find(x => x.id === s.gfx) || {}).name || s.gfx)] : []));
     // Details
