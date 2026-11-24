@@ -216,7 +216,7 @@
   .hr .ss b { display: grid; place-items: center; width: 140px; height: 50px; background: var(--gold); color: #03260A; font-size: 44px; }
   .hr .word { position: absolute; left: 230px; right: 330px; top: 0; bottom: 0; display: flex; justify-content: center; align-items: center; gap: 4px; font-size: 118px; font-weight: 800; letter-spacing: .06em; }
   .hr .word span { display: inline-block; color: #F4F5F7; -webkit-text-stroke: 3px var(--gold); paint-order: stroke fill; text-shadow: 0 4px 0 #8F6A05, 0 10px 18px rgba(0,0,0,.55);
-                   opacity: 0; transform: scale(.15) translateY(40px); transition: opacity .25s, transform .45s cubic-bezier(.25,1.5,.45,1), filter .3s; transition-delay: calc(var(--i) * 45ms); }
+                   opacity: 0; transform: scale(.15) translateY(40px); transition: opacity .25s, transform .45s cubic-bezier(.25,1.5,.45,1), filter .3s; transition-delay: calc(var(--i) * 55ms); }
   .hr .word span.gap { width: 50px; }
   .hr .tag { position: absolute; right: 40px; top: 0; bottom: 0; display: grid; place-items: center; font-size: 66px; font-weight: 800; color: var(--f); letter-spacing: .04em; opacity: 0; transform: translateX(40px); transition: opacity .3s .5s, transform .4s .5s; }
   /* 1 logo box · 2 full bar, HOME RUN · 3 HOME RUN blurs off · 4 name · 5 name and stats · 6 shrinks to the middle · 7 gone */
@@ -226,8 +226,27 @@
   .hr[data-st="6"] .bg { clip-path: inset(0 630px 0 630px); transition: clip-path .32s cubic-bezier(.5,0,.3,1); }
   .hr[data-st="7"] .bg { clip-path: inset(0 885px 0 885px); transition: clip-path .2s cubic-bezier(.5,0,1,1); }
   .hr[data-st="1"] .lg, .hr[data-st="2"] .lg, .hr[data-st="3"] .lg, .hr[data-st="4"] .lg, .hr[data-st="5"] .lg { opacity: 1; transform: none; }
-  .hr[data-st="2"] .word span { opacity: 1; transform: none; transition-delay: calc(.15s + var(--i) * 45ms); }
-  .hr[data-st="2"] .tag { opacity: 1; transform: none; transition-delay: .6s; }
+  /* HOME RUN in: the blur-out run backwards. Each letter drops in big and blurred, slams to size with a small
+     overshoot; when the last one lands the word punches and flares, and a glint sweeps the bar. */
+  .hr[data-st="2"] .word span { opacity: 1; transform: none; filter: none; transition: none;
+                                animation: hrSlam .5s cubic-bezier(.2,.7,.25,1) backwards; animation-delay: calc(.2s + var(--i) * 55ms); }
+  @keyframes hrSlam {
+    0%   { opacity: 0; transform: scale(2.6) translateY(-6px); filter: blur(10px); }
+    55%  { opacity: 1; transform: scale(.9); filter: blur(0); }
+    78%  { transform: scale(1.05); }
+    100% { opacity: 1; transform: none; filter: none; }
+  }
+  .hr[data-st="2"] .word { animation: hrPunch .45s ease-out 1.08s backwards; }
+  @keyframes hrPunch {
+    0%   { transform: scale(1); filter: brightness(1); }
+    25%  { transform: scale(1.06); filter: brightness(1.45); }
+    100% { transform: scale(1); filter: brightness(1); }
+  }
+  .hr .bg::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 260px; transform: translateX(-300px) skewX(-20deg); opacity: 0;
+                   background: linear-gradient(90deg, transparent, rgba(255,255,255,.28) 45%, rgba(255,240,190,.4) 50%, rgba(255,255,255,.28) 55%, transparent); }
+  .hr[data-st="2"] .bg::after { animation: hrGlint .9s cubic-bezier(.45,0,.3,1) 1.05s; }
+  @keyframes hrGlint { 0% { opacity: 1; transform: translateX(-300px) skewX(-20deg); } 100% { opacity: 1; transform: translateX(1900px) skewX(-20deg); } }
+  .hr[data-st="2"] .tag { opacity: 1; transform: none; transition: opacity .3s 1.15s, transform .45s cubic-bezier(.2,1.3,.4,1) 1.15s; }
   .hr[data-st="3"] .word span { opacity: 0; transform: scale(1.6); filter: blur(8px); transition-duration: .35s; }
   .hr[data-st="3"] .tag, .hr[data-st="6"] .tag { transition: opacity .25s, transform .3s; }
   .hr[data-st="4"] .nm, .hr[data-st="5"] .nm { clip-path: inset(0 0 0 0); }
@@ -681,7 +700,7 @@
     // Each step starts while the one before it is still moving, so nothing stops partway.
     const IN = { ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]] };
     const OUT = { ln: [[0, 2], [180, 0], [600]], tc: [[0, 1], [170, 0], [620]], bx: [[0, 2], [130, 0], [560]], hr: [[0, 6], [300, 7], [500, 0], [520]] };
-    const HR_STEPS = [[0, 1], [190, 2], [3600, 3], [3850, 4], [4250, 5], [10600, 6], [10920, 7], [11150, 0]];
+    const HR_STEPS = [[0, 1], [190, 2], [3900, 3], [4150, 4], [4550, 5], [10600, 6], [10920, 7], [11150, 0]];
     const run = (node, steps, done) => { for (const [ms, st] of steps) later(ms, () => { if (st != null) $(node).dataset.st = st; else if (done) done(); }); };
 
     const enter = name => {
