@@ -779,7 +779,6 @@
       d.onclick = () => openSub(v, M.bat, r);
       flash(d, r.slot); return d;
     }) : [el('p', 'hint warn', 'No batting order for ' + nm(M.bat) + ' yet: set it on the Lineups tab.')]));
-    if (M.rows.length) $('lmList').append(el('p', 'hint lmh', 'Tap a spot to put in a sub, like a pinch hitter on deck: the scorebug has him ready when he comes up. Tap the pitcher for a pitching change.'));
     if (M.sub) { const d = el('div', 'r up'); d.append(el('span', 'n', '–'), el('span', 'p', 'PH'), el('b', null, (M.sub.num ? '#' + M.sub.num + ' ' : '') + M.sub.name), el('span', 'l', '')); $('lmList').append(d); }
     const k = el('span', 'k'); k.append(chip(M.fld), 'P');
     const pw = el('div'); pw.append(el('b', null, M.pit ? (M.pit.num ? '#' + M.pit.num + ' ' : '') + M.pit.name : 'No pitcher set'), el('small', null, M.pit ? M.pit.line : ''));
