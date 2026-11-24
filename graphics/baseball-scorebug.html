@@ -389,6 +389,8 @@
   .lu[data-dir="out"] .plate, .lu[data-dir="out"] .hl, .lu[data-dir="out"] .ft span { transition: clip-path .2s ease-in; }
   .lu[data-dir="out"] .ph, .lu[data-dir="out"] .ls, .lu[data-dir="out"] .vs, .lu[data-dir="out"] .ft { transition: clip-path .35s cubic-bezier(.6,0,.4,1); }
   .lu[data-dir="out"] .hd { transition: clip-path .35s cubic-bezier(.6,0,.4,1) .12s; }
+  /* Switching teams: the matchup line folds away with the panels (the header and footer stay up) */
+  .lu.flip .vs { clip-path: inset(0 0 100% 0); transition: clip-path .28s cubic-bezier(.5,0,.75,0); }
 
   /* ---- Title card, full screen (as on the soccer and basketball scorebugs, in the baseball style): a title strip,
      each team's half in its color with its logo, school, name and record, VS in the middle, and the date, time and
@@ -1059,6 +1061,21 @@
       });
       luCur = g;
     };
+    // Switching teams while it's up: the header and footer stay; the matchup line and the two panels fold away, the
+    // header's team name cross-fades, and everything opens again in the new team's colors and order.
+    const flipLu = g => {
+      clearTimers();
+      const lu = $('lu'), hd = $('luHd');
+      lu.dataset.dir = 'out'; lu.dataset.st = 1; lu.classList.add('flip');
+      hd.animate([{ opacity: 1, filter: 'blur(0)' }, { opacity: 0, filter: 'blur(6px)' }], { duration: 300, easing: 'ease-in', fill: 'forwards' });
+      later(480, () => {
+        FILL.lu(g);
+        hd.getAnimations().forEach(a => a.cancel());
+        hd.animate([{ opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0)' }], { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' });
+        lu.classList.remove('flip'); lu.dataset.dir = 'in'; lu.dataset.st = 2;
+      });
+      later(1220, () => { lu.dataset.st = 3; });
+    };
     const fillLu = g => {
       const t = s.teams[g.side] || s.teams.home, lu = $('lu');
       stripe(paint(lu, t), g.side);
@@ -1136,6 +1153,7 @@
         if (want === 'hr') { clearTimers(); enter(want); }
         else if (want === 'lu' && luCur && JSON.stringify(luCur) === JSON.stringify(s.gp || {})) { /* sent again unchanged (Update after a pick): nothing to animate */ }
         else if (want === 'lu' && $('lu').dataset.st === '3' && sameOrder(luCur, s.gp)) swapLu(s.gp || {}); // a new featured player, same order: swap him in place
+        else if (want === 'lu' && luCur && s.gp && s.gp.side !== luCur.side) flipLu(s.gp); // the other team: the panels fold away, recolor, and open again
         else if (want === 'lu') { clearTimers(); $('lu').dataset.st = 2; later(460, () => FILL.lu(s.gp || {})); later(520, () => $('lu').dataset.st = 3); } // the old photo fades all the way first // a new featured player: the old one clears, then the new one comes in
         else { FILL[want](s.gp || {}); }
         return;
