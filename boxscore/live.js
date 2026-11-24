@@ -1,7 +1,7 @@
 /* EOTA live box score: reads the current game from the stat keeper (workers/stat-keeper) and keeps it current.
    Used by fbca.tv/boxscore and the live card on the home page.
 
-   Which game: the soccer and basketball stat keepers are each read once; the one with the most recent activity
+   Which game: the soccer, basketball, baseball and softball stat keepers are each read once; the one with the most recent activity
    (a play, a clock check-in from the scorebug, or a new game) is shown. Then one WebSocket keeps it live: the stat
    keeper pushes each play as it's recorded, so a page never has to ask again. That matters for Cloudflare's free
    plan (100,000 requests a day for the whole account): a viewer costs one connection plus a keep-alive every
@@ -13,19 +13,22 @@
    its start to 3 hours after (cancelled and postponed games never do), and only with stats recorded for it. The
    scorebug tells the stat keeper when the game is at halftime or final (meta.status), and the LIVE tag follows.
 
-   ?skapi=http://localhost:PORT points at a local stat keeper for testing; ?game=soccer|basketball picks one. */
+   ?skapi=http://localhost:PORT points at a local stat keeper for testing; ?game=soccer|basketball|baseball|softball picks one.
+   Baseball and softball use graphics/baseball.js (EotaBaseball) for their stats, as the stat keeper and scorebug do. */
 (() => {
   const params = new URLSearchParams(location.search);
   const local = params.get('skapi');
   const API = local && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(local) ? local : 'https://eota-stat-keeper.clee-625.workers.dev';
   const WS = API.replace(/^http/, 'ws');
-  const GAMES = ['basketball', 'soccer'];
+  const GAMES = ['basketball', 'soccer', 'baseball', 'softball'];
+  const BALL = sport => sport === 'baseball' || sport === 'softball';
+  const SPORT_NAME = { basketball: 'Basketball', soccer: 'Soccer', baseball: 'Baseball', softball: 'Softball' };
   const SHOW_MS = 12 * 3600000;  // fbca.tv/boxscore keeps the last game up this long
   const LIVE_LEAD_MIN = 5, LIVE_DURATION_HRS = 3; // the home page's live window
   const STATS_LEAD_MS = 2 * 3600000; // stats recorded from 2 hours before the start count as this game's
 
   // ---------- The schedule ----------
-  const sportOfScheduled = g => /soccer/i.test(g.sport || '') ? 'soccer' : /basketball/i.test(g.sport || '') ? 'basketball' : '';
+  const sportOfScheduled = g => /soccer/i.test(g.sport || '') ? 'soccer' : /basketball/i.test(g.sport || '') ? 'basketball' : /softball/i.test(g.sport || '') ? 'softball' : /baseball/i.test(g.sport || '') ? 'baseball' : '';
   const isOff = g => /^(cancell?ed|postponed)$/i.test(g.status || '');
   // The scheduled soccer or basketball game in its live window now, if any: { sport, start, game }.
   const liveScheduled = (games, now = Date.now()) => {
@@ -130,8 +133,50 @@
   // Minutes as box scores show them: whole minutes, rounded.
   const minText = sec => sec == null ? '–' : String(Math.round(sec / 60));
 
+  // ---------- Baseball and softball: the same stats as the stat keeper and scorebug (graphics/baseball.js) ----------
+  const ORD = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
+  const halfName = per => { const x = /^([TB])(\d+)$/.exec(per || ''); return x ? (x[1] === 'T' ? 'Top ' : 'Bottom ') + ORD(+x[2]) : per || ''; };
+  const halfIdx = per => { const x = /^([TB])(\d+)$/.exec(per || ''); return x ? 2 * +x[2] + (x[1] === 'B' ? 1 : 0) : 0; };
+  const BALL_PLAYS = ['pa', 'br', 'pc'];
+  const computeBall = (sport, st) => {
+    const BB = window.EotaBaseball, m = st.meta, evs = st.events || [], S = BB.compute(m, evs), out = { sport, meta: m, sides: {}, ball: S };
+    for (const side of ['home', 'away']) {
+      const roster = (m.rosters && m.rosters[side]) || [], bat = Object.values(S.bat[side]), pit = Object.values(S.pit[side]);
+      const sum = (list, k) => list.reduce((n, x) => n + (x[k] || 0), 0);
+      const tot = { ...S.team[side], AB: sum(bat, 'AB'), RBI: sum(bat, 'RBI'), BB: sum(bat, 'BB'), SO: sum(bat, 'SO'), HR: sum(bat, 'HR'), SB: sum(bat, 'SB'),
+                    '2B': sum(bat, '2B'), '3B': sum(bat, '3B'), NP: sum(pit, 'NP') };
+      out.sides[side] = { name: (m.names && m.names[side]) || (side === 'home' ? 'FBCA' : 'Opponent'), color: (m.colors && m.colors[side]) || '#333333',
+                          players: roster, tot, score: S.team[side].R };
+    }
+    const plays = evs.filter(e => BALL_PLAYS.includes(e.type));
+    out.latest = plays.length ? plays[plays.length - 1] : null;
+    out.plays = evs.length; out.events = evs;
+    return out;
+  };
+  // Who batted, in batting order (subs after), and who pitched, in the order they came in
+  const ballBatters = (g, side) => {
+    const BB = window.EotaBaseball, m = g.meta, lines = g.ball.bat[side], roster = g.sides[side].players, byId = new Map(roster.map(p => [p.id, p]));
+    const order = BB.orderOf(m, side), seen = new Set(), out = [];
+    for (const o of order) { const p = byId.get(o.id); if (p && !seen.has(p.id)) { seen.add(p.id); out.push({ p, pos: o.pos || '', line: lines[p.id] || BB.zero(BB.BAT_KEYS) }); } }
+    for (const id of Object.keys(lines)) { const p = byId.get(id); if (p && !seen.has(id)) { seen.add(id); out.push({ p, pos: '', line: lines[id] }); } }
+    return out;
+  };
+  const ballPitchers = (g, side) => {
+    const lines = g.ball.pit[side], byId = new Map(g.sides[side].players.map(p => [p.id, p])), dec = g.meta.dec || {};
+    return Object.keys(lines).map(id => byId.get(id)).filter(Boolean).map(p => ({ p, line: lines[p.id],
+      dec: ['W', 'L', 'S'].find(k => dec[k] && dec[k].side === side && dec[k].id === p.id) || '' }));
+  };
+  const ballWords = (g, e) => {
+    const BB = window.EotaBaseball, d = BB.dataOf(e) || {}, runs = (d.runs || []).length;
+    if (e.type === 'pa') return { title: (BB.RESULTS[d.r] || {}).l || d.r, runs, rbi: d.rbi || 0, d };
+    if (e.type === 'br') return { title: BB.RUNS[d.r] || d.r, runs, rbi: 0, d };
+    if (e.type === 'pc') return { title: 'Pitching change', runs: 0, rbi: 0, d };
+    return { title: e.type, runs: 0, rbi: 0, d };
+  };
+
   // Players and team totals for both sides, the score, and the latest play.
   const compute = (sport, st) => {
+    if (BALL(sport)) return computeBall(sport, st);
     const m = st.meta, keys = sport === 'soccer' ? S_KEYS : B_KEYS, out = { sport, meta: m, sides: {} };
     for (const side of ['home', 'away']) {
       const roster = (m.rosters && m.rosters[side]) || [], players = new Map(roster.map(p => [p.id, { ...p, ...zero(keys), any: false }]));
@@ -258,6 +303,11 @@
   const playTime = (g, e) => e.min ? (g.sport === 'soccer' ? e.min + "'" : e.min) : '';
   const latestText = g => {
     const e = g.latest; if (!e) return null;
+    if (BALL(g.sport)) {
+      const w = ballWords(g, e), runs = w.runs ? ' · ' + w.runs + (w.runs === 1 ? ' run scores' : ' runs score') : '';
+      return { when: halfName(e.period), who: e.type === 'pc' || e.player !== 'team' ? playerName(g, e.side, e.player) : g.sides[e.side].name,
+               what: (e.type === 'pc' ? 'now pitching' : w.title.toLowerCase()) + runs, team: g.sides[e.side].name, side: e.side, big: w.d.r === 'HR' };
+    }
     let words = (g.sport === 'soccer' ? S_PLAY : B_PLAY)[e.type] || e.type;
     // A timeout: the team's name, then "timeout (2 left)" (the scorebug sends how many are left).
     if (e.type === 'timeout' && e.note) words += ' (' + e.note + ')';
@@ -275,6 +325,7 @@
   // The clock: soccer's match minute (shared by the scorebug or run by the stat crew); basketball's time left,
   // shared by the scorebug while it keeps checking in.
   const clockText = g => {
+    if (BALL(g.sport)) { const t = g.ball.sit; return (t.top ? '▲ ' : '▼ ') + ORD(t.inn); } // the inning, as on the scorebug
     const m = g.meta, c = m.clock;
     if (!c) return '';
     if (g.sport === 'soccer') {
@@ -438,6 +489,10 @@
       row: p => [2 * p.m2 + 3 * p.m3 + p.mft, (p.m2 + p.m3) + '-' + (p.m2 + p.m3 + p.x2 + p.x3), p.m3 + '-' + (p.m3 + p.x3), p.mft + '-' + (p.mft + p.xft),
                  p.oreb + p.dreb, p.ast, p.stl, p.blk, p.to, p.pf]
     },
+    baseball: {
+      cmp: t => [['Runs', t.R], ['Hits', t.H], ['Errors', t.E, null, false, true], ['Home runs', t.HR], ['Walks', t.BB], ['Strikeouts', t.SO, null, false, true],
+                 ['Stolen bases', t.SB], ['Left on base', t.LOB, null, false, true], ['Pitches thrown', t.NP, null, false, true]]
+    },
     soccer: {
       cmp: t => [['Shots', t.goal + t.sog + t.shot], ['Shots on goal', t.goal + t.sog], ['Corners', t.corner], ['Fouls', t.foul, null, false, true],
                  ['Offsides', t.offside, null, false, true], ['Saves', t.save], ['Yellow cards', t.yc, null, false, true], ['Red cards', t.rc, null, false, true]],
@@ -477,7 +532,7 @@
     const H = g.sides.home, A = g.sides.away, top = el('div', 'card head-card');
     if (head) {
       const h = el('div', 'ehead'), link = el('a', null, 'Full box score ›'); link.href = '/boxscore/';
-      h.append(el('span', 'tag', 'Live'), el('span', 'what', (g.sport === 'soccer' ? 'Soccer' : 'Basketball') + ' box score'), link);
+      h.append(el('span', 'tag', 'Live'), el('span', 'what', (SPORT_NAME[g.sport] || '') + ' box score'), link);
       top.append(h);
     }
     const board = el('div', 'board');
@@ -487,7 +542,8 @@
       d.append(...(img ? [img] : []), el('span', null, t.name));
       return d;
     };
-    const mid = el('div', 'mid'), clk = el('div', 'clk', '–'), per = el('div', 'per', PERIOD[g.meta.period] || g.meta.period || '');
+    const t9 = g.ball && g.ball.sit, ballPer = t9 ? t9.o + (t9.o === 1 ? ' out' : ' outs') + (t9.b || t9.s ? ' · ' + t9.b + '-' + t9.s : '') : '';
+    const mid = el('div', 'mid'), clk = el('div', 'clk', '–'), per = el('div', 'per', BALL(g.sport) ? ballPer : PERIOD[g.meta.period] || g.meta.period || '');
     mid.append(clk, per);
     // Away on the left, home on the right, as on TV. FBCA is the stat keeper's home team, so it's on the right.
     // The score, with that team's timeouts left under it as dots (lit for each one left), as on the scorebug.
@@ -532,6 +588,76 @@
       r.append(av2, mid2, hv2); cmp.append(r);
     });
     return cmp;
+  };
+
+  // ---------- Baseball: line score, each team's batting and pitching, play-by-play by half inning ----------
+  const ballLineCard = g => {
+    const S = g.ball, n = Math.max(g.meta.innings || 7, S.line.away.length, S.line.home.length), card = el('div', 'card'), tbl = el('table', 'qt ls'), hr = el('tr');
+    hr.append(el('th'), ...Array.from({ length: n }, (_, i) => el('th', null, String(i + 1))), ...['R', 'H', 'E'].map(x => el('th', 'rhe', x)));
+    tbl.append(hr);
+    for (const side of ['away', 'home']) {
+      const tr = el('tr'), nm = el('td'), qn = el('div', 'qn'), t = g.sides[side]; qn.append(mark(g, side), el('span', null, t.name)); nm.append(qn);
+      // Home's last inning that wasn't needed (they were ahead) shows X, as box scores do
+      const cell = i => { const v = S.line[side][i]; if (v != null) return el('td', null, v);
+        const x = side === 'home' && g.status === 'final' && i === S.line.home.length && i === S.line.away.length - 1 && t.score > g.sides.away.score;
+        return el('td', 'zero', x ? 'X' : ''); };
+      tr.append(nm, ...Array.from({ length: n }, (_, i) => cell(i)), el('td', 'tot', t.tot.R), el('td', 'tot', t.tot.H), el('td', 'tot', t.tot.E));
+      tbl.append(tr);
+    }
+    const w = el('div', 'scroll'); w.append(tbl); card.append(w); return card;
+  };
+  const BAT_COLS = [['AB', b => b.AB], ['R', b => b.R], ['H', b => b.H], ['RBI', b => b.RBI], ['BB', b => b.BB], ['SO', b => b.SO], ['2B', b => b['2B']], ['3B', b => b['3B']], ['HR', b => b.HR], ['SB', b => b.SB]];
+  const PIT_COLS = [['IP', p => window.EotaBaseball.ip(p.outs)], ['H', p => p.H], ['R', p => p.R], ['ER', p => p.ER], ['BB', p => p.BB], ['SO', p => p.SO], ['HR', p => p.HR], ['NP', p => p.NP]];
+  const ballTables = g => {
+    const table = side => {
+      const t = g.sides[side], card = el('div', 'card'), th = paint(el('div', 'team-h slab'), t.color), lg = logoImg(g, side, 'tlogo');
+      th.append(...(lg ? [lg] : []), el('span', null, t.name), el('small', null, t.score));
+      card.append(th);
+      if (!t.players.length) { card.append(el('div', 'none', 'No roster entered for this team yet.')); return card; }
+      const tbl = el('table');
+      // Pitching has fewer columns than batting: blank cells fill the row out
+      const pad = cols => Array.from({ length: BAT_COLS.length - cols.length }, () => el('td', 'pad'));
+      const header = (label, cols, cls) => { const r = el('tr', cls); r.append(el('th', null, label), ...cols.map(c => el('th', null, c[0])), ...Array.from({ length: BAT_COLS.length - cols.length }, () => el('th'))); tbl.append(r); };
+      const who = (p, extra) => { const td = el('td'); if (p.num) td.append(el('b', null, '#' + p.num)); td.append(p.name); if (extra) td.append(el('small', 'pos', extra)); return td; };
+      const nums = (cols, x) => cols.map(([, f]) => { const v = f(x); return el('td', v === 0 || v === '0.0' ? 'zero' : null, v); });
+      header('Batting', BAT_COLS);
+      const bats = ballBatters(g, side);
+      if (bats.length) bats.forEach(b => { const tr = el('tr'); tr.append(who(b.p, b.pos), ...nums(BAT_COLS, b.line)); tbl.append(tr); });
+      else { const tr = el('tr'); tr.append(el('td', 'zero', 'No batting order yet')); tbl.append(tr); }
+      const tb = el('tr', 'tot'); tb.append(el('td', null, 'Team'), ...nums(BAT_COLS, t.tot)); tbl.append(tb);
+      header('Pitching', PIT_COLS, 'sub-h');
+      const pits = ballPitchers(g, side);
+      if (pits.length) pits.forEach(x => { const tr = el('tr'); tr.append(who(x.p, x.dec ? '(' + x.dec + ')' : ''), ...nums(PIT_COLS, x.line), ...pad(PIT_COLS)); tbl.append(tr); });
+      else { const tr = el('tr'); tr.append(el('td', 'zero', 'No pitches yet')); tbl.append(tr); }
+      const sc = el('div', 'scroll'); sc.append(tbl); card.append(sc);
+      return card;
+    };
+    const grid = el('div', 'grid2'); grid.append(table('away'), table('home')); return grid;
+  };
+  // One play: the team's mark and a bar (runs scored) or dots, the result, the score after a run, the half inning
+  // and outs, and what happened.
+  const ballPlayItem = (g, bars, e) => {
+    const w = ballWords(g, e), side = e.side, row = el('div', 'pp' + (w.runs ? ' score' : ''));
+    row.style.setProperty('--tc', bars[side]);
+    const rail = el('div', 'rail'); rail.append(mark(g, side), el('i', w.runs ? 'bar' : 'dots')); row.append(rail);
+    const body = el('div', 'pb'), top = el('div', 'pt'), sc = (w.d.sit && w.d.sit.score) || { home: 0, away: 0 };
+    top.append(el('b', null, w.title));
+    if (w.runs) { const nums = el('span', 'ps'), an = el('span', null, sc.away), hn = el('span', null, sc.home); (side === 'home' ? an : hn).classList.add('dim'); nums.append(an, hn); top.append(nums); }
+    const outs = w.d.lob != null ? 3 : w.d.sit ? w.d.sit.o : null;
+    const who = e.player && e.player !== 'team' ? nameOnly(g, side, e.player) : '';
+    const desc = e.type === 'pc' ? who + ' comes in to pitch for ' + g.sides[side].name
+      : [who, w.runs ? w.runs + (w.runs === 1 ? ' run scores' : ' runs score') : '', w.rbi ? w.rbi + ' RBI' : ''].filter(Boolean).join(' · ') || g.sides[side].name;
+    body.append(top, el('div', 'pw', [halfName(e.period), e.type !== 'pc' && outs != null ? outs + (outs === 1 ? ' out' : ' outs') : ''].filter(Boolean).join(' - ')), el('div', 'pd', desc));
+    row.append(body);
+    return row;
+  };
+  const ballPlayCard = g => {
+    const plays = (g.events || []).filter(e => BALL_PLAYS.includes(e.type) && g.sides[e.side]); if (!plays.length) return null;
+    const bars = barsOf(g), card = el('section', 'card gc');
+    if (g.status === 'final') card.append(markRow(g, { label: 'Final', score: { home: g.sides.home.score, away: g.sides.away.score } }));
+    const halves = [...new Set(plays.map(e => e.period))].sort((a, b) => halfIdx(b) - halfIdx(a));
+    for (const h of halves) { card.append(el('h2', 'gh', halfName(h))); plays.filter(e => e.period === h).reverse().forEach(e => card.append(ballPlayItem(g, bars, e))); }
+    return card;
   };
 
   // Each team's player table: STARTERS and BENCH with minutes when the stat page set starters
@@ -1013,6 +1139,7 @@
       root._lastPlay = g.latest.id;
       parts.push(play);
     } else parts.push(el('p', 'note', 'No plays recorded yet.'));
+    if (BALL(g.sport)) { const s = el('section'); s.append(el('h2', 'h', 'Line score'), ballLineCard(g)); parts.push(s); }
     // Team stats. Away's numbers on the left, home's (FBCA) on the right, like the scoreboard above.
     const cmp = cmpCard(g);
     if (collapseTeamStats) {
@@ -1020,10 +1147,10 @@
       const prev = root.querySelector('details.sect'); d.open = prev ? prev.open : false;
       d.append(sum, cmp); parts.push(d);
     } else { const s = el('section'); s.append(el('h2', 'h', 'Team stats'), cmp); parts.push(s); }
-    const players = el('section'); players.append(el('h2', 'h', 'Players'), playerTables(g));
+    const players = el('section'); players.append(el('h2', 'h', 'Players'), BALL(g.sport) ? ballTables(g) : playerTables(g));
     parts.push(players);
     // Soccer on fbca.tv/boxscore (not the home page's compact box score): every play, newest first
-    const pbp = g.sport === 'soccer' && !head && soccerPlayCard(g);
+    const pbp = !head && (g.sport === 'soccer' ? soccerPlayCard(g) : BALL(g.sport) ? ballPlayCard(g) : null);
     if (pbp) { const s = el('section'); s.append(el('h2', 'h', 'Play-by-play'), pbp); parts.push(s); }
     // The date, time and venue from the schedule (fbca.tv/boxscore; not the home page's compact box score)
     const info = !head && gameInfo(g); if (info) parts.push(section('Game Information', info));
@@ -1077,7 +1204,32 @@
              ['YC', p => p.yc], ['RC', p => p.rc]]
   };
   const gameDate = g => new Date((g.meta && g.meta.startedAt) || Date.now());
+  const ballCsv = g => {
+    const BB = window.EotaBaseball, H = g.sides.home, A = g.sides.away, S = g.ball, rows = [];
+    const date = gameDate(g).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    rows.push([SPORT_NAME[g.sport] + ' box score', date], [A.name, A.score], [H.name, H.score], []);
+    const n = Math.max(g.meta.innings || 7, S.line.away.length, S.line.home.length);
+    rows.push(['Line score', ...Array.from({ length: n }, (_, i) => 'Inning ' + (i + 1)), 'R', 'H', 'E', 'LOB']);
+    for (const side of ['away', 'home']) { const t = g.sides[side]; rows.push([t.name, ...Array.from({ length: n }, (_, i) => S.line[side][i] != null ? S.line[side][i] : ''), t.tot.R, t.tot.H, t.tot.E, t.tot.LOB]); }
+    rows.push([], ['Team', '#', 'Batter', 'Pos', ...BAT_COLS.map(c => c[0])]);
+    for (const side of ['away', 'home']) {
+      const t = g.sides[side];
+      for (const b of ballBatters(g, side)) rows.push([t.name, b.p.num, b.p.name, b.pos, ...BAT_COLS.map(c => c[1](b.line))]);
+      rows.push([t.name, '', 'Team total', '', ...BAT_COLS.map(c => c[1](t.tot))]);
+    }
+    rows.push([], ['Team', '#', 'Pitcher', 'Decision', ...PIT_COLS.map(c => c[0])]);
+    for (const side of ['away', 'home']) for (const x of ballPitchers(g, side)) rows.push([g.sides[side].name, x.p.num, x.p.name, x.dec, ...PIT_COLS.map(c => c[1](x.line))]);
+    rows.push([], ['Play-by-play'], ['Inning', 'Team', 'Player', 'Play', 'Runs', 'RBI', 'Score after']);
+    for (const e of g.events || []) {
+      if (!BALL_PLAYS.includes(e.type) || !g.sides[e.side]) continue;
+      const w = ballWords(g, e), sc = w.d.sit && w.d.sit.score;
+      rows.push([halfName(e.period), g.sides[e.side].name, e.player === 'team' ? 'Team' : playerName(g, e.side, e.player), w.title, w.runs || '', w.rbi || '', sc ? A.name + ' ' + sc.away + ', ' + H.name + ' ' + sc.home : '']);
+    }
+    const q = v => { const t = v == null ? '' : String(v); return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    return '\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n') + '\r\n';
+  };
   const csv = g => {
+    if (BALL(g.sport)) return ballCsv(g);
     const S = SPORT[g.sport], H = g.sides.home, A = g.sides.away, soccer = g.sport === 'soccer', rows = [];
     const date = gameDate(g).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     // Away first, then home (FBCA), as on the page.
@@ -1135,5 +1287,5 @@
     const info = scheduleFor(games, sport, meta.startedAt || d.lastAt || d.savedAt);
     return { ...compute(sport, { meta, events: d.events || [] }), at: d.savedAt, scheduled: false, status: 'final', past: true, info };
   };
-  window.EotaLive = { watch, compute, csv, csvName, downloadCsv, pastGames, pastGame, gameDate, renderBox, tickBox, latestText, clockText, isLive, statusTag, playerName, PERIOD, PER_SHORT };
+  window.EotaLive = { SPORT_NAME, watch, compute, csv, csvName, downloadCsv, pastGames, pastGame, gameDate, renderBox, tickBox, latestText, clockText, isLive, statusTag, playerName, PERIOD, PER_SHORT };
 })();

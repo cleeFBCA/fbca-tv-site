@@ -189,6 +189,12 @@
 .ebx table.qt .qn { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ebx table.qt td.tot { font-weight: 800; }
 .ebx table.qt td.zero { color: rgba(255,255,255,.35); }
+/* Baseball's line score: a narrower name column, then the innings and R H E */
+.ebx table.qt.ls th:first-child { width: 30%; }
+.ebx table.qt.ls th.rhe { color: #fff; }
+.ebx table.qt.ls td.tot { box-shadow: inset 1px 0 0 rgba(255,255,255,.1); }
+/* Baseball's batting and pitching: the position (or W/L/S) after the name */
+.ebx td small.pos { margin-left: 6px; color: rgba(255,255,255,.55); font-size: 13px; font-weight: 600; }
 
 /* On the Court */
 .ebx .court + .court { margin-top: 14px; }

@@ -1357,6 +1357,7 @@ document.getElementById("btnWatch").addEventListener("click", () => {
 </script>
 
 <!-- Live box score under the player (stats from the stat keeper; see boxscore/live.js and box.css) -->
+<script src="/graphics/baseball.js"></script>
 <script src="/boxscore/live.js"></script>
 <script>
 (() => {
@@ -1371,7 +1372,7 @@ document.getElementById("btnWatch").addEventListener("click", () => {
     document.body.classList.toggle('watching', !!game);
     if (game) L.renderBox(box, game, { head: true, collapseTeamStats: true });
   };
-  // Only while a scheduled soccer or basketball game is in its live window (no connection otherwise).
+  // Only while a scheduled soccer, basketball, baseball or softball game is in its live window (no connection otherwise).
   L.watch(g => { game = g; render(); }, { scheduledOnly: true });
   setInterval(() => { if (game) L.tickBox(box, game); }, 500);
 })();
