@@ -165,6 +165,7 @@
   .lm button.r { width: 100%; text-align: left; background: none; box-shadow: none; color: inherit; font: inherit; cursor: pointer; min-height: 0; }
   .lm button.r:hover { background: rgba(255,255,255,.05); }
   .lm .lmh { margin: 6px 0 0; font-size: 12px; }
+  .lm .lmp { cursor: pointer; } .lm .lmp:hover { background: rgba(255,255,255,.05); }
   .lm .r { display: grid; grid-template-columns: 26px 40px 1fr auto; align-items: center; gap: 8px; padding: 7px 10px; margin: 3px 0; border: 2px solid transparent; border-radius: 8px; font-size: 16px; }
   .lm .r .n { font-weight: 800; color: var(--chalk-dim); text-align: right; }
   .lm .r .p { font-size: 13px; font-weight: 700; color: var(--chalk-dim); }
@@ -225,8 +226,6 @@
       <div class="grp"><h4>Ball in play</h4><div class="pad" id="padPlay"></div></div>
       <div class="grp" id="grpRun"><h4>Runners</h4><div class="pad" id="padRun"></div></div>
       <div class="grp"><h4>Changes</h4><div class="pad" id="padMore">
-        <button class="act" id="btnPitcher">Pitching change</button>
-        <button class="act" id="btnBatter">Different batter</button>
         <button class="act" id="btnFix">Fix the situation</button>
         <button class="act" id="btnFinal">Mark final</button>
       </div></div>
@@ -600,28 +599,6 @@
   };
 
   // ---- Changes ----
-  const pickFrom = (v, side, text, current) => {
-    const list = (v.meta.rosters[side] || []).slice().sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
-    if (!list.length) { toast('No roster for ' + v.meta.names[side] + ' yet. Add one in Setup.'); return null; }
-    const ans = prompt(text + '\n\nType the number (or the name):\n' + list.map(p => (p.num ? '#' + p.num + ' ' : '') + p.name + (p.id === current ? '  ← now' : '')).join('\n'));
-    if (!ans) return null;
-    const a = ans.trim().replace(/^#/, '').toLowerCase();
-    const p = list.find(x => x.num && x.num === a) || list.find(x => x.name.toLowerCase() === a) || list.find(x => x.name.toLowerCase().includes(a));
-    if (!p) { toast('No player matches "' + ans + '".'); return null; }
-    return p;
-  };
-  $('btnPitcher').onclick = () => {
-    const v = view(); if (!v) return;
-    const sit = BB.current(v.events), side = BB.fielding(sit);
-    const p = pickFrom(v, side, 'New pitcher for ' + v.meta.names[side], BB.pitcherOf(v.meta, sit));
-    if (p) record({ k: 'pc', side, id: p.id });
-  };
-  $('btnBatter').onclick = () => {
-    const v = view(); if (!v) return;
-    const sit = BB.current(v.events), side = BB.batting(sit);
-    const p = pickFrom(v, side, 'Who is batting for ' + v.meta.names[side] + '? (For a pinch hitter who stays in, change the lineup instead.)', BB.batterOf(v.meta, sit));
-    if (p) record({ k: 'bat', id: p.id });
-  };
   $('btnFix').onclick = () => {
     const v = view(); if (!v) return;
     const sit = BB.current(v.events);
@@ -718,8 +695,8 @@
     const line = BB.todayLine(stats.bat[bat][batter]);
     const pr = (k, val, sub) => { const r = el('div', 'row'); r.append(el('span', null, k), el('b', null, val)); if (sub) r.append(el('span', null, sub)); return r; };
     $('sWho').replaceChildren(
-      pr('AB', batter ? who(v, bat, batter) : 'No batting order: set the lineup, or Different batter', line ? '(' + line + ')' : ''),
-      pr('P', pit ? who(v, fld, pit) : 'No pitcher: put one at P in the lineup', pit ? 'P: ' + (sit.np[pit] || 0) : ''),
+      pr('AB', batter ? who(v, bat, batter) : 'No batting order: set it on the Lineups tab', line ? '(' + line + ')' : ''),
+      pr('P', pit ? who(v, fld, pit) : 'No pitcher: pick the starting pitcher on the Lineups tab, or tap the pitcher in the lineup below', pit ? 'P: ' + (sit.np[pit] || 0) : ''),
       pr('Due', [1, 2].map(n => BB.onDeck(v.meta, sit, n)).filter(Boolean).map(id => lastName((player(v, bat, id) || {}).name)).join(', ') || '–'));
     $('sRun').textContent = sit.bases.some(Boolean) ? 'Runners: ' + sit.bases.map((r, i) => r ? ['1st', '2nd', '3rd'][i] + ' ' + who(v, bat, r.id) : '').filter(Boolean).join(' · ') : 'Bases empty';
     $('grpRun').hidden = !sit.bases.some(Boolean);
@@ -756,12 +733,13 @@
       d.onclick = () => openSub(v, M.bat, r);
       flash(d, r.slot); return d;
     }) : [el('p', 'hint warn', 'No batting order for ' + nm(M.bat) + ' yet: set it on the Lineups tab.')]));
-    if (M.rows.length) $('lmList').append(el('p', 'hint lmh', 'Tap a spot to put in a sub, like a pinch hitter on deck: the scorebug has him ready when he comes up.'));
+    if (M.rows.length) $('lmList').append(el('p', 'hint lmh', 'Tap a spot to put in a sub, like a pinch hitter on deck: the scorebug has him ready when he comes up. Tap the pitcher for a pitching change.'));
     if (M.sub) { const d = el('div', 'r up'); d.append(el('span', 'n', '–'), el('span', 'p', 'PH'), el('b', null, (M.sub.num ? '#' + M.sub.num + ' ' : '') + M.sub.name), el('span', 'l', '')); $('lmList').append(d); }
     const k = el('span', 'k'); k.append(chip(M.fld), 'P');
     const pw = el('div'); pw.append(el('b', null, M.pit ? (M.pit.num ? '#' + M.pit.num + ' ' : '') + M.pit.name : 'No pitcher set'), el('small', null, M.pit ? M.pit.line : ''));
     const np = el('div', 'np'); if (M.pit) np.append(String(M.pit.np), el('small', null, M.pit.np === 1 ? ' pitch' : ' pitches'));
     const lp = $('lmPit'); lp.className = 'lmp'; lp.style.animationDelay = ''; lp.replaceChildren(k, pw, np); flash(lp, 'P');
+    lp.title = 'Pitching change'; lp.onclick = () => openPitch(v, M.fld, M.pit && M.pit.id);
   };
   setInterval(() => { if (tab === 'plays' && Object.values(lmChg).some(t => Date.now() - t < 4600)) render(); }, 1000);
   // A sub in one spot of the batting order (a pinch hitter, a pinch runner, a defensive change), saved to the lineup
@@ -786,6 +764,23 @@
       const p = roster.find(x => x.id === who.value);
       toast((p ? p.name : 'Sub') + ' in for ' + r.name + ', batting ' + ordinal(r.slot));
     };
+    $('subTitle').textContent = 'Sub in the batting order'; $('subOk').textContent = 'Make the change';
+    $('subCancel').onclick = () => $('subDlg').close();
+    $('subDlg').showModal();
+  };
+  // A pitching change: the fielding team's new pitcher (everyone on the roster, who's pitched today first)
+  const openPitch = (v, side, cur) => {
+    if ((view() || v).meta.status === 'final') { toast('This game is final. Tap "Final" again to reopen it first.'); return; }
+    const stats = BB.compute(v.meta, v.events), pitched = stats.pit[side] || {};
+    const roster = (v.meta.rosters[side] || []).slice().sort((a, b) => (!!pitched[b.id] - !!pitched[a.id]) || (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
+    if (!roster.length) { toast('No roster for ' + v.meta.names[side] + ' yet. Add one in Setup.'); return; }
+    const who = el('select');
+    who.append(new Option('Pick the new pitcher', ''), ...roster.filter(p => p.id !== cur).map(p => new Option((p.num ? '#' + p.num + ' ' : '') + p.name + (pitched[p.id] ? ' (pitched today, ' + BB.ip(pitched[p.id].outs) + ' IP)' : ''), p.id)));
+    const now = roster.find(p => p.id === cur);
+    $('subBody').replaceChildren(el('p', 'hint', v.meta.names[side] + (now ? ': ' + (now.num ? '#' + now.num + ' ' : '') + now.name + ' is pitching now (' + (BB.current(v.events).np[cur] || 0) + ' pitches). Runners already on stay charged to him.' : ': no pitcher set yet.')),
+      el('label', null, 'New pitcher'), who);
+    $('subTitle').textContent = 'Pitching change'; $('subOk').textContent = 'Make the change';
+    $('subOk').onclick = () => { if (!who.value) { who.focus(); return; } $('subDlg').close(); record({ k: 'pc', side, id: who.value }); };
     $('subCancel').onclick = () => $('subDlg').close();
     $('subDlg').showModal();
   };
@@ -1111,7 +1106,7 @@
 })();
 </script>
 <dialog class="dec" id="subDlg">
-  <h3>Sub in the batting order</h3>
+  <h3 id="subTitle">Sub in the batting order</h3>
   <div id="subBody"></div>
   <div class="set-row"><button class="primary" id="subOk">Make the change</button><button id="subCancel">Cancel</button></div>
 </dialog>
