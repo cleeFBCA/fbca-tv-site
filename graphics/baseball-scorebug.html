@@ -284,7 +284,10 @@
                transition: opacity .7s, transform 1.4s cubic-bezier(.22,1,.36,1); }
   .lu .ph .wm > * { width: 100%; height: 100%; object-fit: contain; animation: luKen 16s ease-in-out infinite alternate; }
   @keyframes luKen { from { transform: scale(1.05) translateX(-3%) rotate(-3deg); } to { transform: scale(1.25) translateX(3%) rotate(3deg); } }
-  .lu .ph .big { position: absolute; left: 70px; right: 70px; top: 70px; bottom: 170px; opacity: 0; transform: scale(.7); transition: opacity .3s, transform .6s cubic-bezier(.3,1.4,.5,1); }
+  /* The team logo stands in for a photo: scaled up to fill its box (logos are saved small), clear of the name plate */
+  .lu .ph:not(:has(.plate.has)) .big { bottom: 40px; } /* no name plate: centered in the panel */
+  .lu .ph .big img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; }
+  .lu .ph .big { position: absolute; left: 34px; right: 34px; top: 40px; bottom: 150px; opacity: 0; transform: scale(.7); transition: opacity .3s, transform .6s cubic-bezier(.3,1.4,.5,1); }
   .lu .ph .wm .ini { font-size: 260px; } .lu .ph .big .ini { font-size: 150px; }
   .lu .ph .pic { position: absolute; left: 0; right: 0; top: 24px; bottom: 0; background: center top / cover no-repeat; opacity: 0; transform: translateY(50px) scale(1.06);
                  transition: opacity .35s, transform .8s cubic-bezier(.22,1,.36,1); }
