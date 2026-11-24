@@ -136,6 +136,9 @@
   .ord { display: grid; grid-template-columns: 28px 1fr 92px; gap: 6px; align-items: center; margin-top: 6px; }
   .ord b { text-align: right; color: var(--chalk-dim); }
   .ord select { padding: 8px; }
+  .ord.sp { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .ord.sp b { color: var(--chalk); }
+  .ord.sp .hint { margin: 0; font-size: 13px; }
   .past-list { list-style: none; margin: 10px 0 0; padding: 0; }
   .past-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid rgba(243,239,226,.1); font-size: 15px; }
   .past-list li .what { flex: 1 1 220px; min-width: 0; }
@@ -198,7 +201,7 @@
   </section>
 
   <section data-pane="lineups" hidden>
-    <p class="hint" style="margin:0 0 10px">The batting order runs the batter up and on deck. Pick a player and a position for each spot; the player at P is the starting pitcher. A pinch hitter or a sub: change the player in that spot and save (their stats stay with each player).</p>
+    <p class="hint" style="margin:0 0 10px">The batting order runs the batter up and on deck. Pick a player and a position for each spot. Pick the starting pitcher on their own line under the order: they bat only if they're also in the order (no DH: put them in a spot at P too). A pinch hitter or a sub: change the player in that spot and save (their stats stay with each player).</p>
     <div class="two" id="lineups"></div>
     <div class="set-row" style="margin-top:10px"><button class="primary" id="btnOrder">Save lineups</button><span class="hint" id="orderNote" style="margin:0"></span></div>
   </section>
@@ -661,7 +664,7 @@
   // ---- Lineups ----
   let orderDraft = null; // edits not saved yet
   const renderLineups = v => {
-    if (!orderDraft) orderDraft = { home: (v.meta.order.home || []).map(o => ({ ...o })), away: (v.meta.order.away || []).map(o => ({ ...o })) };
+    if (!orderDraft) orderDraft = { home: (v.meta.order.home || []).map(o => ({ ...o })), away: (v.meta.order.away || []).map(o => ({ ...o })), sp: { home: '', away: '', ...(v.meta.sp || {}) } };
     $('lineups').replaceChildren(...SHOW.map(side => {
       const card = el('div', 'card'), roster = (v.meta.rosters[side] || []).slice().sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
       const h = el('h3', 'tc', v.meta.names[side] + (side === 'away' ? ' (bats first)' : '')); h.style.setProperty('--tc', colorOf(v, side));
@@ -677,6 +680,11 @@
         pp.value = o.pos; pp.onchange = () => { o.pos = pp.value; $('orderNote').textContent = 'Not saved yet.'; };
         row.append(el('b', null, String(i + 1)), ps, pp); card.append(row);
       });
+      // Starting pitcher: their own line, apart from the batting order
+      const spRow = el('div', 'ord sp'), sp = el('select');
+      sp.append(new Option('No starting pitcher picked', ''), ...roster.map(p => new Option((p.num ? '#' + p.num + ' ' : '') + p.name, p.id)));
+      sp.value = orderDraft.sp[side] || ''; sp.onchange = () => { orderDraft.sp[side] = sp.value; $('orderNote').textContent = 'Not saved yet.'; };
+      spRow.append(el('b', null, 'SP'), sp, el('span', 'hint', 'Starting pitcher')); card.append(spRow);
       if (!roster.length) card.append(el('p', 'hint warn', 'No roster yet: add it in Setup first.'));
       return card;
     }));
@@ -684,7 +692,7 @@
   $('btnOrder').onclick = () => {
     if (!orderDraft) return;
     const order = { home: orderDraft.home.filter(o => o.id), away: orderDraft.away.filter(o => o.id) };
-    enqueue('meta', { meta: { order } });
+    enqueue('meta', { meta: { order, sp: { home: orderDraft.sp.home || '', away: orderDraft.sp.away || '' } } });
     orderDraft = null; $('orderNote').textContent = 'Saved. ' + order.away.length + ' and ' + order.home.length + ' in the batting orders.';
   };
 

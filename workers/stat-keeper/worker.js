@@ -107,7 +107,7 @@ const defaultMeta = (sport = 'basketball') => ({
   gameId: newId(), startedAt: Date.now(), keepers: 1, period: sport === 'soccer' ? '1H' : sport === 'baseball' ? 'T1' : '1Q',
   names: { home: 'FBCA', away: 'Opponent' }, colors: { ...DEFAULT_COLORS }, rosters: { home: [], away: [] },
   ...(sport === 'soccer' ? { halfMin: 40, clock: { run: false, startedAt: 0, base: 0 } } : {}),
-  ...(sport === 'baseball' ? { innings: 7, order: { home: [], away: [] } } : {})
+  ...(sport === 'baseball' ? { innings: 7, order: { home: [], away: [] }, sp: { home: '', away: '' } } : {})
 });
 
 export class Game extends DurableObject {
@@ -320,6 +320,11 @@ export class Game extends DurableObject {
           const was = meta.order || { home: [], away: [] };
           next.order = Object.fromEntries(SIDES.map(s => [s, Array.isArray(m.order[s])
             ? m.order[s].filter(o => o && idOk(o.id)).slice(0, 12).map(o => ({ id: o.id, pos: clean(o.pos, 4) })) : (was[s] || [])]));
+        }
+        // Starting pitchers: one player id per team (or none). They bat only if they're also in the order.
+        if (m.sp) {
+          const was = meta.sp || { home: '', away: '' };
+          next.sp = Object.fromEntries(SIDES.map(s => [s, m.sp[s] == null ? (was[s] || '') : idOk(m.sp[s]) ? m.sp[s] : '']));
         }
       }
       if (m.starters && this.sport === 'basketball') {

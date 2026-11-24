@@ -297,9 +297,15 @@
   .lu .ph .plate .l { font-size: 76px; font-weight: 800; color: #fff; white-space: nowrap; transform-origin: left center; }
   .lu .ls { position: absolute; left: 500px; right: 0; top: 148px; bottom: 60px; padding: 12px 28px; display: flex; flex-direction: column; clip-path: inset(0 0 100% 0); transition: clip-path .55s cubic-bezier(.22,1,.36,1) .06s; }
   .lu .ls::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.42), rgba(0,0,0,.22)); pointer-events: none; }
-  .lu .r { position: relative; flex: 1; display: grid; grid-template-columns: 58px 92px 1fr 150px; align-items: center; font-size: 46px; font-weight: 800; color: #fff;
+  .lu .r { position: relative; flex: 1; min-height: 0; line-height: 1; display: grid; grid-template-columns: 58px 92px 1fr 150px; align-items: center; font-size: 46px; font-weight: 800; color: #fff;
            opacity: 0; transform: translateX(60px); transition: opacity .3s, transform .5s cubic-bezier(.22,1,.36,1); transition-delay: calc(.12s + var(--i) * 55ms); }
   .lu .r + .r { border-top: 2px solid rgba(255,255,255,.2); }
+  /* The starting pitcher: their own line under the order, on a darker band with a gold rule */
+  .lu .r.spr { flex: 0 0 82px; margin: 12px -28px -12px; padding: 0 28px; grid-template-columns: 150px 1fr 230px; border-top: 3px solid var(--gold);
+               background: linear-gradient(rgba(0,0,0,.38), rgba(0,0,0,.6)); }
+  .lu .r.spr .k { font-size: 24px; font-weight: 700; line-height: 1; letter-spacing: .08em; color: var(--gold-hi); }
+  .lu .r.spr .a small { font-size: 30px; font-weight: 700; margin-left: 8px; color: rgba(255,255,255,.75); }
+  .lu .r.spr .hl { left: 14px; right: 14px; }
   .lu .r .o { font-size: 34px; font-weight: 700; color: rgba(255,255,255,.65); }
   .lu .r .p { font-size: 36px; font-weight: 700; color: var(--gold-hi); letter-spacing: .03em; }
   .lu .r .nm { white-space: nowrap; transform-origin: left center; }
@@ -633,7 +639,7 @@
             <input type="file" id="luFile" accept="image/*">
             <label for="luCap">Bottom line (blank = the featured player's season, or Eagles on the Air)</label><input id="luCap" placeholder="">
             <div class="sum" id="luSum"></div>
-            <p class="hint">The order and positions come from the stat keeper's Lineups tab, with season averages. Photos stay on this computer, saved by team and player, so they're there next game. A portrait, or a cut-out PNG on a clear background, works best. Picking another player while it's up swaps them on air.</p>
+            <p class="hint">The order, positions and starting pitcher come from the stat keeper's Lineups tab, with season averages (and the pitcher's ERA). Photos stay on this computer, saved by team and player, so they're there next game. A portrait, or a cut-out PNG on a clear background, works best. Picking another player while it's up swaps them on air.</p>
           </div>
         </div>
       </div>
@@ -822,12 +828,20 @@
       const h = g.hi; $('luPlate').classList.toggle('has', !!h);
       $('luF').replaceChildren(...(h ? [...(h.num ? [el('i', null, '#' + h.num)] : []), h.first || ''] : []));
       $('luL').textContent = h ? h.last : ''; if (h) fit($('luL'), 450);
-      $('luLs').replaceChildren(...(g.rows || []).map((r, i) => {
+      const rows = (g.rows || []).map((r, i) => {
         const d = el('div', 'r' + (r.hi ? ' hi' : '')); d.style.setProperty('--i', i);
         const nm = el('span', 'nm', r.name);
         d.append(el('span', 'o', String(r.o)), el('span', 'p', r.pos), nm, el('span', 'a', r.avg), el('i', 'hl'));
         fit(nm, 590); return d;
-      }));
+      });
+      if (g.sp) {
+        const d = el('div', 'r spr' + (g.sp.hi ? ' hi' : '')); d.style.setProperty('--i', rows.length + 1);
+        const k = el('span', 'k'); k.append('Starting', el('br'), 'pitcher');
+        const nm = el('span', 'nm', (g.sp.num ? '#' + g.sp.num + ' ' : '') + g.sp.name), a = el('span', 'a', g.sp.v || '');
+        if (g.sp.v) a.append(el('small', null, g.sp.k));
+        d.append(k, nm, a, el('i', 'hl')); fit(nm, 520); rows.push(d);
+      }
+      $('luLs').replaceChildren(...rows);
       $('luFt').textContent = g.cap || '';
     };
     const NODE = { bstat: 'ln', pstat: 'ln', l3: 'ln', title: 'tc', brk: 'bx', hr: 'hr', lu: 'lu' };
@@ -1090,20 +1104,28 @@
       ok(c.toDataURL('image/webp', .88)); // keeps a cut-out's clear background
     }; img.onerror = fail; img.src = URL.createObjectURL(file);
   });
-  const luFeatured = () => { if (!kg) return null; const side = s.lu.side; return BB.orderOf(kg.meta, side).some(o => o.id === s.lu.hi) ? playerOf(side, s.lu.hi) : null; };
+  const luSp = side => kg ? ((kg.meta.sp || {})[side] || '') : '';
+  const luFeatured = () => { if (!kg || !s.lu.hi) return null; const side = s.lu.side; return BB.orderOf(kg.meta, side).some(o => o.id === s.lu.hi) || luSp(side) === s.lu.hi ? playerOf(side, s.lu.hi) : null; };
   const luGp = () => {
     if (!kg || !stats) return null;
     const side = s.lu.side, opp = BB.other(side), ord = BB.orderOf(kg.meta, side); if (!ord.length) return { err: 'No batting order for ' + kg.meta.names[side] + ' yet: set it on the stat keeper\'s Lineups tab.' };
     const sea = seasonMap(side), tn = s.teams[side], on = s.teams[opp], fp = luFeatured();
     const rows = ord.map((o, i) => { const p = playerOf(side, o.id) || {}, t = BB.seasonFor(sea, p.name); return { o: i + 1, pos: o.pos || '', name: (p.name || '').toUpperCase(), avg: t && t.bat.AB ? BB.avg(t.bat) : '', hi: !!fp && o.id === fp.id }; });
-    let hi = null, auto = 'Eagles on the Air';
+    let hi = null, auto = 'Eagles on the Air', sp = null;
+    const spP = playerOf(side, luSp(side));
+    if (spP) {
+      const q = (BB.seasonFor(sea, spP.name) || {}).pit;
+      sp = { num: spP.num || '', name: spP.name.toUpperCase(), hi: !!fp && fp.id === spP.id, v: q && q.outs ? BB.era(q, kg.meta.innings || 7) : '', k: 'ERA' };
+    }
     if (fp) {
       hi = { num: fp.num || '', first: firstName(fp.name), last: lastName(fp.name).toUpperCase() };
-      const t = BB.seasonFor(sea, fp.name), b = t && t.bat;
-      if (b && b.AB) auto = `${lastName(fp.name)}: ${BB.avg(b)} AVG · ${b.HR} HR · ${b.RBI} RBI · ${opsOf(b)} OPS`;
+      const t = BB.seasonFor(sea, fp.name), b = t && t.bat, q = t && t.pit;
+      // The starting pitcher featured (and not batting): their pitching line
+      if (sp && sp.hi && !rows.some(r => r.hi)) { if (q && q.outs) auto = `${lastName(fp.name)}: ${BB.era(q, kg.meta.innings || 7)} ERA · ${q.W}-${q.L} · ${BB.ip(q.outs)} IP · ${q.SO} K`; }
+      else if (b && b.AB) auto = `${lastName(fp.name)}: ${BB.avg(b)} AVG · ${b.HR} HR · ${b.RBI} RBI · ${opsOf(b)} OPS`;
     }
     return { side, head: ((tn.name || kg.meta.names[side] || '') + ' Batting Order').toUpperCase(), vs: ('Today vs ' + (on.name || kg.meta.names[opp] || '')).toUpperCase(),
-             rows, hi, photo: fp ? photos[photoKey(side, fp.name)] || '' : '', cap: ($('luCap').value.trim() || auto).toUpperCase() };
+             rows, sp, hi, photo: fp ? photos[photoKey(side, fp.name)] || '' : '', cap: ($('luCap').value.trim() || auto).toUpperCase() };
   };
   const showLu = () => { const g = luGp(); if (!g) { note('Needs the stat keeper (Connections).'); return; } if (g.err) { note(g.err); return; } show('lu', g); };
   const PITCH_TYPES = () => s.game === 'softball' ? ['Fastball', 'Changeup', 'Drop', 'Rise', 'Curve', 'Screwball'] : ['Fastball', '4-Seam FB', 'Sinker', 'Cutter', 'Slider', 'Curveball', 'Changeup', 'Splitter'];
@@ -1304,15 +1326,17 @@
     } else { $('bsSum').textContent = $('psSum').textContent = $('hrSum').textContent = 'Needs the stat keeper (Connections).'; }
     if (pick === 'lu') {
       document.querySelectorAll('[data-lu]').forEach(b => { b.className = 'sm' + (b.dataset.lu === s.lu.side ? ' active' : ''); b.textContent = (kg && kg.meta.names[b.dataset.lu]) || (b.dataset.lu === 'home' ? 'Home' : 'Visitors'); });
-      const ord = kg ? BB.orderOf(kg.meta, s.lu.side) : [], opts = [['', 'No featured player'], ...ord.map((o, i) => { const p = playerOf(s.lu.side, o.id) || {}; return [o.id, (i + 1) + '. ' + (o.pos ? o.pos + ' ' : '') + (p.num ? '#' + p.num + ' ' : '') + (p.name || '') + (photos[photoKey(s.lu.side, p.name)] ? ' · photo' : '')]; })];
+      const ord = kg ? BB.orderOf(kg.meta, s.lu.side) : [], spP = playerOf(s.lu.side, luSp(s.lu.side));
+      const opts = [['', 'No featured player'], ...ord.map((o, i) => { const p = playerOf(s.lu.side, o.id) || {}; return [o.id, (i + 1) + '. ' + (o.pos ? o.pos + ' ' : '') + (p.num ? '#' + p.num + ' ' : '') + (p.name || '') + (photos[photoKey(s.lu.side, p.name)] ? ' · photo' : '')]; }),
+        ...(spP && !ord.some(o => o.id === spP.id) ? [[spP.id, 'Starting pitcher: ' + (spP.num ? '#' + spP.num + ' ' : '') + spP.name + (photos[photoKey(s.lu.side, spP.name)] ? ' · photo' : '')]] : [])];
       const sig = opts.map(o => o.join(':')).join('|');
       if ($('luWho').dataset.sig !== sig) { $('luWho').dataset.sig = sig; $('luWho').replaceChildren(...opts.map(([v, l]) => new Option(l, v))); }
-      $('luWho').value = ord.some(o => o.id === s.lu.hi) ? s.lu.hi : '';
+      $('luWho').value = opts.some(o => o[0] === s.lu.hi) ? s.lu.hi : '';
       setField($('luCap'), s.lu.cap || '');
       const fp = luFeatured(), pic = fp ? photos[photoKey(s.lu.side, fp.name)] : '';
       $('luThumb').style.backgroundImage = pic ? `url("${pic}")` : 'none'; $('luNoPic').disabled = !pic; $('luFile').disabled = !fp;
       const g = luGp();
-      $('luSum').replaceChildren(...(!g ? ['Needs the stat keeper (Connections).'] : g.err ? [g.err] : [el('b', null, g.head), el('br'), g.vs, el('br'), g.hi ? 'Featuring ' + g.hi.first + ' ' + g.hi.last + (g.photo ? ' (with photo)' : ' (no photo: shows the team logo)') : 'No featured player: the team logo fills the left side', el('br'), 'Bottom: ' + g.cap]));
+      $('luSum').replaceChildren(...(!g ? ['Needs the stat keeper (Connections).'] : g.err ? [g.err] : [el('b', null, g.head), el('br'), g.vs, el('br'), (g.sp ? 'Starting pitcher: ' + g.sp.name : 'No starting pitcher picked (stat keeper, Lineups)'), el('br'), g.hi ? 'Featuring ' + g.hi.first + ' ' + g.hi.last + (g.photo ? ' (with photo)' : ' (no photo: shows the team logo)') : 'No featured player: the team logo fills the left side', el('br'), 'Bottom: ' + g.cap]));
     }
     if (pick === 'brk') { const b = breakGp(); $('bxSum').replaceChildren(...(b ? [el('b', null, b.head), el('br'), SIDES.map(sd => (s.teams[sd].abbr || sd) + ' ' + b.rows[sd].R + ' R ' + b.rows[sd].H + ' H ' + b.rows[sd].E + ' E').join(' · '), ...(b.due ? [el('br'), b.due.head + ': ' + b.due.list.map(d => d.name).join(', ')] : [])] : ['No game yet.'])); }
     if (pick === 'pitch') {

@@ -77,7 +77,8 @@
     return ord.length ? ord[((sit.up[batting(sit)] || 0) + n) % ord.length].id : '';
   };
   // The fielding team's pitcher: the last change, else whoever plays P in its lineup.
-  const pitcherOf = (meta, sit, side = fielding(sit)) => sit.pit[side] || (orderOf(meta, side).find(o => o.pos === 'P') || {}).id || '';
+  // The pitcher: the last pitching change, else the starting pitcher, else whoever bats at P
+  const pitcherOf = (meta, sit, side = fielding(sit)) => sit.pit[side] || (meta && meta.sp && meta.sp[side]) || (orderOf(meta, side).find(o => o.pos === 'P') || {}).id || '';
 
   // Where each runner (and the batter) goes by default after a result. dest: 0 out, 1–3 a base, 4 scored.
   const forced = bases => [!!bases[0], !!bases[0] && !!bases[1], !!bases[0] && !!bases[1] && !!bases[2]];
