@@ -779,8 +779,9 @@
             <div class="sum" id="psSum"></div>
           </div>
           <div data-pane="hr">
+            <label>Runs</label><div class="chips" id="hrRuns"></div>
             <div class="sum" id="hrSum"></div>
-            <p class="hint">Runs by itself, about 11 seconds: HOME RUN (solo, 2-run, 3-run or grand slam), then the batter's name with their home runs and RBI this season. With no home run recorded on the stat keeper, it plays just HOME RUN in the batting team's colors (about 5 seconds). The score bug comes back after.</p>
+            <p class="hint">Pick the runs, or leave it on From the stat keeper, then Show. A grand slam says GRAND SLAM in place of HOME RUN. Runs by itself: HOME RUN (with Solo, 2-Run or 3-Run), then the batter's name with their home runs and RBI this season, about 11 seconds. With no home run recorded on the stat keeper, it plays just the big words in the batting team's colors, about 5 seconds. The pick goes back to From the stat keeper after it's shown. The score bug comes back after.</p>
           </div>
           <div data-pane="pitch">
             <label for="spMph">Pitch speed (MPH): type it, then Enter or Show</label><input id="spMph" inputmode="numeric" placeholder="86">
@@ -1008,8 +1009,8 @@
       $('hrNm').replaceChildren(el('span', 'f', g.first || ''), el('span', 'l', g.last || ''));
       $('hrSs').replaceChildren(...(g.stats || []).map(([v, k]) => { const d = el('div'); d.append(el('b', null, String(v)), k); return d; }));
       let i = 0;
-      $('hrWord').replaceChildren(...[...'HOME RUN'].map(ch => { const sp = el('span', ch === ' ' ? 'gap' : '', ch === ' ' ? '' : ch); sp.style.setProperty('--i', i++); return sp; }));
-      $('hrTag').textContent = g.tag || '';
+      $('hrWord').replaceChildren(...[...(g.slam ? 'GRAND SLAM' : 'HOME RUN')].map(ch => { const sp = el('span', ch === ' ' ? 'gap' : '', ch === ' ' ? '' : ch); sp.style.setProperty('--i', i++); return sp; }));
+      $('hrTag').textContent = g.slam ? '' : g.tag || ''; // GRAND SLAM is the big word, so no tag
     };
     // ---- The batting order's featured player, changed while it's up: the old one goes, the new one comes in ----
     let luCur = null;
@@ -1363,7 +1364,7 @@
   // ---- Graphics ----
   const show = (name, gp) => { s.gfx = name; s.gp = gp; s.gAt = Date.now(); save(); };
   const take = () => { if (s.gfx) { s.gfx = ''; s.gp = null; save(); } };
-  let hrTimer = 0;
+  let hrTimer = 0, hrRuns = 0; // the runs picked on the Home run tile (0 = from the stat keeper)
   const batterOpts = () => {
     if (!kg) return [];
     const sit = stats.sit, bat = BB.batting(sit), cur = BB.batterOf(kg.meta, sit);
@@ -1398,7 +1399,7 @@
     const h = lastHr(); if (!h) return null;
     const side = h.e.side, p = playerOf(side, h.e.player); if (!p) return null;
     const t = BB.seasonFor(seasonMap(side), p.name), runs = (h.d.runs || []).length;
-    return { side, first: firstName(p.name), last: lastName(p.name), tag: ['', 'Solo', '2-Run', '3-Run', 'Grand Slam'][runs] || '',
+    return { side, runs, first: firstName(p.name), last: lastName(p.name), tag: ['', 'Solo', '2-Run', '3-Run', 'Grand Slam'][runs] || '', slam: runs === 4,
              stats: [[t ? t.bat.HR : 1, 'HR this season'], [t ? t.bat.RBI : runs, 'RBI this season']] };
   };
   const breakGp = () => {
@@ -1519,7 +1520,9 @@
     { id: 'hr', name: 'Home run', kind: 'Lower third', on: () => s.gfx === 'hr', show: () => {
       // With no home run recorded, it still plays: HOME RUN in the batting team's colors, without the runs or the stats after
       const g = hrGp() || { lite: true, side: (s.live && s.live.bat && s.live.bat.side) || 'home', tag: '', stats: [] };
-      show('hr', g); clearTimeout(hrTimer); const at = s.gAt; hrTimer = setTimeout(() => { if (s.gfx === 'hr' && s.gAt === at) take(); }, g.lite ? 4800 : 11200); } },
+      // The operator's pick (Solo, 2-Run, 3-Run, Grand Slam) wins over the stat keeper's; a grand slam says GRAND SLAM
+      if (hrRuns) { g.runs = hrRuns; g.tag = ['', 'Solo', '2-Run', '3-Run', 'Grand Slam'][hrRuns]; g.slam = hrRuns === 4; }
+      show('hr', g); hrRuns = 0; renderHrRuns(); /* the pick is for this home run only */ clearTimeout(hrTimer); const at = s.gAt; hrTimer = setTimeout(() => { if (s.gfx === 'hr' && s.gAt === at) take(); }, g.lite ? 4800 : 11200); } },
     { id: 'pitch', name: 'Pitch speed', kind: 'On the bug', on: () => !!(s.pitch && Date.now() < s.pitch.until), show: showPitch, take: () => { s.pitch = null; save(); } },
     { id: 'exit', name: 'Exit velo', kind: 'On the bug', on: () => !!(s.exit && Date.now() < s.exit.until), show: showExit, take: () => { s.exit = null; save(); } },
     { id: 'flash', name: 'BB / K / HBP', kind: 'On the bug', on: () => !!(s.flash && Date.now() < s.flash.until), show: () => flashNow('K'), take: () => { s.flash = null; save(); } },
@@ -1566,6 +1569,9 @@
   $('annLabel').addEventListener('input', () => { s.ann.label = $('annLabel').value; save(); });
   $('annSecs').value = s.ann.secs ?? 8;
   $('annSecs').addEventListener('input', () => { s.ann.secs = Math.max(0, Math.min(120, parseInt($('annSecs').value, 10) || 0)); save(); });
+  const HR_PICKS = [[0, 'From the stat keeper'], [1, 'Solo'], [2, '2-Run'], [3, '3-Run'], [4, 'Grand Slam']];
+  const renderHrRuns = () => $('hrRuns').replaceChildren(...HR_PICKS.map(([n, l]) => { const b = el('button', 'sm' + (hrRuns === n ? ' active' : ''), l); b.type = 'button'; b.onclick = () => { hrRuns = n; renderHrRuns(); }; return b; }));
+  renderHrRuns();
   $('bxDue').addEventListener('change', e => { s.bxDue = e.target.checked; save(); });
   $('bxHead').addEventListener('input', e => { s.bxHead = e.target.value; });
   $('ltLogo').onclick = () => { const b = document.querySelector('[data-vp="conn"]'); if (b) b.click(); setTimeout(() => $('skKey').focus(), 50); };
