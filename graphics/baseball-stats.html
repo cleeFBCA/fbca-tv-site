@@ -68,7 +68,8 @@
   .card h3 button { min-height: 36px; padding: 4px 12px; font-family: var(--font-body); letter-spacing: 0; text-transform: none; font-size: 14px; }
 
   /* The situation: inning, outs, count, runners, batter and pitcher */
-  .sit { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; }
+  .sit { display: grid; grid-template-columns: auto 1fr auto auto; gap: 14px; align-items: center; }
+  .sit .fin { min-height: 48px; padding: 6px 18px; white-space: nowrap; }
   .sit .inn { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1; text-align: center; min-width: 70px; }
   .sit .inn small { display: block; font-family: var(--font-body); font-size: 13px; color: var(--chalk-dim); font-weight: 600; }
   .sit .mid { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; min-width: 0; }
@@ -96,7 +97,7 @@
   .who span { color: var(--chalk-dim); }
   .who .row { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
   .runners { font-size: 14px; color: var(--chalk-dim); margin-top: 6px; }
-  @media (max-width: 700px) { .sit { grid-template-columns: auto 1fr; } .sit .who { grid-column: 1 / -1; } }
+  @media (max-width: 700px) { .sit { grid-template-columns: auto 1fr auto; } .sit .who { grid-column: 1 / -1; } }
 
   .grp { margin-top: 12px; }
   .grp h4 { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: .08em; }
@@ -127,6 +128,7 @@
   .log li .per { font-size: 12px; color: var(--chalk-dim); width: 36px; flex: 0 0 auto; }
   .log li .what { flex: 1; min-width: 0; }
   .log li .unsent { font-size: 12px; color: var(--wait); }
+  .log li .undo1 { flex: 0 0 auto; padding: 4px 12px; min-height: 0; font-size: 13px; }
 
   .toast { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--chalk); color: var(--pine); font-weight: 700; padding: 10px 16px; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.4); display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); z-index: 10; }
   .toast button { min-height: 34px; padding: 2px 12px; background: var(--pine); color: var(--chalk); border: 0; }
@@ -225,6 +227,7 @@
           <div class="cnt" id="sCnt"></div>
           <div class="outs" id="sOuts" aria-label="Outs"><i></i><i></i></div>
         </div>
+        <button class="act fin" id="btnFinal">Mark final</button>
         <div class="who" id="sWho"></div>
       </div>
       <div class="runners" id="sRun"></div>
@@ -237,9 +240,6 @@
       <div class="grp"><h4>Pitch</h4><div class="pad" id="padPitch"></div></div>
       <div class="grp"><h4>Ball in play</h4><div class="pad" id="padPlay"></div></div>
       <div class="grp" id="grpRun"><h4>Runners</h4><div class="pad" id="padRun"></div></div>
-      <div class="grp"><h4>Changes</h4><div class="pad" id="padMore">
-        <button class="act" id="btnFinal">Mark final</button>
-      </div></div>
     </div>
     <div class="card lm" id="lmCard">
       <h3 id="lmHead">Lineup</h3>
@@ -505,17 +505,34 @@
     const after = BB.current([ev]), before = BB.current(v.events);
     toast(describe(v, ev) + (after.inn !== before.inn || after.top !== before.top ? ' · End of the half' : ''), ev.id);
   };
-  const undo = id => {
-    for (let i = pending.length - 1; i >= 0; i--) {
-      const p = pending[i];
-      if (p.kind !== 'events' || (i === 0 && sending)) continue;
-      const j = p.body.events.findIndex(e => e.id === id);
-      if (j < 0) continue;
-      p.body.events.splice(j, 1);
-      if (!p.body.events.length) pending.splice(i, 1);
-      savePending(); render(); return;
+  // Takes plays back: one not sent yet just leaves the queue; the rest go to the stat keeper together.
+  const undo = idOrIds => {
+    const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds], toServer = [];
+    for (const id of ids) {
+      let dropped = false;
+      for (let i = pending.length - 1; i >= 0 && !dropped; i--) {
+        const p = pending[i];
+        if (p.kind !== 'events' || (i === 0 && sending)) continue;
+        const j = p.body.events.findIndex(e => e.id === id);
+        if (j < 0) continue;
+        p.body.events.splice(j, 1);
+        if (!p.body.events.length) pending.splice(i, 1);
+        dropped = true;
+      }
+      if (!dropped) toServer.push(id);
     }
-    enqueue('undo', { ids: [id] });
+    savePending();
+    if (toServer.length) enqueue('undo', { ids: toServer }); else render();
+  };
+  // Undo next to a play: that play and every play after it (each play carries the situation after it, so a play
+  // from the middle can't come out on its own without leaving the ones after it wrong)
+  const undoFrom = (v, e) => {
+    const i = v.events.findIndex(x => x.id === e.id); if (i < 0) return;
+    const later = v.events.slice(i);
+    if (later.length > 1 && !confirm('Take back this play and the ' + (later.length - 1) + (later.length === 2 ? ' play' : ' plays') + ' after it?\n\n'
+      + later.slice(0, 8).map(x => x.period + '  ' + describe(v, x)).join('\n') + (later.length > 8 ? '\n…' : '') + '\n\nThen record them again from there.')) return;
+    undo(later.map(x => x.id).reverse());
+    toast(later.length === 1 ? 'Took back: ' + describe(v, e) : 'Took back ' + later.length + ' plays');
   };
   let toastTimer = 0, toastId = null;
   const toast = (text, id) => {
@@ -758,6 +775,7 @@
       const li = el('li');
       li.append(el('span', 'per', e.period), el('span', 'what', describe(v, e)));
       if (e.unsent) li.append(el('span', 'unsent', 'not sent'));
+      const u = el('button', 'sm undo1', 'Undo'); u.type = 'button'; u.title = 'Take back this play' + (e === v.events[v.events.length - 1] ? '' : ' and the plays after it'); u.onclick = () => undoFrom(v, e); li.append(u);
       return li;
     }));
     if (!v.events.length) $('log').append(el('li', null, 'No plays yet. Set the lineups, then record the first pitch.'));
