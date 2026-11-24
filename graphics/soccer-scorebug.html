@@ -1688,7 +1688,7 @@
     homeLogo: '', awayLogo: '', // school logos (trimmed, transparent background) for the pregame card
     keyColor: '#FF00FF', keyMode: 'alpha', keyV: 2, // 'alpha' = fill + key outputs (the default), 'chroma' = one output on the key color
     stn: { on: false, corner: 'auto', opacity: 60, color: 'gold' }, // station bug; corner 'auto' = the top corner opposite the bug
-    period: '1ST', halfMin: 40, otMin: 10, dir: 'down', pos: 'tl', visible: true, swap: false,
+    period: '1ST', halfMin: 40, otMin: 10, dir: 'down', pos: 'tl', visible: true, swap: true, sideV: 2, // swap on = FBCA (home) on the right, the start of every game
     len: 40 * 60000, base: 0, running: false, startedAt: 0, added: 0,
     // What the scoreboard file (Scorebridge) drives when connected.
     sbUse: { clock: true, period: false, score: false },
@@ -1772,6 +1772,7 @@
   };
   const merge = raw => {
     const out = Object.assign(defaults(), raw);
+    if (raw.sideV !== 2) { out.swap = true; out.sideV = 2; } // FBCA starts on the right now: a game saved before that moves there once
     out.stn = Object.assign(defaults().stn, raw.stn);
     out.spotList = withPics(Array.isArray(out.spotList) ? out.spotList : []);
     delete out.lineupShow; // replaced by `panel`
@@ -4316,7 +4317,7 @@
     if (!confirm('Reset scores, cards, goals, stats and the shootout, and put the clock back to the start of the 1st half? Lineups, lower thirds and spotlights are kept.')) return;
     s.homeScore = 0; s.awayScore = 0; s.homeReds = 0; s.awayReds = 0; s.homeYellows = 0; s.awayYellows = 0;
     s.goals = []; s.stats = { home: blankStats(), away: blankStats() }; s.shoot = { on: false, home: [], away: [] };
-    s.drop.on = false; s.l3.on = false; s.panel = ''; s.swap = false;
+    s.drop.on = false; s.l3.on = false; s.panel = ''; s.swap = true; // FBCA back on the right
     s.running = false; setPeriod('1ST');
   };
   // --- School logos: kept per team name on this computer, so a school's logo comes back next time ---
