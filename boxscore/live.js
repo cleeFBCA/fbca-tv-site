@@ -544,7 +544,13 @@
     };
     const t9 = g.ball && g.ball.sit, ballPer = t9 ? t9.o + (t9.o === 1 ? ' out' : ' outs') + (t9.b || t9.s ? ' · ' + t9.b + '-' + t9.s : '') : '';
     const mid = el('div', 'mid'), clk = el('div', 'clk', '–'), per = el('div', 'per', BALL(g.sport) ? ballPer : PERIOD[g.meta.period] || g.meta.period || '');
-    mid.append(clk, per);
+    // Baseball: the bases, lit for each runner on, as on the scorebug (2nd at the top, 3rd left, 1st right)
+    if (t9) { const dmd = el('div', 'dmd'); dmd.setAttribute('role', 'img');
+      const on = t9.bases.map(Boolean), names = ['1st', '2nd', '3rd'].filter((_, i) => on[i]);
+      dmd.setAttribute('aria-label', names.length === 3 ? 'Bases loaded' : names.length ? 'Runner' + (names.length > 1 ? 's' : '') + ' on ' + names.join(' and ') : 'Bases empty');
+      [2, 3, 1].forEach(b => dmd.append(el('i', 'b' + b + (on[b - 1] ? ' on' : ''))));
+      mid.append(clk, dmd, per);
+    } else mid.append(clk, per);
     // Away on the left, home on the right, as on TV. FBCA is the stat keeper's home team, so it's on the right.
     // The score, with that team's timeouts left under it as dots (lit for each one left), as on the scorebug.
     const sc = side => {
@@ -1183,6 +1189,7 @@
     const done = g.status === 'final' ? 'Final' : g.status === 'half' ? 'Half' : '';
     if (clk) { const t = done || clockText(g); clk.textContent = t || '–'; clk.hidden = !t; }
     if (per) per.hidden = !!done;
+    const dmd = root.querySelector('.board .dmd'); if (dmd) dmd.hidden = g.status === 'final';
     // Timeouts go away when the scorebug stops sharing or the game ends, without waiting for the next play.
     const showTos = !!timeoutsLeft(g);
     root.querySelectorAll('.board .tos').forEach(d => { d.hidden = !showTos; });

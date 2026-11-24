@@ -57,6 +57,12 @@
 .ebx .board .clk { font: 800 26px/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .ebx .board .per { font: 800 13px var(--font-display); letter-spacing: .14em; color: var(--gold-on); text-transform: uppercase; text-align: center; }
 .ebx .board .per[hidden], .ebx .board .clk[hidden] { display: none; }
+/* Baseball: the bases, lit for runners on (as on the scorebug) */
+.ebx .board .dmd { position: relative; width: 46px; height: 34px; margin: 4px 0 2px; flex: none; }
+.ebx .board .dmd[hidden] { display: none; }
+.ebx .board .dmd i { position: absolute; width: 13px; height: 13px; transform: rotate(45deg); border: 2px solid rgba(255,255,255,.55); border-radius: 1px; transition: background .25s, border-color .25s, box-shadow .25s; }
+.ebx .board .dmd .b2 { left: 16.5px; top: 2px; } .ebx .board .dmd .b3 { left: 4.5px; top: 14px; } .ebx .board .dmd .b1 { left: 28.5px; top: 14px; }
+.ebx .board .dmd i.on { background: #fff; border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,.5); }
 /* Timeouts left, under the score: a dot for each of the game's timeouts, dark for each one left */
 .ebx .board .tos { display: flex; gap: 3px; }
 .ebx .board .tos[hidden] { display: none; }
@@ -133,6 +139,7 @@
   .ebx .board .tos { gap: 5px; }
   .ebx .board .tos i { width: 10px; height: 10px; }
   .ebx .board .per { font-size: 16px; }
+  .ebx .board .dmd { transform: scale(1.35); margin: 10px 0 8px; }
   .ebx .play { padding: 14px 18px; }
   .ebx .play .txt { font-size: 26px; }
   .ebx .grid2 { grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
@@ -320,6 +327,7 @@
   .ebx .slab, .ebx .board .sc, .ebx .cmp .bar2, .ebx .cmp .bar2 i { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .ebx .slab::before, .ebx .tag.on::before { animation: none; }
   .ebx .board .mid { background: #fff; color: #000; }
+  .ebx .board .dmd i { border-color: #888; } .ebx .board .dmd i.on { background: #000; border-color: #000; box-shadow: none; }
   .ebx .board .per, .ebx .play .txt b, .ebx td:first-child b { color: #6b5208; }
   .ebx .play, .ebx .play.flash { animation: none; }
   .ebx .play .ptag { background: none; color: #000; box-shadow: inset 0 0 0 1px #000; }
