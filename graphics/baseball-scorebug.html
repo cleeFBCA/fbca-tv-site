@@ -154,11 +154,11 @@
   .tc .lg { position: absolute; top: -34px; width: 240px; height: 240px; opacity: 0; transition: opacity .25s, transform .45s cubic-bezier(.3,1.3,.5,1); transform: scale(.7); }
   .tc .lg.L { left: 18px; } .tc .lg.R { right: 18px; }
   .tc .lg .ini { font-size: 90px; }
-  .tc .tx { position: absolute; top: 0; bottom: 0; width: 520px; display: flex; flex-direction: column; justify-content: center; line-height: 1; color: var(--f); transition: clip-path .5s cubic-bezier(.22,1,.36,1), opacity .3s; }
+  .tc .tx { position: absolute; top: 0; bottom: 0; width: 410px; display: flex; flex-direction: column; justify-content: center; line-height: 1; color: var(--f); transition: clip-path .5s cubic-bezier(.22,1,.36,1), opacity .3s; }
   .tc .tx.L { right: 1090px; align-items: flex-end; text-align: right; clip-path: inset(0 0 0 100%); }
   .tc .tx.R { left: 1090px; align-items: flex-start; clip-path: inset(0 100% 0 0); }
-  .tc .tx .s1 { font-size: 46px; font-weight: 700; } .tc .tx .s2 { font-size: 92px; font-weight: 800; white-space: nowrap; } .tc .tx .s3 { font-size: 46px; font-weight: 700; margin-top: 4px; }
-  .tc .tx.L .s2 { transform-origin: right center; } .tc .tx.R .s2 { transform-origin: left center; }
+  .tc .tx .s1 { font-size: 46px; font-weight: 700; white-space: nowrap; } .tc .tx .s2 { font-size: 92px; font-weight: 800; white-space: nowrap; } .tc .tx .s3 { font-size: 46px; font-weight: 700; margin-top: 4px; }
+  .tc .tx.L span { transform-origin: right center; } .tc .tx.R span { transform-origin: left center; } /* lines squeezed to fit stay against the middle */
   .tc .mid { position: absolute; left: 760px; top: 30px; width: 320px; height: 140px; background: linear-gradient(#1D1E22, #050606); border-radius: 12px; display: grid; place-items: center; transform: scale(0); transition: transform .35s cubic-bezier(.3,1.4,.5,1); }
   .tc .mid .logo { width: 230px; }
   .tc .ven { position: absolute; left: 50%; top: -48px; transform: translateX(-50%); height: 48px; padding: 0 26px; background: linear-gradient(#1D1E22, #050606); border-radius: 10px 10px 0 0; display: grid; place-items: center;
@@ -694,8 +694,10 @@
         const t = s.teams[side];
         paint($('tcBg' + L), t); paint($('tcTx' + L), t); crest($('tcLg' + L), t);
         const s2 = el('span', 's2', t.name || g.names[side] || '');
-        $('tcTx' + L).replaceChildren(el('span', 's1', t.school || ''), s2, el('span', 's3', t.rec || ''));
-        fit(s2, 500);
+        const s1 = el('span', 's1', t.school || '');
+        $('tcTx' + L).replaceChildren(s1, s2, el('span', 's3', t.rec || ''));
+        // Keep the school name and team name inside the gold dividers
+        fit(s1, 410); fit(s2, 410);
       }
       $('tcVen').textContent = g.venue || ''; $('tcVen').classList.toggle('has', !!g.venue);
     };
