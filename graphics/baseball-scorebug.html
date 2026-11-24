@@ -906,7 +906,7 @@
   const team = (school, name, abbr, bg, fg) => ({ school, name, abbr, rec: '', bg, fg, logo: '' });
   const manSit = () => ({ inn: 1, top: true, b: 0, s: 0, o: 0, bases: [false, false, false], score: { home: 0, away: 0 }, final: false, bat: '', pit: '', np: 0 });
   const defaults = () => ({
-    game: 'baseball', src: 'keeper', visible: true, boxOn: true, autoFlash: true, batShow: 'auto',
+    game: 'baseball', src: 'keeper', visible: true, boxOn: true, swapSides: true, // the score bug on the right by default autoFlash: true, batShow: 'auto',
     teams: { away: team('', '', '', '#1F3A93', '#FFFFFF'), home: team('Fort Bend Christian', 'Eagles', 'FBCA', FBCA.bg, FBCA.fg) },
     venue: '', when: '', mtTitle: '', mtSub: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70 },
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
