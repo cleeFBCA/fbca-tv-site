@@ -789,11 +789,26 @@
           <div data-pane="pitch">
             <label for="spMph">Pitch speed (MPH): type it, then Enter or Show</label><input id="spMph" inputmode="numeric" placeholder="86">
             <label>Pitch</label><div class="chips" id="spTypes"></div>
-            <p class="hint">Shows under the batter and pitcher. It goes away on the next pitch, or after 15 seconds.</p>
+            <label>Speeds come from</label>
+            <div class="row" style="margin-top:0"><button data-spsrc="hand">Typed in here</button><button data-spsrc="board">The scoreboard</button></div>
+            <div id="spBoard" hidden>
+              <div class="row"><button id="btnSb">Connect scoreboard</button></div>
+              <p class="hint" id="sbStatus">Pick the file Scorebridge writes. Each new pitch speed (and exit velo) on the scoreboard shows by itself.</p>
+              <div id="spField"><label for="sbPitchKey">Pitch speed field in the file</label><select id="sbPitchKey"></select></div>
+              <p class="hint" id="sbNow"></p>
+            </div>
+            <label for="speedSecs">Pitch speed and exit velo stay up for (seconds)</label><input id="speedSecs" type="number" min="1" max="60" inputmode="numeric" value="3">
+            <p class="hint">Shows under the batter and pitcher, then goes away on its own after that many seconds (or at the next pitch).</p>
           </div>
           <div data-pane="exit">
+            <label>Exit velo comes from</label>
+            <div class="row" style="margin-top:0"><button data-evsrc="hand">Typed in here</button><button data-evsrc="board">The scoreboard</button></div>
+            <div id="evBoard" hidden>
+              <p class="hint" id="evNote">Uses the scoreboard file connected on the Pitch speed tile.</p>
+              <label for="sbExitKey">Exit velo field in the file</label><select id="sbExitKey"></select>
+            </div>
             <label for="exMph">Exit velocity (MPH): type it, then Enter or Show</label><input id="exMph" inputmode="numeric" placeholder="94">
-            <p class="hint">Shows above the batter and pitcher, until the next play or 15 seconds.</p>
+            <p class="hint">Shows above the batter and pitcher, then goes away on its own (the time is set on the Pitch speed tile), or at the next play.</p>
           </div>
           <div data-pane="flash">
             <p class="hint" style="margin-top:0">Shows over the bases in the score bug for 4 seconds. With "Auto BB / K / HBP" on, walks, strikeouts and hit batters show by themselves as the stat keeper records them.</p>
@@ -1523,8 +1538,86 @@
     return g ? fmtCT(g.start, { weekday: 'long', month: 'short', day: 'numeric' }) + ' · ' + fmtCT(g.start, { hour: 'numeric', minute: '2-digit' }) : fmtCT(Date.now(), { weekday: 'long', month: 'short', day: 'numeric' }); };
   const PITCH_TYPES = () => s.game === 'softball' ? ['Fastball', 'Changeup', 'Drop', 'Rise', 'Curve', 'Screwball'] : ['Fastball', '4-Seam FB', 'Sinker', 'Cutter', 'Slider', 'Curveball', 'Changeup', 'Splitter'];
   let pitchType = '';
-  const showPitch = () => { const v = parseInt($('spMph').value, 10); if (!(v > 20 && v < 130)) { $('spMph').focus(); return; } s.pitch = { mph: v, type: pitchType, at: Date.now(), until: Date.now() + 15000 }; $('spMph').value = ''; save(); };
-  const showExit = () => { const v = parseInt($('exMph').value, 10); if (!(v > 10 && v < 140)) { $('exMph').focus(); return; } s.exit = { mph: v, at: Date.now(), until: Date.now() + 15000 }; $('exMph').value = ''; save(); };
+  // ---- Speeds from the scoreboard: Scorebridge's Local File output (a small JSON file it keeps rewriting), as on the
+  // basketball scorebug. The field names depend on the console, so the likely ones are picked and any can be chosen.
+  const SB_GUESS = { pitch: ['pitchspeed', 'pitchmph', 'pitchvelocity', 'pitchvelo', 'speed', 'mph', 'pitch', 'radar', 'radarspeed', 'velocity', 'lastpitch'],
+                     exit: ['exitvelocity', 'exitvelo', 'exitspeed', 'exitmph', 'ev', 'hitspeed', 'battedballspeed', 'launchspeed'] };
+  const norm = k => String(k).toLowerCase().replace(/[^a-z0-9]/g, '');
+  let sbHandle = null, sbWorker = null, sbKeys = [], sbVals = {}, sbLast = { pitch: null, exit: null }, sbReadAt = 0, sbErr = '';
+  const sbIdb = (mode, fn) => new Promise((ok, fail) => {
+    const open = indexedDB.open('eota-baseball-scorebridge', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('h');
+    open.onerror = () => fail(open.error);
+    open.onsuccess = () => { try { const tx = open.result.transaction('h', mode), req = fn(tx.objectStore('h')); tx.oncomplete = () => ok(req && req.result); tx.onerror = () => fail(tx.error); } catch (e) { fail(e); } };
+  });
+  const sbKeyFor = kind => { const chosen = s.sbKeys && s.sbKeys[kind]; if (chosen && sbKeys.includes(chosen)) return chosen;
+    for (const n of SB_GUESS[kind]) { const k = sbKeys.find(x => norm(x) === n); if (k) return k; } return ''; };
+  const sbProcess = text => {
+    let o; try { o = JSON.parse(text); } catch (e) { return; } // caught mid-write; the next read gets it
+    o = Array.isArray(o) ? o[0] : o; if (!o || typeof o !== 'object') return;
+    sbReadAt = Date.now(); sbErr = ''; sbKeys = Object.keys(o); sbVals = o;
+    for (const kind of ['pitch', 'exit']) {
+      if ((kind === 'pitch' ? s.spSrc : s.evSrc) !== 'board') { sbLast[kind] = null; continue; } // that one is typed in
+      const k = sbKeyFor(kind); if (!k) continue;
+      const raw = String(o[k] == null ? '' : o[k]).trim(), v = parseInt(raw, 10);
+      if (raw === sbLast[kind]) continue;
+      const first = sbLast[kind] === null; sbLast[kind] = raw;
+      if (first || !(v > 10 && v < 140)) continue; // the value already on the board when connecting, or blank, isn't a new pitch
+      const now = Date.now();
+      if (kind === 'pitch') s.pitch = { mph: v, type: pitchType, at: now, until: now + speedMs() };
+      else s.exit = { mph: v, at: now, until: now + speedMs() };
+      save();
+    }
+    renderSb();
+  };
+  const SB_WORKER = `let h = null, t = 0, last = null;
+    onmessage = e => { h = e.data; last = null; clearTimeout(t); if (h) loop(); };
+    async function loop() { let wait = 50;
+      try { const f = await h.getFile(), text = await f.text(); if (text !== last) { last = text; postMessage({ text }); } else postMessage({ same: 1 }); }
+      catch (err) { postMessage({ err: err.name || 'error' }); wait = 200; }
+      if (h) t = setTimeout(loop, wait); }`;
+  const sbStart = h => {
+    sbHandle = h; sbLast = { pitch: null, exit: null };
+    if (!sbWorker) { sbWorker = new Worker(URL.createObjectURL(new Blob([SB_WORKER], { type: 'text/javascript' })));
+      sbWorker.onmessage = e => { const d = e.data; if (d.text != null) sbProcess(d.text); else if (d.same) { sbReadAt = Date.now(); } else if (d.err) { sbErr = d.err; if (d.err === 'NotAllowedError') sbStop(); renderSb(); } }; }
+    sbWorker.postMessage(h); renderSb();
+  };
+  const sbStop = () => { sbHandle = null; if (sbWorker) sbWorker.postMessage(null); renderSb(); };
+  const renderSb = () => {
+    document.querySelectorAll('[data-spsrc]').forEach(b => b.className = b.dataset.spsrc === (s.spSrc || 'hand') ? 'active' : '');
+    $('spBoard').hidden = s.spSrc !== 'board' && s.evSrc !== 'board'; $('spField').hidden = s.spSrc !== 'board'; // the file connects here for either
+    document.querySelectorAll('[data-evsrc]').forEach(b => b.className = b.dataset.evsrc === (s.evSrc || 'hand') ? 'active' : '');
+    $('evBoard').hidden = s.evSrc !== 'board';
+    $('evNote').textContent = sbHandle ? 'Uses the scoreboard file connected on the Pitch speed tile (' + sbHandle.name + ').' : 'Connect the scoreboard file on the Pitch speed tile (the pitch speed itself can stay typed in).';
+    $('btnSb').textContent = sbHandle ? 'Change scoreboard file' : 'Connect scoreboard';
+    $('sbStatus').textContent = !window.showOpenFilePicker ? "This browser can't follow a file. Use Chrome or Edge."
+      : !sbHandle ? 'Pick the file Scorebridge writes. Each new pitch speed (and exit velo) on the scoreboard shows by itself.'
+      : sbErr === 'NotAllowedError' ? 'Chrome stopped allowing the file. Click Connect scoreboard.'
+      : sbErr ? "Can't read " + sbHandle.name + ' (' + sbErr + '). Is Scorebridge running?'
+      : Date.now() - sbReadAt < 3000 ? 'Reading ' + sbHandle.name + '.' : 'Waiting for ' + sbHandle.name + '…';
+    for (const [kind, id] of [['pitch', 'sbPitchKey'], ['exit', 'sbExitKey']]) {
+      const sel = $(id), cur = sbKeyFor(kind), sig = sbKeys.join('|') + '#' + cur;
+      if (sel.dataset.sig !== sig) { sel.dataset.sig = sig; sel.replaceChildren(new Option(sbKeys.length ? 'None' : 'No fields read yet', ''), ...sbKeys.map(k => new Option(k, k))); sel.value = cur; }
+    }
+    const show = kind => { const k = sbKeyFor(kind); return k ? k + ' = ' + (sbVals[k] === '' || sbVals[k] == null ? '(blank)' : sbVals[k]) : 'no field picked'; };
+    $('sbNow').textContent = sbKeys.length ? 'Now on the scoreboard: pitch speed ' + show('pitch') + (s.evSrc === 'board' ? ' · exit velo ' + show('exit') : '') + '. Fields in the file: ' + sbKeys.join(', ') + '.' : '';
+  };
+  document.querySelectorAll('[data-spsrc]').forEach(b => b.onclick = () => { s.spSrc = b.dataset.spsrc; save(); renderSb(); });
+  document.querySelectorAll('[data-evsrc]').forEach(b => b.onclick = () => { s.evSrc = b.dataset.evsrc; save(); renderSb(); });
+  $('btnSb').onclick = async () => {
+    if (!window.showOpenFilePicker) { renderSb(); return; }
+    try { const [h] = await showOpenFilePicker({ multiple: false }); sbIdb('readwrite', st => st.put(h, 'file')).catch(() => {}); sbStart(h); } catch (e) { /* closed */ }
+  };
+  for (const [kind, id] of [['pitch', 'sbPitchKey'], ['exit', 'sbExitKey']]) $(id).onchange = e => { s.sbKeys = { ...(s.sbKeys || {}), [kind]: e.target.value }; sbLast[kind] = null; save(); renderSb(); };
+  // After a reload: the file picked before, once Chrome allows it again (it may ask with a click on Connect)
+  sbIdb('readonly', st => st.get('file')).then(async h => { if (!h) return; try { if ((await h.queryPermission({ mode: 'read' })) === 'granted') sbStart(h); else { sbHandle = null; $('sbStatus').textContent = 'Click Connect scoreboard to read ' + h.name + ' again.'; } } catch (e) {} }).catch(() => {});
+  setInterval(() => { if (s.spSrc === 'board' || s.evSrc === 'board') renderSb(); }, 1000);
+  renderSb();
+  if (new URLSearchParams(location.search).has('sbtest')) window.__sb = { process: sbProcess }; // for testing the reader without a file
+  // How long the pitch speed and exit velo stay up (set on the Pitch speed tile; 3 seconds unless changed)
+  const speedMs = () => Math.max(1, Math.min(60, Number(s.speedSecs) || 3)) * 1000;
+  const showPitch = () => { const v = parseInt($('spMph').value, 10); if (!(v > 20 && v < 130)) { $('spMph').focus(); return; } s.pitch = { mph: v, type: pitchType, at: Date.now(), until: Date.now() + speedMs() }; $('spMph').value = ''; save(); };
+  const showExit = () => { const v = parseInt($('exMph').value, 10); if (!(v > 10 && v < 140)) { $('exMph').focus(); return; } s.exit = { mph: v, at: Date.now(), until: Date.now() + speedMs() }; $('exMph').value = ''; save(); };
   const flashNow = txt => { s.flash = { id: 'hand', txt, until: Date.now() + 4000 }; save(); };
 
   // Tiles: { id, name, kind, on, show, take }
@@ -1588,6 +1681,7 @@
   const HR_PICKS = [[0, 'From the stat keeper'], [1, 'Solo'], [2, '2-Run'], [3, '3-Run'], [4, 'Grand Slam']];
   const renderHrRuns = () => $('hrRuns').replaceChildren(...HR_PICKS.map(([n, l]) => { const b = el('button', 'sm' + (hrRuns === n ? ' active' : ''), l); b.type = 'button'; b.onclick = () => { hrRuns = n; renderHrRuns(); }; return b; }));
   renderHrRuns();
+  $('speedSecs').addEventListener('input', e => { const v = parseInt(e.target.value, 10); if (v >= 1 && v <= 60) { s.speedSecs = v; save(); } });
   $('bxDue').addEventListener('change', e => { s.bxDue = e.target.checked; save(); });
   $('bxHead').addEventListener('input', e => { s.bxHead = e.target.value; });
   $('ltLogo').onclick = () => { const b = document.querySelector('[data-vp="conn"]'); if (b) b.click(); setTimeout(() => $('skKey').focus(), 50); };
@@ -1845,6 +1939,7 @@
     $('alpha').checked = s.keyMode === 'alpha'; $('chromaBox').hidden = s.keyMode === 'alpha'; setField($('keyColor'), hex(s.keyColor, '#FF00FF').toLowerCase());
     $('stnOn').checked = s.stn.on; setField($('stnOp'), s.stn.op);
     setField($('mtSub'), s.mtSub || ''); setField($('mtTitle'), s.mtTitle || ''); $('mtTitle').placeholder = SPORT(); if (pick === 'match') { const sg = schedToday(); $('mtNow').textContent = 'Under it: ' + [tcWhen(), s.venue.trim() || (sg && sg.location) || ''].filter(Boolean).join(' · '); }
+    setField($('speedSecs'), String(s.speedSecs || 3));
     setField($('venue'), s.venue); setField($('when'), s.when || ''); $('when').placeholder = tcWhen(); if (pick === 'title') { const sg = schedToday(); $('tcNow').textContent = 'Under the card: ' + [tcWhen(), s.venue.trim() || (sg && sg.location) || ''].filter(Boolean).join(' · '); } setField($('l3Name'), s.l3.name); setField($('l3Title'), s.l3.title); $('l3Logo').value = s.l3.logo; $('bxDue').checked = s.bxDue;
     renderTeams();
     renderShell();
