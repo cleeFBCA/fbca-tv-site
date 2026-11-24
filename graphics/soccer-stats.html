@@ -796,9 +796,19 @@
     enqueue('meta', { meta: { names, saved, colors, rosters } });
     $('rosterNote').textContent = 'Saved. ' + rosters.home.length + ' and ' + rosters.away.length + ' players.'; $('rosterNote').className = 'hint';
     rosterBase.home = rosterBase.away = null;
-    const teams = SIDES.filter(side => rosters[side].length).map(side => ({ name: saved[side] || names[side], team: names[side], color: colors[side], roster: rosters[side] }));
+    // Every team with a name typed in goes into Saved teams, with or without players yet (its name and color, to pick
+    // next time). The note says exactly which ones Saved teams now has, from the list the stat keeper sends back.
+    const teams = SIDES.filter(side => rosters[side].length || $('name' + Cap(side)).value.trim())
+      .map(side => ({ name: saved[side] || names[side], team: names[side], color: colors[side], roster: rosters[side] }));
     if (teams.length && key) libFetch('POST', { action: 'save', teams })
-      .then(() => { $('rosterNote').textContent += ' Kept in Saved teams.'; renderLibrary(); })
+      .then(() => {
+        const has = n => (library || []).some(t => t.name.toLowerCase() === n.toLowerCase());
+        const kept = teams.filter(t => has(t.name)).map(t => t.name), missed = teams.filter(t => !has(t.name)).map(t => t.name);
+        $('rosterNote').textContent += (kept.length ? ' Kept in Saved teams: ' + kept.join(' and ') + '.' : '')
+          + (missed.length ? ' Not added to Saved teams: ' + missed.join(' and ') + '. Add at least one player and save again.' : '');
+        if (missed.length) $('rosterNote').className = 'hint warn';
+        renderLibrary();
+      })
       .catch(() => { $('rosterNote').textContent += " (Couldn't add them to Saved teams right now.)"; });
   };
   $('btnReset').onclick = async () => {

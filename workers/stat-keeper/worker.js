@@ -236,7 +236,7 @@ export class Game extends DurableObject {
       if (body.action === 'save') {
         for (const t of (Array.isArray(body.teams) ? body.teams : []).slice(0, 4)) {
           const name = clean(t && t.name, 60), team = clean(t && t.team, 60), roster = cleanRoster(t && t.roster);
-          if (!name || !roster.length) continue;
+          if (!name) continue; // a team with no players yet is kept too (its name and color); the roster can come later
           lib[keyOf(name)] = { name, roster, savedAt: Date.now(), ...(team && team !== name ? { team } : {}), ...(colorOk(t.color) ? { color: t.color.toUpperCase() } : {}) };
         }
         // Over the limit: forget the teams saved longest ago.
