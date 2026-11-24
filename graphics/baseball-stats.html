@@ -80,6 +80,17 @@
   .outs { display: flex; gap: 6px; align-items: center; }
   .outs i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #8A8F98; }
   .outs i.on { background: var(--tally); border-color: var(--tally); }
+  /* The situation can be fixed by tapping it */
+  #sInn, #sCnt, #score { cursor: pointer; border-radius: 8px; } #sOuts i { cursor: pointer; }
+  #sInn:hover, #sCnt:hover, #score:hover { background: rgba(255,255,255,.06); box-shadow: 0 0 0 6px rgba(255,255,255,.06); }
+  #sOuts i { width: 22px; height: 22px; border-radius: 50%; } #sOuts i:hover { border-color: #fff; }
+  .dia rect:hover { stroke: #fff; }
+  .fixrow { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+  .fixrow label { margin: 0; min-width: 70px; }
+  .fixseg { display: flex; gap: 6px; align-items: center; }
+  .fixseg button { min-width: 54px; min-height: 48px; font-size: 18px; font-weight: 800; }
+  .fixseg button.on { background: linear-gradient(color-mix(in srgb, var(--cue) 88%, #fff), var(--cue)); color: #fff; border-color: var(--cue); }
+  .fixseg .fixnum { min-width: 48px; text-align: center; font-size: 26px; }
   .who { display: grid; gap: 4px; font-size: 15px; min-width: 0; }
   .who b { font-size: 17px; }
   .who span { color: var(--chalk-dim); }
@@ -205,6 +216,7 @@
 
   <section data-pane="plays">
     <p class="hint warn" id="playsWarn" hidden></p>
+    <p class="hint" style="margin:0 0 6px">Tap the inning, the count, the outs, the bases or the score to fix them.</p>
     <div class="card" id="sitCard">
       <div class="sit">
         <div class="inn" id="sInn"></div>
@@ -226,7 +238,6 @@
       <div class="grp"><h4>Ball in play</h4><div class="pad" id="padPlay"></div></div>
       <div class="grp" id="grpRun"><h4>Runners</h4><div class="pad" id="padRun"></div></div>
       <div class="grp"><h4>Changes</h4><div class="pad" id="padMore">
-        <button class="act" id="btnFix">Fix the situation</button>
         <button class="act" id="btnFinal">Mark final</button>
       </div></div>
     </div>
@@ -599,21 +610,56 @@
   };
 
   // ---- Changes ----
-  $('btnFix').onclick = () => {
+  // Fixing the situation by tapping it: the inning (and half), the count, the outs, the bases, or the score in the header.
+  // Each fix is a play (Undo takes it back) carrying the corrected situation.
+  const fixSit = (what, change) => {
     const v = view(); if (!v) return;
-    const sit = BB.current(v.events);
-    const ans = prompt('Fix the situation. Type: inning, T or B, outs, balls, strikes, visitors\' runs, home runs, runners (e.g. 13 for 1st and 3rd, 0 for none).\n\nNow: '
-      + [sit.inn, sit.top ? 'T' : 'B', sit.o, sit.b, sit.s, sit.score.away, sit.score.home, sit.bases.map((r, i) => r ? i + 1 : '').join('') || '0'].join(' '));
-    if (!ans) return;
-    const f = ans.trim().split(/[\s,]+/);
-    if (f.length < 7) { toast('Type all seven numbers (runners can be left off).'); return; }
-    const n = i => Math.max(0, parseInt(f[i], 10) || 0);
-    const next = { ...sit, inn: Math.max(1, n(0)), top: !/^b/i.test(f[1]), o: Math.min(2, n(2)), b: Math.min(3, n(3)), s: Math.min(2, n(4)), score: { away: n(5), home: n(6) } };
-    const on = String(f[7] || '');
-    const bat = next.top ? 'away' : 'home', pit = BB.pitcherOf(v.meta, next);
-    next.bases = [0, 1, 2].map(i => on.includes(String(i + 1)) ? (sit.bases[i] || { id: 'team', pit, ue: false }) : null);
-    if (bat !== BB.batting(sit)) next.bases = next.bases.map(r => r && { id: 'team', pit, ue: false });
+    const sit = BB.current(v.events), next = JSON.parse(JSON.stringify(sit));
+    change(next, sit, v);
     record({ k: 'fix', sit: next });
+  };
+  const runner = (v, sit) => ({ id: 'team', pit: BB.pitcherOf(v.meta, sit), ue: false });
+  const segRow = (label, values, cur, pick) => {
+    const row = el('div', 'fixrow'), seg = el('div', 'fixseg');
+    values.forEach(([val, text]) => { const b = el('button', val === cur ? 'on' : null, text); b.type = 'button'; b.onclick = () => { pick(val); seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; seg.append(b); });
+    row.append(el('label', null, label), seg); return row;
+  };
+  const fixDialog = (title, body, ok) => {
+    $('subTitle').textContent = title; $('subOk').textContent = 'Fix it';
+    $('subBody').replaceChildren(...body);
+    $('subOk').onclick = () => { $('subDlg').close(); ok(); };
+    $('subCancel').onclick = () => $('subDlg').close();
+    $('subDlg').showModal();
+  };
+  // The outs: tap a circle to set that many (tap the last lit one to take it back)
+  [...$('sOuts').children].forEach((dot, i) => { dot.setAttribute('role', 'button'); dot.title = 'Tap to fix the outs'; dot.onclick = () => fixSit('outs', (n, sit) => { n.o = sit.o === i + 1 ? i : i + 1; }); });
+  // The bases: tap one to put a runner on it or take him off
+  ['b1', 'b2', 'b3'].forEach((id, i) => { const r = $(id); r.style.cursor = 'pointer'; r.onclick = () => fixSit('base', (n, sit, v) => { n.bases[i] = sit.bases[i] ? null : runner(v, sit); }); });
+  // The count
+  $('sCnt').title = 'Tap to fix the count';
+  $('sCnt').onclick = () => {
+    const v = view(); if (!v) return; const sit = BB.current(v.events); let b = sit.b, st = sit.s;
+    fixDialog('Fix the count', [segRow('Balls', [[0, '0'], [1, '1'], [2, '2'], [3, '3']], b, x => b = x), segRow('Strikes', [[0, '0'], [1, '1'], [2, '2']], st, x => st = x)],
+      () => fixSit('count', n => { n.b = b; n.s = st; }));
+  };
+  // The inning and the half
+  $('sInn').title = 'Tap to fix the inning';
+  $('sInn').onclick = () => {
+    const v = view(); if (!v) return; const sit = BB.current(v.events); let inn = sit.inn, top = sit.top;
+    const num = el('b', 'fixnum', String(inn)), minus = el('button', null, '−'), plus = el('button', null, '+');
+    minus.type = plus.type = 'button'; minus.onclick = () => { inn = Math.max(1, inn - 1); num.textContent = inn; }; plus.onclick = () => { inn = Math.min(20, inn + 1); num.textContent = inn; };
+    const r1 = el('div', 'fixrow'), st1 = el('div', 'fixseg'); st1.append(minus, num, plus); r1.append(el('label', null, 'Inning'), st1);
+    fixDialog('Fix the inning', [r1, segRow('Half', [[true, 'Top ▲'], [false, 'Bottom ▼']], top, x => top = x), el('p', 'hint', 'Moving to another half clears the bases, the outs and the count.')],
+      () => fixSit('inning', (n, s0) => { n.inn = inn; n.top = top; if (top !== s0.top || inn !== s0.inn) { n.o = 0; n.b = 0; n.s = 0; n.bases = [null, null, null]; n.bat = ''; } }));
+  };
+  // The score (in the header)
+  $('score').title = 'Tap to fix the score';
+  $('score').onclick = () => {
+    const v = view(); if (!v) return; const sit = BB.current(v.events);
+    const box = side => { const i = el('input'); i.type = 'number'; i.min = 0; i.max = 99; i.inputMode = 'numeric'; i.value = sit.score[side]; return i; };
+    const a = box('away'), h = box('home');
+    fixDialog('Fix the score', [el('label', null, v.meta.names.away), a, el('label', null, v.meta.names.home), h, el('p', 'hint', 'Only the score changes: runs already credited to players stay as they are.')],
+      () => fixSit('score', n => { n.score = { away: Math.max(0, parseInt(a.value, 10) || 0), home: Math.max(0, parseInt(h.value, 10) || 0) }; }));
   };
   // ---- Final: pick the pitching decisions, then the game goes into the season stats ----
   const decPitchers = (v, st, side) => {
