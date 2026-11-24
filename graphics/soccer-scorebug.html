@@ -1417,6 +1417,7 @@
             <div class="lineup-cols sides">
               <div class="xi-col" data-xcol="home">
                 <h3 id="xiHomeTitle">FBCA</h3>
+                <p class="warn" data-xwarn="home"></p>
                 <label for="xiHomeForm">Formation</label><select id="xiHomeForm" data-xi="home" data-k="formation"></select>
                 <label for="xiHomeCoach">Head coach</label><input id="xiHomeCoach" data-xi="home" data-k="coach" maxlength="30">
                 <div class="xi-pick" data-xside="home"></div>
@@ -1434,6 +1435,7 @@
               </div>
               <div class="xi-col" data-xcol="away">
                 <h3 id="xiAwayTitle">AWAY</h3>
+                <p class="warn" data-xwarn="away"></p>
                 <label for="xiAwayForm">Formation</label><select id="xiAwayForm" data-xi="away" data-k="formation"></select>
                 <label for="xiAwayCoach">Head coach</label><input id="xiAwayCoach" data-xi="away" data-k="coach" maxlength="30">
                 <div class="xi-pick" data-xside="away"></div>
@@ -1562,6 +1564,7 @@
       <label>Pick nominees: tap up to 4 players (tap again to take one off)</label>
       <div class="fv-pick" id="fvPick"></div>
       <p class="hint" id="fvPickNote" style="margin-top:0"></p>
+      <p class="warn" id="fvMismatch"></p>
       <label>Nominees (2–4): team, number, name, position, and a headshot for the results (optional). Picking above fills these in.</label>
       <div class="fv-noms" id="fvNoms"></div>
       <datalist id="fvPlayers"></datalist>
@@ -2585,6 +2588,7 @@
   let fvRenderHook = null; // draws the Fan vote tab (set up below)
   let photoHook = null; // draws the Player photos panels (set up below)
   let logoHook = null; // draws the School logos rows (set up below)
+  let mismatchHook = null; // warns when a lineup and the stat keeper's roster are different squads (set up below)
   let rosterHook = null; // fills the player menus (set up below)
   let shareHook = null; // the clock-sharing status (set up below)
   // Saved photos: redraw once they're read back, then drop any no saved spotlight uses any more.
@@ -2762,6 +2766,7 @@
     if (fvRenderHook) fvRenderHook();
     if (logoHook) logoHook();
     if (rosterHook) rosterHook();
+    if (mismatchHook) mismatchHook();
     if (shareHook) shareHook();
     if (photoHook) photoHook();
     $('cHome').textContent = s.home; $('cAway').textContent = s.away;
@@ -3543,6 +3548,27 @@
     return out.sort((a, b) => jerseyOrder(a, b));
   };
   const playerLabel = p => (p.num ? '#' + p.num + ' ' : '') + p.name;
+  // A lineup left over from another squad (the girls' lineup with the boys' game on the stat keeper) mixes both into
+  // every player menu and the fan vote. Warn when fewer than half of a team's lineup players are on the stat keeper's
+  // roster for that team. The page can't tell which one is right, so it only says so.
+  const lineupMismatch = side => {
+    const g = skGame || rosterGame, keeper = (g && g.meta && g.meta.rosters && g.meta.rosters[side]) || [];
+    const cfg = s.xi[side] || {}, lineup = [...parseXI(cfg.raw || ''), ...parseXI(cfg.subs || '')].filter(p => p.name);
+    if (!keeper.length || !lineup.length) return '';
+    const norm = n => String(n).toLowerCase().replace(/[^a-z]/g, ''), last = n => norm(String(n).trim().split(/\s+/).pop());
+    const names = new Set(keeper.map(p => norm(p.name))), lasts = new Set(keeper.map(p => last(p.name)));
+    const onIt = lineup.filter(p => names.has(norm(p.name)) || lasts.has(last(p.name))).length;
+    if (onIt * 2 >= lineup.length) return '';
+    const as = (g.meta.saved && g.meta.saved[side]) || (g.meta.names && g.meta.names[side]) || teamName(side);
+    return `${teamName(side)}'s lineup doesn't match the stat keeper's roster (${as}): only ${onIt} of its ${lineup.length} players are on it. `
+      + 'Clear the lineup and refresh rosters, or load the right team on the stat keeper.';
+  };
+  const renderMismatch = () => {
+    const msg = { home: lineupMismatch('home'), away: lineupMismatch('away') };
+    document.querySelectorAll('[data-xwarn]').forEach(p => p.textContent = msg[p.dataset.xwarn]);
+    $('fvMismatch').textContent = [msg.home, msg.away].filter(Boolean).join(' ');
+  };
+  mismatchHook = renderMismatch;
   // A player's game so far from the stat keeper, as a lower-third line ("2 GOALS · 1 ASSIST", "5 SAVES").
   const playerLine = (side, p) => {
     const g = skGame || rosterGame; if (!g || !p.id) return '';
