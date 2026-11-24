@@ -355,7 +355,20 @@
     return players;
   };
 
-  const api = { SIDES, other, RESULTS, RUNS, PITCHES, POSITIONS, BAT_KEYS, PIT_KEYS, newSit, batting, fielding, period, current,
+  // The lineup monitor (stat keeper and scorebug control): the batting team's order with who's up and on deck, and the
+  // pitcher now. stats: compute(meta, events). Rows: { slot, pos, id, num, name, line, up, deck }.
+  const monitor = (meta, stats) => {
+    const sit = stats.sit, bat = batting(sit), fld = fielding(sit), roster = side => (meta.rosters && meta.rosters[side]) || [];
+    const find = (side, id) => roster(side).find(p => p.id === id) || null;
+    const up = batterOf(meta, sit), deck = onDeck(meta, sit);
+    const rows = orderOf(meta, bat).map((o, i) => { const p = find(bat, o.id) || {};
+      return { slot: i + 1, pos: o.pos || '', id: o.id, num: p.num || '', name: p.name || '?', line: todayLine(stats.bat[bat][o.id]), up: o.id === up, deck: o.id === deck && o.id !== up }; });
+    const pid = pitcherOf(meta, sit), pp = find(fld, pid), q = stats.pit[fld][pid];
+    return { bat, fld, inn: sit.inn, top: sit.top, rows, sub: up && !rows.some(r => r.up) ? find(bat, up) : null,
+             pit: pp ? { id: pid, num: pp.num || '', name: pp.name, np: sit.np[pid] || 0, line: q ? ip(q.outs) + ' IP, ' + q.H + ' H, ' + q.R + ' R, ' + q.SO + ' K' : '' } : null };
+  };
+
+  const api = { monitor, SIDES, other, RESULTS, RUNS, PITCHES, POSITIONS, BAT_KEYS, PIT_KEYS, newSit, batting, fielding, period, current,
     orderOf, batterOf, onDeck, pitcherOf, defaultMoves, runMoves, defaultRbi, apply, compute, dataOf, todayLine, pitchLine,
     ip, avg, obp, slg, era, baa, whip, zero, nameKey, gamePlayers, seasonTotals, seasonFor, parseGameChanger, parseCsv, ipToOuts };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.EotaBaseball = api;

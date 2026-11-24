@@ -531,6 +531,27 @@
   body.ctl .cols .panel { overflow: auto; max-height: calc(100vh - 90px); }
 
   /* Game: inning, count, outs, runners, score, batter and pitcher */
+  /* Lineup monitor: the batting team's order at a glance, the batter up boxed in gold; a changed spot flashes */
+  body.ctl .lm h2 { display: flex; align-items: center; gap: 8px; }
+  body.ctl .lm h2 .chip { display: inline-block; vertical-align: -1px; margin-right: 6px; width: 12px; height: 12px; border-radius: 3px; }
+  body.ctl .lm .r { display: grid; grid-template-columns: 22px 34px 1fr auto; align-items: center; gap: 6px; padding: 5px 8px; margin: 2px 0; border: 2px solid transparent; border-radius: 6px; font-size: 14px; }
+  body.ctl .lm .r .n { font: 800 15px var(--font-display); color: var(--chalk-dim); text-align: right; }
+  body.ctl .lm .r .p { font: 700 12px var(--font-body); color: var(--chalk-dim); }
+  body.ctl .lm .r b { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+  body.ctl .lm .r .l { font-size: 12px; color: var(--chalk-dim); white-space: nowrap; }
+  body.ctl .lm .r.up { border-color: var(--gold); background: rgba(234,175,15,.14); }
+  body.ctl .lm .r.up .n, body.ctl .lm .r.up b { color: var(--gold-hi); }
+  body.ctl .lm .r.up .l::before { content: 'AT BAT'; margin-right: 6px; font: 800 11px var(--font-body); letter-spacing: .08em; color: var(--gold); }
+  body.ctl .lm .r.deck .l::before { content: 'ON DECK'; margin-right: 6px; font: 700 10px var(--font-body); letter-spacing: .08em; color: var(--chalk-dim); }
+  body.ctl .lm .r.chg { animation: lmChg 4s ease-out; }
+  @keyframes lmChg { 0%, 60% { background: rgba(255,178,30,.35); border-color: #FFB21E; } }
+  body.ctl .lm .lmp { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; margin-top: 8px; padding: 8px; border-top: 1px solid var(--edge-soft); font-size: 14px; }
+  body.ctl .lm .lmp .k { display: flex; align-items: center; gap: 6px; font: 800 12px var(--font-body); letter-spacing: .1em; color: var(--chalk-dim); }
+  body.ctl .lm .lmp .chip { width: 12px; height: 12px; border-radius: 3px; }
+  body.ctl .lm .lmp b { color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.ctl .lm .lmp small { display: block; font-size: 12px; color: var(--chalk-dim); font-weight: 400; }
+  body.ctl .lm .lmp .np { font: 800 20px var(--font-display); text-align: right; } body.ctl .lm .lmp .np small { font: 600 11px var(--font-body); }
+  body.ctl .lm .lmp.chg { animation: lmChg 4s ease-out; border-radius: 6px; }
   body.ctl .gm { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
   body.ctl .gm .inn { font: 800 40px/1 var(--font-display); text-align: center; }
   body.ctl .gm .inn small, body.ctl .gm .cnt small { display: block; font: 700 11px var(--font-body); letter-spacing: .08em; color: var(--chalk-dim); text-transform: uppercase; }
@@ -682,6 +703,11 @@
         <div class="who" id="gWho"></div>
         <div class="fin" id="gFin" hidden>FINAL</div>
         <p class="hint warn" id="gWarn" hidden></p>
+      </div>
+      <div class="panel lm" id="lmPanel" hidden>
+        <h2><span id="lmHead">Lineup</span> <small id="lmHalf"></small></h2>
+        <div id="lmList"></div>
+        <div class="lmp" id="lmPit"></div>
       </div>
       <div class="panel hand" id="handPanel" hidden>
         <h2>By hand <small>the stat keeper isn't running the bug</small></h2>
@@ -1592,6 +1618,38 @@
       if ($('spTypes').dataset.sig !== types.join() + pitchType) { $('spTypes').dataset.sig = types.join() + pitchType; $('spTypes').replaceChildren(...['', ...types].map(t => { const b = el('button', 'sm' + (t === pitchType ? ' active' : ''), t || 'No pitch type'); b.onclick = () => { pitchType = t; renderShell(); }; return b; })); }
     }
   };
+  // ---- Lineup monitor: the batting team's order, the batter up boxed in gold, and the pitcher now ----
+  let lmPrev = null, lmSig = '';
+  const lmChg = {}; // when each spot (and 'P', the pitcher) last changed, so its flash survives redraws
+  const flash = (node, key) => { const t = lmChg[key], age = Date.now() - (t || 0); if (t && age < 4000) { node.classList.add('chg'); node.style.animationDelay = -age + 'ms'; } };
+  const renderMonitor = () => {
+    const on = s.src === 'keeper' && !!kg && !!stats; $('lmPanel').hidden = !on; if (!on) return;
+    const M = BB.monitor(kg.meta, stats), t = s.teams[M.bat], ft = s.teams[M.fld], name = side => s.teams[side].abbr || s.teams[side].name || kg.meta.names[side];
+    // A spot whose player changed (a sub, or the order was edited) flashes; so does a new pitcher
+    const now = Date.now();
+    if (lmPrev && lmPrev.bat === M.bat) M.rows.forEach(r => { if (lmPrev.ids[r.slot - 1] !== r.id) lmChg[r.slot] = now; });
+    if (lmPrev && lmPrev.fld === M.fld && M.pit && lmPrev.pit !== M.pit.id) lmChg.P = now;
+    if (lmPrev && lmPrev.bat !== M.bat) for (const k in lmChg) delete lmChg[k];
+    lmPrev = { bat: M.bat, fld: M.fld, ids: M.rows.map(r => r.id), pit: M.pit && M.pit.id };
+    const sig = JSON.stringify([M, t.bg, ft.bg, name(M.bat), lmChg]);
+    if (sig === lmSig) return; lmSig = sig;
+    const chip = el('i', 'chip'); chip.style.background = hex(t.bg, '#333');
+    $('lmHead').replaceChildren(chip, name(M.bat) + ' batting');
+    $('lmHalf').textContent = (M.top ? 'Top ' : 'Bottom ') + ordinal(M.inn);
+    $('lmList').replaceChildren(...(M.rows.length ? M.rows.map(r => {
+      const d = el('div', 'r' + (r.up ? ' up' : '') + (r.deck ? ' deck' : ''));
+      d.append(el('span', 'n', String(r.slot)), el('span', 'p', r.pos), el('b', null, (r.num ? '#' + r.num + ' ' : '') + r.name), el('span', 'l', r.line));
+      flash(d, r.slot); return d;
+    }) : [el('p', 'hint warn', 'No batting order for ' + name(M.bat) + ' yet: the stat keeper sets it on its Lineups tab.')]));
+    if (M.sub) { const d = el('div', 'r up'); d.append(el('span', 'n', '–'), el('span', 'p', 'PH'), el('b', null, (M.sub.num ? '#' + M.sub.num + ' ' : '') + M.sub.name), el('span', 'l', '')); $('lmList').append(d); }
+    const pc = el('i', 'chip'); pc.style.background = hex(ft.bg, '#333');
+    const pw = el('div'); pw.append(el('b', null, M.pit ? (M.pit.num ? '#' + M.pit.num + ' ' : '') + M.pit.name : 'No pitcher set'), el('small', null, M.pit ? M.pit.line : ''));
+    const np = el('div', 'np'); if (M.pit) np.append(String(M.pit.np), el('small', null, M.pit.np === 1 ? ' pitch' : ' pitches'));
+    const k = el('span', 'k'); k.append(pc, ' P');
+    const lp = $('lmPit'); lp.className = 'lmp'; lp.style.animationDelay = ''; lp.replaceChildren(k, pw, np); flash(lp, 'P');
+  };
+  // Redraw once a flash has run its course
+  setInterval(() => { if (Object.values(lmChg).some(t => Date.now() - t < 4600)) { lmSig = ''; renderMonitor(); } }, 1000);
   const renderCtl = () => {
     $('ctlTitle').textContent = SPORT() + ' scorebug';
     document.title = 'EOTA ' + SPORT() + ' Scorebug';
@@ -1609,6 +1667,7 @@
       $('gWho').replaceChildren(row('AB', (L.bat.name || '') + (L.bat.stat ? '  ' + L.bat.stat : '')), row('P', L.pit.name ? L.pit.name + '  P: ' + L.pit.np : ''));
       $('gFin').hidden = !L.final;
     }
+    renderMonitor();
     $('gmSrc').textContent = s.src === 'hand' ? 'by hand' : kg ? 'from the stat keeper' : 'waiting for the stat keeper';
     $('gWarn').hidden = !(s.src === 'keeper' && kg && stats && !BB.orderOf(kg.meta, 'home').length && !BB.orderOf(kg.meta, 'away').length);
     $('gWarn').textContent = 'No batting orders yet: the stat keeper sets them on its Lineups tab. Until then the bug has no batter.';

@@ -149,6 +149,26 @@
   dialog.dec h3 { margin: 0 0 6px; }
   dialog.dec label { display: block; margin: 12px 0 4px; color: var(--chalk-dim); font-size: 14px; }
   dialog.dec .set-row { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  /* Lineup monitor: the batting team's order at a glance, the batter up boxed in gold; a changed spot flashes */
+  .lm h3 { display: flex; align-items: center; gap: 8px; }
+  .lm h3 small { margin-left: auto; color: var(--chalk-dim); font-weight: 600; }
+  .lm .chip { width: 14px; height: 14px; border-radius: 3px; flex: none; display: inline-block; }
+  .lm .r { display: grid; grid-template-columns: 26px 40px 1fr auto; align-items: center; gap: 8px; padding: 7px 10px; margin: 3px 0; border: 2px solid transparent; border-radius: 8px; font-size: 16px; }
+  .lm .r .n { font-weight: 800; color: var(--chalk-dim); text-align: right; }
+  .lm .r .p { font-size: 13px; font-weight: 700; color: var(--chalk-dim); }
+  .lm .r b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lm .r .l { font-size: 13px; color: var(--chalk-dim); white-space: nowrap; }
+  .lm .r.up { border-color: #EAAF0F; background: rgba(234,175,15,.14); }
+  .lm .r.up .n, .lm .r.up b { color: var(--gold-hi); }
+  .lm .r.up .l::before { content: 'AT BAT'; margin-right: 8px; font-size: 12px; font-weight: 800; letter-spacing: .08em; color: #EAAF0F; }
+  .lm .r.deck .l::before { content: 'ON DECK'; margin-right: 8px; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--chalk-dim); }
+  .lm .r.chg, .lm .lmp.chg { animation: lmChg 4s ease-out; }
+  @keyframes lmChg { 0%, 60% { background: rgba(255,178,30,.35); border-color: var(--wait); } }
+  .lm .lmp { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin-top: 10px; padding: 10px; border-top: 1px solid var(--line); border-radius: 8px; font-size: 16px; }
+  .lm .lmp .k { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; letter-spacing: .1em; color: var(--chalk-dim); }
+  .lm .lmp b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lm .lmp small { display: block; font-size: 13px; color: var(--chalk-dim); }
+  .lm .lmp .np { font-size: 22px; font-weight: 800; text-align: right; } .lm .lmp .np small { display: inline; }
   .final-on { background: linear-gradient(color-mix(in srgb, var(--ok) 85%, #fff), var(--ok)) !important; color: #03170A !important; border-color: var(--ok) !important; }
 </style>
 </head>
@@ -197,6 +217,12 @@
         <button class="act" id="btnFix">Fix the situation</button>
         <button class="act" id="btnFinal">Mark final</button>
       </div></div>
+    </div>
+
+    <div class="card lm" id="lmCard" style="margin-top:14px">
+      <h3 id="lmHead">Lineup</h3>
+      <div id="lmList"></div>
+      <div class="lmp" id="lmPit"></div>
     </div>
 
     <div class="card log" style="margin-top:14px">
@@ -684,6 +710,7 @@
       pr('Due', [1, 2].map(n => BB.onDeck(v.meta, sit, n)).filter(Boolean).map(id => lastName((player(v, bat, id) || {}).name)).join(', ') || '–'));
     $('sRun').textContent = sit.bases.some(Boolean) ? 'Runners: ' + sit.bases.map((r, i) => r ? ['1st', '2nd', '3rd'][i] + ' ' + who(v, bat, r.id) : '').filter(Boolean).join(' · ') : 'Bases empty';
     $('grpRun').hidden = !sit.bases.some(Boolean);
+    renderMonitor(v, stats);
     renderAdj(v, sit);
     $('pads').style.opacity = adj ? .45 : 1;
     $('pads').inert = !!adj;
@@ -698,6 +725,30 @@
     }));
     if (!v.events.length) $('log').append(el('li', null, 'No plays yet. Set the lineups, then record the first pitch.'));
   };
+
+  // ---- Lineup monitor (as on the scorebug control page): the order, the batter up boxed in gold, the pitcher now ----
+  let lmPrev = null; const lmChg = {};
+  const flash = (node, key) => { const t = lmChg[key], age = Date.now() - (t || 0); if (t && age < 4000) { node.classList.add('chg'); node.style.animationDelay = -age + 'ms'; } };
+  const renderMonitor = (v, stats) => {
+    const M = BB.monitor(v.meta, stats), now = Date.now(), nm = side => v.meta.names[side];
+    if (lmPrev && lmPrev.bat === M.bat) M.rows.forEach(r => { if (lmPrev.ids[r.slot - 1] !== r.id) lmChg[r.slot] = now; });
+    if (lmPrev && lmPrev.fld === M.fld && M.pit && lmPrev.pit !== M.pit.id) lmChg.P = now;
+    if (lmPrev && lmPrev.bat !== M.bat) for (const k in lmChg) delete lmChg[k];
+    lmPrev = { bat: M.bat, fld: M.fld, ids: M.rows.map(r => r.id), pit: M.pit && M.pit.id };
+    const chip = side => { const c = el('i', 'chip'); c.style.background = colorOf(v, side); return c; };
+    $('lmHead').replaceChildren(chip(M.bat), nm(M.bat) + ' batting', el('small', null, (M.top ? 'Top ' : 'Bottom ') + ordinal(M.inn)));
+    $('lmList').replaceChildren(...(M.rows.length ? M.rows.map(r => {
+      const d = el('div', 'r' + (r.up ? ' up' : '') + (r.deck ? ' deck' : ''));
+      d.append(el('span', 'n', String(r.slot)), el('span', 'p', r.pos), el('b', null, (r.num ? '#' + r.num + ' ' : '') + r.name), el('span', 'l', r.line));
+      flash(d, r.slot); return d;
+    }) : [el('p', 'hint warn', 'No batting order for ' + nm(M.bat) + ' yet: set it on the Lineups tab.')]));
+    if (M.sub) { const d = el('div', 'r up'); d.append(el('span', 'n', '–'), el('span', 'p', 'PH'), el('b', null, (M.sub.num ? '#' + M.sub.num + ' ' : '') + M.sub.name), el('span', 'l', '')); $('lmList').append(d); }
+    const k = el('span', 'k'); k.append(chip(M.fld), 'P');
+    const pw = el('div'); pw.append(el('b', null, M.pit ? (M.pit.num ? '#' + M.pit.num + ' ' : '') + M.pit.name : 'No pitcher set'), el('small', null, M.pit ? M.pit.line : ''));
+    const np = el('div', 'np'); if (M.pit) np.append(String(M.pit.np), el('small', null, M.pit.np === 1 ? ' pitch' : ' pitches'));
+    const lp = $('lmPit'); lp.className = 'lmp'; lp.style.animationDelay = ''; lp.replaceChildren(k, pw, np); flash(lp, 'P');
+  };
+  setInterval(() => { if (tab === 'plays' && Object.values(lmChg).some(t => Date.now() - t < 4600)) render(); }, 1000);
 
   // ---- Lineups ----
   let orderDraft = null; // edits not saved yet
