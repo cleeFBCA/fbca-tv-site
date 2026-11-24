@@ -321,6 +321,8 @@ export class Game extends DurableObject {
           next.order = Object.fromEntries(SIDES.map(s => [s, Array.isArray(m.order[s])
             ? m.order[s].filter(o => o && idOk(o.id)).slice(0, 12).map(o => ({ id: o.id, pos: clean(o.pos, 4) })) : (was[s] || [])]));
         }
+        // Pitching decisions (win, loss, save), picked when the game is marked final. Sent whole; empty clears.
+        if (m.dec) next.dec = Object.fromEntries(['W', 'L', 'S'].filter(k => m.dec[k] && SIDES.includes(m.dec[k].side) && idOk(m.dec[k].id)).map(k => [k, { side: m.dec[k].side, id: m.dec[k].id }]));
         // Starting pitchers: one player id per team (or none). They bat only if they're also in the order.
         if (m.sp) {
           const was = meta.sp || { home: '', away: '' };

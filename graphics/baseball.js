@@ -249,6 +249,9 @@
       const st = first && dataOf(first).pit;
       if (st && out.pit[side][st]) out.pit[side][st].GS = 1;
     }
+    // Pitching decisions, picked when the game is marked final: { W: { side, id }, L: { side, id }, S: { side, id } }
+    const dec = (meta && meta.dec) || {};
+    for (const [k, stat] of [['W', 'W'], ['L', 'L'], ['S', 'SV']]) { const d = dec[k]; if (d && out.pit[d.side] && out.pit[d.side][d.id]) out.pit[d.side][d.id][stat] = 1; }
     return out;
   };
 

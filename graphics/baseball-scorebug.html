@@ -631,6 +631,18 @@
             <label for="l3Title">Second line</label><input id="l3Title" placeholder="Play-by-play">
             <label for="l3Logo">Logo</label><select id="l3Logo"><option value="eota">Eagles on the Air</option><option value="home">Home team</option><option value="away">Visitors</option></select>
           </div>
+          <div data-pane="ann">
+            <p class="hint" style="margin-top:0">The announcers' names as a lower third, in the EOTA colors. The names are remembered for next time.</p>
+            <label for="ann1">Announcers</label>
+            <input id="ann1" maxlength="30" placeholder="First announcer">
+            <input id="ann2" maxlength="30" placeholder="Second announcer (optional)" style="margin-top:6px">
+            <input id="ann3" maxlength="30" placeholder="Third announcer (optional)" style="margin-top:6px">
+            <div class="two">
+              <div><label for="annLabel">Line below the names</label><input id="annLabel" maxlength="40" placeholder="On the call"></div>
+              <div><label for="annSecs">Auto-hide after (sec, 0 = stay)</label><input id="annSecs" type="number" min="0" max="120" value="8"></div>
+            </div>
+            <p class="hint" id="annNow"></p>
+          </div>
           <div data-pane="lineup">
             <label>Team</label><div class="chips"><button data-lu="away" id="luAway">Visitors</button><button data-lu="home" id="luHome">Home</button></div>
             <label for="luWho">Featured player (highlighted in the order, with their photo)</label><select id="luWho"></select>
@@ -718,12 +730,12 @@
     teams: { away: team('', '', '', '#1F3A93', '#FFFFFF'), home: team('Fort Bend Christian', 'Eagles', 'FBCA', FBCA.bg, FBCA.fg) },
     venue: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70 },
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
-    gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }
+    gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }, ann: { names: ['', '', ''], label: 'On the call', secs: 8 }
   });
   const merge = raw => {
     const d = defaults(), out = { ...d, ...raw };
     out.teams = { away: { ...d.teams.away, ...(raw.teams || {}).away }, home: { ...d.teams.home, ...(raw.teams || {}).home } };
-    out.stn = { ...d.stn, ...(raw.stn || {}) }; out.man = { ...d.man, ...(raw.man || {}) }; out.l3 = { ...d.l3, ...(raw.l3 || {}) }; out.lu = { ...d.lu, ...(raw.lu || {}) };
+    out.stn = { ...d.stn, ...(raw.stn || {}) }; out.man = { ...d.man, ...(raw.man || {}) }; out.l3 = { ...d.l3, ...(raw.l3 || {}) }; out.lu = { ...d.lu, ...(raw.lu || {}) }; out.ann = { ...d.ann, ...(raw.ann || {}) };
     return out;
   };
   let s = (() => { try { const r = localStorage.getItem(STORE); if (r) return merge(JSON.parse(r)); } catch (e) {} return defaults(); })();
@@ -844,8 +856,8 @@
       $('luLs').replaceChildren(...rows);
       $('luFt').textContent = g.cap || '';
     };
-    const NODE = { bstat: 'ln', pstat: 'ln', l3: 'ln', title: 'tc', brk: 'bx', hr: 'hr', lu: 'lu' };
-    const FILL = { bstat: fillLn, pstat: fillLn, l3: fillLn, title: fillTc, brk: fillBx, hr: fillHr, lu: fillLu };
+    const NODE = { bstat: 'ln', pstat: 'ln', l3: 'ln', ann: 'ln', title: 'tc', brk: 'bx', hr: 'hr', lu: 'lu' };
+    const FILL = { bstat: fillLn, pstat: fillLn, l3: fillLn, ann: fillLn, title: fillTc, brk: fillBx, hr: fillHr, lu: fillLu };
     // Steps in and out: [ms, stage]
     // Each step starts while the one before it is still moving, so nothing stops partway.
     const IN = { ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]], lu: [[0, 1], [260, 2], [1000, 3]] };
@@ -1064,7 +1076,7 @@
     const auto = today && (today.BF || today.outs) ? `Today: ${BB.ip(today.outs)} IP, ${today.H} H, ${today.R} R, ${today.SO} K · ${np} pitches`
       : q.GS ? q.GS + (q.GS === 1 ? ' start' : ' starts') + ' this season' : q.G ? q.G + ' appearances this season' : '';
     return { side, num: p.num, first: firstName(p.name), last: lastName(p.name),
-             stats: [['IP', BB.ip(q.outs)], ['ERA', BB.era(q, kg.meta.innings || 7)], ['BB', q.BB], ['K', q.SO], ['BAA', BB.baa(q)]], cap: $('psCap').value.trim() || auto };
+             stats: [['IP', BB.ip(q.outs)], ['ERA', BB.era(q, kg.meta.innings || 7)], ['BB', q.BB], ['K', q.SO], ['W-L', q.W + '-' + q.L]], cap: $('psCap').value.trim() || auto };
   };
   const lastHr = () => { if (!kg) return null; for (let i = kg.events.length - 1; i >= 0; i--) { const e = kg.events[i], d = BB.dataOf(e); if (e.type === 'pa' && d && d.r === 'HR') return { e, d }; } return null; };
   const hrGp = () => {
@@ -1127,6 +1139,15 @@
     return { side, head: ((tn.name || kg.meta.names[side] || '') + ' Batting Order').toUpperCase(), vs: ('Today vs ' + (on.name || kg.meta.names[opp] || '')).toUpperCase(),
              rows, sp, hi, photo: fp ? photos[photoKey(side, fp.name)] || '' : '', cap: ($('luCap').value.trim() || auto).toUpperCase() };
   };
+  // ---- Announcers: up to three names and the line below them (as on soccer), remembered between games ----
+  const annNames = () => { const n = (s.ann.names || []).map(x => String(x || '').trim()).filter(Boolean); return n.length > 1 ? n.slice(0, -1).join(', ') + ' & ' + n[n.length - 1] : n[0] || ''; };
+  let annTimer = 0;
+  const showAnn = () => {
+    const names = annNames(); if (!names) { $('ann1').focus(); note('Type at least one announcer.'); return; }
+    show('ann', { side: '', last: names, sub: (s.ann.label || '').trim() });
+    clearTimeout(annTimer); const at = s.gAt, secs = s.ann.secs ?? 8;
+    if (secs > 0) annTimer = setTimeout(() => { if (s.gfx === 'ann' && s.gAt === at) take(); }, secs * 1000 + 900); // + the time it takes to come in
+  };
   const showLu = () => { const g = luGp(); if (!g) { note('Needs the stat keeper (Connections).'); return; } if (g.err) { note(g.err); return; } show('lu', g); };
   const PITCH_TYPES = () => s.game === 'softball' ? ['Fastball', 'Changeup', 'Drop', 'Rise', 'Curve', 'Screwball'] : ['Fastball', '4-Seam FB', 'Sinker', 'Cutter', 'Slider', 'Curveball', 'Changeup', 'Splitter'];
   let pitchType = '';
@@ -1145,9 +1166,10 @@
     { id: 'flash', name: 'BB / K / HBP', kind: 'On the bug', on: () => !!(s.flash && Date.now() < s.flash.until), show: () => flashNow('K'), take: () => { s.flash = null; save(); } },
     { id: 'brk', name: 'Box score + due up', kind: 'Break', on: () => s.gfx === 'brk', show: () => { const g = breakGp(); if (g) show('brk', g); } },
     { id: 'lu', name: 'Batting order', kind: 'Full screen', on: () => s.gfx === 'lu', show: showLu },
+    { id: 'ann', name: 'Announcers', kind: 'Lower third', on: () => s.gfx === 'ann', show: showAnn },
     { id: 'l3', name: 'Lower third', kind: 'Name and title', on: () => s.gfx === 'l3', show: () => { const n = $('l3Name').value.trim(); if (!n) { $('l3Name').focus(); return; } show('l3', { side: s.l3.logo === 'eota' ? '' : s.l3.logo, last: n.toUpperCase(), sub: $('l3Title').value.trim() }); } }
   ];
-  const PANE = { title: 'title', bstat: 'bstat', pstat: 'pstat', hr: 'hr', pitch: 'pitch', exit: 'exit', flash: 'flash', brk: 'break', l3: 'l3', lu: 'lineup' };
+  const PANE = { title: 'title', bstat: 'bstat', pstat: 'pstat', hr: 'hr', pitch: 'pitch', exit: 'exit', flash: 'flash', brk: 'break', l3: 'l3', lu: 'lineup', ann: 'ann' };
   let pick = 'bstat', noteText = '', noteAt = 0;
   const note = t => { noteText = t; noteAt = Date.now(); renderShell(); };
   const tileEls = {};
@@ -1177,6 +1199,11 @@
     catch (e) { note("Couldn't save that photo."); }
   };
   $('luNoPic').onclick = () => { const fp = luFeatured(); if (!fp) return; const key = photoKey(s.lu.side, fp.name); delete photos[key]; photoDb('readwrite', st => st.delete(key)).catch(() => {}); renderShell(); if (s.gfx === 'lu') showLu(); };
+  ['ann1', 'ann2', 'ann3'].forEach((id, i) => { $(id).value = s.ann.names[i] || ''; $(id).addEventListener('input', () => { s.ann.names[i] = $(id).value; save(); }); $(id).addEventListener('keydown', e => { if (e.key === 'Enter') showAnn(); }); });
+  $('annLabel').value = s.ann.label || '';
+  $('annLabel').addEventListener('input', () => { s.ann.label = $('annLabel').value; save(); });
+  $('annSecs').value = s.ann.secs ?? 8;
+  $('annSecs').addEventListener('input', () => { s.ann.secs = Math.max(0, Math.min(120, parseInt($('annSecs').value, 10) || 0)); save(); });
   $('bxDue').addEventListener('change', e => { s.bxDue = e.target.checked; save(); });
   $('bxHead').addEventListener('input', e => { s.bxHead = e.target.value; });
   $('btnBug').onclick = () => { s.visible = !s.visible; save(); };
@@ -1324,6 +1351,7 @@
       if (pick === 'pstat') { const [sd, id] = $('psWho').value.split('|'); sumLines($('psSum'), id ? pitcherGp(sd, id) : null); }
       if (pick === 'hr') { const h = hrGp(), e = lastHr(); $('hrSum').replaceChildren(...(h ? ['Last home run: ', el('b', null, h.first + ' ' + h.last), ' (' + kg.meta.names[h.side] + ', ' + (h.tag || '').toLowerCase() + ', ' + e.e.period.replace('T', 'top ').replace('B', 'bottom ') + ')', el('br'), h.stats.map(([v, k]) => v + ' ' + k).join(' · ')] : ['No home run recorded yet this game.'])); }
     } else { $('bsSum').textContent = $('psSum').textContent = $('hrSum').textContent = 'Needs the stat keeper (Connections).'; }
+    if (pick === 'ann') $('annNow').textContent = s.gfx === 'ann' ? 'On air: ' + annNames() + ((s.ann.secs ?? 8) ? ' (goes down by itself after ' + s.ann.secs + ' seconds)' : '') : annNames() ? 'Shows: ' + annNames() : '';
     if (pick === 'lu') {
       document.querySelectorAll('[data-lu]').forEach(b => { b.className = 'sm' + (b.dataset.lu === s.lu.side ? ' active' : ''); b.textContent = (kg && kg.meta.names[b.dataset.lu]) || (b.dataset.lu === 'home' ? 'Home' : 'Visitors'); });
       const ord = kg ? BB.orderOf(kg.meta, s.lu.side) : [], spP = playerOf(s.lu.side, luSp(s.lu.side));

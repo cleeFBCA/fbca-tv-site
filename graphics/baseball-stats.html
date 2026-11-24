@@ -144,6 +144,11 @@
   .past-list li .what { flex: 1 1 220px; min-width: 0; }
   .past-list li .what small { display: block; color: var(--chalk-dim); font-size: 13px; }
   .past-list li button { min-height: 38px; padding: 4px 12px; font-size: 14px; }
+  dialog.dec { background: linear-gradient(#1D1E22, #17181B); color: var(--chalk); border: 1px solid #2C2E33; border-radius: 12px; padding: 18px; width: min(460px, calc(100vw - 32px)); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+  dialog.dec::backdrop { background: rgba(0,0,0,.6); }
+  dialog.dec h3 { margin: 0 0 6px; }
+  dialog.dec label { display: block; margin: 12px 0 4px; color: var(--chalk-dim); font-size: 14px; }
+  dialog.dec .set-row { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
   .final-on { background: linear-gradient(color-mix(in srgb, var(--ok) 85%, #fff), var(--ok)) !important; color: #03170A !important; border-color: var(--ok) !important; }
 </style>
 </head>
@@ -594,12 +599,45 @@
     if (bat !== BB.batting(sit)) next.bases = next.bases.map(r => r && { id: 'team', pit, ue: false });
     record({ k: 'fix', sit: next });
   };
+  // ---- Final: pick the pitching decisions, then the game goes into the season stats ----
+  const decPitchers = (v, st, side) => {
+    const ids = Object.keys(st.pit[side]), roster = v.meta.rosters[side] || [];
+    return ids.map(id => roster.find(p => p.id === id)).filter(Boolean).map(p => ({ p, line: st.pit[side][p.id] }));
+  };
+  const openDecisions = v => {
+    const st = BB.compute(v.meta, v.events), sc = st.sit.score;
+    if (sc.home === sc.away) return Promise.resolve({}); // a tie: no decisions
+    const win = sc.home > sc.away ? 'home' : 'away', lose = BB.other(win), was = v.meta.dec || {};
+    const W = decPitchers(v, st, win), L = decPitchers(v, st, lose);
+    const line = x => (x.p.num ? '#' + x.p.num + ' ' : '') + x.p.name + ' · ' + BB.ip(x.line.outs) + ' IP, ' + x.line.R + ' R';
+    const sel = (list, cur, none) => { const s = el('select'); s.append(...(none ? [new Option(none, '')] : []), ...list.map(x => new Option(line(x), x.p.id))); if (cur && list.some(x => x.p.id === cur)) s.value = cur; return s; };
+    // Best guesses to start from: the winner who went longest, the loser who gave up the most runs
+    const most = (list, f) => (list.slice().sort((a, b) => f(b) - f(a))[0] || {}).p;
+    const gw = was.W && was.W.side === win ? was.W.id : (most(W, x => x.line.outs) || {}).id;
+    const gl = was.L && was.L.side === lose ? was.L.id : (most(L, x => x.line.R * 1000 + x.line.outs) || {}).id;
+    const sw = sel(W, gw), sl = sel(L, gl), ss = sel(W, was.S && was.S.side === win ? was.S.id : '', 'No save');
+    const dlg = $('decDlg');
+    $('decBody').replaceChildren(
+      el('p', 'hint', v.meta.names[win] + ' won ' + Math.max(sc.home, sc.away) + '-' + Math.min(sc.home, sc.away) + '. These go into each pitcher\'s season record (W-L) on the scorebug.'),
+      el('label', null, 'Win (' + v.meta.names[win] + ')'), sw, el('label', null, 'Loss (' + v.meta.names[lose] + ')'), sl, el('label', null, 'Save (' + v.meta.names[win] + ', optional)'), ss);
+    if (!W.length || !L.length) $('decBody').append(el('p', 'hint warn', 'No pitches are recorded for ' + (!W.length ? v.meta.names[win] : v.meta.names[lose]) + ', so there\'s no one to pick there.'));
+    return new Promise(ok => {
+      $('decOk').onclick = () => { dlg.close(); const d = {}; if (sw.value) d.W = { side: win, id: sw.value }; if (sl.value) d.L = { side: lose, id: sl.value }; if (ss.value && ss.value !== sw.value) d.S = { side: win, id: ss.value }; ok(d); };
+      $('decSkip').onclick = () => { dlg.close(); ok({}); };
+      $('decCancel').onclick = () => { dlg.close(); ok(null); };
+      dlg.showModal();
+    });
+  };
   $('btnFinal').onclick = async () => {
     const v = view(); if (!v) return;
     const fin = v.meta.status === 'final';
-    if (!confirm(fin ? 'Reopen this game? (It stays in the season stats until it\'s marked final again, which replaces it.)' : 'Mark the game final? Its stats go into both teams\' season stats, and the scorebug shows FINAL.')) return;
-    enqueue('meta', { meta: { status: fin ? '' : 'final' } });
-    if (!fin) addGameToSeason(view());
+    if (fin) {
+      if (!confirm('Reopen this game? (It stays in the season stats until it\'s marked final again, which replaces it.)')) return;
+      enqueue('meta', { meta: { status: '' } }); return;
+    }
+    const dec = await openDecisions(v); if (!dec) return; // cancelled
+    enqueue('meta', { meta: { status: 'final', dec } });
+    addGameToSeason({ ...v, meta: { ...v.meta, status: 'final', dec } });
   };
   $('btnUndo').onclick = () => {
     const v = view(); if (!v || !v.events.length) return;
@@ -981,5 +1019,10 @@
   showTab(); connect(); loadLibrary(); loadSeasons();
 })();
 </script>
+<dialog class="dec" id="decDlg">
+  <h3>Pitching decisions</h3>
+  <div id="decBody"></div>
+  <div class="set-row"><button class="primary" id="decOk">Mark final</button><button id="decSkip">No decisions</button><button id="decCancel">Cancel</button></div>
+</dialog>
 </body>
 </html>
