@@ -36,6 +36,11 @@
 
   /* ================= On-air output ================= */
   body.bug { background: var(--key); overflow: hidden; cursor: none; }
+  /* The graphics never scroll: the stage is pinned to the window. The outputs' address ends in #bug, which a browser
+     takes as "scroll to the element named bug"; in a window shorter than 1080 (the control page's preview), that
+     scrolled the whole picture and it seemed to drift up and down. */
+  html:has(body.bug) { overflow: hidden; overflow-anchor: none; }
+  body.bug #stage { position: fixed; }
   body.bug #control { display: none; }
   body.ctl #stage { display: none; }
   body.bug.matte { background: #000; }
@@ -169,8 +174,9 @@
   .tc[data-st="2"] .lg { opacity: 1; transform: none; }
   .tc[data-st="2"] .tx { clip-path: inset(0 0 0 0); }
   .tc[data-st="2"] .ven.has { clip-path: inset(0 0 0 0); transition-delay: .2s; }
-  /* Production, as on the soccer title card: each team's logo large and faint behind its half (drifting slowly),
-     a light running along the gold line and the top edge, a shine sweeping the card, and a soft glow behind EOTA. Only the faint logos move. */
+  /* Production, as on the soccer title card: each team's logo large and faint behind its half, a light along the gold
+     line and the top edge, a shine across the card, and a soft glow behind EOTA. The faint logos drift, the lights circle
+     and the shine comes every 6 seconds; the card itself stays put. */
   .tc .wm { position: absolute; top: -170px; width: 540px; height: 540px; background: var(--wm, none) center / contain no-repeat; opacity: 0;
             filter: grayscale(1) brightness(2.4); transition: opacity .8s; animation: pgKen 16s ease-in-out infinite alternate; }
   .tc .bgL .wm { left: -132px; } .tc .bgR .wm { right: -132px; animation-direction: alternate-reverse; }
@@ -796,6 +802,9 @@
     const stage = $('stage');
     const fitStage = () => stage.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`;
     addEventListener('resize', fitStage); fitStage();
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    const unscroll = () => { if (scrollX || scrollY) scrollTo(0, 0); };
+    addEventListener('scroll', unscroll); addEventListener('load', unscroll); unscroll();
     $('stn').style.setProperty('--logo', getComputedStyle(document.documentElement).getPropertyValue('--logo'));
 
     let shownGfx = '', busy = null, timers = [], lastScore = { home: null, away: null };
