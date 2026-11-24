@@ -259,20 +259,20 @@
       <h3>Teams and rosters</h3>
       <div class="two">
         <div>
-          <label for="libHome">Saved teams</label>
-          <div class="set-row"><select id="libHome"></select><button id="forgetHome" class="ghost">Forget</button></div>
-          <label for="nameHome">Our team and its color</label><div class="set-row"><input id="nameHome" maxlength="60"><input type="color" id="colorHome" class="swatch" aria-label="Our team's color"></div>
-          <label for="saveHome">Save as (optional)</label><input id="saveHome" maxlength="60" placeholder="Same as the team name, or e.g. FBCA Girls">
-          <label for="rosterHome">Roster: one player per line, number then name</label>
-          <textarea id="rosterHome" placeholder="2 Luke Tran&#10;3 Jordan Lee&#10;5 Noah Kim"></textarea>
-        </div>
-        <div>
           <label for="libAway">Saved teams</label>
           <div class="set-row"><select id="libAway"></select><button id="forgetAway" class="ghost">Forget</button></div>
           <label for="nameAway">Opponent and its color</label><div class="set-row"><input id="nameAway" maxlength="60"><input type="color" id="colorAway" class="swatch" aria-label="Opponent's color"></div>
           <label for="saveAway">Save as (optional)</label><input id="saveAway" maxlength="60" placeholder="Same as the team name">
           <label for="rosterAway">Roster: one player per line, number then name</label>
           <textarea id="rosterAway" placeholder="1 Sam Ortiz&#10;4 Eli Brooks"></textarea>
+        </div>
+        <div>
+          <label for="libHome">Saved teams</label>
+          <div class="set-row"><select id="libHome"></select><button id="forgetHome" class="ghost">Forget</button></div>
+          <label for="nameHome">Our team and its color</label><div class="set-row"><input id="nameHome" maxlength="60"><input type="color" id="colorHome" class="swatch" aria-label="Our team's color"></div>
+          <label for="saveHome">Save as (optional)</label><input id="saveHome" maxlength="60" placeholder="Same as the team name, or e.g. FBCA Girls">
+          <label for="rosterHome">Roster: one player per line, number then name</label>
+          <textarea id="rosterHome" placeholder="2 Luke Tran&#10;3 Jordan Lee&#10;5 Noah Kim"></textarea>
         </div>
       </div>
       <div class="set-row" style="margin-top:10px"><button class="primary" id="btnRoster">Save teams and rosters</button></div>
@@ -307,6 +307,7 @@
   const API = (qs.get('api') || 'https://eota-stat-keeper.clee-625.workers.dev').replace(/\/$/, '');
   const GAME = 'soccer';
   const SIDES = ['home', 'away'];
+  const SHOW = ['away', 'home']; // on the Plays and Setup tabs: the opponent on the left, our team on the right
   const PERIODS = ['1H', '2H', 'OT1', 'OT2'];
   const PER_LABEL = { '1H': '1st half', '2H': '2nd half', OT1: 'OT 1', OT2: 'OT 2' };
   const TYPES = { goal: 'Goal', ast: 'Assist', sog: 'Shot on target', shot: 'Shot off target', save: 'Save', corner: 'Corner kick',
@@ -385,7 +386,7 @@
   };
   const paint = (node, v, side) => { const c = colorOf(v, side); node.style.setProperty('--tc', c); node.style.setProperty('--tf', textOn(c)); return node; };
   const dot = (v, side) => paint(el('i'), v, side);
-  const sidesShown = v => v.meta.keepers === 2 ? [mySide] : SIDES;
+  const sidesShown = v => v.meta.keepers === 2 ? [mySide] : SHOW;
   const lastName = n => { const w = String(n || '').trim().split(/\s+/); return w.length > 1 ? w[w.length - 1] : w[0] || ''; };
   const who = (v, side, player) => {
     if (player === 'team') return v.meta.names[side] + ' team';
@@ -597,7 +598,7 @@
   const renderPlays = (v, t, sides, two) => {
     const sw = $('switch');
     sw.className = 'switch' + (two ? '' : ' both');
-    sw.replaceChildren(...(two ? [] : SIDES.map(side => {
+    sw.replaceChildren(...(two ? [] : SHOW.map(side => {
       const b = el('button', side === shown ? 'on' : ''); b.append(dot(v, side), v.meta.names[side]); b.onclick = () => { shown = side; render(); }; return b;
     })));
     const teams = $('teams');
@@ -759,7 +760,7 @@
     $('keyNote').className = 'hint' + (sendErr === 'badkey' || !key ? ' warn' : '');
     for (const b of $('keepers').children) b.classList.toggle('on', +b.dataset.k === v.meta.keepers);
     $('mySideBox').hidden = v.meta.keepers !== 2;
-    $('mySide').replaceChildren(...SIDES.map(side => {
+    $('mySide').replaceChildren(...SHOW.map(side => {
       const b = el('button', side === mySide ? 'on' : ''); b.append(dot(v, side), v.meta.names[side]);
       b.onclick = () => { mySide = side; store.set(LS.side, side); pick = {}; render(); };
       return b;
