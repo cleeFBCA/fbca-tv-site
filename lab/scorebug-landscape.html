@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab: Scorebug Landscape</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  LAB MOCKUP: the basketball scorebug controls fitted to one landscape screen (1440x900 and up) with no page scroll.
+  For looks only. Buttons change what this page shows and nothing else: no output window, no stat keeper, no storage.
+
+  Layout
+    Top bar      title, view tabs (Live / Game setup / Graphics setup / Connections), connection lights, what's on air, Take down
+    Live view    left: clock and both teams' score, fouls and timeouts
+                 middle: output preview, bug buttons, a grid of graphic tiles
+                 right: the picked graphic's details, with its Show / Take down button
+    Setup views  forms in columns, filling the screen: everything from the working page that is not needed during play
+
+  Keep this in step with graphics/basketball-scorebug.html: every control there should have a place here.
+
+  Status colors (same as the real control pages)
+    green = on air or running, red = take down, blue = ready to take or selected, amber = queued or waiting
+-->
+<style>
+  :root {
+    --bg: #0F1012; --panel: #1A1B1E; --panel-2: #222327; --btn: #2A2C31; --edge: #3A3D44; --edge-soft: #2C2E33;
+    --chalk: #F1F2F4; --dim: #A3A7AF; --head: #D5D8DE; --gold: #F2C14E;
+    --on: #22D865; --on-ink: #03170A; --off: #F43B3B; --cue: #2F7BFF; --wait: #FFB21E; --wait-ink: #1F1500;
+    --font-display: 'Big Shoulders Display', Impact, 'Arial Narrow', sans-serif; --font-body: 'Barlow', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--chalk); font: 500 14px/1.35 var(--font-body); overflow: hidden; display: flex; flex-direction: column; }
+  @media (max-width: 1199px), (max-height: 699px) { body { overflow: auto; } } /* smaller than a laptop screen: let it scroll */
+
+  /* ---------- Buttons: compact (34 px) ---------- */
+  button { font: 600 14px var(--font-body); color: var(--chalk); min-height: 34px; padding: 6px 10px; border-radius: 7px; cursor: pointer;
+           background: linear-gradient(#32343A, #282A2F); border: 1px solid #43464E; box-shadow: inset 0 1px 0 rgba(255,255,255,.07); white-space: nowrap; }
+  button:not(.go, .onair, .running, .queued, .take, .danger, .sel):hover:not(:disabled) { background: linear-gradient(#3B3E45, #30333A); border-color: #555962; }
+  button:is(.go, .onair, .running, .queued, .take, .sel):hover:not(:disabled) { filter: brightness(1.1); }
+  button:disabled { opacity: .38; cursor: default; }
+  button.sm { min-height: 28px; padding: 3px 8px; font-size: 13px; }
+  button.sel { color: #fff; background: color-mix(in srgb, var(--cue) 28%, #24262B); border-color: var(--cue); box-shadow: inset 0 0 0 1px var(--cue); }
+  button.go { background: linear-gradient(color-mix(in srgb, var(--cue) 88%, #fff), var(--cue)); border-color: var(--cue); color: #fff; font-weight: 700; }
+  button.onair, button.running { background: linear-gradient(color-mix(in srgb, var(--on) 85%, #fff), var(--on)); border-color: var(--on); color: var(--on-ink); font-weight: 800;
+                                 box-shadow: 0 0 0 2px rgba(34,216,101,.25), 0 0 14px rgba(34,216,101,.3); }
+  button.onair::before, button.running::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: var(--on-ink); vertical-align: 1px; animation: blink 1.2s ease-in-out infinite; }
+  button.queued { background: linear-gradient(color-mix(in srgb, var(--wait) 85%, #fff), var(--wait)); border-color: var(--wait); color: var(--wait-ink); font-weight: 700; }
+  button.take { background: linear-gradient(color-mix(in srgb, var(--off) 85%, #fff), var(--off)); border-color: var(--off); color: #fff; font-weight: 700; }
+  button.take:disabled { background: linear-gradient(#32343A, #282A2F); border-color: #43464E; color: var(--chalk); }
+  button.danger { background: rgba(244,59,59,.08); border: 1.5px solid var(--off); color: #FF6B6B; font-weight: 700; }
+  @keyframes blink { 50% { opacity: .25; } }
+
+  input, select { width: 100%; font: 500 14px var(--font-body); color: var(--chalk); background: var(--bg); border: 1px solid var(--edge); border-radius: 6px; padding: 7px 9px; min-height: 34px; }
+  input:focus, select:focus { outline: 2px solid var(--cue); outline-offset: -1px; border-color: var(--cue); }
+  input[type=color] { padding: 2px; cursor: pointer; }
+  label { display: block; font-size: 12px; color: var(--dim); margin: 8px 0 3px; }
+  .hint { color: var(--dim); font-size: 12px; margin: 6px 0 0; line-height: 1.4; }
+
+  /* ---------- Top bar ---------- */
+  .bar { flex: none; height: 52px; display: flex; align-items: center; gap: 14px; padding: 0 14px; background: #141518; border-bottom: 1px solid var(--edge-soft); }
+  .bar h1 { margin: 0; font: 800 20px var(--font-display); letter-spacing: .05em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+  .lab { font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--wait-ink); background: var(--wait); border-radius: 4px; padding: 2px 6px; }
+  .views { display: flex; gap: 4px; margin-left: 8px; }
+  .views button { min-height: 32px; padding: 4px 14px; }
+  .views button.cur { background: #3A3D44; border-color: #6B7079; box-shadow: inset 0 -3px 0 #fff; color: #fff; }
+  .lights { display: flex; gap: 6px; margin-left: auto; }
+  .light { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--dim); padding: 3px 9px; border: 1px solid var(--edge-soft); border-radius: 999px; white-space: nowrap; }
+  .light::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--off); }
+  .light.ok::before { background: var(--on); box-shadow: 0 0 6px rgba(34,216,101,.7); }
+  .light.wait::before { background: var(--wait); }
+  .airnote { font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+  .airnote b { color: var(--on); }
+
+  /* ---------- Views ---------- */
+  .view { flex: 1; min-height: 0; padding: 12px; }
+  .view[hidden] { display: none !important; }
+  .panel { background: linear-gradient(#1D1E22, #17181B); border: 1px solid var(--edge-soft); border-radius: 10px; padding: 12px; min-height: 0; }
+  .panel h2 { margin: 0 0 8px; font: 800 15px var(--font-display); letter-spacing: .09em; text-transform: uppercase; color: var(--head); display: flex; align-items: center; gap: 8px; }
+  .panel h2 small { margin-left: auto; font: 600 12px var(--font-body); letter-spacing: 0; text-transform: none; color: var(--dim); }
+  .panel h2 small.near { margin-left: 4px; }
+
+  /* Live: three columns, nothing scrolls but the details panel */
+  #live { display: grid; grid-template-columns: minmax(300px, 25%) 1fr minmax(320px, 26%); gap: 12px; }
+  .col { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  #live > .col:first-child { overflow-y: auto; } /* short screens only: the left column scrolls before anything gets cut off */
+  #live > .col > .panel { flex-shrink: 0; }
+
+  /* Scoreboard feed: a look-only confidence monitor of the raw scoreboard data */
+  .feed h2 .light { margin-left: auto; font: 600 11px var(--font-body); letter-spacing: 0; text-transform: none; padding: 2px 8px; }
+  .fd { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+  .fdt { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  .fdt th { font: 700 10.5px var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); text-align: center; padding: 0 4px 2px; }
+  .fdt td { text-align: center; font: 800 19px/1.25 var(--font-display); padding: 0 4px; }
+  .fdt td:first-child { text-align: left; font: 600 12px var(--font-body); color: var(--dim); white-space: nowrap; }
+  .fdt td:first-child b { color: var(--head); font-weight: 700; }
+  .fdc { display: flex; flex-direction: column; align-items: flex-end; padding-left: 12px; border-left: 1px solid var(--edge-soft); font-variant-numeric: tabular-nums; }
+  .fdc small { font: 700 10.5px var(--font-body); letter-spacing: .06em; color: var(--dim); }
+  .fdc b { font: 800 30px/1 var(--font-display); }
+  .fdc i { font: 800 17px var(--font-display); font-style: normal; }
+  .dg, .sep { display: inline-block; text-align: center; }
+  .dg { width: .5em; } .sep { width: .26em; }
+
+  /* Clock */
+  .clk { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 8px; }
+  .clk .perbox { grid-column: 3; align-self: start; text-align: right; }
+  .clk .perbox small { display: block; margin-bottom: 3px; font: 700 11px var(--font-body); letter-spacing: .08em; color: var(--dim); }
+  .clk .per { font: 800 26px/1 var(--font-display); letter-spacing: .1em; color: var(--gold); }
+  .clk .time { font: 800 64px/0.95 var(--font-display); font-variant-numeric: tabular-nums; }
+  .clk .shot { grid-column: 2; justify-self: center; text-align: center; font: 800 34px/1 var(--font-display); color: var(--dim); font-variant-numeric: tabular-nums; }
+  .clk .shot small { display: block; font: 700 11px var(--font-body); letter-spacing: .08em; }
+  .row { display: flex; gap: 6px; margin-top: 8px; }
+  .row > * { flex: 1 1 0; }
+  .periods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 8px; }
+
+  /* Teams, side by side */
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tm { text-align: center; min-width: 0; }
+  .tm .nm { display: block; padding: 2px 8px; border-radius: 4px; font: 800 20px var(--font-display); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tm .sc { font: 800 54px/1.05 var(--font-display); font-variant-numeric: tabular-nums; }
+  .tm .pts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .tm .pts button { padding: 4px 0; font-size: 15px; font-weight: 700; }
+  .step { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 6px; font-size: 12px; color: var(--dim); }
+  .step b { color: var(--chalk); font-size: 16px; min-width: 18px; text-align: center; }
+  .step .ctl { display: flex; align-items: center; gap: 4px; }
+  .tm .bonus { font-size: 11px; font-weight: 800; letter-spacing: .1em; color: var(--wait); min-height: 15px; margin-top: 2px; }
+  .tm .acts { display: grid; grid-template-columns: 1fr; gap: 4px; margin-top: 8px; }
+
+  /* Middle: preview, bug buttons, graphic tiles */
+  .mid { container-type: inline-size; }
+  .mid > .panel { flex-shrink: 0; }  /* never let the preview panel get squashed under the graphics tiles */
+  .pv { position: relative; width: min(100%, calc(54vh * 16 / 9)); aspect-ratio: 16 / 9; margin: 0 auto; background: #000; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--edge-soft); }
+  .pv .tag { position: absolute; left: 8px; top: 6px; font-size: 10px; font-weight: 800; letter-spacing: .1em; color: rgba(255,255,255,.4); }
+  .pv .bug { position: absolute; left: 8%; right: 8%; bottom: 6%; height: 7%; display: flex; border-radius: 3px; overflow: hidden; transition: opacity .3s; font: 800 clamp(9px, 1.4cqw, 16px) var(--font-display); }
+  .pv .bug > div { display: grid; place-items: center; }
+  .pv .bug .a { flex: 3; background: #1F3D8F; } .pv .bug .h { flex: 3; background: #063E0C; color: #EAAF0F; }
+  .pv .bug .s { flex: 1; background: linear-gradient(#fff, #dcdde0); color: #17181b; }
+  .pv .bug .c { flex: 2; background: linear-gradient(#2e2f33, #17181b); color: #fff; }
+  .pv .bug.out { opacity: 0; }
+  .pv .full { position: absolute; inset: 12% 14% 18%; border-radius: 6px; background: linear-gradient(#2e2f33, #17181b); box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+              display: grid; place-items: center; font: 800 clamp(12px, 2.6cqw, 30px) var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: #fff; }
+  .pv .low { position: absolute; left: 6%; bottom: 17%; width: 46%; height: 11%; border-left: 6px solid #EAAF0F; background: linear-gradient(#2e2f33, #17181b);
+             display: flex; align-items: center; padding-left: 12px; font: 800 clamp(10px, 1.6cqw, 18px) var(--font-display); text-transform: uppercase; color: #fff; }
+  .pv .low.bottom { bottom: 6%; }
+  .pv .stn { position: absolute; right: 3%; top: 4%; font: 800 clamp(9px, 1.4cqw, 15px) var(--font-display); color: rgba(234,175,15,.6); }
+  .pv [hidden] { display: none; }
+  .bugrow { display: flex; gap: 6px; margin-top: 10px; }
+  .bugrow > * { flex: 1 1 0; }
+
+  /* Graphic buttons: one fixed size, about the height of Show / Take down, name centered, right under the preview. */
+  .tiles-panel { flex: none; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 54px; gap: 6px; }
+  /* The middle column is the one that gives when the window narrows: stack the buttons instead of squeezing them. */
+  @container (max-width: 620px) { .bugrow { display: grid; grid-template-columns: 1fr 1fr; } .tiles { grid-template-columns: repeat(3, 1fr); } }
+  @container (max-width: 440px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  @container (max-width: 260px) { .bugrow, .tiles { grid-template-columns: 1fr; } }
+  .tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; text-align: center; padding: 4px 8px; white-space: normal; overflow: hidden; }
+  .tile b { font-size: 16px; font-weight: 700; line-height: 1.1; white-space: nowrap; }
+  .tile small { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+  .tile.pick { outline: 2px solid #fff; outline-offset: 1px; }
+  .tile.onair { box-shadow: 0 0 0 2px rgba(34,216,101,.25), 0 0 14px rgba(34,216,101,.3); }
+  .tile.onair::before { display: none; }
+  .tile.onair small, .tile.queued small { color: inherit; opacity: .8; }
+  .tile.onair kbd { color: inherit; border-color: currentColor; }
+  .tile .k { position: absolute; }
+  .tile kbd { font: 700 10px var(--font-body); color: var(--dim); border: 1px solid var(--edge); border-radius: 3px; padding: 0 4px; margin-left: auto; }
+
+  /* Right: details of the picked graphic */
+  .det { flex: 1; display: flex; flex-direction: column; }
+  .det .body { flex: 1; min-height: 0; overflow: auto; padding-right: 2px; }
+  /* Show / Take down sit at the top, right under the graphic's name, so they're always in the same place */
+  .det .foot { flex: none; display: flex; gap: 6px; padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--edge-soft); }
+  .det .foot button { flex: 1; min-height: 42px; font-size: 15px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .popstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .list { list-style: none; margin: 8px 0 0; padding: 0; }
+  .list li { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-top: 1px solid var(--edge-soft); font-size: 13px; }
+  .list li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list li small { color: var(--dim); }
+
+  /* Setup views: columns that fill the screen */
+  .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; height: 100%; }
+  .cols .panel { overflow: auto; }
+  .logo-box { display: flex; align-items: center; gap: 8px; }
+  .logo-box i { width: 44px; height: 44px; border-radius: 6px; flex: none; background: var(--bg); border: 1px dashed var(--edge); display: grid; place-items: center; font: 800 13px var(--font-display); color: var(--dim); font-style: normal; }
+  .chk { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; }
+  .chk input { width: 16px; height: 16px; min-height: 0; accent-color: var(--on); }
+
+
+  /* ---- Pieces ported from the working scorebug ---- */
+  .lu-row { display: grid; grid-template-columns: 18px 1fr 96px 56px; gap: 6px; align-items: center; margin-top: 4px; }
+  .lu-row > b { color: var(--gold); font: 800 17px var(--font-display); text-align: center; }
+  .lu-row > span { font-size: 11px; color: var(--dim); text-align: center; line-height: 1.2; }
+  .lu-row > span.yes { color: var(--on); }
+  .sp-stats { display: grid; grid-template-columns: 1fr 2fr; gap: 4px 8px; }
+  .fit { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; margin-top: 8px; padding: 8px; border: 1px solid var(--edge-soft); border-radius: 8px; }
+  .fit .cv { width: 132px; aspect-ratio: 224 / 164; border-radius: 4px; display: grid; place-items: center; font: 800 18px var(--font-display); }
+  .fit .cv.ph { width: 96px; aspect-ratio: 440 / 528; background: linear-gradient(160deg, #2a5a8a, #10263d); color: rgba(255,255,255,.5); }
+  .fit label { margin-top: 0; }
+  .fit input[type=range] { padding: 0; min-height: 0; accent-color: var(--cue); }
+  .fit[hidden], .pph[hidden], .sheet[hidden], .keycolor[hidden], .shotctl[hidden] { display: none; }
+  .pph { margin-top: 8px; padding: 8px; border: 1px solid var(--edge-soft); border-radius: 8px; }
+  .pph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin-top: 6px; }
+  .pph-tile { background: var(--bg); border: 1px solid var(--edge-soft); border-radius: 6px; padding: 4px; text-align: center; font-size: 11px; }
+  .pph-tile .ph { aspect-ratio: 440 / 528; border-radius: 4px; display: grid; place-items: center; margin-bottom: 3px; font: 800 20px var(--font-display); background: linear-gradient(160deg, color-mix(in srgb, var(--c) 90%, #fff), color-mix(in srgb, var(--c) 65%, #000)); color: var(--f); }
+  .pph-tile .ph.has { background: linear-gradient(#8aa0b8, #5d7089); color: transparent; }
+  .pph-tile b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pph-tile .acts { display: flex; gap: 3px; margin-top: 3px; }
+  .pph-tile .acts button { flex: 1; min-height: 0; padding: 2px 0; font-size: 11px; }
+  .pph-add { display: grid; grid-template-columns: 52px 1fr auto; gap: 6px; margin-top: 8px; }
+  table.src, table.mini { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  table.src th { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); text-align: left; padding: 0 4px 4px; }
+  table.src td { padding: 5px 4px; border-top: 1px solid var(--edge-soft); }
+  table.src td small { color: var(--dim); }
+  table.src .na { color: var(--edge); }
+  table.src input { width: 16px; height: 16px; min-height: 0; accent-color: var(--on); vertical-align: middle; margin: 0 6px 0 0; }
+  table.mini th, table.mini td { padding: 4px 6px; border-top: 1px solid var(--edge-soft); text-align: center; }
+  table.mini td:first-child, table.mini th:first-child { text-align: left; color: var(--dim); }
+  .keys { list-style: none; margin: 0; padding: 0; font-size: 13px; color: var(--dim); }
+  .keys li { padding: 5px 0; border-top: 1px solid var(--edge-soft); }
+  .keys li:first-child { border-top: 0; }
+  kbd { font: 700 11px var(--font-body); color: var(--chalk); background: var(--bg); border: 1px solid var(--edge); border-radius: 4px; padding: 0 5px; }
+  .switch { position: relative; display: flex; align-items: center; gap: 10px; margin: 8px 0 0; cursor: pointer; font-size: 13px; color: var(--chalk); }
+  .switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .switch .track { flex: none; position: relative; width: 40px; height: 22px; border-radius: 11px; background: var(--edge); transition: background .2s; }
+  .switch .track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--chalk); transition: transform .2s; }
+  .switch input:checked + .track { background: var(--on); }
+  .switch input:checked + .track::after { transform: translateX(18px); background: #fff; }
+  .switch small { display: block; color: var(--dim); font-size: 12px; }
+  .stn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .stn-row select { width: auto; }
+  .stn-row .op { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dim); }
+  .stn-row .op input { width: 110px; padding: 0; min-height: 0; accent-color: var(--cue); }
+  .fv-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fv-pick h4 { margin: 0 0 4px; font: 800 13px var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { min-height: 0; padding: 3px 9px; font-size: 12px; border-radius: 999px; }
+  .fv-nom { display: grid; grid-template-columns: 74px 44px 1fr 74px auto; gap: 4px; margin-top: 4px; }
+  .fv-nom input, .fv-nom select { min-width: 0; padding: 5px 6px; min-height: 30px; font-size: 13px; }
+  .tally { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+  .tally li { display: grid; grid-template-columns: 1fr 48px; gap: 2px 8px; font-size: 13px; }
+  .tally .t { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--edge); overflow: hidden; }
+  .tally .f { height: 100%; background: var(--cue); }
+  .tally b { text-align: right; }
+  .setclk { display: flex; gap: 6px; margin-top: 6px; }
+  .setclk input { min-height: 28px; padding: 3px 8px; font-size: 13px; }
+  .sidenote { text-align: center; font-size: 12px; color: var(--dim); margin: 8px 0 0; }
+  .poss-ind { color: var(--wait); }
+  .toast { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); background: var(--wait); color: var(--wait-ink); font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <h1>Basketball Scorebug</h1><span class="lab" title="This page is a mockup. It changes nothing outside itself.">LAB MOCKUP</span>
+  <nav class="views" id="views">
+    <button data-view="live" class="cur">Live</button>
+    <button data-view="game">Game setup</button>
+    <button data-view="gfx">Graphics setup</button>
+    <button data-view="conn">Connections</button>
+  </nav>
+  <div class="lights">
+    <span class="light ok" title="Scorebridge file connected">Scoreboard</span>
+    <span class="light ok" title="Live from the stat keeper">Stat keeper</span>
+    <span class="light wait" title="Fill window open, key window not open">Output</span>
+  </div>
+  <span class="airnote" id="airNote"></span>
+  <button class="take" id="takeAll" title="Takes down every graphic insert on air (the score bug stays)">Take down</button>
+</header>
+
+<!-- ================= LIVE ================= -->
+<section class="view" id="live" data-v="live">
+  <div class="col">
+    <div class="panel">
+      <h2>Clock <small class="near">Space starts / stops</small></h2>
+      <div class="clk">
+        <div class="time" id="time">8:00</div>
+        <div class="shot" id="shot" hidden><span id="shotNum">35</span><small>SHOT</small></div>
+        <div class="perbox"><small>PERIOD</small><div class="per" id="perLbl">2ND</div></div>
+      </div>
+      <div class="row"><button id="run" class="go">Start clock</button></div>
+      <div class="row"><button class="sm" data-adj="-1">−1 sec</button><button class="sm" data-adj="-0.1">−0.1</button><button class="sm" data-adj="0.1">+0.1</button><button class="sm" data-adj="1">+1 sec</button></div>
+      <div class="setclk"><input id="setClock" placeholder="Set clock, e.g. 5:41 or 12.4" inputmode="decimal"><button class="sm" id="btnSet">Set</button></div>
+      <div class="shotctl" id="shotCtl" hidden>
+        <div class="row"><button class="sm" data-shot="full">Reset <span class="sfl">35</span></button><button class="sm" data-shot="short">Reset <span class="ssl">20</span></button><button class="sm" data-shot="off">Hide</button></div>
+      </div>
+      <div class="periods" id="periods" title="Picking a period resets the clock and stops it"></div>
+    </div>
+    <div class="panel">
+      <h2>Score <small><button class="sm" id="swap">Swap sides ⇄</button></small></h2>
+      <div class="teams" id="teams"></div>
+      <p class="sidenote" id="sideNote"></p>
+    </div>
+    <div class="panel feed" title="Exactly what the scoreboard is sending, before anything on this page changes it. Look only: nothing here can be changed.">
+      <h2>Scoreboard feed <span class="light ok" id="feedAge">Live · just now</span></h2>
+      <div class="fd">
+        <table class="fdt"><thead><tr><th></th><th>Score</th><th>TOL</th><th>Fouls</th></tr></thead><tbody id="fdTeams"></tbody></table>
+        <div class="fdc"><small>CLOCK</small><b id="fdClock">8:00</b><span><small>PER</small> <i id="fdPer">2ND</i><span id="fdShotW" hidden> <small>SHOT</small> <i id="fdShot">35</i></span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col mid">
+    <div class="panel">
+      <div class="pv" id="pv">
+        <span class="tag">PREVIEW</span>
+        <span class="stn" id="pvStn">EOTA</span>
+        <div class="full" id="pvFull" hidden></div>
+        <div class="low" id="pvLow" hidden></div>
+        <div class="bug" id="pvBug"><div class="a" id="pvAn">EWS</div><div class="s" id="pvA">0</div><div class="c" id="pvC">2ND 8:00</div><div class="s" id="pvH">0</div><div class="h" id="pvHn">FBCA</div></div>
+      </div>
+      <div class="bugrow">
+        <button id="bugBtn">Hide score bug</button>
+        <button id="stnBtn" title="Station bug on / off (settings in Graphics setup)">Station bug</button>
+        <button id="fillBtn">Open fill window</button>
+        <button id="keyBtn">Open key window</button>
+      </div>
+    </div>
+    <div class="panel tiles-panel">
+      <h2>Graphics <small>Pick one to set it up on the right. Double-click to show it right away.</small></h2>
+      <div class="tiles" id="tiles"></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="panel det">
+      <h2 id="detTitle">Lower third</h2>
+      <div class="foot"><button class="go" id="detShow">Show</button><button class="take" id="detHide">Take down</button></div>
+      <div class="body" id="detBody"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GAME SETUP ================= -->
+<section class="view" data-v="game" hidden>
+  <div class="cols">
+    <div class="panel">
+      <h2>Today's game</h2>
+      <label>Load from schedule</label>
+      <select><option>Dec 10 · Boys Basketball vs The Emery Weiner School</option><option>Jan 8 · Boys Basketball vs Logos Preparatory Academy</option><option>Schedule not loaded. Type teams below.</option></select>
+      <p class="hint">Picking a game fills in both teams, the title card's date, time and venue, and the full names.</p>
+      <h2 style="margin-top:16px">Rules</h2>
+      <div id="rules"></div>
+      <div class="row" style="margin-top:14px"><button class="danger" id="btnReset">Reset game (scores, fouls, timeouts, clock)</button></div>
+    </div>
+    <div class="panel" id="setupAway"></div>
+    <div class="panel" id="setupHome"></div>
+  </div>
+</section>
+
+<!-- ================= GRAPHICS SETUP ================= -->
+<section class="view" data-v="gfx" hidden>
+  <div class="cols">
+    <div class="panel">
+      <h2>Player of the Game fan vote</h2>
+      <p class="hint" style="margin-top:0">Fans vote at fbca.tv/vote, one vote per phone or computer. Pick the nominees, open voting, show the QR lower third, then close voting and show the results.</p>
+      <label>Pick nominees: tap up to 4 players (tap again to take one off)</label>
+      <div class="fv-pick" id="fvPick"></div>
+      <label>Nominees (2–4): team, number, name, position, and a headshot for the results (optional). Picking above fills these in.</label>
+      <div id="fvNoms"></div>
+      <label>Admin key (saved on this computer only)</label>
+      <div class="setclk" style="margin-top:0"><input type="password" value="xxxxxxxx" autocomplete="off"><button class="sm">Save key</button></div>
+    </div>
+    <div class="panel">
+      <h2>Saved lower thirds</h2>
+      <p class="hint" style="margin-top:0">Save lower thirds before the game (starters, key players), then show them from the Lower third panel with one click. Showing one takes down the fan vote QR, since they share a spot.</p>
+      <ul class="list" id="l3Saved"></ul>
+      <h2 style="margin-top:16px">Saved spotlights</h2>
+      <ul class="list" id="spSaved"></ul>
+    </div>
+    <div class="panel">
+      <h2>Station bug</h2>
+      <div class="stn-row">
+        <label class="switch"><input type="checkbox" id="stnOn" checked><span class="track"></span><span>Station bug</span></label>
+        <select aria-label="Corner"><option>Top right</option><option>Top left</option></select>
+        <select aria-label="Color"><option>Gold</option><option>White</option><option>Black</option></select>
+        <span class="op">Opacity <input type="range" min="20" max="100" step="5" value="60" id="stnOp"><b id="stnOpV">60%</b></span>
+      </div>
+      <p class="hint">The EOTA logo in a top corner, see-through. B turns it on and off.</p>
+      <h2 style="margin-top:16px">Pop-ups</h2>
+      <label>Take pop-ups down after (seconds, 0 = stays up)</label><input type="number" min="0" max="120" value="8">
+      <p class="hint">The announcers pop-up uses this time too.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONNECTIONS ================= -->
+<section class="view" data-v="conn" hidden>
+  <div class="cols">
+    <div class="panel">
+      <h2>Data sources</h2>
+      <div class="row" style="margin-top:0"><button class="onair" id="btnSb">Connected: scoreboard.xml</button></div>
+      <p class="hint">Run the clock, score and fouls from the gym scoreboard. Pick the file Scorebridge writes.</p>
+      <label>Stats come from</label>
+      <select id="statFrom"><option value="keeper">Stat keeper page (live, fbca.tv/graphics/basketball-stats.html)</option><option value="sheet">Excel stat sheet on OneDrive (deprecated)</option></select>
+      <div id="keeperBox">
+        <div class="row"><button>Disconnect</button></div>
+        <p class="hint">This clock is always shared with the stat keeper: every play is stamped with the game time the moment it's tapped, and the fbca.tv box score shows it.</p>
+        <div class="setclk"><input type="password" value="xxxxxxxx" placeholder="Stat keeper key (the same one the stat crew uses)" autocomplete="off"><button class="sm">Save key</button></div>
+        <p class="hint">Clock shared: the stat page and fbca.tv box score show the game clock.<br>Live from the stat keeper. 0 plays this game.</p>
+      </div>
+      <div class="sheet" id="sheetBox" hidden>
+        <label>Stat sheet share link (Excel on OneDrive, shared as "Anyone with the link can view")</label>
+        <div class="setclk" style="margin-top:0"><input placeholder="https://fortbendchristian-my.sharepoint.com/:x:/g/…"><button class="sm">Connect</button></div>
+        <label>Read the sheet every</label><select><option>1 second</option><option selected>5 seconds</option><option>15 seconds</option></select>
+        <p class="hint">Not connected.</p>
+      </div>
+      <table class="src"><thead><tr><th>Item</th><th>Scoreboard</th><th>Stats</th></tr></thead><tbody id="srcRows"></tbody></table>
+      <p class="hint">Tick where each item comes from. Unticked items run from the buttons on the Live tab. Stats arrive as the stat crew enters them, a moment after the play, so the clock and score are best from the scoreboard.</p>
+    </div>
+    <div class="panel">
+      <h2>Output signal</h2>
+      <label class="switch"><input type="checkbox" id="alphaKey" checked><span class="track"></span><span>Fill + key (alpha channel)<small>Two outputs: fill and key</small></span></label>
+      <p class="hint">Set this before the broadcast, to match how the ATEM is wired. Changing it asks first, because it changes what the outputs send.</p>
+      <p class="hint">ATEM: send the fill and key windows to two inputs, upstream key type Luma, Pre Multiplied Key on.</p>
+      <div class="row"><button>Open fill window</button><button id="keyWinBtn">Open key window</button></div>
+      <div class="keycolor" id="keyColor" hidden>
+        <label>Key color (the background the ATEM keys out)</label>
+        <div class="setclk" style="margin-top:0"><input type="color" value="#FF00FF" style="flex:0 0 70px"><button class="sm sel">Magenta</button><button class="sm">Green</button><button class="sm">Blue</button></div>
+      </div>
+      <h2 style="margin-top:16px">Storage on this computer</h2>
+      <p class="hint" style="margin-top:0">Everything below stays in this browser on this computer (it's still there after a restart).</p>
+      <ul class="list" id="storeList"></ul>
+    </div>
+    <div class="panel">
+      <h2>Keyboard</h2>
+      <ul class="keys">
+        <li><kbd>Space</kbd> start / stop the clock</li>
+        <li><kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> left team +1 / +2 / +3, <kbd>A</kbd> left −1</li>
+        <li><kbd>I</kbd> <kbd>O</kbd> <kbd>P</kbd> right team +1 / +2 / +3, <kbd>L</kbd> right −1</li>
+        <li><kbd>S</kbd> / <kbd>K</kbd> foul on the left / right team</li>
+        <li><kbd>R</kbd> shot clock full reset, <kbd>T</kbd> short reset (when the shot clock is on)</li>
+        <li><kbd>X</kbd> flip the possession arrow, <kbd>H</kbd> hide / show the score bug</li>
+        <li><kbd>N</kbd> show / hide the lower third in the form</li>
+        <li><kbd>U</kbd> pop-up: show the last one again / take it down</li>
+        <li><kbd>B</kbd> station bug on / off</li>
+        <li><kbd>V</kbd> fan vote QR lower third, <kbd>Esc</kbd> take down the full-screen graphic</li>
+      </ul>
+      <p class="hint">Left and right follow the screen, so they stay under your hands after a swap. All of these work in this mockup.</p>
+    </div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  // Mock state: this page only. Nothing is saved or sent anywhere.
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const toast = msg => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1600); };
+
+  const rules = { qMin: 8, otMin: 4, toMax: 5, bonusAt: 5, foulReset: 'quarter', shotOn: false, shotFull: 35, shotShort: 20, toAuto: true };
+  const s = {
+    view: 'live', running: false, left: 8 * 60, base: 8 * 60, startedAt: 0, shot: 35, shotShown: true, period: '2Q',
+    home: { name: 'FBCA', full: 'Fort Bend Christian Academy', rec: '6-3', bg: '#063E0C', fg: '#EAAF0F', score: 0, fouls: 0, tos: 5, photos: true },
+    away: { name: 'EWS', full: 'The Emery Weiner School', rec: '', bg: '#1F3D8F', fg: '#FFFFFF', score: 0, fouls: 0, tos: 5, photos: false },
+    poss: 'away', swap: false, bug: true, stn: true, full: '', low: '', pick: 'l3', popWhat: 'text', voteOpen: true
+  };
+  const ROSTER = {
+    home: ['0 Dax Kon', '1 Layden McGrady', '2 Joseph Gathecha', '3 Trent Meyer', '4 Dylan Cooper', '5 Jude McCurdy', '10 Divine Tamuno', '11 Shane Young', '12 Jake Holmes', '14 Andreas Brame', '20 Austin Dunn', '24 Hayden Woodbury'],
+    away: ['1 Sam Ortiz', '4 Eli Brooks', '11 Noah Klein', '15 Ben Adler', '23 Jordan Ellis', '30 Max Feld']
+  };
+  const LU = { home: [['0 Dax Kon', 'Guard', 1], ['20 Austin Dunn', 'Guard', 1], ['14 Andreas Brame', '', 1], ['12 Jake Holmes', '', 1], ['24 Hayden Woodbury', '', 1]], away: [['1 Sam Ortiz', 'Guard', 0], ['4 Eli Brooks', 'Guard', 0], ['11 Noah Klein', 'Forward', 0], ['23 Jordan Ellis', 'Forward', 0], ['30 Max Feld', 'Center', 0]] };
+  const COACH = { home: 'Ondra Waddy', away: '' };
+  const PERIODS = [['1Q', '1st'], ['2Q', '2nd'], ['HALF', 'Half'], ['3Q', '3rd'], ['4Q', '4th'], ['OT', 'OT'], ['2OT', '2OT'], ['3OT', '3OT'], ['4OT', '4OT'], ['FINAL', 'Final']];
+  const POP_STATS = ['FG', '3PT', 'FT', 'Rebounds', 'Off. rebounds', 'Assists', 'Steals', 'Blocks', 'Turnovers', 'Team fouls', 'Timeouts left'];
+  const L3_FMT = ['Points', 'PTS · FG', 'PTS · REB · AST', 'PTS · FG · REB · AST (+ STL, BLK)', 'Shooting: FG · 3PT · FT', 'Rebounds: total · offensive · defensive', 'Offensive rebounds', 'Defensive rebounds', 'Blocks', 'Steals', 'Free throws'];
+
+  // Graphic tiles, in show order. full = full screen (the score bug steps out under it); low = shares the lower-third spot.
+  const GFX = [
+    // Four to a row: openers and quick inserts / lineups (full screen, then lower third) / the rest.
+    // `long` is the name used everywhere but the tile, where the FULL SCREEN / LOWER THIRD line already tells the two lineups apart.
+    { id: 'title', name: 'Title card', kind: 'full' },
+    { id: 'ann', name: 'Announcers', kind: 'low' },
+    { id: 'l3', name: 'Lower third', kind: 'low', key: 'N' },
+    { id: 'pop', name: 'Pop-up', kind: 'pop', key: 'U' },
+    { id: 'luH', name: 'Lineup: FBCA', kind: 'full' },
+    { id: 'luA', name: 'Lineup: EWS', kind: 'full' },
+    { id: 'luL3H', name: 'Lineup: FBCA', long: 'Lineup lower third: FBCA', kind: 'low' },
+    { id: 'luL3A', name: 'Lineup: EWS', long: 'Lineup lower third: EWS', kind: 'low' },
+    { id: 'spot', name: 'Player spotlight', kind: 'full' },
+    { id: 'stats', name: 'Team stats', kind: 'full' },
+    { id: 'qr', name: 'Fan vote QR', kind: 'low', key: 'V' },
+    { id: 'vote', name: 'Vote results', kind: 'full' },
+  ];
+  const byId = id => GFX.find(g => g.id === id);
+  const longName = id => byId(id).long || byId(id).name;
+  const isOn = id => s.full === id || s.low === id;
+  const opts = (list, sel) => list.map(o => `<option${o === sel ? ' selected' : ''}>${o}</option>`).join('');
+  const teamOpts = (extra = '') => `<option value="home">${s.home.name}</option><option value="away">${s.away.name}</option>${extra}`;
+
+  const luRows = side => LU[side].map(([p, pos, ph], i) => `<div class="lu-row"><b>${i + 1}</b><input value="#${p}" list="roster-${side}"><input value="${pos}" placeholder="Position"><span class="${ph ? 'yes' : ''}">${ph ? 'Photo ✓' : 'No photo'}</span></div>`).join('')
+    + `<datalist id="roster-${side}">${ROSTER[side].map(r => `<option value="#${r}">`).join('')}</datalist>`
+    + `<label>Head coach</label><input value="${COACH[side]}" placeholder="Coach Smith" maxlength="40">`;
+  const luHint = '<p class="hint" style="margin-top:0">The starters fill in from the stat keeper page when its keeper sets them (with stats from there). Pick from the roster, or type one like #3 Jordan Lee. Headshots come from Game setup → Player photos; without one, the team logo shows.</p>';
+  const voteLive = () => `<p class="hint" style="margin-top:0">${s.voteOpen ? 'Voting is open.' : 'Voting is closed.'} 41 votes (only you see the count).</p>
+      <div class="row" style="margin-top:4px"><button class="${s.voteOpen ? 'onair' : 'go'}" id="fvOpen">${s.voteOpen ? 'Voting is open' : 'Reopen voting'}</button><button id="fvClose"${s.voteOpen ? '' : ' disabled'}>Close voting</button><button class="danger">Clear vote</button></div>
+      <ul class="tally"><li><span>#0 Dax Kon <small>FBCA</small></span><b>58%</b><div class="t"><div class="f" style="width:58%"></div></div></li><li><span>#23 Jordan Ellis <small>EWS</small></span><b>42%</b><div class="t"><div class="f" style="width:42%"></div></div></li></ul>
+      <p class="hint">Nominees and the admin key are in Graphics setup → Fan vote.</p>`;
+
+  // The right panel for each graphic: every field from the working page's tab for it.
+  const DETAILS = {
+    l3: () => `<label>From the stats: pick a player to fill in tonight's line</label>
+      <div class="two"><select>${ROSTER.home.map(r => `<option>#${r}</option>`).join('')}</select><select aria-label="Stat line">${opts(L3_FMT, 'PTS · REB · AST')}</select></div>
+      <p class="hint">Stats updated 4 s ago.</p>
+      <label>Name</label><input maxlength="36" placeholder="#23 Jordan Ellis" value="#0 Dax Kon">
+      <label>Stat line</label><input maxlength="60" placeholder="18 PTS · 6 REB · 4 AST" value="12 PTS · 4 REB · 3 AST">
+      <div class="two"><div><label>Colors</label><select>${teamOpts('<option value="none">Neutral</option>')}</select></div><div><label>Auto-hide after (sec, 0 = stay)</label><input type="number" min="0" max="120" value="8"></div></div>
+      <label class="chk"><input type="checkbox" checked> Show the player's headshot (from Game setup → Player photos)</label>
+      <div class="row"><button class="sm" id="l3Save">Save to list</button></div>
+      <label>Saved</label><ul class="list">${savedL3()}</ul>`,
+    pop: () => `<p class="hint" style="margin-top:0">A strip that rises above the bug. It shares the space with the lower third and the fan vote QR, so showing one takes down the others.</p>
+      <label>Text</label><input id="popText" maxlength="70" placeholder="e.g. SENIOR NIGHT · #3 LEE NEEDS 6 FOR 1,000">
+      <div class="two" style="margin-top:8px"><select aria-label="Team tag"><option>No team tag</option>${teamOpts()}</select><button class="go" data-popgo="text">Show text</button></div>
+      <label>Run</label><div class="row" style="margin-top:0"><button data-popgo="run">Show: FBCA on a 10–0 run</button></div>
+      <label>Team stat (both teams)</label>
+      <div class="popstats">${POP_STATS.map(x => `<button class="sm" data-popgo="${x}">${x}</button>`).join('')}</div>
+      <p class="hint">Shooting, rebounds and the rest need the stats connected (Connections → Data sources). Team fouls and timeouts work any time.</p>
+      <label>Take it down after (seconds, 0 = stays up)</label><input type="number" min="0" max="120" value="8">
+      <p class="hint" id="popNow"></p>`,
+    ann: () => `<p class="hint" style="margin-top:0">The announcers' names, as a pop-up strip above the bug or as a lower third in the bug's spot.</p>
+      <label>Show as</label><select><option>Pop-up above the bug</option><option>Lower third (the bug steps aside, then comes back)</option></select>
+      <label>Label</label><input maxlength="24" placeholder="On the call" value="On the call">
+      <label>Announcers</label><input maxlength="30" placeholder="First announcer" value="Chris Lee">
+      <input maxlength="30" placeholder="Second announcer (optional)" value="Jordan Ellis" style="margin-top:6px">
+      <input maxlength="30" placeholder="Third announcer (optional)" style="margin-top:6px">
+      <p class="hint">It comes down on its own after the pop-up's time (now 8 s; set it in Graphics setup → Pop-ups). As a lower third it stays until you take it down.</p>`,
+    title: () => `<p class="hint" style="margin-top:0">The matchup card: both teams' logos, names and records (from Game setup), with the details below.</p>
+      <div class="two"><div><label>Title</label><input placeholder="Boys Basketball" value="Boys Basketball"></div><div><label>Subtitle (optional)</label><input placeholder="District game"></div></div>
+      <div class="two"><div><label>${s.home.name} full name</label><input placeholder="Fort Bend Christian Academy" value="${s.home.full}"></div><div><label>${s.away.name} full name</label><input placeholder="The Village School" value="${s.away.full}"></div></div>
+      <p class="hint" style="margin-top:4px">Shown on the title card. Leave blank to use the short name. Picking a game in Game setup fills these in.</p>
+      <div class="two"><div><label>Date and time</label><input placeholder="Thu, Dec 10 · 6:00 PM" value="Wed, Dec 10 · 6:00 PM"></div><div><label>Venue</label><input placeholder="The Nest" value="The Nest"></div></div>
+      <p class="hint">Records: FBCA 6-3. EWS has no record (add one in Game setup).</p>`,
+    luH: () => luHint + luRows('home'),
+    luA: () => luHint + luRows('away'),
+    luL3H: () => luHint + luRows('home'),
+    luL3A: () => luHint + luRows('away'),
+    spot: () => `<label>Player (from the stats roster, or Game setup → Player photos)</label><select>${ROSTER.home.map(r => `<option>#${r} (FBCA)</option>`).join('')}</select>
+      <div class="two"><div><label>Team</label><select>${teamOpts()}</select></div><div><label>Number</label><input maxlength="3" inputmode="numeric" value="0"></div></div>
+      <label>Name</label><input maxlength="30" placeholder="Jordan Lee" value="Dax Kon">
+      <div class="two"><div><label>Position</label><input maxlength="20" placeholder="Guard" value="Guard"></div><div><label>Class</label><input maxlength="20" placeholder="Senior" value="Senior"></div></div>
+      <label>Stats (number, then what it is)</label>
+      <div class="sp-stats"><input maxlength="6" placeholder="18.4" value="12"><input maxlength="20" placeholder="PPG" value="PTS"><input maxlength="6" placeholder="7.2" value="4"><input maxlength="20" placeholder="RPG" value="REB"><input maxlength="6" placeholder="3.1" value="3"><input maxlength="20" placeholder="APG" value="AST"></div>
+      <label>Or fill tonight's numbers from the stats</label>
+      <div class="two"><select>${ROSTER.home.map(r => `<option>#${r}</option>`).join('')}</select><button class="sm">Fill PTS · REB · AST</button></div>
+      <label>Photo (optional; without one, the jersey number shows)</label>
+      <div class="setclk" style="margin-top:0"><button class="sm" style="flex:1">Choose photo…</button><button class="sm">Remove</button></div>
+      <p class="hint">Best: a PNG cutout with a transparent background, waist up. It's sized from the player's outline. <a href="../graphics/spotlight-photo-template.png" style="color:var(--cue)">Headshot template</a></p>
+      <div class="fit"><div class="cv ph">PHOTO</div><div><label>Size</label><input type="range" min="60" max="160" value="100"><label>Up / down</label><input type="range" min="-150" max="150" value="0"><button class="sm" style="margin-top:6px">Reset fit</button></div></div>
+      <div class="row"><button class="sm">Save to list</button></div>
+      <ul class="list">${savedSpot()}</ul>`,
+    stats: () => `<label>Title</label><select><option>Automatic (Halftime, Final, or the quarter)</option><option>Halftime</option><option>Final</option><option>No title</option></select>
+      <p class="hint">Live from the stat keeper.</p>
+      <table class="mini"><tr><th></th><th>${s.away.name}</th><th>${s.home.name}</th></tr><tr><td>FG</td><td>9-25</td><td>12-28</td></tr><tr><td>3PT</td><td>2-11</td><td>3-9</td></tr><tr><td>FT</td><td>4-6</td><td>5-8</td></tr><tr><td>Rebounds</td><td>15</td><td>18</td></tr><tr><td>Assists</td><td>5</td><td>8</td></tr><tr><td>Turnovers</td><td>9</td><td>6</td></tr><tr><td>Steals</td><td>3</td><td>6</td></tr><tr><td>Blocks</td><td>1</td><td>2</td></tr></table>`,
+    qr: () => `<p class="hint" style="margin-top:0">The QR code for fbca.tv/vote, as a lower third. It shares the spot with the lower third and pop-up.</p>` + voteLive(),
+    vote: () => voteLive(),
+  };
+  const savedL3 = () => [['#23 Jordan Ellis', '18 PTS · 6 REB'], ['Senior Night', '#3 Trent Meyer']].map(([a, b]) => `<li><span><b>${a}</b> <small>${b}</small></span><button class="sm">Show</button><button class="sm">Edit</button><button class="sm danger">✕</button></li>`).join('');
+  const savedSpot = () => [['#0 Dax Kon', 'FBCA · Guard · Senior'], ['#23 Jordan Ellis', 'EWS · Forward']].map(([a, b]) => `<li><span><b>${a}</b> <small>${b}</small></span><button class="sm">Show</button><button class="sm">Edit</button><button class="sm danger">✕</button></li>`).join('');
+
+  // ---- Clock ----
+  const fmt = sec => sec >= 60 ? Math.floor(sec / 60) + ':' + String(Math.floor(sec % 60)).padStart(2, '0') : sec.toFixed(1);
+  const elapsed = () => s.running ? (performance.now() - s.startedAt) / 1000 : 0;
+  const clockLeft = () => s.running ? Math.max(0, s.base - elapsed()) : s.left;
+  const perLabel = () => PERIODS.find(p => p[0] === s.period)[1].toUpperCase();
+  // The clock font's digits aren't all the same width (a 1 is half as wide), so each character gets a fixed-width slot and the clock doesn't jump as it counts.
+  const digits = (node, str) => { if (node.dataset.shown === str) return; node.dataset.shown = str;
+    node.replaceChildren(...[...str].map(c => el('span', /\d/.test(c) ? 'dg' : 'sep', c))); };
+  const renderClock = () => {
+    const left = clockLeft();
+    digits($('time'), fmt(left)); $('perLbl').textContent = perLabel();
+    const shot = Math.max(0, Math.ceil(s.shot - elapsed()));
+    $('shot').hidden = !rules.shotOn; digits($('shotNum'), s.shotShown ? String(shot) : '–');
+    $('pvC').textContent = perLabel() + ' ' + fmt(left) + (rules.shotOn && s.shotShown ? '  ' + shot : '');
+    // Scoreboard feed (mockup: mirrors this page; the real one shows the raw scoreboard data). The scoreboard calls them Guest and Home.
+    digits($('fdClock'), fmt(left)); $('fdPer').textContent = perLabel();
+    $('fdShotW').hidden = !rules.shotOn; digits($('fdShot'), String(shot));
+    const rows = [['Guest', s.away], ['Home', s.home]].map(([w, t]) => `<tr><td>${w} · <b>${t.name}</b></td><td>${t.score}</td><td>${t.tos}</td><td>${t.fouls}</td></tr>`).join('');
+    if ($('fdTeams').innerHTML !== rows) $('fdTeams').innerHTML = rows;
+    if (s.running && left <= 0) { s.left = 0; s.running = false; render(); }
+  };
+  const stopClock = () => { if (s.running) { s.left = clockLeft(); s.shot = Math.max(0, s.shot - elapsed()); s.running = false; } };
+
+  // ---- Teams ----
+  const order = () => s.swap ? ['home', 'away'] : ['away', 'home'];
+  const inBonus = side => s[side === 'home' ? 'away' : 'home'].fouls >= rules.bonusAt; // the team that shoots
+  const teamCard = side => {
+    const t = s[side], d = el('div', 'tm');
+    const nm = el('span', 'nm', t.name); nm.style.background = t.bg; nm.style.color = t.fg;
+    const pts = el('div', 'pts');
+    for (const n of [1, 2, 3, -1]) { const b = el('button', null, n > 0 ? '+' + n : '−1'); b.onclick = () => { t.score = Math.max(0, t.score + n); render(); }; pts.append(b); }
+    const step = (label, key, max) => {
+      const r = el('div', 'step'), c = el('div', 'ctl'), minus = el('button', 'sm', '−'), plus = el('button', 'sm', '+');
+      minus.onclick = () => { t[key] = Math.max(0, t[key] - 1); render(); }; plus.onclick = () => { t[key] = Math.min(max, t[key] + 1); render(); };
+      c.append(minus, el('b', null, t[key]), plus); r.append(el('span', null, label), c); return r;
+    };
+    const acts = el('div', 'acts'), to = el('button', 'sm', 'Timeout'), poss = el('button', 'sm' + (s.poss === side ? ' sel' : ''), 'Possession arrow');
+    to.onclick = () => { if (t.tos) { t.tos--; stopClock(); render(); toast(t.name + ' timeout: the timeout graphic flashes'); } };
+    poss.onclick = () => { s.poss = side; render(); };
+    acts.append(to, poss);
+    d.append(nm, el('div', 'sc', t.score), pts, step('Team fouls', 'fouls', 20), el('div', 'bonus', inBonus(side) ? 'BONUS' : ''), step('Timeouts left', 'tos', rules.toMax), acts);
+    return d;
+  };
+
+  // ---- Game setup: both teams, as on the working page ----
+  const teamSetup = side => {
+    const t = s[side], home = side === 'home';
+    const p = $(home ? 'setupHome' : 'setupAway');
+    p.innerHTML = `<h2>${home ? 'Home' : 'Away'}</h2>
+      <div class="two"><div><label>Name on the bug</label><input data-k="name" value="${t.name}"><small class="hint" style="display:block;margin-top:3px">Fits the bug.</small></div>
+        <div><label>Record (optional, e.g. 8-2)</label><input data-k="rec" maxlength="8" value="${t.rec}"></div></div>
+      <div class="two"><div><label>Team color</label><input data-k="bg" type="color" value="${t.bg}"></div><div><label>Text color on the logo end</label><input data-k="fg" type="color" value="${t.fg}"></div></div>
+      ${home ? '<div class="row"><button class="sm" data-fbca>Restore FBCA colors</button></div>' : ''}
+      <label>Logo (any PNG or JPG; adjust it below. Remembered for this team on this computer)</label>
+      <div class="logo-box"><i style="background:${t.bg};color:${t.fg};border-style:solid">${t.name}</i><button class="sm">Choose file…</button><button class="sm" data-adjust>Adjust</button><button class="sm">Remove</button></div>
+      <div class="fit" data-fitbox hidden><div class="cv" style="background:${t.bg};color:${t.fg}">${t.name}</div><div>
+        <label>Size</label><input type="range" min="50" max="200" value="100"><label>Left / right</label><input type="range" min="-50" max="50" value="0"><label>Up / down</label><input type="range" min="-50" max="50" value="0">
+        <label class="chk" style="margin-top:4px"><input type="checkbox"> Make the background see-through</label>
+        <div class="row"><button class="sm">Reset fit</button><button class="sm go" data-adjust>Done</button></div></div></div>
+      <div class="row"><button class="sm" data-pph>Player photos</button></div>
+      <div class="pph" data-pphbox hidden>
+        <div class="two" style="align-items:end"><div><label>Roster</label><select><option>Boys</option><option>Girls</option><option>Not set</option></select></div><p class="hint" style="margin:0">Picking Boys or Girls keeps each roster's photos apart.</p></div>
+        <p class="hint">Headshots for the graphics: player spotlight, lower thirds, lineups and the fan vote. <a href="../graphics/spotlight-photo-template.png" style="color:var(--cue)">Headshot template</a></p>
+        <div class="pph-grid" style="--c:${t.bg};--f:${t.fg}">${ROSTER[side].map((r, i) => { const [n, ...nm] = r.split(' '); const has = t.photos && i % 3 !== 2;
+          return `<div class="pph-tile"><div class="ph${has ? ' has' : ''}">${has ? '' : n}</div><b>#${n} ${nm.join(' ')}</b><div class="acts"><button>${has ? 'Replace' : 'Add'}</button>${has ? '<button>✕</button>' : ''}</div></div>`; }).join('')}</div>
+        <div class="pph-add"><input maxlength="3" inputmode="numeric" placeholder="#"><input maxlength="30" placeholder="Player name"><button class="sm">Add player</button></div>
+      </div>`;
+    p.querySelectorAll('[data-k]').forEach(inp => inp.addEventListener('input', () => { t[inp.dataset.k] = inp.dataset.k === 'name' ? inp.value.toUpperCase() : inp.value; renderLive(); }));
+    p.querySelectorAll('[data-adjust]').forEach(b => b.onclick = () => { const f = p.querySelector('[data-fitbox]'); f.hidden = !f.hidden; });
+    p.querySelector('[data-pph]').onclick = () => { const f = p.querySelector('[data-pphbox]'); f.hidden = !f.hidden; };
+    const fb = p.querySelector('[data-fbca]'); if (fb) fb.onclick = () => { t.bg = '#063E0C'; t.fg = '#EAAF0F'; teamSetup(side); renderLive(); };
+  };
+  const renderRules = () => {
+    $('rules').innerHTML = `<div class="two"><div><label>Quarter length (min)</label><input type="number" min="1" max="20" data-r="qMin" value="${rules.qMin}"></div><div><label>OT length (min)</label><input type="number" min="1" max="10" data-r="otMin" value="${rules.otMin}"></div></div>
+      <div class="two"><div><label>Timeouts per game</label><input type="number" min="0" max="8" data-r="toMax" value="${rules.toMax}"></div><div><label>Bonus at team foul #</label><input type="number" min="1" max="15" data-r="bonusAt" value="${rules.bonusAt}"></div></div>
+      <div class="two"><div><label>Team fouls reset</label><select data-r="foulReset"><option value="quarter">Every quarter</option><option value="half">Every half</option></select></div>
+        <div><label>Shot clock</label><select data-r="shotOn"><option value="0">Off (TAPPS: no shot clock)</option><option value="1">On</option></select></div></div>
+      <div class="two"><div><label>Shot clock full reset (sec)</label><input type="number" min="5" max="60" data-r="shotFull" value="${rules.shotFull}"></div><div><label>Short reset (sec)</label><input type="number" min="5" max="60" data-r="shotShort" value="${rules.shotShort}"></div></div>
+      <label class="chk"><input type="checkbox" data-r="toAuto" checked> Flash the timeout graphic when the scoreboard's timeouts-left drops</label>
+      <p class="hint">Defaults follow NFHS: four 8-minute quarters and 4-minute overtimes; 5 timeouts (three 60-second, two 30-second), plus one more for each team at the start of each overtime; two free throws starting with the 5th team foul of each quarter (no one-and-one), with fouls carrying from the 4th quarter into overtime; shot clock off, since TAPPS doesn't use one. If a game does, NFHS uses 35 seconds; the 20-second short reset is a common state option.</p>
+      <p class="hint">BONUS shows on the team that shoots the free throws: the one whose opponent has reached the bonus foul number.</p>`;
+    $('rules').querySelector('[data-r="shotOn"]').value = rules.shotOn ? '1' : '0';
+    $('rules').querySelectorAll('[data-r]').forEach(inp => inp.addEventListener('change', () => {
+      const k = inp.dataset.r;
+      rules[k] = k === 'shotOn' ? inp.value === '1' : k === 'toAuto' ? inp.checked : k === 'foulReset' ? inp.value : +inp.value;
+      if (k === 'qMin' && !s.running) s.left = s.base = rules.qMin * 60;
+      if (k === 'shotFull' || k === 'shotOn') s.shot = rules.shotFull;
+      renderLive();
+    }));
+  };
+
+  // ---- Graphics setup: fan vote nominees, saved lists ----
+  const fvPicked = new Set(['home:0 Dax Kon', 'away:23 Jordan Ellis']);
+  const renderFv = () => {
+    $('fvPick').replaceChildren(...['home', 'away'].map(side => {
+      const d = el('div'); d.append(el('h4', null, s[side].name));
+      const chips = el('div', 'chips');
+      for (const r of ROSTER[side]) { const k = side + ':' + r, b = el('button', 'chip' + (fvPicked.has(k) ? ' sel' : ''), '#' + r);
+        b.onclick = () => { if (fvPicked.has(k)) fvPicked.delete(k); else if (fvPicked.size < 4) fvPicked.add(k); else toast('Up to 4 nominees'); renderFv(); }; chips.append(b); }
+      d.append(chips); return d;
+    }));
+    $('fvNoms').innerHTML = [...fvPicked].map(k => { const [side, r] = k.split(':'); const [n, ...nm] = r.split(' ');
+      return `<div class="fv-nom"><select>${teamOpts().replace(`value="${side}"`, `value="${side}" selected`)}</select><input value="${n}"><input value="${nm.join(' ')}"><input placeholder="Position"><button class="sm">Headshot</button></div>`; }).join('')
+      || '<p class="hint">No nominees yet.</p>';
+  };
+
+  // ---- Connections ----
+  const SRC = [['Game clock', 'b'], ['Shot clock', 'b'], ['Period', 'b'], ['Score', 'bs', '0-0'], ['Team fouls', 'bs', '0-0 this quarter'], ['Timeouts left', 'b'], ['Player stats (lower thirds)', 's', '18 players'], ['Team stats (stats panel)', 's', 'ready']];
+  const srcOn = { 'Game clock': 'b', 'Shot clock': 'b', 'Score': 's', 'Team fouls': 's', 'Player stats (lower thirds)': 's', 'Team stats (stats panel)': 's' };
+  const renderSrc = () => {
+    $('srcRows').innerHTML = SRC.map(([label, from, note]) => `<tr><td>${label}</td>${['b', 's'].map(w => from.includes(w)
+      ? `<td><input type="checkbox" data-src="${label}" data-w="${w}"${srcOn[label] === w ? ' checked' : ''}>${w === 's' && note && srcOn[label] === 's' ? `<small>${note}</small>` : ''}</td>` : '<td><span class="na">—</span></td>').join('')}</tr>`).join('');
+    // One source per item: ticking one unticks the other.
+    $('srcRows').querySelectorAll('input').forEach(b => b.onchange = () => { srcOn[b.dataset.src] = b.checked ? b.dataset.w : ''; renderSrc(); });
+  };
+  const renderStore = () => {
+    $('storeList').innerHTML = [['Kept permanently: yes', ''], ['Settings storage: 212 KB of 5 MB', ''], ['Saved spotlights: 2', '2 photos, 180 KB'], ['Saved lower thirds: 2', ''], ['School logos remembered: 4', '96 KB'], ['Player photos (headshots): 26', '1.4 MB']]
+      .map(([a, b]) => `<li><span>${a} ${b ? `<small>· ${b}</small>` : ''}</span>${b ? '<button class="sm danger">Clear</button>' : ''}</li>`).join('');
+  };
+
+  // ---- Show / take down ----
+  const showGfx = id => { const g = byId(id); if (g.kind === 'full') { s.full = id; } else { s.low = id; } render(); };
+  const takeGfx = id => { if (s.full === id) s.full = ''; if (s.low === id) s.low = ''; render(); };
+  const popLbl = () => s.popWhat === 'text' ? ($('popText')?.value.trim() || 'Senior Night') : s.popWhat === 'run' ? 'FBCA on a 10–0 run' : s.popWhat + ': ' + s.away.name + ' vs ' + s.home.name;
+
+  const renderLive = () => {
+    const run = $('run'); run.textContent = s.running ? 'Stop clock' : 'Start clock'; run.className = s.running ? 'running' : 'go';
+    $('periods').replaceChildren(...PERIODS.map(([k, l]) => { const b = el('button', 'sm' + (s.period === k ? ' sel' : ''), l);
+      b.onclick = () => { s.period = k; s.running = false; s.left = s.base = (k.includes('OT') ? rules.otMin : rules.qMin) * 60; s.shot = rules.shotFull; render(); }; return b; }));
+    $('shotCtl').hidden = !rules.shotOn;
+    document.querySelectorAll('.sfl').forEach(x => x.textContent = rules.shotFull); document.querySelectorAll('.ssl').forEach(x => x.textContent = rules.shotShort);
+    $('teams').replaceChildren(...order().map(teamCard));
+    const [L, R] = order();
+    $('sideNote').textContent = s[L].name + ' on the left, ' + s[R].name + ' on the right.';
+    $('pvAn').textContent = s[L].name; $('pvA').textContent = s[L].score; $('pvH').textContent = s[R].score; $('pvHn').textContent = s[R].name;
+    for (const [id, side] of [['pvAn', L], ['pvHn', R]]) { $(id).style.background = s[side].bg; $(id).style.color = s[side].fg; }
+    // Score bug: green while up, amber while it waits under a full-screen graphic
+    const bugQ = s.bug && !!s.full;
+    const bb = $('bugBtn'); bb.textContent = s.bug ? (bugQ ? 'Score bug returns after' : 'Hide score bug') : 'Show score bug';
+    bb.className = s.bug ? (bugQ ? 'queued' : 'onair') : '';
+    bb.title = bugQ ? 'The score bug comes back when the full-screen graphic goes down. Click to keep it hidden.' : '';
+    $('pvBug').classList.toggle('out', !s.bug || !!s.full);
+    $('stnBtn').className = s.stn ? 'onair' : ''; $('pvStn').hidden = !s.stn; $('stnOn').checked = s.stn;
+    $('pvFull').hidden = !s.full; $('pvFull').textContent = s.full ? longName(s.full) : '';
+    $('pvLow').hidden = !s.low; $('pvLow').textContent = s.low === 'pop' ? 'Pop-up · ' + popLbl() : s.low ? longName(s.low) : '';
+    $('pvLow').classList.toggle('bottom', !s.bug || !!s.full);
+    $('tiles').replaceChildren(...GFX.map(g => {
+      const on = isOn(g.id), b = el('button', 'tile' + (on ? ' onair' : '') + (s.pick === g.id ? ' pick' : ''));
+      const top = el('b', null, g.name); if (g.key) { top.append(' '); top.append(el('kbd', null, g.key)); }
+      b.append(top, el('small', null, on ? 'On air' : g.kind === 'full' ? 'Full screen' : g.kind === 'pop' ? 'Pop-up' : 'Lower third'));
+      b.onclick = () => { s.pick = g.id; render(); };
+      b.ondblclick = () => { s.pick = g.id; isOn(g.id) ? takeGfx(g.id) : showGfx(g.id); };
+      return b;
+    }));
+    const g = byId(s.pick), on = isOn(g.id);
+    $('detTitle').textContent = longName(g.id);
+    const sig = g.id + '|' + s.voteOpen + '|' + s.home.name + s.away.name;
+    if ($('detBody').dataset.for !== sig) {
+      $('detBody').innerHTML = DETAILS[g.id](); $('detBody').dataset.for = sig;
+    }
+    const show = $('detShow'); show.textContent = on ? 'On air' : 'Show ' + longName(g.id).replace(/^Lineup/, 'lineup').replace(/^[A-Z]/, c => c.toLowerCase()); show.className = on ? 'onair' : 'go';
+    $('detHide').disabled = !on;
+    document.querySelectorAll('[data-popgo]').forEach(b => { const live = s.low === 'pop' && s.popWhat === b.dataset.popgo; b.classList.toggle('onair', live); b.classList.toggle('go', !live && b.dataset.popgo === 'text'); });
+    if ($('popNow')) $('popNow').textContent = s.low === 'pop' ? 'On air: ' + popLbl() + '.' : '';
+    const air = [s.full, s.low].filter(Boolean).map(longName);
+    $('airNote').replaceChildren(...(air.length ? [el('b', null, 'ON AIR: '), air.join(', ')] : ['No graphic inserts on air']));
+    $('takeAll').disabled = !air.length;
+    renderClock();
+  };
+  const render = () => {
+    document.querySelectorAll('[data-v]').forEach(v => v.hidden = v.dataset.v !== s.view);
+    document.querySelectorAll('#views button').forEach(b => b.classList.toggle('cur', b.dataset.view === s.view));
+    renderLive();
+  };
+
+  // ---- Wiring ----
+  document.querySelectorAll('#views button').forEach(b => b.onclick = () => { s.view = b.dataset.view; render(); });
+  $('run').onclick = () => { if (s.running) stopClock(); else { s.base = s.left; s.startedAt = performance.now(); s.running = true; } render(); };
+  document.querySelectorAll('[data-adj]').forEach(b => b.onclick = () => { const d = +b.dataset.adj; if (s.running) s.base += d; else s.left = Math.max(0, s.left + d); renderClock(); });
+  const setClock = () => { const v = $('setClock').value.trim(), m = v.match(/^(\d+):(\d{1,2})$/), sec = m ? +m[1] * 60 + +m[2] : parseFloat(v);
+    if (!isNaN(sec)) { stopClock(); s.left = sec; $('setClock').value = ''; render(); } };
+  $('btnSet').onclick = setClock; $('setClock').addEventListener('keydown', e => { if (e.key === 'Enter') setClock(); });
+  const shotReset = n => { s.shotShown = true; s.shot = n + elapsed(); renderClock(); };
+  document.querySelectorAll('[data-shot]').forEach(b => b.onclick = () => b.dataset.shot === 'off' ? (s.shotShown = !s.shotShown, renderClock()) : shotReset(b.dataset.shot === 'full' ? rules.shotFull : rules.shotShort));
+  $('swap').onclick = () => { s.swap = !s.swap; render(); };
+  $('bugBtn').onclick = () => { s.bug = !s.bug; render(); };
+  $('stnBtn').onclick = () => { s.stn = !s.stn; render(); };
+  $('stnOn').onchange = () => { s.stn = $('stnOn').checked; render(); };
+  $('stnOp').oninput = () => { $('stnOpV').textContent = $('stnOp').value + '%'; $('pvStn').style.opacity = $('stnOp').value / 60; };
+  $('fillBtn').onclick = $('keyBtn').onclick = () => toast('Mockup: no windows open from the lab');
+  $('takeAll').onclick = () => { s.full = ''; s.low = ''; render(); };
+  $('detShow').onclick = () => { if (!isOn(s.pick)) showGfx(s.pick); };
+  $('detHide').onclick = () => takeGfx(s.pick);
+  $('detBody').addEventListener('click', e => {
+    const b = e.target.closest('[data-popgo]'); if (b) { s.popWhat = b.dataset.popgo; showGfx('pop'); return; }
+    if (e.target.id === 'fvOpen') { s.voteOpen = true; render(); } else if (e.target.id === 'fvClose') { s.voteOpen = false; render(); }
+    else if (e.target.id === 'l3Save') toast('Saved to the list (mockup)');
+  });
+  $('btnReset').onclick = () => { if (confirm('Reset scores, fouls, timeouts and the clock? (Mockup only)')) { for (const side of ['home', 'away']) Object.assign(s[side], { score: 0, fouls: 0, tos: rules.toMax }); s.running = false; s.left = s.base = rules.qMin * 60; s.period = '1Q'; s.view = 'live'; render(); } };
+  $('statFrom').onchange = () => { const sheet = $('statFrom').value === 'sheet'; $('sheetBox').hidden = !sheet; $('keeperBox').hidden = sheet; };
+  $('alphaKey').onchange = () => { const on = $('alphaKey').checked; $('keyColor').hidden = on; $('keyWinBtn').hidden = !on; $('keyBtn').hidden = !on; };
+
+  // Keyboard, as on the working page (left and right follow the screen)
+  document.addEventListener('keydown', e => {
+    if (e.target.matches('input, select, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key.toLowerCase(), [L, R] = order();
+    const pts = { q: [L, 1], w: [L, 2], e: [L, 3], a: [L, -1], i: [R, 1], o: [R, 2], p: [R, 3], l: [R, -1] }[k];
+    if (e.code === 'Space') { e.preventDefault(); $('run').click(); }
+    else if (pts) { s[pts[0]].score = Math.max(0, s[pts[0]].score + pts[1]); render(); }
+    else if (k === 's' || k === 'k') { const t = s[k === 's' ? L : R]; t.fouls++; render(); }
+    else if (k === 'r' && rules.shotOn) shotReset(rules.shotFull);
+    else if (k === 't' && rules.shotOn) shotReset(rules.shotShort);
+    else if (k === 'x') { s.poss = s.poss === 'home' ? 'away' : 'home'; render(); }
+    else if (k === 'h') $('bugBtn').click();
+    else if (k === 'b') $('stnBtn').click();
+    else if (k === 'escape') { s.full = ''; render(); }
+    else { const g = GFX.find(x => x.key && x.key.toLowerCase() === k); if (g) isOn(g.id) ? takeGfx(g.id) : showGfx(g.id); }
+  });
+
+  teamSetup('away'); teamSetup('home'); renderRules(); renderFv(); renderSrc(); renderStore();
+  $('l3Saved').innerHTML = savedL3(); $('spSaved').innerHTML = savedSpot();
+  setInterval(renderClock, 100);
+  render();
+})();
+</script>
+</body>
+</html>
