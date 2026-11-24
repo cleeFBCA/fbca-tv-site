@@ -204,10 +204,10 @@
   .bx[data-dir="out"] .rws { transition: clip-path .38s cubic-bezier(.6,0,.4,1); }
   .bx[data-dir="out"] .hd, .bx[data-dir="out"] .ft { transition: clip-path .22s ease-in .16s; }
 
-  /* ---- Home run: name, season HR and RBI, then HOME RUN in big letters with SOLO / 2-RUN / 3-RUN / GRAND SLAM ---- */
+  /* ---- Home run: HOME RUN in big letters with SOLO / 2-RUN / 3-RUN / GRAND SLAM, then the name with season HR and RBI ---- */
   .hr { position: absolute; left: 75px; bottom: 52px; width: 1770px; height: 128px; }
   .hr .bg { position: absolute; inset: 0; border-radius: 4px; clip-path: inset(0 100% 0 0); transition: clip-path .42s cubic-bezier(.22,1,.36,1); }
-  .hr .lg { position: absolute; left: 14px; top: -40px; width: 170px; height: 170px; opacity: 0; transform: scale(.6); transition: opacity .25s, transform .35s cubic-bezier(.3,1.4,.5,1); }
+  .hr .lg { position: absolute; left: 20px; top: -16px; width: 160px; height: 160px; opacity: 0; transform: scale(.6); transition: opacity .25s, transform .35s cubic-bezier(.3,1.4,.5,1); }
   .hr .lg .ini { font-size: 60px; }
   .hr .nm { position: absolute; left: 205px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; line-height: .98; color: var(--f); clip-path: inset(0 100% 0 0); transition: clip-path .45s cubic-bezier(.22,1,.36,1); }
   .hr .nm .f { font-size: 44px; font-weight: 600; } .hr .nm .l { font-size: 70px; font-weight: 800; white-space: nowrap; }
@@ -219,18 +219,19 @@
                    opacity: 0; transform: scale(.15) translateY(40px); transition: opacity .25s, transform .45s cubic-bezier(.25,1.5,.45,1), filter .3s; transition-delay: calc(var(--i) * 45ms); }
   .hr .word span.gap { width: 50px; }
   .hr .tag { position: absolute; right: 40px; top: 0; bottom: 0; display: grid; place-items: center; font-size: 66px; font-weight: 800; color: var(--f); letter-spacing: .04em; opacity: 0; transform: translateX(40px); transition: opacity .3s .5s, transform .4s .5s; }
+  /* 1 logo box · 2 full bar, HOME RUN · 3 HOME RUN blurs off · 4 name · 5 name and stats · 6 shrinks to the middle · 7 gone */
   .hr[data-st="1"] .bg { clip-path: inset(0 1570px 0 0); transition: clip-path .22s cubic-bezier(.5,0,1,1); }
-  .hr[data-st="2"] .bg { clip-path: inset(0 1100px 0 0); }
-  .hr[data-st="3"] .bg, .hr[data-st="4"] .bg, .hr[data-st="5"] .bg { clip-path: inset(0 0 0 0); }
-  .hr[data-st="3"] .bg { transition: clip-path .55s cubic-bezier(.45,0,.2,1); }
+  .hr[data-st="2"] .bg, .hr[data-st="3"] .bg, .hr[data-st="4"] .bg, .hr[data-st="5"] .bg { clip-path: inset(0 0 0 0); }
+  .hr[data-st="2"] .bg { transition: clip-path .55s cubic-bezier(.22,1,.36,1); }
   .hr[data-st="6"] .bg { clip-path: inset(0 630px 0 630px); transition: clip-path .32s cubic-bezier(.5,0,.3,1); }
   .hr[data-st="7"] .bg { clip-path: inset(0 885px 0 885px); transition: clip-path .2s cubic-bezier(.5,0,1,1); }
   .hr[data-st="1"] .lg, .hr[data-st="2"] .lg, .hr[data-st="3"] .lg, .hr[data-st="4"] .lg, .hr[data-st="5"] .lg { opacity: 1; transform: none; }
-  .hr[data-st="2"] .nm, .hr[data-st="3"] .nm { clip-path: inset(0 0 0 0); transition-delay: .12s; }
-  .hr[data-st="3"] .ss { clip-path: inset(0 0 0 0); transition-delay: .3s; }
-  .hr[data-st="4"] .word span { opacity: 1; transform: none; }
-  .hr[data-st="4"] .tag { opacity: 1; transform: none; }
-  .hr[data-st="5"] .word span { opacity: 0; transform: scale(1.6); filter: blur(8px); transition-duration: .35s; }
+  .hr[data-st="2"] .word span { opacity: 1; transform: none; transition-delay: calc(.15s + var(--i) * 45ms); }
+  .hr[data-st="2"] .tag { opacity: 1; transform: none; transition-delay: .6s; }
+  .hr[data-st="3"] .word span { opacity: 0; transform: scale(1.6); filter: blur(8px); transition-duration: .35s; }
+  .hr[data-st="3"] .tag, .hr[data-st="6"] .tag { transition: opacity .25s, transform .3s; }
+  .hr[data-st="4"] .nm, .hr[data-st="5"] .nm { clip-path: inset(0 0 0 0); }
+  .hr[data-st="5"] .ss { clip-path: inset(0 0 0 0); }
 
   /* ---- Station bug ---- */
   .stn { position: absolute; top: 54px; right: 96px; width: 190px; transition: opacity .4s; }
@@ -680,7 +681,7 @@
     // Each step starts while the one before it is still moving, so nothing stops partway.
     const IN = { ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]] };
     const OUT = { ln: [[0, 2], [180, 0], [600]], tc: [[0, 1], [170, 0], [620]], bx: [[0, 2], [130, 0], [560]], hr: [[0, 6], [300, 7], [500, 0], [520]] };
-    const HR_STEPS = [[0, 1], [190, 2], [3500, 3], [7600, 4], [10600, 5], [10900, 6], [11220, 7], [11450, 0]];
+    const HR_STEPS = [[0, 1], [190, 2], [3600, 3], [3850, 4], [4250, 5], [10600, 6], [10920, 7], [11150, 0]];
     const run = (node, steps, done) => { for (const [ms, st] of steps) later(ms, () => { if (st != null) $(node).dataset.st = st; else if (done) done(); }); };
 
     const enter = name => {
@@ -926,7 +927,7 @@
     { id: 'title', name: 'Title card', kind: 'Lower third', on: () => s.gfx === 'title', show: () => show('title', { venue: s.venue, names: kg ? kg.meta.names : {} }) },
     { id: 'bstat', name: 'Batter stats', kind: 'Lower third', on: () => s.gfx === 'bstat', show: () => { const [side, id] = $('bsWho').value.split('|'); const g = batterGp(side, id); if (g) show('bstat', g); else note('Pick a batter (the stat keeper needs rosters).'); } },
     { id: 'pstat', name: 'Pitcher stats', kind: 'Lower third', on: () => s.gfx === 'pstat', show: () => { const [side, id] = $('psWho').value.split('|'); const g = pitcherGp(side, id); if (g) show('pstat', g); else note('Pick a pitcher (the stat keeper needs rosters).'); } },
-    { id: 'hr', name: 'Home run', kind: 'Lower third', on: () => s.gfx === 'hr', show: () => { const g = hrGp(); if (!g) { note('No home run recorded yet.'); return; } show('hr', g); clearTimeout(hrTimer); const at = s.gAt; hrTimer = setTimeout(() => { if (s.gfx === 'hr' && s.gAt === at) take(); }, 11500); } },
+    { id: 'hr', name: 'Home run', kind: 'Lower third', on: () => s.gfx === 'hr', show: () => { const g = hrGp(); if (!g) { note('No home run recorded yet.'); return; } show('hr', g); clearTimeout(hrTimer); const at = s.gAt; hrTimer = setTimeout(() => { if (s.gfx === 'hr' && s.gAt === at) take(); }, 11200); } },
     { id: 'pitch', name: 'Pitch speed', kind: 'On the bug', on: () => !!(s.pitch && Date.now() < s.pitch.until), show: showPitch, take: () => { s.pitch = null; save(); } },
     { id: 'exit', name: 'Exit velo', kind: 'On the bug', on: () => !!(s.exit && Date.now() < s.exit.until), show: showExit, take: () => { s.exit = null; save(); } },
     { id: 'flash', name: 'BB / K / HBP', kind: 'On the bug', on: () => !!(s.flash && Date.now() < s.flash.until), show: () => flashNow('K'), take: () => { s.flash = null; save(); } },
