@@ -1706,9 +1706,9 @@
       show('hr', g); hrRuns = 0; renderHrRuns(); /* the pick is for this home run only */ clearTimeout(hrTimer); const at = s.gAt; hrTimer = setTimeout(() => { if (s.gfx === 'hr' && s.gAt === at) take(); }, g.lite ? 4800 : 11200); } },
     { id: 'pitch', name: 'Pitch speed', kind: 'Exit velo too', on: () => !!((s.pitch && Date.now() < s.pitch.until) || (s.exit && Date.now() < s.exit.until)), show: showPitch, take: () => { s.pitch = null; s.exit = null; save(); } },
     { id: 'flash', name: 'BB / K / HBP', kind: 'On the bug', on: () => !!(s.flash && Date.now() < s.flash.until), show: () => flashNow('K'), take: () => { s.flash = null; save(); } },
-    { id: 'full', name: 'Full box score', kind: 'Every inning', on: () => s.gfx === 'full', show: () => { const g = fullGp(); if (g) show('full', g); else note('No game yet.'); } },
-    { id: 'brk', name: 'Box score + due up', kind: 'Break', on: () => s.gfx === 'brk', show: () => { const g = breakGp(); if (g) show('brk', g); } },
     { id: 'lu', name: 'Batting order', kind: 'Full screen', on: () => s.gfx === 'lu', show: showLu },
+    { id: 'brk', name: 'Box score + due up', kind: 'Break', on: () => s.gfx === 'brk', show: () => { const g = breakGp(); if (g) show('brk', g); } },
+    { id: 'full', name: 'Full box score', kind: 'Every inning', on: () => s.gfx === 'full', show: () => { const g = fullGp(); if (g) show('full', g); else note('No game yet.'); } },
     { id: 'ann', name: 'Announcers', kind: 'Lower third', on: () => s.gfx === 'ann', show: showAnn },
     { id: 'l3', name: 'Lower third', kind: 'Name and title', on: () => s.gfx === 'l3', show: () => { const n = $('l3Name').value.trim(); if (!n) { $('l3Name').focus(); return; } show('l3', { side: s.l3.logo === 'eota' ? '' : s.l3.logo, last: n.toUpperCase(), sub: $('l3Title').value.trim() }); } }
   ];
