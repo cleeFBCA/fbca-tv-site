@@ -255,6 +255,34 @@
   .bx[data-dir="out"] .rws { transition: clip-path .38s cubic-bezier(.6,0,.4,1); }
   .bx[data-dir="out"] .hd, .bx[data-dir="out"] .ft { transition: clip-path .22s ease-in .16s; }
 
+  /* ---- Full box score: every inning, then R H E LOB ---- */
+  .fb { position: absolute; left: 50%; bottom: 66px; transform: translateX(-50%); display: flex; flex-direction: column; }
+  .fb .hd, .fb .ft { height: 40px; background: linear-gradient(#1D1E22, #050606); display: grid; align-items: center; font-weight: 700; transition: clip-path .3s cubic-bezier(.22,1,.36,1); }
+  .fb .hd { font-size: 26px; border-radius: 12px 12px 0 0; clip-path: inset(100% 0 0 0); }
+  .fb .hd span { text-align: center; font-variant-numeric: tabular-nums; }
+  .fb .hd span:first-child { text-align: left; padding-left: 16px; letter-spacing: .04em; white-space: nowrap; }
+  .fb .hd span.k { color: var(--gold); }
+  .fb .ft { height: 34px; font-size: 21px; letter-spacing: .14em; text-align: center; border-radius: 0 0 12px 12px; clip-path: inset(0 0 100% 0); }
+  .fb .rws { display: flex; flex-direction: column; clip-path: inset(0 100% 0 0); transition: clip-path .45s cubic-bezier(.22,1,.36,1); }
+  .fb .rw { height: 84px; display: grid; align-items: center; font-size: 44px; font-weight: 800; }
+  .fb .rw + .rw { border-top: 2px solid rgba(255,255,255,.8); }
+  .fb .rw .crest { height: 100%; padding: 7px; background: rgba(0,0,0,.22); }
+  .fb .rw .crest .ini { font-size: 22px; }
+  .fb .rw .ab { padding-left: 14px; color: var(--f); white-space: nowrap; overflow: hidden; }
+  .fb .rw .n { text-align: center; height: 100%; display: grid; place-items: center; border-left: 2px solid rgba(255,255,255,.35); font-variant-numeric: tabular-nums; color: var(--f); }
+  .fb .rw .n.i { font-size: 40px; font-weight: 700; background: rgba(0,0,0,.16); }
+  .fb .rw .n.i b { font-weight: inherit; opacity: 0; transform: translateY(14px); transition: opacity .25s, transform .35s cubic-bezier(.3,1.4,.5,1); transition-delay: calc(var(--i) * 55ms); }
+  .fb .rw .n.i.now { box-shadow: inset 0 -6px 0 var(--gold); }
+  .fb .rw .n.tot { min-width: 0; }
+  .fb .rw .n.r { background: #F1F2F4; color: #111; border-left: 0; font-size: 48px; }
+  .fb[data-st="1"] .rws { clip-path: inset(0 70% 0 0); transition: clip-path .2s cubic-bezier(.5,0,1,1); }
+  .fb[data-st="2"] .rws, .fb[data-st="3"] .rws { clip-path: inset(0 0 0 0); }
+  .fb[data-st="2"] .hd, .fb[data-st="3"] .hd, .fb[data-st="2"] .ft, .fb[data-st="3"] .ft { clip-path: inset(0 0 0 0); }
+  .fb[data-st="3"] .rw .n.i b { opacity: 1; transform: none; }
+  .fb[data-dir="out"] .rws { transition: clip-path .38s cubic-bezier(.6,0,.4,1); }
+  .fb[data-dir="out"] .hd, .fb[data-dir="out"] .ft { transition: clip-path .22s ease-in .16s; }
+  .fb[data-dir="out"] .rw .n.i b { transition: opacity .15s; transition-delay: 0s; }
+
   /* ---- Home run: HOME RUN in big chrome letters with SOLO / 2-RUN / 3-RUN / GRAND SLAM, then the name with season HR and RBI ---- */
   .hr { position: absolute; left: 75px; bottom: 52px; width: 1770px; height: 128px;
         --hr-depth: drop-shadow(0 2px 0 #C08A0A) drop-shadow(0 2px 0 #8F6A05) drop-shadow(0 2px 0 #5E4503) drop-shadow(0 10px 12px rgba(0,0,0,.6)); }
@@ -660,6 +688,10 @@
     <div class="du" id="bxDu"><div class="hd" id="duHd"></div><div class="dl tm" id="duList"></div></div>
   </div>
 
+  <div class="fb shadow" id="fb" data-st="0">
+    <div class="hd" id="fbHd"></div><div class="rws" id="fbRows"></div><div class="ft">Eagles on the Air</div>
+  </div>
+
   <div class="hr shadow" id="hr" data-st="0">
     <div class="bg tm" id="hrBg"></div>
     <div class="nm" id="hrNm"></div>
@@ -799,20 +831,25 @@
             </div>
             <label for="speedSecs">Pitch speed and exit velo stay up for (seconds)</label><input id="speedSecs" type="number" min="1" max="60" inputmode="numeric" value="3">
             <p class="hint">Shows under the batter and pitcher, then goes away on its own after that many seconds (or at the next pitch).</p>
-          </div>
-          <div data-pane="exit">
+            <div style="margin:18px 0 2px;padding-top:12px;border-top:1px solid rgba(255,255,255,.14);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:13px;opacity:.8">Exit velo</div>
+            <label for="exMph">Exit velocity (MPH): type it, then Enter or Show exit velo</label>
+            <div class="row" style="margin-top:0"><input id="exMph" inputmode="numeric" placeholder="94" style="flex:1"><button id="exShow">Show exit velo</button></div>
             <label>Exit velo comes from</label>
             <div class="row" style="margin-top:0"><button data-evsrc="hand">Typed in here</button><button data-evsrc="board">The scoreboard</button></div>
             <div id="evBoard" hidden>
-              <p class="hint" id="evNote">Uses the scoreboard file connected on the Pitch speed tile.</p>
+              <p class="hint" id="evNote">Uses the scoreboard file connected above.</p>
               <label for="sbExitKey">Exit velo field in the file</label><select id="sbExitKey"></select>
             </div>
-            <label for="exMph">Exit velocity (MPH): type it, then Enter or Show</label><input id="exMph" inputmode="numeric" placeholder="94">
-            <p class="hint">Shows above the batter and pitcher, then goes away on its own (the time is set on the Pitch speed tile), or at the next play.</p>
+            <p class="hint">Shows above the batter and pitcher for the same time. Take down clears both.</p>
           </div>
           <div data-pane="flash">
             <p class="hint" style="margin-top:0">Shows over the bases in the score bug for 4 seconds. With "Auto BB / K / HBP" on, walks, strikeouts and hit batters show by themselves as the stat keeper records them.</p>
             <div class="chips" id="flChips"></div>
+          </div>
+          <div data-pane="full">
+            <div class="sum" id="fbSum"></div>
+            <label for="fbHead">Top line (blank = automatic: Top 3rd, End 5th, Final)</label><input id="fbHead" placeholder="">
+            <p class="hint">Runs in every inning (7, or more in extra innings), then runs, hits, errors and left on base, from the stat keeper. Scoring by hand, the innings stay blank and only the runs show. The score bug steps aside while it's up.</p>
           </div>
           <div data-pane="break">
             <div class="sum" id="bxSum"></div>
@@ -1021,6 +1058,27 @@
         $('duList').replaceChildren(...g.due.list.map(d => { const r = el('div', 'dr'); r.append(el('b', null, d.name), el('span', null, d.line)); return r; }));
       }
     };
+    // Full box score: crest, name, one column per inning (at least 7), then R H E LOB
+    const fillFb = g => {
+      const n = Math.max(7, ...(g.cells ? SIDES.map(sd => g.cells[sd].length) : [7]));
+      const cols = `78px 180px repeat(${n}, ${n > 9 ? 66 : 76}px) repeat(4, 92px)`;
+      const hd = $('fbHd'); hd.style.gridTemplateColumns = cols;
+      const first = el('span', null, g.head || ''); first.style.gridColumn = 'span 2';
+      hd.replaceChildren(first, ...Array.from({ length: n }, (_, i) => el('span', null, String(i + 1))), ...['R', 'H', 'E', 'LOB'].map(x => el('span', 'k', x)));
+      $('fbRows').replaceChildren(...SIDES.map((side, si) => {
+        const t = s.teams[side], r = stripe(paint(el('div', 'rw tm'), t), side), c = el('div', 'crest'); if (t.logo) crest(c, t);
+        r.style.gridTemplateColumns = cols;
+        r.append(c, el('div', 'ab', t.abbr || (t.name || '').slice(0, 4)));
+        const cells = (g.cells || {})[side] || [];
+        for (let i = 0; i < n; i++) {
+          const v = cells[i], d = el('div', 'n i' + (g.now && g.now.side === side && g.now.inn === i + 1 ? ' now' : '')), b = el('b', null, v == null ? '' : String(v));
+          b.style.setProperty('--i', i + si * 2); d.append(b); r.append(d);
+        }
+        const v = g.rows[side];
+        r.append(el('div', 'n r', String(v.R)), el('div', 'n tot', String(v.H)), el('div', 'n tot', String(v.E)), el('div', 'n tot', String(v.LOB)));
+        return r;
+      }));
+    };
     const fillHr = g => {
       const t = s.teams[g.side] || s.teams.home;
       paint($('hr'), t); stripe($('hr'), g.side); crest($('hrLg'), t);
@@ -1137,12 +1195,12 @@
       $('mtWhen').textContent = g.when || ''; $('mtVn').textContent = g.venue || '';
       $('mtSep2').classList.toggle('off', !(g.when && g.venue)); fit($('mtVn'), 700);
     };
-    const NODE = { match: 'mt', bstat: 'ln', pstat: 'ln', l3: 'ln', ann: 'ln', title: 'tc', brk: 'bx', hr: 'hr', lu: 'lu' };
-    const FILL = { match: fillMt, bstat: fillLn, pstat: fillLn, l3: fillLn, ann: fillLn, title: fillTc, brk: fillBx, hr: fillHr, lu: fillLu };
+    const NODE = { full: 'fb', match: 'mt', bstat: 'ln', pstat: 'ln', l3: 'ln', ann: 'ln', title: 'tc', brk: 'bx', hr: 'hr', lu: 'lu' };
+    const FILL = { full: fillFb, match: fillMt, bstat: fillLn, pstat: fillLn, l3: fillLn, ann: fillLn, title: fillTc, brk: fillBx, hr: fillHr, lu: fillLu };
     // Steps in and out: [ms, stage]
     // Each step starts while the one before it is still moving, so nothing stops partway.
-    const IN = { ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]], lu: [[0, 1], [260, 2], [1000, 3]], mt: [[0, 1], [420, 2], [1250, 3]] };
-    const OUT = { ln: [[0, 2], [180, 0], [600]], tc: [[0, 1], [170, 0], [620]], bx: [[0, 2], [130, 0], [560]], lu: [[0, 1], [260, 0], [760]], mt: [[0, 1], [260, 0], [760]], hr: [[0, 6], [300, 7], [500, 0], [520]] };
+    const IN = { fb: [[0, 1], [170, 2], [520, 3]], ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]], lu: [[0, 1], [260, 2], [1000, 3]], mt: [[0, 1], [420, 2], [1250, 3]] };
+    const OUT = { fb: [[0, 2], [140, 0], [600]], ln: [[0, 2], [180, 0], [600]], tc: [[0, 1], [170, 0], [620]], bx: [[0, 2], [130, 0], [560]], lu: [[0, 1], [260, 0], [760]], mt: [[0, 1], [260, 0], [760]], hr: [[0, 6], [300, 7], [500, 0], [520]] };
     const HR_LITE = [[0, 1], [190, 2], [4200, 6], [4520, 7], [4750, 0]];
     const HR_STEPS = [[0, 1], [190, 2], [3900, 3], [4500, 4], [4900, 5], [10600, 6], [10920, 7], [11150, 0]];
     const run = (node, steps, done) => { for (const [ms, st] of steps) later(ms, () => { if (st != null) $(node).dataset.st = st; else if (done) done(); }); };
@@ -1433,11 +1491,25 @@
     return { side, runs, first: firstName(p.name), last: lastName(p.name), tag: ['', 'Solo', '2-Run', '3-Run', 'Grand Slam'][runs] || '', slam: runs === 4,
              stats: [[t ? t.bat.HR : 1, 'HR this season'], [t ? t.bat.RBI : runs, 'RBI this season']] };
   };
+  // The head line both box scores use when it's left blank
+  const boxHead = L => L.final ? (L.inn > (L.innings || 7) ? 'Final · ' + L.inn : 'Final') : L.between ? (L.top ? 'Mid ' : 'End ') + ordinal(L.top ? L.inn - 1 : L.inn) : (L.top ? 'Top ' : 'Bot ') + ordinal(L.inn);
+  const fullGp = () => {
+    const L = s.live; if (!L) return null;
+    const keeper = stats && s.src === 'keeper', rows = {}, cells = {};
+    for (const side of SIDES) {
+      rows[side] = keeper ? stats.team[side] : { R: L.score[side], H: '-', E: '-', LOB: '-' };
+      cells[side] = keeper ? stats.line[side].slice() : [];
+    }
+    // Final with the home team ahead after the top of the last inning: X where they didn't bat
+    if (keeper && L.final && cells.home.length < cells.away.length && rows.home.R > rows.away.R) cells.home.push('X');
+    const now = !L.final && !L.between ? { side: L.top ? 'away' : 'home', inn: L.inn } : null;
+    return { head: $('fbHead').value.trim() || boxHead(L), rows, cells, now };
+  };
   const breakGp = () => {
     const L = s.live; if (!L) return null;
     const rows = {};
     for (const side of SIDES) rows[side] = stats && s.src === 'keeper' ? stats.team[side] : { R: L.score[side], H: '-', E: '-', LOB: '-' };
-    const head = $('bxHead').value.trim() || (L.final ? 'Final' : L.between ? (L.top ? 'Mid ' : 'End ') + ordinal(L.top ? L.inn - 1 : L.inn) : (L.top ? 'Top ' : 'Bot ') + ordinal(L.inn));
+    const head = $('bxHead').value.trim() || boxHead(L);
     let due = null;
     if (s.bxDue && kg && s.src === 'keeper' && !L.final) {
       const sit = stats.sit, bat = BB.batting(sit), list = [];
@@ -1588,7 +1660,7 @@
     $('spBoard').hidden = s.spSrc !== 'board' && s.evSrc !== 'board'; $('spField').hidden = s.spSrc !== 'board'; // the file connects here for either
     document.querySelectorAll('[data-evsrc]').forEach(b => b.className = b.dataset.evsrc === (s.evSrc || 'hand') ? 'active' : '');
     $('evBoard').hidden = s.evSrc !== 'board';
-    $('evNote').textContent = sbHandle ? 'Uses the scoreboard file connected on the Pitch speed tile (' + sbHandle.name + ').' : 'Connect the scoreboard file on the Pitch speed tile (the pitch speed itself can stay typed in).';
+    $('evNote').textContent = sbHandle ? 'Uses the scoreboard file connected above (' + sbHandle.name + ').' : 'Connect the scoreboard file above (the pitch speed itself can stay typed in; its switch can stay on Typed in here).';
     $('btnSb').textContent = sbHandle ? 'Change scoreboard file' : 'Connect scoreboard';
     $('sbStatus').textContent = !window.showOpenFilePicker ? "This browser can't follow a file. Use Chrome or Edge."
       : !sbHandle ? 'Pick the file Scorebridge writes. Each new pitch speed (and exit velo) on the scoreboard shows by itself.'
@@ -1632,15 +1704,15 @@
       // The operator's pick (Solo, 2-Run, 3-Run, Grand Slam) wins over the stat keeper's; a grand slam says GRAND SLAM
       if (hrRuns) { g.runs = hrRuns; g.tag = ['', 'Solo', '2-Run', '3-Run', 'Grand Slam'][hrRuns]; g.slam = hrRuns === 4; }
       show('hr', g); hrRuns = 0; renderHrRuns(); /* the pick is for this home run only */ clearTimeout(hrTimer); const at = s.gAt; hrTimer = setTimeout(() => { if (s.gfx === 'hr' && s.gAt === at) take(); }, g.lite ? 4800 : 11200); } },
-    { id: 'pitch', name: 'Pitch speed', kind: 'On the bug', on: () => !!(s.pitch && Date.now() < s.pitch.until), show: showPitch, take: () => { s.pitch = null; save(); } },
-    { id: 'exit', name: 'Exit velo', kind: 'On the bug', on: () => !!(s.exit && Date.now() < s.exit.until), show: showExit, take: () => { s.exit = null; save(); } },
+    { id: 'pitch', name: 'Pitch speed', kind: 'Exit velo too', on: () => !!((s.pitch && Date.now() < s.pitch.until) || (s.exit && Date.now() < s.exit.until)), show: showPitch, take: () => { s.pitch = null; s.exit = null; save(); } },
     { id: 'flash', name: 'BB / K / HBP', kind: 'On the bug', on: () => !!(s.flash && Date.now() < s.flash.until), show: () => flashNow('K'), take: () => { s.flash = null; save(); } },
+    { id: 'full', name: 'Full box score', kind: 'Every inning', on: () => s.gfx === 'full', show: () => { const g = fullGp(); if (g) show('full', g); else note('No game yet.'); } },
     { id: 'brk', name: 'Box score + due up', kind: 'Break', on: () => s.gfx === 'brk', show: () => { const g = breakGp(); if (g) show('brk', g); } },
     { id: 'lu', name: 'Batting order', kind: 'Full screen', on: () => s.gfx === 'lu', show: showLu },
     { id: 'ann', name: 'Announcers', kind: 'Lower third', on: () => s.gfx === 'ann', show: showAnn },
     { id: 'l3', name: 'Lower third', kind: 'Name and title', on: () => s.gfx === 'l3', show: () => { const n = $('l3Name').value.trim(); if (!n) { $('l3Name').focus(); return; } show('l3', { side: s.l3.logo === 'eota' ? '' : s.l3.logo, last: n.toUpperCase(), sub: $('l3Title').value.trim() }); } }
   ];
-  const PANE = { match: 'match', title: 'title', bstat: 'bstat', pstat: 'pstat', hr: 'hr', pitch: 'pitch', exit: 'exit', flash: 'flash', brk: 'break', l3: 'l3', lu: 'lineup', ann: 'ann' };
+  const PANE = { match: 'match', title: 'title', bstat: 'bstat', pstat: 'pstat', hr: 'hr', pitch: 'pitch', flash: 'flash', brk: 'break', full: 'full', l3: 'l3', lu: 'lineup', ann: 'ann' };
   let pick = 'bstat', noteText = '', noteAt = 0;
   const note = t => { noteText = t; noteAt = Date.now(); renderShell(); };
   const tileEls = {};
@@ -1655,6 +1727,7 @@
   $('btnTakeAll').onclick = take;
   $('spMph').addEventListener('keydown', e => { if (e.key === 'Enter') showPitch(); });
   $('exMph').addEventListener('keydown', e => { if (e.key === 'Enter') showExit(); });
+  $('exShow').onclick = showExit;
   $('flChips').replaceChildren(...[['BB', 'Walk (BB)'], ['IBB', 'Intentional (IBB)'], ['K', 'Strikeout (K)'], ['KL', 'Looking (backward K)'], ['HBP', 'Hit by pitch (HBP)']].map(([t, l]) => { const b = el('button', null, l); b.onclick = () => flashNow(t); return b; }));
   $('venue').addEventListener('input', e => { s.venue = e.target.value; save(); });
   $('when').addEventListener('input', e => { s.when = e.target.value; save(); });
@@ -1821,8 +1894,8 @@
     $('detTitle').textContent = g.name;
     document.querySelectorAll('#detBody > [data-pane]').forEach(p => p.hidden = p.dataset.pane !== PANE[pick]);
     const on = g.on();
-    $('detShow').textContent = on && !['pitch', 'exit', 'flash'].includes(g.id) ? 'Update' : g.id === 'flash' ? 'Show K' : 'Show';
-    $('detShow').className = on && !['pitch', 'exit'].includes(g.id) ? 'onair' : 'primary';
+    $('detShow').textContent = on && !['pitch', 'flash'].includes(g.id) ? 'Update' : g.id === 'flash' ? 'Show K' : g.id === 'pitch' ? 'Show pitch speed' : 'Show';
+    $('detShow').className = on && g.id !== 'pitch' ? 'onair' : 'primary';
     $('detTake').disabled = !on;
     $('btnTakeAll').disabled = !s.gfx;
     const L = s.live;
@@ -1854,6 +1927,7 @@
       const g = luGp();
       $('luSum').replaceChildren(...(!g ? ['Needs the stat keeper (Connections).'] : g.err ? [g.err] : [el('b', null, g.head), el('br'), g.vs, el('br'), (g.sp ? 'Starting pitcher: ' + g.sp.name : 'No starting pitcher picked (stat keeper, Lineups)'), el('br'), g.hi ? 'Featuring ' + g.hi.first + ' ' + g.hi.last + (g.photo ? ' (with photo)' : ' (no photo: shows the team logo)') : 'No featured player: the team logo fills the left side', el('br'), 'Bottom: ' + g.cap]));
     }
+    if (pick === 'full') { const b = fullGp(); $('fbSum').replaceChildren(...(b ? [el('b', null, b.head), ...SIDES.flatMap(sd => [el('br'), (s.teams[sd].abbr || sd) + '  ' + (b.cells[sd].join(' ') || '–') + '  ·  ' + b.rows[sd].R + ' R ' + b.rows[sd].H + ' H ' + b.rows[sd].E + ' E ' + b.rows[sd].LOB + ' LOB'])] : ['No game yet.'])); }
     if (pick === 'brk') { const b = breakGp(); $('bxSum').replaceChildren(...(b ? [el('b', null, b.head), el('br'), SIDES.map(sd => (s.teams[sd].abbr || sd) + ' ' + b.rows[sd].R + ' R ' + b.rows[sd].H + ' H ' + b.rows[sd].E + ' E').join(' · '), ...(b.due ? [el('br'), b.due.head + ': ' + b.due.list.map(d => d.name).join(', ')] : [])] : ['No game yet.'])); }
     if (pick === 'pitch') {
       const types = PITCH_TYPES();
