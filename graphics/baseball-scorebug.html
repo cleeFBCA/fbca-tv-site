@@ -880,8 +880,9 @@
             <div class="logo-row"><div class="thumb" id="luThumb"></div><button class="sm" id="luNoPic">Remove photo</button></div>
             <input type="file" id="luFile" accept="image/*">
             <label for="luCap">Bottom line (blank = the featured player's season, or Eagles on the Air)</label><input id="luCap" placeholder="">
+            <p class="hint" id="luWait" style="color:#F2B33D" hidden></p>
             <div class="sum" id="luSum"></div>
-            <p class="hint">The order, positions and starting pitcher come from the stat keeper's Lineups tab, with season averages (and the pitcher's ERA). Photos stay on this computer, saved by team and player, so they're there next game. A portrait, or a cut-out PNG on a clear background, works best. Picking another player while it's up swaps them on air.</p>
+            <p class="hint">The order, positions and starting pitcher come from the stat keeper's Lineups tab, with season averages (and the pitcher's ERA). Photos stay on this computer, saved by team and player, so they're there next game. A portrait, or a cut-out PNG on a clear background, works best. Picking another player while it's up swaps them on air. Picking the other team while it's up waits: choose their featured player, then press Update to bring their lineup in.</p>
           </div>
         </div>
       </div>
@@ -1534,9 +1535,9 @@
   const setPhoto = async (side, p, file) => {
     try { const url = await shrinkPhoto(file), key = photoKey(side, p.name); photos[key] = url; await photoDb('readwrite', st => st.put(url, key)); }
     catch (e) { note("Couldn't save that photo. Try a PNG or JPG."); }
-    pphSig[side] = ''; renderShell(); renderCtl(); if (s.gfx === 'lu') showLu();
+    pphSig[side] = ''; renderShell(); renderCtl(); if (luLive()) showLu();
   };
-  const unsetPhoto = (side, p) => { const key = photoKey(side, p.name); delete photos[key]; photoDb('readwrite', st => st.delete(key)).catch(() => {}); pphSig[side] = ''; renderShell(); renderCtl(); if (s.gfx === 'lu') showLu(); };
+  const unsetPhoto = (side, p) => { const key = photoKey(side, p.name); delete photos[key]; photoDb('readwrite', st => st.delete(key)).catch(() => {}); pphSig[side] = ''; renderShell(); renderCtl(); if (luLive()) showLu(); };
   const renderPhotos = side => {
     const F = teamForms[side]; if (!F) return;
     const roster = ((kg && kg.meta.rosters[side]) || []).slice().sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
@@ -1598,6 +1599,8 @@
     clearTimeout(annTimer); const at = s.gAt, secs = s.ann.secs ?? 8;
     if (secs > 0) annTimer = setTimeout(() => { if (s.gfx === 'ann' && s.gAt === at) take(); }, secs * 1000 + 900); // + the time it takes to come in
   };
+  // On air with the team picked here: picks and photos go straight to air. The other team waits for Update.
+  const luLive = () => s.gfx === 'lu' && !!s.gp && s.gp.side === s.lu.side;
   const showLu = () => { const g = luGp(); if (!g) { note('Needs the stat keeper (Connections).'); return; } if (g.err) { note(g.err); return; } show('lu', g); };
   // ---- The title card's date and time: typed in, or today's game on the schedule, or just today's date ----
   let schedGames = null;
@@ -1736,16 +1739,16 @@
   $('l3Name').addEventListener('input', e => { s.l3.name = e.target.value; save(); });
   $('l3Title').addEventListener('input', e => { s.l3.title = e.target.value; save(); });
   $('l3Logo').addEventListener('change', e => { s.l3.logo = e.target.value; save(); });
-  document.querySelectorAll('[data-lu]').forEach(b => b.onclick = () => { s.lu.side = b.dataset.lu; s.lu.hi = ''; save(); if (s.gfx === 'lu') showLu(); });
-  $('luWho').onchange = () => { s.lu.hi = $('luWho').value; save(); if (s.gfx === 'lu') showLu(); };
+  document.querySelectorAll('[data-lu]').forEach(b => b.onclick = () => { s.lu.side = b.dataset.lu; s.lu.hi = ''; save(); renderShell(); });
+  $('luWho').onchange = () => { s.lu.hi = $('luWho').value; save(); if (luLive()) showLu(); else renderShell(); };
   $('luCap').addEventListener('input', e => { s.lu.cap = e.target.value; });
   $('luFile').onchange = async () => {
     const f = $('luFile').files[0], fp = luFeatured(); $('luFile').value = '';
     if (!f) return; if (!fp) { note('Pick the featured player first.'); return; }
-    try { const url = await shrinkPhoto(f), key = photoKey(s.lu.side, fp.name); photos[key] = url; await photoDb('readwrite', st => st.put(url, key)); renderShell(); if (s.gfx === 'lu') showLu(); }
+    try { const url = await shrinkPhoto(f), key = photoKey(s.lu.side, fp.name); photos[key] = url; await photoDb('readwrite', st => st.put(url, key)); renderShell(); if (luLive()) showLu(); }
     catch (e) { note("Couldn't save that photo."); }
   };
-  $('luNoPic').onclick = () => { const fp = luFeatured(); if (!fp) return; const key = photoKey(s.lu.side, fp.name); delete photos[key]; photoDb('readwrite', st => st.delete(key)).catch(() => {}); renderShell(); if (s.gfx === 'lu') showLu(); };
+  $('luNoPic').onclick = () => { const fp = luFeatured(); if (!fp) return; const key = photoKey(s.lu.side, fp.name); delete photos[key]; photoDb('readwrite', st => st.delete(key)).catch(() => {}); renderShell(); if (luLive()) showLu(); };
   ['ann1', 'ann2', 'ann3'].forEach((id, i) => { $(id).value = s.ann.names[i] || ''; $(id).addEventListener('input', () => { s.ann.names[i] = $(id).value; save(); }); $(id).addEventListener('keydown', e => { if (e.key === 'Enter') showAnn(); }); });
   $('annLabel').value = s.ann.label || '';
   $('annLabel').addEventListener('input', () => { s.ann.label = $('annLabel').value; save(); });
@@ -1922,6 +1925,8 @@
       if ($('luWho').dataset.sig !== sig) { $('luWho').dataset.sig = sig; $('luWho').replaceChildren(...opts.map(([v, l]) => new Option(l, v))); }
       $('luWho').value = opts.some(o => o[0] === s.lu.hi) ? s.lu.hi : '';
       setField($('luCap'), s.lu.cap || '');
+      const wait = s.gfx === 'lu' && s.gp && s.gp.side !== s.lu.side;
+      $('luWait').hidden = !wait; if (wait) $('luWait').textContent = ((kg && kg.meta.names[s.gp.side]) || 'The other team') + ' is on air. Pick the featured player, then press Update to bring this lineup in.';
       const fp = luFeatured(), pic = fp ? photos[photoKey(s.lu.side, fp.name)] : '';
       $('luThumb').style.backgroundImage = pic ? `url("${pic}")` : 'none'; $('luNoPic').disabled = !pic; $('luFile').disabled = !fp;
       const g = luGp();
