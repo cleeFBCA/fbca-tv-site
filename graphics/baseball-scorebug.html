@@ -1242,7 +1242,7 @@
 
     const enter = name => {
       const node = NODE[name]; shownGfx = name; $(node).dataset.dir = 'in';
-      FILL[name](s.gp || {});
+      FILL[name](s.gp || {}); enter.gp = s.gp || {};
       // No home run recorded: just HOME RUN (no runs tag, no name or stats after), then it goes
       if (name === 'hr') { const past = Date.now() - (s.gAt || Date.now()); for (const [ms, st] of ((s.gp || {}).lite ? HR_LITE : HR_STEPS)) { if (ms >= past) later(ms - past, () => $('hr').dataset.st = st); else $('hr').dataset.st = st; } return; }
       run(node, IN[node]);
@@ -1265,11 +1265,16 @@
       } else if (want && s.gAt !== enter.at) { // the same graphic again, with new content
         enter.at = s.gAt;
         if (want === 'hr') { clearTimers(); enter(want); }
+        else if ((want === 'pstat' || want === 'bstat') && enter.gp && ['side', 'num', 'first', 'last'].some(k => (enter.gp[k] || '') !== ((s.gp || {})[k] || ''))) {
+          // A different pitcher (or batter): the bar goes out, then comes back in with the new one
+          clearTimers(); busy = 'swap'; $('ln').dataset.dir = 'out';
+          run('ln', OUT.ln, () => { busy = null; if (s.gfx === want) { enter(want); enter.at = s.gAt; } else shownGfx = ''; /* taken down meanwhile: it's already off */ sync(); });
+        }
         else if (want === 'lu' && luCur && JSON.stringify(luCur) === JSON.stringify(s.gp || {})) { /* sent again unchanged (Update after a pick): nothing to animate */ }
         else if (want === 'lu' && $('lu').dataset.st === '3' && sameOrder(luCur, s.gp)) swapLu(s.gp || {}); // a new featured player, same order: swap him in place
         else if (want === 'lu' && luCur && s.gp && s.gp.side !== luCur.side) flipLu(s.gp); // the other team: the panels fold away, recolor, and open again
         else if (want === 'lu') { clearTimers(); $('lu').dataset.st = 2; later(460, () => FILL.lu(s.gp || {})); later(520, () => $('lu').dataset.st = 3); } // the old photo fades all the way first // a new featured player: the old one clears, then the new one comes in
-        else { FILL[want](s.gp || {}); }
+        else { FILL[want](s.gp || {}); enter.gp = s.gp || {}; }
         return;
       }
       setBug(bugWanted());
