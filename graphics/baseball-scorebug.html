@@ -542,7 +542,7 @@
   .mt .team > * { position: relative; z-index: 1; opacity: 0; transition: opacity .4s, transform .6s cubic-bezier(.22,1,.36,1); transition-delay: calc(.05s + var(--d, 0) * .08s); }
   .mt .team.L > * { transform: translateX(-70px); } .mt .team.R > * { transform: translateX(70px); }
   .mt:is([data-st="2"], [data-st="3"]) .team > * { opacity: 1; transform: none; }
-  .mt .team .crest { height: 360px; width: 360px; }
+  .mt .team .crest { height: 360px; width: 360px; align-items: end; } /* a wide logo sits just above the school name, as it did before, not floating in the middle of the box */
   /* The logo fits inside a 360 x 360 box (a tall one can't grow past it and cover the school name) */
   .mt .team .crest img { width: auto; height: auto; max-width: 360px; max-height: 360px; object-fit: contain; filter: drop-shadow(0 6px 16px rgba(0,0,0,.4)); }
   .mt .team .crest .ini { font-size: 140px; }
