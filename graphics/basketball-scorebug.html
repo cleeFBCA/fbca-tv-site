@@ -1476,6 +1476,7 @@
         <select id="stnCorner" aria-label="Station bug corner"><option value="tr">Top right</option><option value="tl">Top left</option></select>
         <select id="stnColor" aria-label="Station bug color"><option value="gold">Gold</option><option value="white">White</option><option value="black">Black</option></select>
         <span class="op">Opacity <input type="range" id="stnOp" min="20" max="100" step="5"><b id="stnOpV"></b></span>
+        <span class="op">Size <input type="range" id="stnSz" min="50" max="200" step="5"><b id="stnSzV"></b></span>
       </div>
       <p class="hint" id="stnNote"></p>
       <h2 style="margin-top:16px">Pop-ups</h2>
@@ -1607,7 +1608,7 @@
     // Which roster the player photos are for ('boys' | 'girls' | ''): FBCA has a boys' and a girls' team.
     squad: '',
     // Station bug: on, corner ('tr' | 'tl'), opacity in percent.
-    stn: { on: false, corner: 'tr', opacity: 60, color: 'gold' },
+    stn: { on: false, corner: 'tr', opacity: 60, color: 'gold', size: 100 },
     // Pop-up above the bar: kind 'text' | 'stat' | 'run'; until = when it comes down (0 = stays up).
     // Pregame matchup (s.panel === 'match'): title, subtitle, date/time and venue. Records come from Setup.
     // homeFull / awayFull: full school names for the title card (the bug keeps the short names).
@@ -2445,6 +2446,7 @@
       stn.style.setProperty('--o', Math.min(100, Math.max(10, s.stn.opacity)) / 100);
       // The station bug's color: FBCA gold (like every EOTA logo on the graphics), white or black.
       stn.style.background = { white: '#FFFFFF', black: '#000000' }[s.stn.color] || '#EAAF0F';
+      stn.style.width = Math.round(150 * (s.stn.size || 100) / 100) + 'px'; // grows from its corner
       $('bb').classList.toggle('hidden', !bugUp());
       paintSide('L', leftSide()); paintSide('R', rightSide());
       paintTimeout('L', leftSide()); paintTimeout('R', rightSide());
@@ -3096,8 +3098,10 @@
   $('stnCorner').addEventListener('change', e => { s.stn = { ...s.stn, corner: e.target.value }; save(); });
   $('stnColor').addEventListener('change', e => { s.stn = { ...s.stn, color: e.target.value }; save(); });
   $('stnOp').addEventListener('input', e => { s.stn = { ...s.stn, opacity: +e.target.value }; save(); });
+  $('stnSz').addEventListener('input', e => { s.stn = { ...s.stn, size: +e.target.value }; save(); });
   const renderStn = () => {
     $('stnOn').checked = s.stn.on; $('stnCorner').value = s.stn.corner; $('stnColor').value = s.stn.color || 'gold'; setField($('stnOp'), s.stn.opacity); $('stnOpV').textContent = s.stn.opacity + '%';
+    setField($('stnSz'), s.stn.size || 100); $('stnSzV').textContent = (s.stn.size || 100) + '%';
     // See-through only keys cleanly with fill + key; over a chroma color it would tint.
     $('stnNote').textContent = s.stn.on && s.keyMode !== 'alpha' && s.stn.opacity < 100
       ? 'See-through needs Fill + key (Connections → Output signal). On a chroma key it shows tinted, so use 100% there.' : '';

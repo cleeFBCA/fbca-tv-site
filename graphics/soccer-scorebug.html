@@ -1578,6 +1578,7 @@
         <select id="stnCorner" aria-label="Station bug corner"><option value="auto">Opposite the scorebug</option><option value="tr">Top right</option><option value="tl">Top left</option><option value="br">Bottom right</option><option value="bl">Bottom left</option></select>
         <select id="stnColor" aria-label="Station bug color"><option value="gold">Gold</option><option value="white">White</option><option value="black">Black</option></select>
         <span class="op">Opacity <input type="range" id="stnOp" min="20" max="100" step="5"><b id="stnOpV"></b></span>
+        <span class="op">Size <input type="range" id="stnSz" min="50" max="200" step="5"><b id="stnSzV"></b></span>
       </div>
       <p class="hint" id="stnNote"></p>
     </div>
@@ -1687,7 +1688,7 @@
     awayBg: '#1F3A93', awayFg: '#FFFFFF',
     homeLogo: '', awayLogo: '', // school logos (trimmed, transparent background) for the pregame card
     keyColor: '#FF00FF', keyMode: 'alpha', keyV: 2, // 'alpha' = fill + key outputs (the default), 'chroma' = one output on the key color
-    stn: { on: false, corner: 'auto', opacity: 60, color: 'gold' }, // station bug; corner 'auto' = the top corner opposite the bug
+    stn: { on: false, corner: 'auto', opacity: 60, color: 'gold', size: 100 }, // station bug; corner 'auto' = the top corner opposite the bug
     period: '1ST', halfMin: 40, otMin: 10, dir: 'down', pos: 'tl', visible: true, swap: true, sideV: 2, // swap on = FBCA (home) on the right, the start of every game
     len: 40 * 60000, base: 0, running: false, startedAt: 0, added: 0,
     // What the scoreboard file (Scorebridge) drives when connected.
@@ -2550,9 +2551,9 @@
       for (const c of ['tr', 'tl', 'br', 'bl']) stn.classList.toggle(c, c === corner);
       stn.style.setProperty('--o', Math.min(100, Math.max(10, s.stn.opacity)) / 100);
       stn.style.background = { white: '#FFFFFF', black: '#000000' }[s.stn.color] || '#EAAF0F';
-      // In a top corner, line it up with the scorebug across the screen: same height as the bug's bar, top and bottom level.
-      const row = $('sb').querySelector('.row');
-      stn.style.height = row && row.offsetHeight ? row.offsetHeight + 'px' : '';
+      // In a top corner, line it up with the scorebug across the screen: the bug's bar height (times Size), tops level.
+      const row = $('sb').querySelector('.row'), k = (s.stn.size || 100) / 100;
+      stn.style.height = Math.round((row && row.offsetHeight ? row.offsetHeight : 76) * k) + 'px'; // grows from its corner
       stn.style.top = corner[0] === 't' && row && row.offsetHeight ? ($('sb').offsetTop + row.offsetTop) + 'px' : '';
     };
     const render = () => { applyKey(); renderBug(); renderDrop(); renderL3(); renderFanVote(); renderXI(); renderPanels(); renderStn(); };
@@ -2749,9 +2750,11 @@
   $('stnCorner').addEventListener('change', e => { s.stn = { ...s.stn, corner: e.target.value }; save(); });
   $('stnColor').addEventListener('change', e => { s.stn = { ...s.stn, color: e.target.value }; save(); });
   $('stnOp').addEventListener('input', e => { s.stn = { ...s.stn, opacity: +e.target.value }; save(); });
+  $('stnSz').addEventListener('input', e => { s.stn = { ...s.stn, size: +e.target.value }; save(); });
   const renderStnCtl = () => {
     $('stnOn').checked = !!s.stn.on; $('stnCorner').value = s.stn.corner || 'auto'; $('stnColor').value = s.stn.color || 'gold';
     setField('stnOp', s.stn.opacity); $('stnOpV').textContent = s.stn.opacity + '%';
+    setField('stnSz', s.stn.size || 100); $('stnSzV').textContent = (s.stn.size || 100) + '%';
     // See-through only keys cleanly with fill + key; over a chroma color it would tint.
     $('stnNote').textContent = s.stn.on && s.keyMode !== 'alpha' && s.stn.opacity < 100
       ? 'See-through needs Fill + key (Connections → Output signal). On a chroma key it shows tinted, so use 100% there.'
