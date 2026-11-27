@@ -530,7 +530,8 @@
   .mt .gl::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 22%; opacity: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent); }
   .mt:is([data-st="2"], [data-st="3"]) .gl::after { opacity: 1; animation: pgRun 3.8s linear infinite; }
   .mt:is([data-st="2"], [data-st="3"]) .gl.b::after { animation-direction: reverse; animation-delay: -1.9s; }
-  .mt .body { display: grid; grid-template-columns: 1fr 260px 1fr; height: 576px; }
+  /* The gray strip behind VS (between the two teams): darkest at the top and bottom, lightest at the middle, behind VS */
+  .mt .body { display: grid; grid-template-columns: 1fr 260px 1fr; height: 576px; background: linear-gradient(#141518, #34363C 50%, #141518); }
   .mt .team { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 6px 30px 20px; overflow: hidden; }
   .mt .team.L { clip-path: polygon(0 0, 100% 0, calc(100% - 70px) 100%, 0 100%); margin-right: -70px; padding-right: 100px; transform: translateX(-110%); }
   .mt .team.R { clip-path: polygon(70px 0, 100% 0, 100% 100%, 0 100%); margin-left: -70px; padding-left: 100px; transform: translateX(110%); }
