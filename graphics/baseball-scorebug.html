@@ -533,7 +533,7 @@
   .mt:is([data-st="2"], [data-st="3"]) .gl.b::after { animation-direction: reverse; animation-delay: -1.9s; }
   /* The gray strip behind VS (between the two teams): darkest at the top and bottom, lightest at the middle, behind VS */
   .mt .body { display: grid; grid-template-columns: 1fr 260px 1fr; height: 576px; background: linear-gradient(#141518, #34363C 50%, #141518); }
-  .mt .team { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 6px 30px 20px; overflow: hidden; }
+  .mt .team { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px 30px; overflow: hidden; }
   .mt .team.L { clip-path: polygon(0 0, 100% 0, calc(100% - 70px) 100%, 0 100%); margin-right: -70px; padding-right: 100px; transform: translateX(-110%); }
   .mt .team.R { clip-path: polygon(70px 0, 100% 0, 100% 100%, 0 100%); margin-left: -70px; padding-left: 100px; transform: translateX(110%); }
   .mt .team { transition: transform .7s cubic-bezier(.22,1,.36,1) .05s; }
@@ -544,9 +544,10 @@
   .mt .team > * { position: relative; z-index: 1; opacity: 0; transition: opacity .4s, transform .6s cubic-bezier(.22,1,.36,1); transition-delay: calc(.05s + var(--d, 0) * .08s); }
   .mt .team.L > * { transform: translateX(-70px); } .mt .team.R > * { transform: translateX(70px); }
   .mt:is([data-st="2"], [data-st="3"]) .team > * { opacity: 1; transform: none; }
-  .mt .team .crest { height: 360px; width: 360px; align-items: end; } /* a wide logo sits just above the school name, as it did before, not floating in the middle of the box */
+  .mt .team .crest { height: 360px; width: 360px; align-items: end; } /* its height is set to the taller logo's (fillMt) */
+  .mt .team .rc.ph { visibility: hidden; }
   /* The logo scales up or down to fill a 360 x 360 box (keeping its shape), sitting on the bottom of the box just above the school name */
-  .mt .team .crest img { width: 360px; height: 360px; max-width: none; max-height: none; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 6px 16px rgba(0,0,0,.4)); }
+  .mt .team .crest img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 6px 16px rgba(0,0,0,.4)); }
   .mt .team .crest .ini { font-size: 140px; }
   .mt .team .sc { font-size: 30px; font-weight: 700; letter-spacing: .08em; color: var(--f); opacity: .9; white-space: nowrap; transform-origin: center; text-shadow: 0 2px 8px rgba(0,0,0,.45); }
   .mt .team .nm { font-size: 72px; font-weight: 800; letter-spacing: .04em; line-height: .95; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.4); white-space: nowrap; }
@@ -1361,12 +1362,20 @@
         node.style.setProperty('--wm', t.logo ? `url("${t.logo}")` : 'none');
         const cr = el('div', 'crest'); crest(cr, t);
         const nm = el('div', 'nm'), span = el('span', null, t.name || (g.names || {})[side] || ''); nm.append(span);
-        const sc = el('div', 'sc', t.school || ''), rc = el('div', 'rc', t.rec || '');
+        // A line only one team has (school, record) keeps its room on the other side too, so both sides line up
+        const any = k => SIDES.some(sd => (s.teams[sd][k] || '').trim());
+        const sc = el('div', 'sc', t.school || (any('school') ? '\u00a0' : '')), rc = el('div', 'rc' + (!t.rec && any('rec') ? ' ph' : ''), t.rec || (any('rec') ? '\u00a0' : ''));
         [cr, sc, nm, rc].forEach((n, i) => n.style.setProperty('--d', i));
         node.replaceChildren(cr, sc, nm, rc); fit(span, 560); fit(sc, 560);
       }
       $('mtWhen').textContent = g.when || ''; $('mtVn').textContent = g.venue || '';
       $('mtSep2').classList.toggle('off', !(g.when && g.venue)); fit($('mtVn'), 700);
+      // The logo row is as tall as the taller of the two logos (each fit to 360 x 360), and each team's logo, names and
+      // record sit centered in its panel: no empty band above short, wide logos, and both sides stay level
+      const crs = ['mtL', 'mtR'].map(id => $(id).querySelector('.crest')), imgs = crs.map(c => c.querySelector('img')).filter(Boolean);
+      const fitH = c => { const i = c.querySelector('img'); return i ? (i.naturalWidth ? Math.min(360, 360 * i.naturalHeight / i.naturalWidth) : 0) : 170; };
+      const size = () => { const H = Math.max(120, ...crs.map(fitH)); crs.forEach(c => c.style.height = Math.round(H) + 'px'); };
+      size(); Promise.all(imgs.map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; }))).then(size);
     };
     const NODE = { fd: 'fd', full: 'fb', match: 'mt', bstat: 'ln', pstat: 'ln', l3: 'ln', ann: 'ln', title: 'tc', brk: 'bx', hr: 'hr', lu: 'lu' };
     const FILL = { fd: fillFd, full: fillFb, match: fillMt, bstat: fillLn, pstat: fillLn, l3: fillLn, ann: fillLn, title: fillTc, brk: fillBx, hr: fillHr, lu: fillLu };
