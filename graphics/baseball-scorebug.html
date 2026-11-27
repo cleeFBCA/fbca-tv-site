@@ -293,17 +293,24 @@
   .fb .rw .ab { padding-left: 14px; color: var(--f); white-space: nowrap; overflow: hidden; }
   .fb .rw .n { text-align: center; height: 100%; display: grid; place-items: center; border-left: 2px solid rgba(255,255,255,.35); font-variant-numeric: tabular-nums; color: var(--f); }
   .fb .rw .n.i { font-size: 40px; font-weight: 700; background: rgba(0,0,0,.16); }
-  .fb .rw .n.i b { font-weight: inherit; opacity: 0; transform: translateY(14px); transition: opacity .25s, transform .35s cubic-bezier(.3,1.4,.5,1); transition-delay: calc(var(--i) * 55ms); }
+  /* Everything in the rows comes in after the rows open, in order: logo, name, each inning, then R H E LOB */
+  .fb .rw .n b { font-weight: inherit; opacity: 0; transform: translateY(14px); transition: opacity .25s, transform .35s cubic-bezier(.3,1.4,.5,1); transition-delay: calc(var(--i) * 55ms); }
+  .fb .rw .n.r b { transform: scale(.4); transition: opacity .2s, transform .45s cubic-bezier(.3,1.6,.5,1); transition-delay: calc(var(--i) * 55ms); }
+  .fb .rw .crest > * { opacity: 0; transform: scale(.4) rotate(-12deg); transition: opacity .25s, transform .5s cubic-bezier(.3,1.5,.5,1); transition-delay: calc(var(--i) * 55ms); }
+  .fb .rw .ab span { display: inline-block; clip-path: inset(0 100% 0 0); transition: clip-path .4s cubic-bezier(.22,1,.36,1); transition-delay: calc(var(--i) * 55ms); }
+  .fb[data-st="3"] .rw .crest > * { opacity: 1; transform: none; }
+  .fb[data-st="3"] .rw .ab span { clip-path: inset(0 0 0 0); }
   .fb .rw .n.i.now { box-shadow: inset 0 -6px 0 var(--gold); }
   .fb .rw .n.tot { min-width: 0; }
   .fb .rw .n.r { background: #F1F2F4; color: #111; border-left: 0; font-size: 48px; }
   .fb[data-st="1"] .rws { clip-path: inset(0 70% 0 0); transition: clip-path .2s cubic-bezier(.5,0,1,1); }
   .fb[data-st="2"] .rws, .fb[data-st="3"] .rws { clip-path: inset(0 0 0 0); }
   .fb[data-st="2"] .hd, .fb[data-st="3"] .hd, .fb[data-st="2"] .ft, .fb[data-st="3"] .ft { clip-path: inset(0 0 0 0); }
-  .fb[data-st="3"] .rw .n.i b { opacity: 1; transform: none; }
+  .fb[data-st="3"] .rw .n b { opacity: 1; transform: none; }
   .fb[data-dir="out"] .rws { transition: clip-path .38s cubic-bezier(.6,0,.4,1); }
   .fb[data-dir="out"] .hd, .fb[data-dir="out"] .ft { transition: clip-path .22s ease-in .16s; }
-  .fb[data-dir="out"] .rw .n.i b { transition: opacity .15s; transition-delay: 0s; }
+  .fb[data-dir="out"] .rw .n b, .fb[data-dir="out"] .rw .crest > * { transition: opacity .15s; transition-delay: 0s; }
+  .fb[data-dir="out"] .rw .ab span { transition: clip-path .2s ease-in; transition-delay: 0s; }
 
   /* ---- Home run: HOME RUN in big chrome letters with SOLO / 2-RUN / 3-RUN / GRAND SLAM, then the name with season HR and RBI ---- */
   .hr { position: absolute; left: 75px; bottom: 52px; width: 1770px; height: 128px;
@@ -1211,14 +1218,16 @@
       $('fbRows').replaceChildren(...SIDES.map((side, si) => {
         const t = s.teams[side], r = stripe(paint(el('div', 'rw tm'), t), side), c = el('div', 'crest'); if (t.logo) crest(c, t);
         r.style.gridTemplateColumns = cols;
-        r.append(c, el('div', 'ab', t.abbr || (t.name || '').slice(0, 4)));
+        const o = si * 2, ab = el('div', 'ab'), abs = el('span', null, t.abbr || (t.name || '').slice(0, 4)); ab.append(abs);
+        c.style.setProperty('--i', o); abs.style.setProperty('--i', o + 1);
+        r.append(c, ab);
         const cells = (g.cells || {})[side] || [];
         for (let i = 0; i < n; i++) {
           const v = cells[i], d = el('div', 'n i' + (g.now && g.now.side === side && g.now.inn === i + 1 ? ' now' : '')), b = el('b', null, v == null ? '' : String(v));
-          b.style.setProperty('--i', i + si * 2); d.append(b); r.append(d);
+          b.style.setProperty('--i', o + 2 + i); d.append(b); r.append(d);
         }
         const v = g.rows[side];
-        r.append(el('div', 'n r', String(v.R)), el('div', 'n tot', String(v.H)), el('div', 'n tot', String(v.E)), el('div', 'n tot', String(v.LOB)));
+        r.append(...[['n r', v.R], ['n tot', v.H], ['n tot', v.E], ['n tot', v.LOB]].map(([cl, x], k) => { const d = el('div', cl), b = el('b', null, String(x)); b.style.setProperty('--i', o + 3 + n + k); d.append(b); return d; }));
         return r;
       }));
     };
