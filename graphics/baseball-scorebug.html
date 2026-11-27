@@ -360,6 +360,16 @@
   .hr .bg::before { content: ''; position: absolute; left: 262px; right: 350px; top: -40px; bottom: -40px; opacity: 0;
                     background: radial-gradient(closest-side, rgba(255,250,225,.75), rgba(234,175,15,.35) 45%, transparent); }
   .hr[data-st="2"] .bg::before { animation: hrFlash .7s ease-out 1.1s; }
+  /* When it shakes: the title card's lightning, behind the logo and the letters (a strike, a flicker, a second strike, then the fade) */
+  .hr .fx { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; pointer-events: none; }
+  .hr .fx i { position: absolute; opacity: 0; }
+  .hr .fx .wash { inset: 0; background: rgba(240,245,255,.6); }
+  .hr .fx .burst { top: 64px; width: 1500px; height: 700px; margin: -350px 0 0 -750px;
+                   background: radial-gradient(closest-side, #fff 0%, rgba(255,255,255,.95) 18%, rgba(255,250,235,.55) 45%, rgba(255,240,200,.18) 72%, transparent); }
+  .hr .fx .burst.a { left: 125px; } .hr .fx .burst.b { left: 841px; }
+  .hr[data-st="2"] .fx .burst { animation: tcBurst .55s 1.1s both; }
+  .hr[data-st="2"] .fx .wash { animation: tcWash .55s 1.1s both; }
+  .hr[data-st="2"] .lg { animation: tcLand .55s 1.1s; }
   @keyframes hrFlash { 0% { opacity: 0; transform: scaleX(.4); } 15% { opacity: 1; } 100% { opacity: 0; transform: scaleX(1.15); } }
   /* A light sweeps the bar */
   .hr .bg::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 260px; transform: translateX(-300px) skewX(-20deg); opacity: 0;
@@ -719,6 +729,7 @@
 
   <div class="hr shadow" id="hr" data-st="0">
     <div class="bg tm" id="hrBg"></div>
+    <div class="fx"><i class="wash"></i><i class="burst a"></i><i class="burst b"></i></div>
     <div class="nm" id="hrNm"></div>
     <div class="ss" id="hrSs"></div>
     <div class="word" id="hrWord"></div>
