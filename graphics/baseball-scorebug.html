@@ -1399,6 +1399,14 @@
       } else if (want && s.gAt !== enter.at) { // the same graphic again, with new content
         enter.at = s.gAt;
         if (want === 'hr') { clearTimers(); enter(want); }
+        else if (want === 'fd' && enter.gp && (s.gp || {}).side !== enter.gp.side) {
+          // The other team: the players go, the field folds away, it recolors with the new team, opens again and the players come in
+          clearTimers(); busy = 'swap'; const fd = $('fd'); fd.dataset.dir = 'out'; fd.dataset.st = 2;
+          later(260, () => { fd.dataset.st = 1; });
+          later(760, () => { FILL.fd(s.gp || {}); enter.gp = s.gp || {}; fd.dataset.dir = 'in'; });
+          later(800, () => { fd.dataset.st = 2; });
+          later(1600, () => { fd.dataset.st = 3; busy = null; sync(); });
+        }
         else if ((want === 'pstat' || want === 'bstat') && enter.gp && ['side', 'num', 'first', 'last'].some(k => (enter.gp[k] || '') !== ((s.gp || {})[k] || ''))) {
           // A different pitcher (or batter): the bar goes out, then comes back in with the new one
           clearTimers(); busy = 'swap'; $('ln').dataset.dir = 'out';
