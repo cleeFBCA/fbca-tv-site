@@ -487,7 +487,7 @@
     if (e.type === 'pitch') return BB.PITCHES[d.p] || 'Pitch';
     if (e.type === 'pa') {
       const R = BB.RESULTS[d.r] || {}, runs = (d.runs || []).length;
-      return who(v, e.side, e.player) + ' · ' + (R.l || d.r) + (runs ? ' · ' + runs + (runs === 1 ? ' run' : ' runs') : '') + (d.rbi ? ' · ' + d.rbi + ' RBI' : '');
+      return who(v, e.side, e.player) + ' · ' + (d.r === 'HR' && runs === 4 ? 'Grand slam' : R.l || d.r) + (runs ? ' · ' + runs + (runs === 1 ? ' run' : ' runs') : '') + (d.rbi ? ' · ' + d.rbi + ' RBI' : '');
     }
     if (e.type === 'br') { const runs = (d.runs || []).length; return (BB.RUNS[d.r] || d.r) + (e.player !== 'team' ? ' · ' + who(v, e.side, e.player) : '') + (runs ? ' · ' + runs + (runs === 1 ? ' run' : ' runs') : ''); }
     if (e.type === 'pc') return 'Pitching change: ' + who(v, e.side, e.player);

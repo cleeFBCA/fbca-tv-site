@@ -168,7 +168,7 @@
   };
   const ballWords = (g, e) => {
     const BB = window.EotaBaseball, d = BB.dataOf(e) || {}, runs = (d.runs || []).length;
-    if (e.type === 'pa') return { title: (BB.RESULTS[d.r] || {}).l || d.r, runs, rbi: d.rbi || 0, d };
+    if (e.type === 'pa') return { title: d.r === 'HR' && runs === 4 ? 'Grand slam' : (BB.RESULTS[d.r] || {}).l || d.r, runs, rbi: d.rbi || 0, d };
     if (e.type === 'br') return { title: BB.RUNS[d.r] || d.r, runs, rbi: 0, d };
     if (e.type === 'pc') return { title: 'Pitching change', runs: 0, rbi: 0, d };
     return { title: e.type, runs: 0, rbi: 0, d };
