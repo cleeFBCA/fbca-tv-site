@@ -308,6 +308,8 @@
   .hr .nm .f { font-size: 44px; font-weight: 600; } .hr .nm .l { font-size: 70px; font-weight: 800; white-space: nowrap; }
   .hr .ss { position: absolute; left: 860px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; clip-path: inset(0 100% 0 0); transition: clip-path .5s cubic-bezier(.22,1,.36,1); }
   .hr .ss div { display: flex; align-items: center; gap: 22px; font-size: 52px; font-weight: 800; line-height: 1; color: var(--f); }
+  .hr .ss .tl { margin: 0; max-width: 860px; font-size: 56px; font-weight: 800; line-height: 1; color: var(--f); white-space: nowrap; }
+  .hr .ss .tl.two { font-size: 44px; line-height: 1.04; white-space: normal; text-wrap: balance; }
   .hr .ss b { display: grid; place-items: center; width: 140px; height: 50px; background: var(--gold); color: #03260A; font-size: 44px; }
   .hr .word { position: absolute; left: 262px; right: 350px; top: -12px; bottom: -12px; display: flex; justify-content: center; align-items: center;
               font-size: 158px; font-weight: 800; line-height: 1; letter-spacing: .07em; filter: var(--hr-depth); }
@@ -838,8 +840,10 @@
           </div>
           <div data-pane="hr">
             <label>Runs</label><div class="chips" id="hrRuns"></div>
+            <label>After the name</label><div class="chips" id="hrSets"></div>
+            <input id="hrLine" maxlength="60" placeholder="Type the text line (in place of the stats)" style="margin-top:6px" hidden>
             <div class="sum" id="hrSum"></div>
-            <p class="hint">Pick the runs, or leave it on From the stat keeper, then Show. A grand slam says GRAND SLAM in place of HOME RUN. Runs by itself: HOME RUN (with Solo, 2-Run or 3-Run), then the batter's name with their home runs and RBI this season, about 11 seconds. With no home run recorded on the stat keeper, it plays just the big words in the batting team's colors, about 5 seconds. The pick goes back to From the stat keeper after it's shown. The score bug comes back after.</p>
+            <p class="hint">Pick the runs, or leave it on From the stat keeper, then Show. A grand slam says GRAND SLAM in place of HOME RUN. Runs by itself: HOME RUN (with Solo, 2-Run or 3-Run), then the batter's name with what's picked under After the name (season or tonight's HR and RBI, nothing, or a typed line), about 11 seconds. With no home run recorded on the stat keeper, it plays just the big words in the batting team's colors, about 5 seconds. The pick goes back to From the stat keeper after it's shown. The score bug comes back after.</p>
           </div>
           <div data-pane="pitch">
             <label for="spMph">Pitch speed (MPH): type it, then Enter or Show</label><input id="spMph" inputmode="numeric" placeholder="86">
@@ -988,6 +992,7 @@
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
     gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }, ann: { names: ['', '', ''], label: 'On the call', secs: 8 },
     // Batter and pitcher stats: which stats (set), which line above (cap), the typed line, typed labels, typed values by player
+    hrSet: 'season', hrLine: '',
     ls: { capV: 1, b: { set: 'season', cap: 'none', txt: '', lab: ['', '', '', ''], v: {}, line: '' }, p: { set: 'season', cap: 'none', txt: '', lab: ['', '', '', ''], v: {}, line: '' } }
   });
   const merge = raw => {
@@ -1113,7 +1118,7 @@
       const t = s.teams[g.side] || s.teams.home;
       paint($('hr'), t); stripe($('hr'), g.side); crest($('hrLg'), t);
       $('hrNm').replaceChildren(el('span', 'f', g.first || ''), el('span', 'l', g.last || ''));
-      $('hrSs').replaceChildren(...(g.stats || []).map(([v, k]) => { const d = el('div'); d.append(el('b', null, String(v)), k); return d; }));
+      $('hrSs').replaceChildren(...(g.line ? [el('p', 'tl' + (g.line.length > 30 ? ' two' : ''), g.line)] : (g.stats || []).map(([v, k]) => { const d = el('div'); d.append(el('b', null, String(v)), k); return d; })));
       let i = 0;
       $('hrWord').replaceChildren(...[...(g.slam ? 'GRAND SLAM' : 'HOME RUN')].map(ch => { const sp = el('span', ch === ' ' ? 'gap' : '', ch === ' ' ? '' : ch); sp.style.setProperty('--i', i++); return sp; }));
       $('hrTag').textContent = g.slam ? '' : g.tag || ''; // GRAND SLAM is the big word, so no tag
@@ -1548,7 +1553,16 @@
     const side = h.e.side, p = playerOf(side, h.e.player); if (!p) return null;
     const t = BB.seasonFor(seasonMap(side), p.name), runs = (h.d.runs || []).length;
     return { side, runs, first: firstName(p.name), last: lastName(p.name), tag: ['', 'Solo', '2-Run', '3-Run', 'Grand Slam'][runs] || '', slam: runs === 4,
-             stats: [[t ? t.bat.HR : 1, 'HR this season'], [t ? t.bat.RBI : runs, 'RBI this season']] };
+             ...hrStats(side, h.e.player, t, runs) };
+  };
+  // What follows the name on the Home run graphic: season, tonight, nothing, or a typed line
+  const HR_SETS = [['season', 'Season HR and RBI'], ['tonight', "Tonight's HR and RBI"], ['none', 'No stats (name only)'], ['text', 'Text line']];
+  const hrStats = (side, id, t, runs) => {
+    const set = s.hrSet || 'season', b = stats.bat[side][id] || BB.zero(BB.BAT_KEYS);
+    if (set === 'none') return { stats: [] };
+    if (set === 'text') { const l = (s.hrLine || '').trim(); return { stats: [], line: l }; }
+    if (set === 'tonight') return { stats: [[b.HR || 1, 'HR tonight'], [b.RBI || runs, 'RBI tonight']] };
+    return { stats: [[t ? t.bat.HR : 1, 'HR this season'], [t ? t.bat.RBI : runs, 'RBI this season']] };
   };
   // The head line both box scores use when it's left blank
   const boxHead = L => L.final ? (L.inn > (L.innings || 7) ? 'Final · ' + L.inn : 'Final') : L.between ? (L.top ? 'Mid ' : 'End ') + ordinal(L.top ? L.inn - 1 : L.inn) : (L.top ? 'Top ' : 'Bot ') + ordinal(L.inn);
@@ -1815,6 +1829,12 @@
   const HR_PICKS = [[0, 'From the stat keeper'], [1, 'Solo'], [2, '2-Run'], [3, '3-Run'], [4, 'Grand Slam']];
   const renderHrRuns = () => $('hrRuns').replaceChildren(...HR_PICKS.map(([n, l]) => { const b = el('button', 'sm' + (hrRuns === n ? ' active' : ''), l); b.type = 'button'; b.onclick = () => { hrRuns = n; renderHrRuns(); }; return b; }));
   renderHrRuns();
+  const renderHrSets = () => {
+    const cur = s.hrSet || 'season';
+    if ($('hrSets').dataset.sig !== cur) { $('hrSets').dataset.sig = cur; $('hrSets').replaceChildren(...HR_SETS.map(([v, l]) => { const b = el('button', 'sm' + (v === cur ? ' active' : ''), l); b.type = 'button'; b.onclick = () => { s.hrSet = v; save(); renderShell(); if (v === 'text') $('hrLine').focus(); }; return b; })); }
+    setField($('hrLine'), s.hrLine || ''); $('hrLine').hidden = cur !== 'text';
+  };
+  $('hrLine').addEventListener('input', e => { s.hrLine = e.target.value; save(); renderShell(); });
   $('speedSecs').addEventListener('input', e => { const v = parseInt(e.target.value, 10); if (v >= 1 && v <= 60) { s.speedSecs = v; save(); } });
   $('bxDue').addEventListener('change', e => { s.bxDue = e.target.checked; save(); });
   $('bxHead').addEventListener('input', e => { s.bxHead = e.target.value; });
@@ -1992,6 +2012,7 @@
     $('btnFlashAuto').textContent = 'Auto BB / K / HBP: ' + (s.autoFlash ? 'on' : 'off'); $('btnFlashAuto').className = s.autoFlash ? 'active' : '';
     $('panelNote').replaceChildren(...(Date.now() - noteAt < 6000 && noteText ? [noteText] : s.gfx ? ['On air: ', el('b', null, (GFX.find(x => x.id === s.gfx) || {}).name || s.gfx)] : []));
     // Details
+    if (pick === 'hr') renderHrSets();
     if (kg && stats) {
       fillSelect($('bsWho'), batterOpts()); fillSelect($('psWho'), pitcherOpts());
       if (pick === 'bstat') { renderLs('b', 'bs'); const [sd, id] = $('bsWho').value.split('|'); sumLines($('bsSum'), id ? batterGp(sd, id) : null); }
