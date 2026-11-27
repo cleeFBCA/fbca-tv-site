@@ -1282,6 +1282,14 @@
       // Already off (the home run takes itself off at the end): nothing to play
       if (['0', '7', undefined].includes($(node).dataset.st)) { $(node).dataset.st = 0; later(0, done); return; }
       $(node).dataset.dir = 'out'; run(node, OUT[node], done); };
+    // While the lower-third title card is up, the lightning strikes again every 12 seconds. The times count from when it
+    // was shown (shared through the saved state), so the fill and key windows strike together.
+    let zapN = 0;
+    setInterval(() => {
+      const tc = $('tc'); if (shownGfx !== 'title' || tc.dataset.st !== '2' || !s.gAt) { zapN = 0; return; }
+      const n = Math.floor((Date.now() - s.gAt - 1500) / 12000); if (n < 1 || n === zapN) return; zapN = n;
+      tc.getAnimations({ subtree: true }).filter(a => ['tcBurst', 'tcWash', 'tcLand'].includes(a.animationName)).forEach(a => { a.currentTime = 0; a.play(); });
+    }, 200);
     // One graphic at a time; the bug steps aside for each and comes back after.
     const sync = () => {
       const want = s.gfx || '';
