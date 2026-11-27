@@ -219,7 +219,18 @@
   /* The logos land with a little flash */
   /* Like a camera flash: on almost at once (30 ms), then fades over about half a second */
   .tc[data-st="2"] .lg { animation: tcLand .52s .25s; }
-  @keyframes tcLand { 0% { filter: brightness(1); animation-timing-function: linear; } 6% { filter: brightness(1.7) drop-shadow(0 0 18px rgba(255,255,255,.6)); animation-timing-function: ease-out; } 100% { filter: brightness(1); } }
+  @keyframes tcLand { 0% { filter: brightness(1); animation-timing-function: linear; } 6% { filter: brightness(2.1) drop-shadow(0 0 30px rgba(255,255,255,.9)); animation-timing-function: ease-out; } 100% { filter: brightness(1); } }
+  /* The same flash lights the whole card, behind the logos and the text: a burst from each logo and a wash over everything */
+  .tc .fx { position: absolute; left: 0; top: 0; width: 1840px; height: 200px; border-radius: 12px; overflow: hidden; pointer-events: none; }
+  .tc .fx i { position: absolute; opacity: 0; }
+  .tc .fx .wash { inset: 0; background: rgba(255,255,255,.55); }
+  .tc .fx .burst { top: 86px; width: 1500px; height: 760px; margin: -380px 0 0 -750px;
+                   background: radial-gradient(closest-side, #fff 0%, rgba(255,255,255,.95) 18%, rgba(255,250,235,.55) 45%, rgba(255,240,200,.18) 72%, transparent); }
+  .tc .fx .burst.L { left: 138px; } .tc .fx .burst.R { left: 1702px; }
+  .tc[data-st="2"] .fx .burst { animation: tcBurst .52s .25s both; }
+  .tc[data-st="2"] .fx .wash { animation: tcWash .52s .25s both; }
+  @keyframes tcBurst { 0% { opacity: 0; transform: scale(.55); animation-timing-function: linear; } 6% { opacity: 1; transform: scale(1); animation-timing-function: ease-out; } 100% { opacity: 0; transform: scale(1.15); } }
+  @keyframes tcWash { 0% { opacity: 0; animation-timing-function: linear; } 6% { opacity: 1; animation-timing-function: ease-out; } 100% { opacity: 0; } }
   .tc[data-dir="out"] .tx { transition: clip-path .26s cubic-bezier(.5,0,.8,.4), opacity .2s; }
   .tc[data-dir="out"] .lg { transition: opacity .2s, transform .24s ease-in; }
   .tc[data-dir="out"] .ven { transition: clip-path .2s ease-in; }
@@ -677,6 +688,7 @@
     <div class="ven" id="tcVen"></div>
     <div class="bgL tm" id="tcBgL"><i class="wm"></i></div><div class="bgR tm" id="tcBgR"><i class="wm"></i></div><div class="lines"><i class="edge"></i><i class="topl"></i></div>
     <div class="gw"><i class="glow"></i></div>
+    <div class="fx"><i class="wash"></i><i class="burst L"></i><i class="burst R"></i></div>
     <div class="tx L" id="tcTxL"></div><div class="tx R" id="tcTxR"></div>
     <div class="shn"></div>
     <div class="mid"><i class="logo"></i></div>
