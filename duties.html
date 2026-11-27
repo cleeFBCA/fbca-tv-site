@@ -694,7 +694,15 @@
     { name: 'Soccer', match: /soccer/i, roles: {
       op: { href: 'graphics/soccer-scorebug.html', note: 'Run the scorebug and graphics', outs: [['Output (fill)', 'graphics/soccer-scorebug.html#bug'], ['Key', 'graphics/soccer-scorebug.html#key']] },
       stats: { href: 'graphics/soccer-stats.html', note: 'Tap in each play' },
-      ann: { href: 'graphics/soccer-announcers.html', note: 'Live goals, leaders and box score' } } }
+      ann: { href: 'graphics/soccer-announcers.html', note: 'Live goals, leaders and box score' } } },
+    { name: 'Softball', match: /softball/i, roles: {
+      op: { href: 'graphics/baseball-scorebug.html', note: 'Run the scorebug and graphics (pick Softball in Game setup)', outs: [['Output (fill)', 'graphics/baseball-scorebug.html#bug'], ['Key', 'graphics/baseball-scorebug.html#key']] },
+      stats: { href: 'graphics/baseball-stats.html?game=softball', note: 'Tap in each pitch and play' },
+      ann: { href: 'graphics/baseball-announcers.html?game=softball', note: 'Live situation, leaders and box score' } } },
+    { name: 'Baseball', match: /baseball/i, roles: {
+      op: { href: 'graphics/baseball-scorebug.html', note: 'Run the scorebug and graphics', outs: [['Output (fill)', 'graphics/baseball-scorebug.html#bug'], ['Key', 'graphics/baseball-scorebug.html#key']] },
+      stats: { href: 'graphics/baseball-stats.html?game=baseball', note: 'Tap in each pitch and play' },
+      ann: { href: 'graphics/baseball-announcers.html?game=baseball', note: 'Live situation, leaders and box score' } } }
   ];
   const SB_ROLES = [['op', 'Scorebug operator', 'Scorebug'], ['stats', 'Statistician', 'Stats'], ['ann', 'Announcers', 'Announcers']];
   const sbSport = (g) => SB_SPORTS.find((s) => s.match.test(g.sport || ''));
