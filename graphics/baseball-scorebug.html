@@ -818,12 +818,18 @@
           </div>
           <div data-pane="bstat">
             <label for="bsWho">Batter</label><select id="bsWho"></select>
-            <label for="bsCap">Line above it (blank = automatic)</label><input id="bsCap" placeholder="">
+            <label>Stats</label><div class="chips" id="bsSets"></div>
+            <div id="bsVals"></div>
+            <label>Line above it</label><div class="chips" id="bsCaps"></div>
+            <input id="bsCap" placeholder="Type the line above it" style="margin-top:6px">
             <div class="sum" id="bsSum"></div>
           </div>
           <div data-pane="pstat">
             <label for="psWho">Pitcher</label><select id="psWho"></select>
-            <label for="psCap">Line above it (blank = automatic)</label><input id="psCap" placeholder="">
+            <label>Stats</label><div class="chips" id="psSets"></div>
+            <div id="psVals"></div>
+            <label>Line above it</label><div class="chips" id="psCaps"></div>
+            <input id="psCap" placeholder="Type the line above it" style="margin-top:6px">
             <div class="sum" id="psSum"></div>
           </div>
           <div data-pane="hr">
@@ -972,16 +978,19 @@
   const team = (school, name, abbr, bg, fg) => ({ school, name, abbr, rec: '', bg, fg, logo: '' });
   const manSit = () => ({ inn: 1, top: true, b: 0, s: 0, o: 0, bases: [false, false, false], score: { home: 0, away: 0 }, final: false, bat: '', pit: '', np: 0 });
   const defaults = () => ({
-    game: 'baseball', src: 'keeper', visible: true, boxOn: true, swapSides: true, // the score bug on the right by default autoFlash: true, batShow: 'auto',
+    game: 'baseball', src: 'keeper', visible: true, boxOn: true, swapSides: true /* the score bug on the right by default */, autoFlash: true, batShow: 'auto',
     teams: { away: team('', '', '', '#1F3A93', '#FFFFFF'), home: team('Fort Bend Christian', 'Eagles', 'FBCA', FBCA.bg, FBCA.fg) },
     venue: '', when: '', mtTitle: '', mtSub: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70 },
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
-    gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }, ann: { names: ['', '', ''], label: 'On the call', secs: 8 }
+    gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }, ann: { names: ['', '', ''], label: 'On the call', secs: 8 },
+    // Batter and pitcher stats: which stats (set), which line above (cap), the typed line, typed labels, typed values by player
+    ls: { b: { set: 'season', cap: 'auto', txt: '', lab: ['', '', '', ''], v: {} }, p: { set: 'season', cap: 'auto', txt: '', lab: ['', '', '', ''], v: {} } }
   });
   const merge = raw => {
     const d = defaults(), out = { ...d, ...raw };
     out.teams = { away: { ...d.teams.away, ...(raw.teams || {}).away }, home: { ...d.teams.home, ...(raw.teams || {}).home } };
     out.stn = { ...d.stn, ...(raw.stn || {}) }; out.man = { ...d.man, ...(raw.man || {}) }; out.l3 = { ...d.l3, ...(raw.l3 || {}) }; out.lu = { ...d.lu, ...(raw.lu || {}) }; out.ann = { ...d.ann, ...(raw.ann || {}) };
+    out.ls = { b: { ...d.ls.b, ...((raw.ls || {}).b || {}) }, p: { ...d.ls.p, ...((raw.ls || {}).p || {}) } };
     return out;
   };
   let s = (() => { try { const r = localStorage.getItem(STORE); if (r) return merge(JSON.parse(r)); } catch (e) {} return defaults(); })();
@@ -1481,21 +1490,49 @@
     return [fld, BB.other(fld)].flatMap(side => roster(side).map(p => ({ side, id: p.id, label: (p.id === cur ? '▶ Pitching now: ' : pitched(side).has(p.id) ? 'Pitched today: ' : '') + kg.meta.names[side] + ' · ' + (p.num ? '#' + p.num + ' ' : '') + p.name })))
       .sort((a, b) => (b.id === cur) - (a.id === cur) || /^Pitched/.test(b.label) - /^Pitched/.test(a.label));
   };
+  // ---- Batter and pitcher stats: the stats picked, and the line above them ----
+  const LS_SETS = {
+    b: [['none', 'No stats'], ['season', 'Season'], ['tonight', "Tonight's stats"], ['hit', 'Tonight hitting'], ['field', 'Tonight fielding'], ['typed', 'Typed in']],
+    p: [['none', 'No stats'], ['season', 'Season'], ['tonight', "Tonight's pitching"], ['hit', 'Tonight hitting'], ['field', 'Tonight fielding'], ['typed', 'Typed in']]
+  };
+  const LS_CAPS = [['auto', 'Automatic'], ['tonight', 'Tonight'], ['season', 'Season'], ['typed', 'Typed in'], ['none', 'None']];
+  const FIELD_LABS = ['PO', 'A', 'E']; // the stat keeper doesn't keep fielding by player: typed in
+  const lsLabs = k => s.ls[k].set === 'field' ? FIELD_LABS : s.ls[k].set === 'typed' ? s.ls[k].lab : [];
+  const lsTyped = (k, id) => { const v = s.ls[k].v[id] || {}; return lsLabs(k).map((l, i) => [String(l || '').trim().toUpperCase(), String(v[s.ls[k].set === 'field' ? l : i] || '').trim()]).filter(([l, x]) => l && x !== ''); };
+  const hitTonight = b => [['H-AB', b.H + '-' + b.AB], ['2B', b['2B']], ['3B', b['3B']], ['HR', b.HR], ['RBI', b.RBI]];
+  const lsStats = (k, side, id) => {
+    const set = s.ls[k].set, p = playerOf(side, id), t = p && BB.seasonFor(seasonMap(side), p.name);
+    const bt = stats.bat[side][id] || BB.zero(BB.BAT_KEYS);
+    if (set === 'none') return [];
+    if (set === 'hit') return hitTonight(bt);
+    if (set === 'field' || set === 'typed') return lsTyped(k, id);
+    if (k === 'b') {
+      if (set === 'tonight') return [['H-AB', bt.H + '-' + bt.AB], ['R', bt.R], ['RBI', bt.RBI], ['BB', bt.BB], ['K', bt.SO]];
+      const b = t ? t.bat : BB.zero(BB.BAT_KEYS); return [['AVG', BB.avg(b)], ['HR', b.HR], ['RBI', b.RBI], ['OPS', opsOf(b)]];
+    }
+    const pt = stats.pit[side][id] || BB.zero(BB.PIT_KEYS);
+    if (set === 'tonight') return [['IP', BB.ip(pt.outs)], ['H', pt.H], ['ER', pt.ER], ['K', pt.SO], ['PC', (stats.sit.np || {})[id] || pt.NP || 0]];
+    const q = t ? t.pit : BB.zero(BB.PIT_KEYS); return [['IP', BB.ip(q.outs)], ['ERA', BB.era(q, kg.meta.innings || 7)], ['BB', q.BB], ['K', q.SO], ['W-L', q.W + '-' + q.L]];
+  };
+  const lsCap = (k, auto, tonight, season) => { const c = s.ls[k].cap; return c === 'none' ? '' : c === 'typed' ? (s.ls[k].txt || '').trim() : c === 'tonight' ? tonight : c === 'season' ? season : auto; };
   const batterGp = (side, id) => {
     const p = playerOf(side, id); if (!p) return null;
     const t = BB.seasonFor(seasonMap(side), p.name), b = t ? t.bat : BB.zero(BB.BAT_KEYS), today = stats.bat[side][id], slot = slotOf(side, id);
-    const auto = today && today.PA ? 'Today: ' + BB.todayLine(today) : (t && t.bat.G ? t.bat.G + ' games this season' : '');
+    const tonight = today && today.PA ? 'Tonight: ' + BB.todayLine(today) : slot ? 'First time up tonight' : '';
+    const season = t && t.bat.G ? t.bat.G + (t.bat.G === 1 ? ' game' : ' games') + ' this season' + (t.bat.AB ? ' · ' + t.bat.H + '-' + t.bat.AB : '') : '';
+    const auto = today && today.PA ? tonight : season;
     return { side, num: p.num, pos: slot && slot.pos || '', first: firstName(p.name), last: lastName(p.name),
-             stats: [['AVG', BB.avg(b)], ['HR', b.HR], ['RBI', b.RBI], ['OPS', opsOf(b)]], cap: $('bsCap').value.trim() || auto };
+             stats: lsStats('b', side, id), cap: lsCap('b', auto, tonight, season) };
   };
   const pitcherGp = (side, id) => {
     const p = playerOf(side, id); if (!p) return null;
     const t = BB.seasonFor(seasonMap(side), p.name), q = t ? t.pit : BB.zero(BB.PIT_KEYS), today = stats.pit[side][id];
     const sit = stats.sit, np = sit.np[id] || 0;
-    const auto = today && (today.BF || today.outs) ? `Today: ${BB.ip(today.outs)} IP, ${today.H} H, ${today.R} R, ${today.SO} K · ${np} pitches`
-      : q.GS ? q.GS + (q.GS === 1 ? ' start' : ' starts') + ' this season' : q.G ? q.G + ' appearances this season' : '';
+    const tonight = today && (today.BF || today.outs) ? `Tonight: ${BB.ip(today.outs)} IP, ${today.H} H, ${today.R} R, ${today.SO} K · ${np} pitches` : '';
+    const season = q.GS ? q.GS + (q.GS === 1 ? ' start' : ' starts') + ' this season' + (q.outs ? ' · ' + BB.ip(q.outs) + ' IP' : '') : q.G ? q.G + ' appearances this season' : '';
+    const auto = tonight || season;
     return { side, num: p.num, first: firstName(p.name), last: lastName(p.name),
-             stats: [['IP', BB.ip(q.outs)], ['ERA', BB.era(q, kg.meta.innings || 7)], ['BB', q.BB], ['K', q.SO], ['W-L', q.W + '-' + q.L]], cap: $('psCap').value.trim() || auto };
+             stats: lsStats('p', side, id), cap: lsCap('p', auto, tonight, season) };
   };
   const lastHr = () => { if (!kg) return null; for (let i = kg.events.length - 1; i >= 0; i--) { const e = kg.events[i], d = BB.dataOf(e); if (e.type === 'pa' && d && d.r === 'HR') return { e, d }; } return null; };
   const hrGp = () => {
@@ -1893,12 +1930,33 @@
     // Follows whoever is up now, unless another player was picked
     if (keep && opts.some(o => o.side + '|' + o.id === keep) && sel.dataset.manual === '1') sel.value = keep;
   };
+  // The stats and the line-above pickers on the Batter stats and Pitcher stats tiles
+  const renderLs = (k, pre) => {
+    const L = s.ls[k], [, id] = $(pre + 'Who').value.split('|');
+    const chips = (node, list, cur, fn) => { const sig = list.map(x => x[0]).join() + cur; if (node.dataset.sig === sig) return; node.dataset.sig = sig;
+      node.replaceChildren(...list.map(([v, l]) => { const b = el('button', 'sm' + (v === cur ? ' active' : ''), l); b.type = 'button'; b.onclick = () => fn(v); return b; })); };
+    chips($(pre + 'Sets'), LS_SETS[k], L.set, v => { L.set = v; save(); renderShell(); });
+    chips($(pre + 'Caps'), LS_CAPS, L.cap, v => { L.cap = v; save(); renderShell(); if (v === 'typed') $(pre + 'Cap').focus(); });
+    setField($(pre + 'Cap'), L.txt || ''); $(pre + 'Cap').hidden = L.cap !== 'typed';
+    // Typed stats: PO / A / E for fielding, or up to four of your own; the numbers are kept for each player
+    const box = $(pre + 'Vals'), typed = L.set === 'field' || L.set === 'typed', sig = L.set + '|' + (id || '');
+    box.hidden = !typed; if (!typed) { box.dataset.sig = ''; return; }
+    if (box.dataset.sig !== sig) {
+      box.dataset.sig = sig;
+      const v = id ? (L.v[id] = L.v[id] || {}) : {}, rows = [];
+      const inp = (val, ph, on, w) => { const i = el('input'); i.value = val || ''; i.placeholder = ph; i.style.width = w; i.disabled = !id; i.addEventListener('input', () => { on(i.value); save(); renderShell(); }); return i; };
+      if (L.set === 'field') rows.push(...FIELD_LABS.map(l => { const r = el('div', 'row'); r.style.marginTop = '4px'; r.append(el('b', null, l), inp(v[l], '0', x => { v[l] = x; }, '90px')); r.firstChild.style.cssText = 'width:48px;align-self:center'; return r; }));
+      else rows.push(...[0, 1, 2, 3].map(i => { const r = el('div', 'row'); r.style.marginTop = '4px'; r.append(inp(L.lab[i], ['SB', 'BB', 'R', 'K'][i], x => { L.lab[i] = x; }, '110px'), inp(v[i], 'value', x => { v[i] = x; }, '110px')); return r; }));
+      box.replaceChildren(el('p', 'hint', id ? (L.set === 'field' ? "The stat keeper doesn't keep fielding by player, so type tonight's putouts, assists and errors. Blank ones are left off." : 'Up to four stats: the name, then the number. Blank ones are left off. The names stay; the numbers are kept for each player.') : 'Pick the player first.'), ...rows);
+    }
+  };
+  for (const [k, pre] of [['b', 'bs'], ['p', 'ps']]) $(pre + 'Cap').addEventListener('input', e => { s.ls[k].txt = e.target.value; save(); renderShell(); });
   $('bsWho').onchange = () => { $('bsWho').dataset.manual = $('bsWho').selectedIndex > 0 ? '1' : ''; renderShell(); };
   $('psWho').onchange = () => { $('psWho').dataset.manual = $('psWho').selectedIndex > 0 ? '1' : ''; renderShell(); };
   const sumLines = (node, g) => {
     if (!g) { node.textContent = 'Nothing to show yet.'; return; }
     node.replaceChildren(el('b', null, ((g.num ? '#' + g.num + ' ' : '') + (g.first ? g.first + ' ' : '') + g.last).trim()), el('br'),
-      (g.stats || []).map(([k, v]) => k + ' ' + v).join(' · '), el('br'), g.cap ? 'Above it: ' + g.cap : 'No line above it');
+      (g.stats || []).length ? g.stats.map(([k, v]) => k + ' ' + v).join(' · ') : 'No stats', el('br'), g.cap ? 'Above it: ' + g.cap : 'No line above it');
   };
   const setLight = (node, cls, text) => { node.className = 'light' + (cls ? ' ' + cls : ''); node.textContent = text; };
   const renderShell = () => {
@@ -1924,8 +1982,8 @@
     // Details
     if (kg && stats) {
       fillSelect($('bsWho'), batterOpts()); fillSelect($('psWho'), pitcherOpts());
-      if (pick === 'bstat') { const [sd, id] = $('bsWho').value.split('|'); sumLines($('bsSum'), id ? batterGp(sd, id) : null); }
-      if (pick === 'pstat') { const [sd, id] = $('psWho').value.split('|'); sumLines($('psSum'), id ? pitcherGp(sd, id) : null); }
+      if (pick === 'bstat') { renderLs('b', 'bs'); const [sd, id] = $('bsWho').value.split('|'); sumLines($('bsSum'), id ? batterGp(sd, id) : null); }
+      if (pick === 'pstat') { renderLs('p', 'ps'); const [sd, id] = $('psWho').value.split('|'); sumLines($('psSum'), id ? pitcherGp(sd, id) : null); }
       if (pick === 'hr') { const h = hrGp(), e = lastHr(); $('hrSum').replaceChildren(...(h ? ['Last home run: ', el('b', null, h.first + ' ' + h.last), ' (' + kg.meta.names[h.side] + ', ' + (h.tag || '').toLowerCase() + ', ' + e.e.period.replace('T', 'top ').replace('B', 'bottom ') + ')', el('br'), h.stats.map(([v, k]) => v + ' ' + k).join(' · ')] : ['No home run recorded yet this game.'])); }
     } else { $('bsSum').textContent = $('psSum').textContent = $('hrSum').textContent = 'Needs the stat keeper (Connections).'; }
     if (pick === 'ann') $('annNow').textContent = s.gfx === 'ann' ? 'On air: ' + annNames() + ((s.ann.secs ?? 8) ? ' (goes down by itself after ' + s.ann.secs + ' seconds)' : '') : annNames() ? 'Shows: ' + annNames() : '';
