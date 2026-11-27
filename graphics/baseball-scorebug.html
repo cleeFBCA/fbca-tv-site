@@ -802,7 +802,7 @@
       <svg viewBox="0 0 1500 654" preserveAspectRatio="none" aria-hidden="true">
         <path class="grass" d="M750 640 L326 216 A600 600 0 0 1 1174 216 Z"/>
         <path class="dirt" d="M750 640 L517 407 A330 330 0 0 1 983 407 Z"/>
-        <path class="ln" d="M750 640 L110 0 M750 640 L1390 0 M326 216 A600 600 0 0 1 1174 216 M517 407 A330 330 0 0 1 983 407 M750 640 L906 484 L750 328 L594 484 Z"/>
+        <path class="ln" d="M750 640 L326 216 M750 640 L1174 216 M326 216 A600 600 0 0 1 1174 216 M517 407 A330 330 0 0 1 983 407 M750 640 L906 484 L750 328 L594 484 Z"/>
         <circle class="md" cx="750" cy="484" r="26"/><rect class="bs" x="896" y="474" width="20" height="20" transform="rotate(45 906 484)"/><rect class="bs" x="740" y="318" width="20" height="20" transform="rotate(45 750 328)"/><rect class="bs" x="584" y="474" width="20" height="20" transform="rotate(45 594 484)"/><path class="bs" d="M738 628 h24 v10 l-12 10 l-12 -10 Z"/>
       </svg>
       <div id="fdPl"></div>
@@ -1223,7 +1223,7 @@
       }));
     };
     // On the field: where each position stands (the center of the photo), on the field drawn 1500 x 654
-    const FD_AT = { CF: [750, 105], LF: [360, 190], RF: [1140, 190], SS: [615, 285], '2B': [885, 285], '3B': [515, 445], '1B': [985, 445], P: [750, 425], C: [750, 570], DH: [150, 570] };
+    const FD_AT = { CF: [750, 105], LF: [420, 195], RF: [1080, 195], SS: [615, 285], '2B': [885, 285], '3B': [515, 445], '1B': [985, 445], P: [750, 425], C: [750, 570], DH: [150, 570] };
     const fillFd = g => {
       const t = s.teams[g.side] || s.teams.home; paint($('fd'), t); stripe($('fdFld'), g.side);
       crest($('fdCr'), t); crest($('fdWm'), t);
