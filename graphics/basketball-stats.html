@@ -268,6 +268,7 @@
           <div class="set-row"><select id="libAway"></select><button id="forgetAway" class="ghost">Forget</button></div>
           <label for="nameAway">Opponent and its color</label><div class="set-row"><input id="nameAway" maxlength="60"><input type="color" id="colorAway" class="swatch" aria-label="Opponent's color"></div>
           <label for="saveAway">Save as (optional)</label><input id="saveAway" maxlength="60" placeholder="Same as the team name">
+          <label for="mascotAway">Mascot (optional, shown on the announcer pages)</label><input id="mascotAway" maxlength="40" placeholder="Warriors">
           <label for="rosterAway">Roster: one player per line, number then name</label>
           <textarea id="rosterAway" placeholder="1 Sam Ortiz&#10;4 Eli Brooks"></textarea>
         </div>
@@ -276,6 +277,7 @@
           <div class="set-row"><select id="libHome"></select><button id="forgetHome" class="ghost">Forget</button></div>
           <label for="nameHome">Our team and its color</label><div class="set-row"><input id="nameHome" maxlength="60"><input type="color" id="colorHome" class="swatch" aria-label="Our team's color"></div>
           <label for="saveHome">Save as (optional)</label><input id="saveHome" maxlength="60" placeholder="Same as the team name, or e.g. FBCA Girls">
+          <label for="mascotHome">Mascot (optional, shown on the announcer pages)</label><input id="mascotHome" maxlength="40" placeholder="Eagles">
           <label for="rosterHome">Roster: one player per line, number then name</label>
           <textarea id="rosterHome" placeholder="2 Luke Tran&#10;3 Jordan Lee&#10;5 Noah Kim"></textarea>
         </div>
@@ -849,6 +851,7 @@
       // The name to show (FBCA), and the label it's saved under when that's different (FBCA Girls)
       $('name' + Cap(side)).value = t.team || t.name; $('save' + Cap(side)).value = t.team ? t.name : ''; $('save' + Cap(side)).dataset.dirty = '1';
       $('roster' + Cap(side)).value = rosterText(t.roster);
+      $('mascot' + Cap(side)).value = t.mascot || ''; $('mascot' + Cap(side)).dataset.dirty = '1';
       if (t.color) { $('color' + Cap(side)).value = t.color.toLowerCase(); $('color' + Cap(side)).dataset.dirty = '1'; }
       $('name' + Cap(side)).dataset.dirty = '1'; $('roster' + Cap(side)).dataset.dirty = '1';
       rosterBase[side] = t.roster;
@@ -881,10 +884,11 @@
     }));
     setField('nameHome', v.meta.names.home); setField('nameAway', v.meta.names.away);
     setField('saveHome', (v.meta.saved || {}).home || ''); setField('saveAway', (v.meta.saved || {}).away || '');
+    setField('mascotHome', (v.meta.mascots || {}).home || ''); setField('mascotAway', (v.meta.mascots || {}).away || '');
     setField('colorHome', colorOf(v, 'home').toLowerCase()); setField('colorAway', colorOf(v, 'away').toLowerCase());
     setField('rosterHome', rosterText(v.meta.rosters.home)); setField('rosterAway', rosterText(v.meta.rosters.away));
   };
-  for (const id of ['nameHome', 'nameAway', 'saveHome', 'saveAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway']) $(id).addEventListener('input', () => { $(id).dataset.dirty = '1'; $('rosterNote').textContent = 'Not saved yet.'; $('rosterNote').className = 'hint warn'; });
+  for (const id of ['nameHome', 'nameAway', 'saveHome', 'saveAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway', 'mascotHome', 'mascotAway']) $(id).addEventListener('input', () => { $(id).dataset.dirty = '1'; $('rosterNote').textContent = 'Not saved yet.'; $('rosterNote').className = 'hint warn'; });
   $('btnKey').onclick = () => { key = $('key').value.trim(); store.set(LS.key, key); sendErr = ''; render(); flush(); loadLibrary(); };
   for (const b of $('keepers').children) b.onclick = () => { const k = +b.dataset.k; pick = {}; enqueue('meta', { meta: { keepers: k } }); };
 
@@ -905,14 +909,15 @@
     const colors = { home: $('colorHome').value.toUpperCase(), away: $('colorAway').value.toUpperCase() };
     // Save as: the Saved teams label ("FBCA Girls"), when it's different from the name shown
     const saved = Object.fromEntries(SIDES.map(side => { const t = $('save' + Cap(side)).value.trim(); return [side, t && t !== names[side] ? t : '']; }));
-    for (const id of ['nameHome', 'nameAway', 'saveHome', 'saveAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway']) $(id).dataset.dirty = '';
-    enqueue('meta', { meta: { names, saved, colors, rosters } });
+    const mascots = Object.fromEntries(SIDES.map(side => [side, $('mascot' + Cap(side)).value.trim()]));
+    for (const id of ['nameHome', 'nameAway', 'saveHome', 'saveAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway', 'mascotHome', 'mascotAway']) $(id).dataset.dirty = '';
+    enqueue('meta', { meta: { names, saved, mascots, colors, rosters } });
     $('rosterNote').textContent = 'Saved. ' + rosters.home.length + ' and ' + rosters.away.length + ' players.'; $('rosterNote').className = 'hint';
     rosterBase.home = rosterBase.away = null;
     // Every team with a name typed in goes into Saved teams, with or without players yet (its name and color, to pick
     // next time). The note says exactly which ones Saved teams now has, from the list the stat keeper sends back.
     const teams = SIDES.filter(side => rosters[side].length || $('name' + Cap(side)).value.trim())
-      .map(side => ({ name: saved[side] || names[side], team: names[side], color: colors[side], roster: rosters[side] }));
+      .map(side => ({ name: saved[side] || names[side], team: names[side], mascot: mascots[side], color: colors[side], roster: rosters[side] }));
     if (teams.length && key) libFetch('POST', { action: 'save', teams })
       .then(() => {
         const has = n => (library || []).some(t => t.name.toLowerCase() === n.toLowerCase());
@@ -934,7 +939,7 @@
       if (!r.ok) throw new Error(data.error || 'Error ' + r.status);
       pending = []; savePending();
       server = { rev: data.rev, meta: data.meta, events: data.events }; store.set(LS.cache, server);
-      for (const id of ['nameHome', 'nameAway', 'saveHome', 'saveAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway']) $(id).dataset.dirty = '';
+      for (const id of ['nameHome', 'nameAway', 'saveHome', 'saveAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway', 'mascotHome', 'mascotAway']) $(id).dataset.dirty = '';
       pick = {}; assist = null; toast('New game started.'); render(); loadPast();
     } catch (e) { toast("Couldn't start a new game: " + e.message); }
   };

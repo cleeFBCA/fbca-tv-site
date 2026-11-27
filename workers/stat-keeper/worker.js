@@ -32,7 +32,7 @@
 //   GET  /archive?game=basketball&id=X one past game: { id, savedAt, meta, events }
 //   POST /archive { action: 'delete', id }   forgets a past game
 //   GET  /library                      saved teams: { teams: [{ name, team?, color?, roster, savedAt }] }
-//   POST /library { action: 'save', teams: [{ name, team?, color, roster }] } | { action: 'delete', name }
+//   POST /library { action: 'save', teams: [{ name, team?, mascot?, color, roster }] } | { action: 'delete', name }
 //            name is the saved team's label ("FBCA Girls"); team, when different, is the name the box score shows ("FBCA").
 //   POSTs and /library need Authorization: Bearer <STAT_KEY>.
 //
@@ -252,9 +252,9 @@ export class Game extends DurableObject {
       const lib = this.get('library', {}), keyOf = n => clean(n, 60).toLowerCase(); // team names up to 60 ("Fort Bend Christian Academy Lady Eagles")
       if (body.action === 'save') {
         for (const t of (Array.isArray(body.teams) ? body.teams : []).slice(0, 4)) {
-          const name = clean(t && t.name, 60), team = clean(t && t.team, 60), roster = cleanRoster(t && t.roster);
+          const name = clean(t && t.name, 60), team = clean(t && t.team, 60), mascot = clean(t && t.mascot, 40), roster = cleanRoster(t && t.roster);
           if (!name) continue; // a team with no players yet is kept too (its name and color); the roster can come later
-          lib[keyOf(name)] = { name, roster, savedAt: Date.now(), ...(team && team !== name ? { team } : {}), ...(colorOk(t.color) ? { color: t.color.toUpperCase() } : {}) };
+          lib[keyOf(name)] = { name, roster, savedAt: Date.now(), ...(team && team !== name ? { team } : {}), ...(mascot ? { mascot } : {}), ...(colorOk(t.color) ? { color: t.color.toUpperCase() } : {}) };
         }
         // Over the limit: forget the teams saved longest ago.
         const keys = Object.keys(lib).sort((a, b) => lib[b].savedAt - lib[a].savedAt);
@@ -310,6 +310,8 @@ export class Game extends DurableObject {
       if (m.names) next.names = Object.fromEntries(SIDES.map(s => [s, clean(m.names[s], 60) || meta.names[s]]));
       // Each side's Saved teams label, when it differs from the name shown ("FBCA Girls" for FBCA)
       if (m.saved) next.saved = Object.fromEntries(SIDES.map(s => [s, clean(m.saved[s], 60)]));
+      // Each side's mascot ("Eagles"), for the announcer pages
+      if (m.mascots) next.mascots = Object.fromEntries(SIDES.map(s => [s, clean(m.mascots[s], 40)]));
       if (m.colors) next.colors = Object.fromEntries(SIDES.map(s => [s, colorOk(m.colors[s]) ? m.colors[s].toUpperCase() : meta.colors[s]]));
       if (m.rosters) next.rosters = Object.fromEntries(SIDES.map(s => [s, m.rosters[s] ? cleanRoster(m.rosters[s]) : meta.rosters[s]]));
       // Starters: up to five player ids per team, each once. A side left out keeps what it had.
@@ -383,7 +385,7 @@ export class Game extends DurableObject {
       if (body.archive !== false) this.archiveCurrent();
       else this.sql.exec('DELETE FROM archive WHERE id = ?', meta.gameId); // a test game, saved when it was marked final
       const next = defaultMeta(this.sport);
-      if (body.keepRosters) { if (meta.innings) next.innings = meta.innings; next.rosters = meta.rosters; next.names = meta.names; if (meta.saved) next.saved = meta.saved; next.colors = meta.colors; next.keepers = meta.keepers; if (meta.halfMin) next.halfMin = meta.halfMin; if (meta.logos) next.logos = meta.logos; }
+      if (body.keepRosters) { if (meta.innings) next.innings = meta.innings; next.rosters = meta.rosters; next.names = meta.names; if (meta.saved) next.saved = meta.saved; if (meta.mascots) next.mascots = meta.mascots; next.colors = meta.colors; next.keepers = meta.keepers; if (meta.halfMin) next.halfMin = meta.halfMin; if (meta.logos) next.logos = meta.logos; }
       else for (const side of SIDES) this.sql.exec('DELETE FROM kv WHERE k = ?', 'logo:' + side); // new teams: their logos come from the scorebug
       this.sql.exec('DELETE FROM events');
       this.put('seq', 0); this.put('meta', next);

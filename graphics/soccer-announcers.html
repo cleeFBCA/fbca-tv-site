@@ -44,6 +44,7 @@
   .tm .nm { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tm .nm .short { display: none; }
   @media (max-width: 640px) { .tm .nm .full { display: none; } .tm .nm .short { display: inline; } }
+  .tm .masc { font-size: 14px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--chalk); opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.1; }
   .tm .sub { font-size: 13px; color: var(--chalk-dim); white-space: nowrap; }
   .tm .sub b.yc { color: #F2D43A; }
   .tm .sub b.rc { color: #ff6b6b; }
@@ -313,6 +314,7 @@
       d.style.setProperty('--c', t.color);
       const m = el('div', 'meta');
       const n = el('div', 'nm'); n.append(el('span', 'full', t.name), el('span', 'short', t.short)); m.append(n);
+      const masc = ((game.meta.mascots || {})[side] || '').trim(); if (masc) m.append(el('div', 'masc', masc)); // the mascot (from the stat keeper's Setup), under the name
       const cardsTxt = (t.tot.yc ? ` · <b class="yc">${t.tot.yc} YC</b>` : '') + (t.tot.rc ? ` · <b class="rc">${t.tot.rc} RC</b>` : '');
       m.append(html('div', 'sub', `Shots ${t.tot.shots}${cardsTxt}`));
       d.append(el('i', 'chip'), m);

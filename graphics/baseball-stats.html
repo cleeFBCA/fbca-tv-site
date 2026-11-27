@@ -322,6 +322,7 @@
           <div class="set-row"><select id="libAway"></select><button id="forgetAway" class="ghost">Forget</button></div>
           <label for="nameAway">Visitors and their color</label><div class="set-row"><input id="nameAway" maxlength="60"><input type="color" id="colorAway" class="swatch" aria-label="Visitors' color"></div>
           <label for="saveAway">Save as (optional)</label><input id="saveAway" maxlength="60" placeholder="Same as the team name">
+          <label for="mascotAway">Mascot (optional, shown on the announcer pages)</label><input id="mascotAway" maxlength="40" placeholder="Warriors">
           <label for="rosterAway">Roster: one player per line, number then name</label>
           <textarea id="rosterAway" placeholder="1 Sam Ortiz&#10;4 Eli Brooks"></textarea>
         </div>
@@ -330,6 +331,7 @@
           <div class="set-row"><select id="libHome"></select><button id="forgetHome" class="ghost">Forget</button></div>
           <label for="nameHome">Home team and its color</label><div class="set-row"><input id="nameHome" maxlength="60"><input type="color" id="colorHome" class="swatch" aria-label="Home team's color"></div>
           <label for="saveHome">Save as (optional)</label><input id="saveHome" maxlength="60" placeholder="Same as the team name, or e.g. FBCA Softball">
+          <label for="mascotHome">Mascot (optional, shown on the announcer pages)</label><input id="mascotHome" maxlength="40" placeholder="Eagles">
           <label for="rosterHome">Roster: one player per line, number then name</label>
           <textarea id="rosterHome" placeholder="2 Luke Tran&#10;3 Jordan Lee&#10;5 Noah Kim"></textarea>
         </div>
@@ -1046,7 +1048,7 @@
       $('forget' + Cap(side)).disabled = !sel.value;
     }
   };
-  const FIELDS = ['nameHome', 'nameAway', 'saveHome', 'saveAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway'];
+  const FIELDS = ['nameHome', 'nameAway', 'saveHome', 'saveAway', 'rosterHome', 'rosterAway', 'colorHome', 'colorAway', 'mascotHome', 'mascotAway'];
   for (const side of SIDES) {
     $('lib' + Cap(side)).addEventListener('change', e => {
       const t = (library || []).find(x => x.name === e.target.value);
@@ -1054,6 +1056,7 @@
       if (!t) return;
       $('name' + Cap(side)).value = t.team || t.name; $('save' + Cap(side)).value = t.team ? t.name : '';
       $('roster' + Cap(side)).value = rosterText(t.roster);
+      $('mascot' + Cap(side)).value = t.mascot || ''; $('mascot' + Cap(side)).dataset.dirty = '1';
       if (t.color) $('color' + Cap(side)).value = t.color.toLowerCase();
       for (const f of ['name', 'save', 'roster', 'color']) $(f + Cap(side)).dataset.dirty = '1';
       rosterBase[side] = t.roster;
@@ -1075,6 +1078,7 @@
     setField('innings', String(v.meta.innings || 7));
     setField('nameHome', v.meta.names.home); setField('nameAway', v.meta.names.away);
     setField('saveHome', (v.meta.saved || {}).home || ''); setField('saveAway', (v.meta.saved || {}).away || '');
+    setField('mascotHome', (v.meta.mascots || {}).home || ''); setField('mascotAway', (v.meta.mascots || {}).away || '');
     setField('colorHome', colorOf(v, 'home').toLowerCase()); setField('colorAway', colorOf(v, 'away').toLowerCase());
     setField('rosterHome', rosterText(v.meta.rosters.home)); setField('rosterAway', rosterText(v.meta.rosters.away));
   };
@@ -1100,15 +1104,16 @@
     const names = { home: $('nameHome').value.trim() || 'FBCA', away: $('nameAway').value.trim() || 'Visitors' };
     const colors = { home: $('colorHome').value.toUpperCase(), away: $('colorAway').value.toUpperCase() };
     const saved = Object.fromEntries(SIDES.map(side => { const t = $('save' + Cap(side)).value.trim(); return [side, t && t !== names[side] ? t : '']; }));
+    const mascots = Object.fromEntries(SIDES.map(side => [side, $('mascot' + Cap(side)).value.trim()]));
     for (const id of FIELDS) $(id).dataset.dirty = '';
     // Players taken off a roster come out of the batting order too
     const order = Object.fromEntries(SIDES.map(side => [side, (v.meta.order[side] || []).filter(o => rosters[side].some(p => p.id === o.id))]));
-    enqueue('meta', { meta: { names, saved, colors, rosters, order } });
+    enqueue('meta', { meta: { names, saved, mascots, colors, rosters, order } });
     orderDraft = null;
     $('rosterNote').textContent = 'Saved. ' + rosters.away.length + ' and ' + rosters.home.length + ' players. Next: the Lineups tab.'; $('rosterNote').className = 'hint';
     rosterBase.home = rosterBase.away = null;
     const teams = SIDES.filter(side => rosters[side].length || $('name' + Cap(side)).value.trim())
-      .map(side => ({ name: saved[side] || names[side], team: names[side], color: colors[side], roster: rosters[side] }));
+      .map(side => ({ name: saved[side] || names[side], team: names[side], mascot: mascots[side], color: colors[side], roster: rosters[side] }));
     if (teams.length && key) libFetch('POST', { action: 'save', teams }).then(renderLibrary).catch(() => { $('rosterNote').textContent += " (Couldn't add them to Saved teams right now.)"; });
   };
   $('btnReset').onclick = async () => {
