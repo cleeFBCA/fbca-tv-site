@@ -217,8 +217,9 @@
               background: radial-gradient(closest-side, rgba(255,240,200,.28), rgba(234,175,15,.1) 55%, transparent); transition: opacity .6s; }
   .tc[data-st="2"] .glow { opacity: .8; }
   /* The logos land with a little flash */
-  .tc[data-st="2"] .lg { animation: tcLand .7s ease-out .25s; }
-  @keyframes tcLand { 0% { filter: brightness(1); } 30% { filter: brightness(1.7) drop-shadow(0 0 18px rgba(255,255,255,.6)); } 100% { filter: brightness(1); } }
+  /* Like a camera flash: on almost at once (30 ms), then fades over about half a second */
+  .tc[data-st="2"] .lg { animation: tcLand .52s .25s; }
+  @keyframes tcLand { 0% { filter: brightness(1); animation-timing-function: linear; } 6% { filter: brightness(1.7) drop-shadow(0 0 18px rgba(255,255,255,.6)); animation-timing-function: ease-out; } 100% { filter: brightness(1); } }
   .tc[data-dir="out"] .tx { transition: clip-path .26s cubic-bezier(.5,0,.8,.4), opacity .2s; }
   .tc[data-dir="out"] .lg { transition: opacity .2s, transform .24s ease-in; }
   .tc[data-dir="out"] .ven { transition: clip-path .2s ease-in; }
