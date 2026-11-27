@@ -984,13 +984,14 @@
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
     gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }, ann: { names: ['', '', ''], label: 'On the call', secs: 8 },
     // Batter and pitcher stats: which stats (set), which line above (cap), the typed line, typed labels, typed values by player
-    ls: { b: { set: 'season', cap: 'auto', txt: '', lab: ['', '', '', ''], v: {} }, p: { set: 'season', cap: 'auto', txt: '', lab: ['', '', '', ''], v: {} } }
+    ls: { capV: 1, b: { set: 'season', cap: 'none', txt: '', lab: ['', '', '', ''], v: {} }, p: { set: 'season', cap: 'none', txt: '', lab: ['', '', '', ''], v: {} } }
   });
   const merge = raw => {
     const d = defaults(), out = { ...d, ...raw };
     out.teams = { away: { ...d.teams.away, ...(raw.teams || {}).away }, home: { ...d.teams.home, ...(raw.teams || {}).home } };
     out.stn = { ...d.stn, ...(raw.stn || {}) }; out.man = { ...d.man, ...(raw.man || {}) }; out.l3 = { ...d.l3, ...(raw.l3 || {}) }; out.lu = { ...d.lu, ...(raw.lu || {}) }; out.ann = { ...d.ann, ...(raw.ann || {}) };
-    out.ls = { b: { ...d.ls.b, ...((raw.ls || {}).b || {}) }, p: { ...d.ls.p, ...((raw.ls || {}).p || {}) } };
+    out.ls = { capV: 1, b: { ...d.ls.b, ...((raw.ls || {}).b || {}) }, p: { ...d.ls.p, ...((raw.ls || {}).p || {}) } };
+    if (!(raw.ls && raw.ls.capV)) { out.ls.b.cap = 'none'; out.ls.p.cap = 'none'; } // the line above starts on None (it was Automatic)
     return out;
   };
   let s = (() => { try { const r = localStorage.getItem(STORE); if (r) return merge(JSON.parse(r)); } catch (e) {} return defaults(); })();
@@ -1495,7 +1496,7 @@
     b: [['none', 'No stats'], ['season', 'Season'], ['tonight', "Tonight's stats"], ['hit', 'Tonight hitting'], ['field', 'Tonight fielding'], ['typed', 'Typed in']],
     p: [['none', 'No stats'], ['season', 'Season'], ['tonight', "Tonight's pitching"], ['hit', 'Tonight hitting'], ['field', 'Tonight fielding'], ['typed', 'Typed in']]
   };
-  const LS_CAPS = [['auto', 'Automatic'], ['tonight', 'Tonight'], ['season', 'Season'], ['typed', 'Typed in'], ['none', 'None']];
+  const LS_CAPS = [['none', 'None'], ['auto', 'Automatic'], ['tonight', 'Tonight'], ['season', 'Season'], ['typed', 'Typed in']];
   const FIELD_LABS = ['PO', 'A', 'E']; // the stat keeper doesn't keep fielding by player: typed in
   const lsLabs = k => s.ls[k].set === 'field' ? FIELD_LABS : s.ls[k].set === 'typed' ? s.ls[k].lab : [];
   const lsTyped = (k, id) => { const v = s.ls[k].v[id] || {}; return lsLabs(k).map((l, i) => [String(l || '').trim().toUpperCase(), String(v[s.ls[k].set === 'field' ? l : i] || '').trim()]).filter(([l, x]) => l && x !== ''); };
