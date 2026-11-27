@@ -1319,7 +1319,7 @@
       $('bug').classList.toggle('out', !on); renderBox(on);
     };
     const renderBox = bugOn => {
-      const L = s.live, show = bugOn && s.boxOn && L && !L.final && (L.bat.name || L.pit.name);
+      const L = s.live, show = bugOn && s.boxOn && L && !L.final && !L.between && (L.bat.name || L.pit.name);
       $('bp').classList.toggle('out', !show);
       const now = Date.now();
       $('tabSp').classList.toggle('on', !!(show && s.pitch && now < s.pitch.until));
@@ -1346,12 +1346,16 @@
         strip.classList.remove('one');
         if (L.final) { $('stCount').textContent = 'Final'; $('stOuts').textContent = L.inn > (L.innings || 7) ? L.inn + ' Inn' : ''; }
         else { $('stCount').textContent = L.b + '-' + L.s; $('stOuts').textContent = L.o + (L.o === 1 ? ' Out' : ' Outs'); }
-        // Batter (batting team's color) over pitcher (fielding team's color)
-        const bt = s.teams[L.bat.side], pt = s.teams[L.pit.side];
-        paint($('rBat'), bt); paint($('rPit'), pt);
-        stripe($('rBat'), L.bat.side); stripe($('rPit'), L.pit.side);
-        $('rBat').firstChild.textContent = L.bat.name || ''; $('rBat').lastChild.textContent = L.bat.stat || '';
-        $('rPit').firstChild.textContent = L.pit.name || ''; $('rPit').lastChild.textContent = L.pit.name ? 'P: ' + L.pit.np : '';
+        // Batter (batting team's color) over pitcher (fielding team's color).
+        // Between halves the box is going away: it keeps the last batter and pitcher (not the next half's) while it does.
+        const R = L.between ? L.prev : L;
+        if (R) {
+          const bt = s.teams[R.bat.side], pt = s.teams[R.pit.side];
+          paint($('rBat'), bt); paint($('rPit'), pt);
+          stripe($('rBat'), R.bat.side); stripe($('rPit'), R.pit.side);
+          $('rBat').firstChild.textContent = R.bat.name || ''; $('rBat').lastChild.textContent = R.bat.stat || '';
+          $('rPit').firstChild.textContent = R.pit.name || ''; $('rPit').lastChild.textContent = R.pit.name ? 'P: ' + R.pit.np : '';
+        }
         $('tabSp').textContent = s.pitch ? (s.pitch.type ? s.pitch.type + ' - ' : '') + s.pitch.mph + ' MPH' : '';
         $('tabEx').textContent = s.exit ? 'Exit MPH: ' + s.exit.mph : '';
         // BB / K / HBP over the bases
@@ -1438,19 +1442,26 @@
                bat: { side: bat, name: (m.bat || '').toUpperCase(), stat: '' }, pit: { side: bat === 'away' ? 'home' : 'away', name: (m.pit || '').toUpperCase(), np: m.np } };
     }
     const meta = kg.meta, sit = stats.sit, bat = BB.batting(sit), fld = BB.fielding(sit);
-    const bid = BB.batterOf(meta, sit), pid = BB.pitcherOf(meta, sit), bp = playerOf(bat, bid), pp = playerOf(fld, pid);
-    const slot = bid ? slotOf(bat, bid) : null, today = stats.bat[bat][bid];
-    let stat = '';
-    if (bp) {
-      const t = BB.seasonFor(seasonMap(bat), bp.name);
-      const avg = t && t.bat.AB ? BB.avg(t.bat) : '';
-      stat = s.batShow === 'today' ? shortToday(today) || avg : s.batShow === 'avg' ? avg : (today && today.PA ? shortToday(today) : avg);
-    }
-    const last = kg.events[kg.events.length - 1];
+    // The batter and pitcher rows: name and number, the batter's average or today's line, the pitcher's pitch count
+    const batRow = (side, id) => {
+      const bp = playerOf(side, id), slot = id ? slotOf(side, id) : null, today = stats.bat[side][id];
+      let stat = '';
+      if (bp) {
+        const t = BB.seasonFor(seasonMap(side), bp.name);
+        const avg = t && t.bat.AB ? BB.avg(t.bat) : '';
+        stat = s.batShow === 'today' ? shortToday(today) || avg : s.batShow === 'avg' ? avg : (today && today.PA ? shortToday(today) : avg);
+      }
+      return { side, name: bp ? (slot ? slot.n + '. ' : '') + lastName(bp.name).toUpperCase() : '', stat };
+    };
+    const pitRow = (side, id) => { const pp = playerOf(side, id); return { side, name: pp ? lastName(pp.name).toUpperCase() : '', np: sit.np[id] || 0 }; };
+    const bid = BB.batterOf(meta, sit), pid = BB.pitcherOf(meta, sit);
+    const last = kg.events[kg.events.length - 1], between = !!last && last.period !== BB.period(sit);
+    // The third out: the box goes away still showing who was up then (it comes back with the new half's batter and pitcher)
+    let prev = null;
+    if (between && last.type === 'pa') { const d = BB.dataOf(last) || {}; prev = { bat: batRow(last.side, last.player), pit: pitRow(BB.other(last.side), d.pit) }; }
     return { inn: sit.inn, top: sit.top, b: sit.b, s: sit.s, o: sit.o, bases: sit.bases.map(Boolean), score: { ...sit.score }, innings: meta.innings || 7,
-             final: meta.status === 'final', between: !!last && last.period !== BB.period(sit),
-             bat: { side: bat, name: bp ? (slot ? slot.n + '. ' : '') + lastName(bp.name).toUpperCase() : '', stat },
-             pit: { side: fld, name: pp ? lastName(pp.name).toUpperCase() : '', np: sit.np[pid] || 0 } };
+             final: meta.status === 'final', between, prev,
+             bat: batRow(bat, bid), pit: pitRow(fld, pid) };
   };
   const FLASH = { BB: 'BB', IBB: 'IBB', K: 'K', KL: 'KL', KD: 'K', HBP: 'HBP' };
   const onKeeper = added => {
