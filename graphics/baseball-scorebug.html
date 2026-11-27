@@ -1456,7 +1456,8 @@
 
     const render = () => {
       applyKey();
-      $('stn').style.opacity = s.stn.on ? s.stn.op / 100 : 0;
+      // The station bug steps aside while a full-screen graphic is up (they share the top of the screen)
+      $('stn').style.opacity = s.stn.on && !['match', 'lu', 'fd'].includes(s.gfx) ? s.stn.op / 100 : 0;
       $('stn').style.background = STN_COLOR[s.stn.color] || STN_COLOR.white;
       $('stn').style.width = Math.round(190 * (s.stn.size || 100) / 100) + 'px'; // grows from its corner
       $('stn').classList.toggle('left', s.stn.pos === 'left');
