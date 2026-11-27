@@ -131,6 +131,8 @@
   .ln .nm.one .l { font-size: 56px; }
   .ln .nm .t2 { font-size: 30px; font-weight: 600; opacity: .9; text-transform: none; font-family: var(--font-body); letter-spacing: .01em; }
   .ln .sts { margin-left: auto; display: flex; gap: 14px; }
+  .ln .tl { margin-left: auto; flex: none; max-width: 640px; font-size: 44px; font-weight: 800; line-height: 1; white-space: nowrap; transform-origin: right center; text-align: right; }
+  .ln .tl.two { font-size: 34px; line-height: 1.04; white-space: normal; text-wrap: balance; } /* a long line takes two rows */
   .ln .st { width: 104px; text-align: center; }
   .ln .sts:has(.st:nth-child(5)) { gap: 8px; } .ln .sts:has(.st:nth-child(5)) .st { width: 96px; }
   .ln .st small { display: block; font-size: 30px; font-weight: 700; padding-bottom: 2px; border-bottom: 2px solid rgba(255,255,255,.75); letter-spacing: .04em; }
@@ -820,6 +822,7 @@
             <label for="bsWho">Batter</label><select id="bsWho"></select>
             <label>Stats</label><div class="chips" id="bsSets"></div>
             <div id="bsVals"></div>
+            <input id="bsLine" maxlength="60" placeholder="Type the text line (in place of the stats)" style="margin-top:6px" hidden>
             <label>Line above it</label><div class="chips" id="bsCaps"></div>
             <input id="bsCap" placeholder="Type the line above it" style="margin-top:6px">
             <div class="sum" id="bsSum"></div>
@@ -828,6 +831,7 @@
             <label for="psWho">Pitcher</label><select id="psWho"></select>
             <label>Stats</label><div class="chips" id="psSets"></div>
             <div id="psVals"></div>
+            <input id="psLine" maxlength="60" placeholder="Type the text line (in place of the stats)" style="margin-top:6px" hidden>
             <label>Line above it</label><div class="chips" id="psCaps"></div>
             <input id="psCap" placeholder="Type the line above it" style="margin-top:6px">
             <div class="sum" id="psSum"></div>
@@ -984,7 +988,7 @@
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
     gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }, ann: { names: ['', '', ''], label: 'On the call', secs: 8 },
     // Batter and pitcher stats: which stats (set), which line above (cap), the typed line, typed labels, typed values by player
-    ls: { capV: 1, b: { set: 'season', cap: 'none', txt: '', lab: ['', '', '', ''], v: {} }, p: { set: 'season', cap: 'none', txt: '', lab: ['', '', '', ''], v: {} } }
+    ls: { capV: 1, b: { set: 'season', cap: 'none', txt: '', lab: ['', '', '', ''], v: {}, line: '' }, p: { set: 'season', cap: 'none', txt: '', lab: ['', '', '', ''], v: {}, line: '' } }
   });
   const merge = raw => {
     const d = defaults(), out = { ...d, ...raw };
@@ -1045,10 +1049,12 @@
       const l = el('span', 'l', g.last || ''); nm.append(l);
       if (g.sub) nm.append(el('span', 't2', g.sub));
       parts.push(nm);
+      if (g.line) parts.push(el('div', 'tl' + (g.line.length > 28 ? ' two' : ''), g.line));
       if (g.stats && g.stats.length) { const sts = el('div', 'sts'); for (const [k, v] of g.stats) { const st = el('div', 'st'); st.append(el('small', null, k), el('b', null, v)); sts.append(st); } parts.push(sts); }
       txt.replaceChildren(...parts);
       // The last name gets whatever the number and the stats leave
-      requestAnimationFrame(() => { const sts = txt.querySelector('.sts'), num = txt.querySelector('.num');
+      requestAnimationFrame(() => { const sts = txt.querySelector('.sts') || txt.querySelector('.tl'), num = txt.querySelector('.num'), tl = txt.querySelector('.tl');
+        if (tl && !tl.classList.contains('two')) fit(tl, 640);
         fit(l, Math.max(120, txt.clientWidth - (sts ? sts.offsetWidth : 0) - (num ? num.offsetWidth : 0) - 40)); });
       $('lnCap').textContent = g.cap || ''; $('lnCap').classList.toggle('has', !!g.cap);
     };
@@ -1493,8 +1499,8 @@
   };
   // ---- Batter and pitcher stats: the stats picked, and the line above them ----
   const LS_SETS = {
-    b: [['none', 'No stats'], ['season', 'Season'], ['tonight', "Tonight's stats"], ['hit', 'Tonight hitting'], ['field', 'Tonight fielding'], ['typed', 'Typed in']],
-    p: [['none', 'No stats'], ['season', 'Season'], ['tonight', "Tonight's pitching"], ['hit', 'Tonight hitting'], ['field', 'Tonight fielding'], ['typed', 'Typed in']]
+    b: [['none', 'No stats'], ['season', 'Season'], ['tonight', "Tonight's stats"], ['hit', 'Tonight hitting'], ['field', 'Tonight fielding'], ['typed', 'Typed in'], ['text', 'Text line']],
+    p: [['none', 'No stats'], ['season', 'Season'], ['tonight', "Tonight's pitching"], ['hit', 'Tonight hitting'], ['field', 'Tonight fielding'], ['typed', 'Typed in'], ['text', 'Text line']]
   };
   const LS_CAPS = [['none', 'None'], ['auto', 'Automatic'], ['tonight', 'Tonight'], ['season', 'Season'], ['typed', 'Typed in']];
   const FIELD_LABS = ['PO', 'A', 'E']; // the stat keeper doesn't keep fielding by player: typed in
@@ -1504,7 +1510,7 @@
   const lsStats = (k, side, id) => {
     const set = s.ls[k].set, p = playerOf(side, id), t = p && BB.seasonFor(seasonMap(side), p.name);
     const bt = stats.bat[side][id] || BB.zero(BB.BAT_KEYS);
-    if (set === 'none') return [];
+    if (set === 'none' || set === 'text') return [];
     if (set === 'hit') return hitTonight(bt);
     if (set === 'field' || set === 'typed') return lsTyped(k, id);
     if (k === 'b') {
@@ -1515,6 +1521,7 @@
     if (set === 'tonight') return [['IP', BB.ip(pt.outs)], ['H', pt.H], ['ER', pt.ER], ['K', pt.SO], ['PC', (stats.sit.np || {})[id] || pt.NP || 0]];
     const q = t ? t.pit : BB.zero(BB.PIT_KEYS); return [['IP', BB.ip(q.outs)], ['ERA', BB.era(q, kg.meta.innings || 7)], ['BB', q.BB], ['K', q.SO], ['W-L', q.W + '-' + q.L]];
   };
+  const lsLine = k => s.ls[k].set === 'text' ? (s.ls[k].line || '').trim() : '';
   const lsCap = (k, auto, tonight, season) => { const c = s.ls[k].cap; return c === 'none' ? '' : c === 'typed' ? (s.ls[k].txt || '').trim() : c === 'tonight' ? tonight : c === 'season' ? season : auto; };
   const batterGp = (side, id) => {
     const p = playerOf(side, id); if (!p) return null;
@@ -1523,7 +1530,7 @@
     const season = t && t.bat.G ? t.bat.G + (t.bat.G === 1 ? ' game' : ' games') + ' this season' + (t.bat.AB ? ' · ' + t.bat.H + '-' + t.bat.AB : '') : '';
     const auto = today && today.PA ? tonight : season;
     return { side, num: p.num, pos: slot && slot.pos || '', first: firstName(p.name), last: lastName(p.name),
-             stats: lsStats('b', side, id), cap: lsCap('b', auto, tonight, season) };
+             stats: lsStats('b', side, id), line: lsLine('b'), cap: lsCap('b', auto, tonight, season) };
   };
   const pitcherGp = (side, id) => {
     const p = playerOf(side, id); if (!p) return null;
@@ -1533,7 +1540,7 @@
     const season = q.GS ? q.GS + (q.GS === 1 ? ' start' : ' starts') + ' this season' + (q.outs ? ' · ' + BB.ip(q.outs) + ' IP' : '') : q.G ? q.G + ' appearances this season' : '';
     const auto = tonight || season;
     return { side, num: p.num, first: firstName(p.name), last: lastName(p.name),
-             stats: lsStats('p', side, id), cap: lsCap('p', auto, tonight, season) };
+             stats: lsStats('p', side, id), line: lsLine('p'), cap: lsCap('p', auto, tonight, season) };
   };
   const lastHr = () => { if (!kg) return null; for (let i = kg.events.length - 1; i >= 0; i--) { const e = kg.events[i], d = BB.dataOf(e); if (e.type === 'pa' && d && d.r === 'HR') return { e, d }; } return null; };
   const hrGp = () => {
@@ -1936,9 +1943,10 @@
     const L = s.ls[k], [, id] = $(pre + 'Who').value.split('|');
     const chips = (node, list, cur, fn) => { const sig = list.map(x => x[0]).join() + cur; if (node.dataset.sig === sig) return; node.dataset.sig = sig;
       node.replaceChildren(...list.map(([v, l]) => { const b = el('button', 'sm' + (v === cur ? ' active' : ''), l); b.type = 'button'; b.onclick = () => fn(v); return b; })); };
-    chips($(pre + 'Sets'), LS_SETS[k], L.set, v => { L.set = v; save(); renderShell(); });
+    chips($(pre + 'Sets'), LS_SETS[k], L.set, v => { L.set = v; save(); renderShell(); if (v === 'text') $(pre + 'Line').focus(); });
     chips($(pre + 'Caps'), LS_CAPS, L.cap, v => { L.cap = v; save(); renderShell(); if (v === 'typed') $(pre + 'Cap').focus(); });
     setField($(pre + 'Cap'), L.txt || ''); $(pre + 'Cap').hidden = L.cap !== 'typed';
+    setField($(pre + 'Line'), L.line || ''); $(pre + 'Line').hidden = L.set !== 'text';
     // Typed stats: PO / A / E for fielding, or up to four of your own; the numbers are kept for each player
     const box = $(pre + 'Vals'), typed = L.set === 'field' || L.set === 'typed', sig = L.set + '|' + (id || '');
     box.hidden = !typed; if (!typed) { box.dataset.sig = ''; return; }
@@ -1951,13 +1959,16 @@
       box.replaceChildren(el('p', 'hint', id ? (L.set === 'field' ? "The stat keeper doesn't keep fielding by player, so type tonight's putouts, assists and errors. Blank ones are left off." : 'Up to four stats: the name, then the number. Blank ones are left off. The names stay; the numbers are kept for each player.') : 'Pick the player first.'), ...rows);
     }
   };
-  for (const [k, pre] of [['b', 'bs'], ['p', 'ps']]) $(pre + 'Cap').addEventListener('input', e => { s.ls[k].txt = e.target.value; save(); renderShell(); });
+  for (const [k, pre] of [['b', 'bs'], ['p', 'ps']]) {
+    $(pre + 'Cap').addEventListener('input', e => { s.ls[k].txt = e.target.value; save(); renderShell(); });
+    $(pre + 'Line').addEventListener('input', e => { s.ls[k].line = e.target.value; save(); renderShell(); });
+  }
   $('bsWho').onchange = () => { $('bsWho').dataset.manual = $('bsWho').selectedIndex > 0 ? '1' : ''; renderShell(); };
   $('psWho').onchange = () => { $('psWho').dataset.manual = $('psWho').selectedIndex > 0 ? '1' : ''; renderShell(); };
   const sumLines = (node, g) => {
     if (!g) { node.textContent = 'Nothing to show yet.'; return; }
     node.replaceChildren(el('b', null, ((g.num ? '#' + g.num + ' ' : '') + (g.first ? g.first + ' ' : '') + g.last).trim()), el('br'),
-      (g.stats || []).length ? g.stats.map(([k, v]) => k + ' ' + v).join(' · ') : 'No stats', el('br'), g.cap ? 'Above it: ' + g.cap : 'No line above it');
+      g.line ? 'Text: ' + g.line : (g.stats || []).length ? g.stats.map(([k, v]) => k + ' ' + v).join(' · ') : 'No stats', el('br'), g.cap ? 'Above it: ' + g.cap : 'No line above it');
   };
   const setLight = (node, cls, text) => { node.className = 'light' + (cls ? ' ' + cls : ''); node.textContent = text; };
   const renderShell = () => {
