@@ -98,6 +98,14 @@
   /* ---- Batter and pitcher, right side: batting team over pitching team; pitch speed under, exit velo over ---- */
   /* Swapped: the score bug on the right, the batter and pitcher on the left (same distances from the edges) */
   #stage.swap .sb { left: auto; right: 72px; } #stage.swap .bp { right: auto; left: 88px; }
+  /* Attached (Graphics setup): the batter and pitcher box sits against the score bug's side, the corners where they meet squared off,
+     with a white seam between; it folds away toward the bug */
+  #stage.attach:not(.swap) .bp { right: auto; left: 602px; transform-origin: left center; }
+  #stage.attach.swap .bp { left: auto; right: 602px; transform-origin: right center; }
+  #stage.attach:not(.swap) .bp .rows { border-radius: 0 12px 12px 0; border-left: 3px solid rgba(255,255,255,.85); }
+  #stage.attach.swap .bp .rows { border-radius: 12px 0 0 12px; border-right: 3px solid rgba(255,255,255,.85); }
+  #stage.attach:not(.swap) .sb .half.R { border-radius: 0; }
+  #stage.attach.swap .sb .half.L { border-radius: 0; }
   .bp { position: absolute; right: 88px; bottom: 96px; width: 364px; height: 96px; transition: transform .22s ease .0s; transform-origin: center; }
   .bp .rows { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; transition: clip-path .28s cubic-bezier(.6,0,.3,1) .18s; clip-path: inset(0 0 0 0); }
   .bp .row { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 33px; font-weight: 800; letter-spacing: .03em; color: var(--f); white-space: nowrap; }
@@ -944,6 +952,11 @@
         <div id="chromaBox"><label for="keyColor">Chroma key color</label><input type="color" id="keyColor"></div>
       </div>
       <div class="panel">
+        <h2>Batter and pitcher box</h2>
+        <div class="row" style="margin-top:0"><button data-dock="apart">Separate</button><button data-dock="attach">Attached to the score bug</button></div>
+        <p class="hint">Separate: the box sits on the other side of the screen from the score bug. Attached: it sits against the score bug's side, joined to it. Either way it follows the score bug when you swap sides. Changing it while the bug is up takes both off and brings them back.</p>
+      </div>
+      <div class="panel">
         <h2>Station bug</h2>
         <label class="check"><input type="checkbox" id="stnOn"> EOTA logo in the top right corner</label>
         <label for="stnOp">Opacity</label><input type="range" id="stnOp" min="20" max="100">
@@ -986,7 +999,7 @@
   const team = (school, name, abbr, bg, fg) => ({ school, name, abbr, rec: '', bg, fg, logo: '' });
   const manSit = () => ({ inn: 1, top: true, b: 0, s: 0, o: 0, bases: [false, false, false], score: { home: 0, away: 0 }, final: false, bat: '', pit: '', np: 0 });
   const defaults = () => ({
-    game: 'baseball', src: 'keeper', visible: true, boxOn: true, swapSides: true /* the score bug on the right by default */, autoFlash: true, batShow: 'auto',
+    game: 'baseball', src: 'keeper', visible: true, boxOn: true, swapSides: true /* the score bug on the right by default */, bpDock: 'apart', autoFlash: true, batShow: 'auto',
     teams: { away: team('', '', '', '#1F3A93', '#FFFFFF'), home: team('Fort Bend Christian', 'Eagles', 'FBCA', FBCA.bg, FBCA.fg) },
     venue: '', when: '', mtTitle: '', mtSub: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70 },
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
@@ -1281,13 +1294,14 @@
     };
     let sidesOn = null, sidesBusy = false;
     const setBug = on => {
-      const want = !!s.swapSides;
-      if (sidesOn === null) { sidesOn = want; $('stage').classList.toggle('swap', want); }
+      const want = (s.swapSides ? 'swap' : '') + (s.bpDock === 'attach' ? '+attach' : '');
+      const place = w => { $('stage').classList.toggle('swap', w.startsWith('swap')); $('stage').classList.toggle('attach', w.endsWith('attach')); };
+      if (sidesOn === null) { sidesOn = want; place(want); }
       // Changing sides: both go off, trade places, and come back on (a cut would jump)
       if (want !== sidesOn && !sidesBusy) {
         const wasUp = bugUp(); sidesBusy = true;
         $('bug').classList.add('out'); $('bp').classList.add('out');
-        setTimeout(() => { sidesOn = want; $('stage').classList.toggle('swap', want); sidesBusy = false; setBug(bugWanted()); }, wasUp ? 650 : 0);
+        setTimeout(() => { sidesOn = want; place(want); sidesBusy = false; setBug(bugWanted()); }, wasUp ? 650 : 0);
         return;
       }
       if (sidesBusy) return;
@@ -1936,6 +1950,7 @@
   };
   document.querySelectorAll('[data-sport]').forEach(b => b.onclick = () => { if (s.game === b.dataset.sport) return; s.game = b.dataset.sport; kg = null; stats = null; seasons = null; save(); if (s.src === 'keeper') { keeperStart(); loadSeasons(); } });
   $('batShow').onchange = e => { s.batShow = e.target.value; if (kg) onKeeper([]); else save(); };
+  document.querySelectorAll('[data-dock]').forEach(b => b.onclick = () => { s.bpDock = b.dataset.dock; save(); renderShell(); });
   document.querySelectorAll('[data-src]').forEach(b => b.onclick = () => {
     s.src = b.dataset.src;
     if (s.src === 'keeper') { keeperStart(); loadSeasons(); } else keeperStop();
@@ -2121,6 +2136,7 @@
       : !kOpen ? 'Connecting to the stat keeper…' : !kg ? 'Connected, waiting for the game…'
       : 'Live: ' + kg.meta.names.away + ' at ' + kg.meta.names.home + ', ' + kg.events.length + ' plays.';
     document.querySelectorAll('[data-src]').forEach(b => b.className = b.dataset.src === s.src ? 'active' : '');
+    document.querySelectorAll('[data-dock]').forEach(b => b.className = b.dataset.dock === (s.bpDock || 'apart') ? 'active' : '');
     document.querySelectorAll('[data-sport]').forEach(b => b.className = b.dataset.sport === s.game ? 'active' : '');
     $('batShow').value = s.batShow;
     $('gameNote').textContent = kg ? 'Stat keeper teams: ' + kg.meta.names.away + ' at ' + kg.meta.names.home + '. Blank team names here use those.' : '';
