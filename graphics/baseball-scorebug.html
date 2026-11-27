@@ -530,6 +530,7 @@
   .bx .rws::after { box-shadow: inset 1.5px 0 0 rgba(255,255,255,.2), inset -1.5px 0 0 rgba(255,255,255,.2); }
 
   /* ---- Station bug ---- */
+  .stn.left { right: auto; left: 96px; }
   .stn { position: absolute; top: 54px; right: 96px; width: 190px; transition: opacity .4s; }
 
   /* ================= Control page ================= */
@@ -969,7 +970,9 @@
       </div>
       <div class="panel">
         <h2>Station bug</h2>
-        <label class="check"><input type="checkbox" id="stnOn"> EOTA logo in the top right corner</label>
+        <label class="check"><input type="checkbox" id="stnOn"> EOTA logo in a top corner</label>
+        <label>Corner</label>
+        <div class="row" style="margin-top:0"><button data-stnp="left">Top left</button><button data-stnp="right">Top right</button></div>
         <label for="stnOp" style="display:flex;justify-content:space-between">Opacity<span id="stnOpPct" style="font-variant-numeric:tabular-nums"></span></label><input type="range" id="stnOp" min="20" max="100">
         <label for="stnSz" style="display:flex;justify-content:space-between">Size<span id="stnSzPct" style="font-variant-numeric:tabular-nums"></span></label><input type="range" id="stnSz" min="50" max="200" step="5">
         <label>Color</label>
@@ -1016,7 +1019,7 @@
   const defaults = () => ({
     game: 'baseball', src: 'keeper', visible: true, boxOn: true, swapSides: true /* the score bug on the right by default */, bpDock: 'apart', autoFlash: true, batShow: 'auto',
     teams: { away: team('', '', '', '#1F3A93', '#FFFFFF'), home: team('Fort Bend Christian', 'Eagles', 'FBCA', FBCA.bg, FBCA.fg) },
-    venue: '', when: '', mtTitle: '', mtSub: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70, color: 'white', size: 100 },
+    venue: '', when: '', mtTitle: '', mtSub: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70, color: 'white', size: 100, pos: 'right' },
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
     gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }, ann: { names: ['', '', ''], label: 'On the call', secs: 8 },
     // Batter and pitcher stats: which stats (set), which line above (cap), the typed line, typed labels, typed values by player
@@ -1334,7 +1337,8 @@
       applyKey();
       $('stn').style.opacity = s.stn.on ? s.stn.op / 100 : 0;
       $('stn').style.background = STN_COLOR[s.stn.color] || STN_COLOR.white;
-      $('stn').style.width = Math.round(190 * (s.stn.size || 100) / 100) + 'px'; // grows from the top right corner
+      $('stn').style.width = Math.round(190 * (s.stn.size || 100) / 100) + 'px'; // grows from its corner
+      $('stn').classList.toggle('left', s.stn.pos === 'left');
       const L = s.live;
       if (L) {
         for (const [side, X] of [['away', 'L'], ['home', 'R']]) {
@@ -1988,6 +1992,7 @@
   $('alpha').onchange = e => { s.keyMode = e.target.checked ? 'alpha' : 'chroma'; save(); };
   $('keyColor').oninput = e => { s.keyColor = e.target.value.toUpperCase(); save(); };
   $('stnOn').onchange = e => { s.stn.on = e.target.checked; save(); };
+  document.querySelectorAll('[data-stnp]').forEach(b => b.onclick = () => { s.stn.pos = b.dataset.stnp; save(); renderCtl(); });
   document.querySelectorAll('[data-stnc]').forEach(b => b.onclick = () => { s.stn.color = b.dataset.stnc; save(); renderCtl(); });
   $('stnSz').oninput = e => { s.stn.size = +e.target.value; $('stnSzPct').textContent = s.stn.size + '%'; save(); };
   $('stnOp').oninput = e => { s.stn.op = +e.target.value; $('stnOpPct').textContent = s.stn.op + '%'; save(); };
@@ -2173,6 +2178,7 @@
     $('alpha').checked = s.keyMode === 'alpha'; $('chromaBox').hidden = s.keyMode === 'alpha'; setField($('keyColor'), hex(s.keyColor, '#FF00FF').toLowerCase());
     $('stnOn').checked = s.stn.on; setField($('stnOp'), s.stn.op); $('stnOpPct').textContent = s.stn.op + '%';
     setField($('stnSz'), s.stn.size || 100); $('stnSzPct').textContent = (s.stn.size || 100) + '%';
+    document.querySelectorAll('[data-stnp]').forEach(b => b.className = b.dataset.stnp === (s.stn.pos || 'right') ? 'active' : '');
     document.querySelectorAll('[data-stnc]').forEach(b => b.className = b.dataset.stnc === (s.stn.color || 'white') ? 'active' : '');
     setField($('mtSub'), s.mtSub || ''); setField($('mtTitle'), s.mtTitle || ''); $('mtTitle').placeholder = SPORT(); if (pick === 'match') { const sg = schedToday(); $('mtNow').textContent = 'Under it: ' + [tcWhen(), s.venue.trim() || (sg && sg.location) || ''].filter(Boolean).join(' · '); }
     setField($('speedSecs'), String(s.speedSecs || 3));
