@@ -971,6 +971,8 @@
         <h2>Station bug</h2>
         <label class="check"><input type="checkbox" id="stnOn"> EOTA logo in the top right corner</label>
         <label for="stnOp">Opacity</label><input type="range" id="stnOp" min="20" max="100">
+        <label>Color</label>
+        <div class="row" style="margin-top:0"><button data-stnc="white">White</button><button data-stnc="gold">Gold</button><button data-stnc="black">Black</button></div>
       </div>
     </div>
   </section>
@@ -1001,6 +1003,7 @@
 (() => {
   const BB = window.EotaBaseball;
   const STORE = 'eota-baseball-bug-v1';
+  const STN_COLOR = { white: '#FFFFFF', gold: 'var(--gold)', black: '#000000' }; // the station bug (Graphics setup)
   const isMatte = location.hash === '#key', isBug = location.hash === '#bug' || isMatte;
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -1012,7 +1015,7 @@
   const defaults = () => ({
     game: 'baseball', src: 'keeper', visible: true, boxOn: true, swapSides: true /* the score bug on the right by default */, bpDock: 'apart', autoFlash: true, batShow: 'auto',
     teams: { away: team('', '', '', '#1F3A93', '#FFFFFF'), home: team('Fort Bend Christian', 'Eagles', 'FBCA', FBCA.bg, FBCA.fg) },
-    venue: '', when: '', mtTitle: '', mtSub: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70 },
+    venue: '', when: '', mtTitle: '', mtSub: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70, color: 'white' },
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
     gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }, ann: { names: ['', '', ''], label: 'On the call', secs: 8 },
     // Batter and pitcher stats: which stats (set), which line above (cap), the typed line, typed labels, typed values by player
@@ -1329,6 +1332,7 @@
     const render = () => {
       applyKey();
       $('stn').style.opacity = s.stn.on ? s.stn.op / 100 : 0;
+      $('stn').style.background = STN_COLOR[s.stn.color] || STN_COLOR.white;
       const L = s.live;
       if (L) {
         for (const [side, X] of [['away', 'L'], ['home', 'R']]) {
@@ -1982,6 +1986,7 @@
   $('alpha').onchange = e => { s.keyMode = e.target.checked ? 'alpha' : 'chroma'; save(); };
   $('keyColor').oninput = e => { s.keyColor = e.target.value.toUpperCase(); save(); };
   $('stnOn').onchange = e => { s.stn.on = e.target.checked; save(); };
+  document.querySelectorAll('[data-stnc]').forEach(b => b.onclick = () => { s.stn.color = b.dataset.stnc; save(); renderCtl(); });
   $('stnOp').oninput = e => { s.stn.op = +e.target.value; save(); };
   const freshUrl = hash => { const q = new URLSearchParams(location.search); q.set('v', Date.now()); return location.pathname + '?' + q + hash; };
   $('btnOpen').onclick = () => window.open(freshUrl('#bug'), 'eota-baseball-bug', 'width=1280,height=720');
@@ -2164,6 +2169,7 @@
     $('gameNote').textContent = kg ? 'Stat keeper teams: ' + kg.meta.names.away + ' at ' + kg.meta.names.home + '. Blank team names here use those.' : '';
     $('alpha').checked = s.keyMode === 'alpha'; $('chromaBox').hidden = s.keyMode === 'alpha'; setField($('keyColor'), hex(s.keyColor, '#FF00FF').toLowerCase());
     $('stnOn').checked = s.stn.on; setField($('stnOp'), s.stn.op);
+    document.querySelectorAll('[data-stnc]').forEach(b => b.className = b.dataset.stnc === (s.stn.color || 'white') ? 'active' : '');
     setField($('mtSub'), s.mtSub || ''); setField($('mtTitle'), s.mtTitle || ''); $('mtTitle').placeholder = SPORT(); if (pick === 'match') { const sg = schedToday(); $('mtNow').textContent = 'Under it: ' + [tcWhen(), s.venue.trim() || (sg && sg.location) || ''].filter(Boolean).join(' · '); }
     setField($('speedSecs'), String(s.speedSecs || 3));
     setField($('venue'), s.venue); setField($('when'), s.when || ''); $('when').placeholder = tcWhen(); if (pick === 'title') { const sg = schedToday(); $('tcNow').textContent = 'Under the card: ' + [tcWhen(), s.venue.trim() || (sg && sg.location) || ''].filter(Boolean).join(' · '); } setField($('l3Name'), s.l3.name); setField($('l3Title'), s.l3.title); $('l3Logo').value = s.l3.logo; $('bxDue').checked = s.bxDue;
