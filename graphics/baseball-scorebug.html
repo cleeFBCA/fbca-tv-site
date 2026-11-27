@@ -2104,6 +2104,7 @@
     box.append(...lab('School / city (top line on the title card)', school), ...lab('Team name (big line)', name),
       two(lab('Short name (box score)', abbr), lab('Record', rec)), two(lab('Color', bg), lab('Text color', fg)), restore,
       el('label', null, 'Logo'), file, known, logoRow,
+      el('p', 'hint', 'A 360x360 pixel image is the minimum recommended size. 720x720 px is best.'),
       el('p', 'hint', 'A logo used on any EOTA scorebug on this computer can be picked from the list.'));
     for (const i of [school, name, abbr, rec, bg, fg]) i.addEventListener('input', () => { s.teams[side][i.dataset.f] = i.value; if (i.dataset.f === 'name' && !s.teams[side].logo && logoLib[i.value]) s.teams[side].logo = logoLib[i.value]; save(); });
     file.onchange = async () => { const fl = file.files[0]; if (!fl) return; try { s.teams[side].logo = await shrinkLogo(fl); rememberLogo(s.teams[side].name || s.teams[side].school, s.teams[side].logo); save(); } catch (e) { note("Couldn't read that picture."); } file.value = ''; };
