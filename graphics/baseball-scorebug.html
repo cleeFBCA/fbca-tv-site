@@ -382,6 +382,54 @@
   .hr[data-st="4"] .nm, .hr[data-st="5"] .nm { clip-path: inset(0 0 0 0); }
   .hr[data-st="5"] .ss { clip-path: inset(0 0 0 0); }
 
+  /* ---- On the field: full screen. The starting nine at their positions on a field, each with a photo (or the team logo) ---- */
+  .fd { position: absolute; left: 210px; top: 136px; width: 1500px; height: 808px; }
+  .fd .hd { position: absolute; left: 0; right: 0; top: 0; height: 94px; background: linear-gradient(#2A2C31, #08090A); border-radius: 12px 12px 0 0; box-shadow: var(--hl);
+            display: grid; place-items: center; font-size: 64px; font-weight: 800; letter-spacing: .04em; white-space: nowrap; clip-path: inset(0 50% 0 50%); transition: clip-path .45s cubic-bezier(.22,1,.36,1); }
+  .fd .hd > span { transform-origin: center; }
+  .fd .hd .logo { position: absolute; right: 24px; top: 16px; width: 108px; }
+  .fd .hd .crest { position: absolute; left: 20px; top: 8px; width: 120px; height: 78px; }
+  .fd .hd .crest .ini { font-size: 34px; }
+  .fd .fld { position: absolute; left: 0; right: 0; top: 94px; height: 654px; overflow: hidden; clip-path: inset(0 0 100% 0); transition: clip-path .55s cubic-bezier(.22,1,.36,1); }
+  .fd .fld::before { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 100%, rgba(0,0,0,.05), rgba(0,0,0,.45)); pointer-events: none; }
+  .fd .wm { position: absolute; left: 50%; top: 50%; width: 900px; height: 900px; margin: -450px 0 0 -450px; opacity: 0; filter: grayscale(1) brightness(2.4); transition: opacity .8s; }
+  .fd .wm img { width: 100%; height: 100%; object-fit: contain; } .fd .wm .ini { font-size: 300px; }
+  .fd svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .fd svg .grass { fill: rgba(255,255,255,.05); }
+  .fd svg .dirt { fill: rgba(0,0,0,.22); }
+  .fd svg .ln { fill: none; stroke: rgba(255,255,255,.7); stroke-width: 4; stroke-dasharray: 2400; stroke-dashoffset: 2400; transition: stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1); }
+  .fd svg .md { fill: rgba(0,0,0,.25); stroke: rgba(255,255,255,.45); stroke-width: 3; }
+  .fd svg .bs { fill: #fff; opacity: 0; transition: opacity .3s .6s; }
+  /* A player: the photo (or the team logo) in a gold ring, the position tag, then the number and name */
+  .fd .pl { position: absolute; width: 240px; margin-left: -120px; margin-top: -44px; display: flex; flex-direction: column; align-items: center;
+            opacity: 0; transform: translateY(24px) scale(.8); transition: opacity .3s, transform .5s cubic-bezier(.3,1.4,.5,1); transition-delay: calc(var(--i) * 70ms); }
+  .fd .pl .ring { position: relative; width: 88px; height: 88px; border-radius: 50%; border: 4px solid var(--gold); background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--c) 70%, #fff), var(--c) 70%);
+                  box-shadow: 0 6px 16px rgba(0,0,0,.5), var(--hl); overflow: hidden; display: grid; place-items: center; }
+  .fd .pl .ring .crest { width: 64px; height: 64px; } .fd .pl .ring .crest .ini { font-size: 24px; }
+  .fd .pl .ring .pic { position: absolute; inset: 0; background: center 12% / cover no-repeat; }
+  .fd .pl .pos { position: absolute; left: 50%; top: -14px; transform: translateX(-74px); min-width: 46px; padding: 2px 8px; border-radius: 8px; background: var(--gold); color: #03260A;
+                 font-size: 22px; font-weight: 800; line-height: 1.1; text-align: center; box-shadow: 0 3px 8px rgba(0,0,0,.45); }
+  .fd .pl .nm { margin-top: 4px; height: 36px; padding: 0 14px; border-radius: 8px; background: linear-gradient(#24262B, #060707); box-shadow: var(--hl), 0 4px 10px rgba(0,0,0,.45);
+                display: flex; align-items: center; gap: 8px; font-size: 28px; font-weight: 800; color: #fff; white-space: nowrap; max-width: 240px; }
+  .fd .pl .nm i { font-style: normal; color: var(--gold-hi); }
+  .fd .pl .nm span { transform-origin: left center; }
+  .fd .ft { position: absolute; left: 0; right: 0; bottom: 0; height: 60px; background: linear-gradient(#1D1E22, #050606); border-radius: 0 0 12px 12px; box-shadow: var(--hl);
+            display: grid; place-items: center; clip-path: inset(100% 0 0 0); transition: clip-path .3s cubic-bezier(.22,1,.36,1); }
+  .fd .ft span { font-size: 36px; font-weight: 700; letter-spacing: .05em; color: var(--gold-hi); white-space: nowrap; }
+  .fd[data-st="1"] .hd, .fd[data-st="2"] .hd, .fd[data-st="3"] .hd { clip-path: inset(0 0 0 0); }
+  .fd[data-st="2"] .fld, .fd[data-st="3"] .fld { clip-path: inset(0 0 0 0); }
+  .fd[data-st="2"] .ft, .fd[data-st="3"] .ft { clip-path: inset(0 0 0 0); transition-delay: .2s; }
+  .fd[data-st="2"] .wm, .fd[data-st="3"] .wm { opacity: .1; }
+  .fd[data-st="3"] .wm { animation: pgKen 16s ease-in-out infinite alternate; }
+  .fd[data-st="2"] svg .ln, .fd[data-st="3"] svg .ln { stroke-dashoffset: 0; }
+  .fd[data-st="2"] svg .bs, .fd[data-st="3"] svg .bs { opacity: 1; }
+  .fd[data-st="3"] .pl { opacity: 1; transform: none; }
+  .fd[data-dir="out"] .pl { transition: opacity .2s, transform .25s ease-in; transition-delay: 0s; }
+  .fd[data-dir="out"] .fld { transition: clip-path .4s cubic-bezier(.6,0,.4,1) .1s; }
+  .fd[data-dir="out"] .hd { transition: clip-path .3s ease-in .25s; }
+  .fd[data-dir="out"] .ft { transition: clip-path .2s ease-in; }
+  .fd[data-dir="out"] svg .ln { transition: stroke-dashoffset .3s; }
+
   /* ---- Batting order: full screen. Header, matchup line, the featured player (photo, or the team logo) beside the nine ---- */
   .lu { position: absolute; left: 210px; top: 136px; width: 1500px; height: 808px; }
   .lu .hd { position: absolute; left: 0; right: 0; top: 0; height: 94px; background: linear-gradient(#2A2C31, #08090A); border-radius: 12px 12px 0 0; box-shadow: var(--hl);
@@ -748,6 +796,20 @@
     <div class="drop"><div class="drop-in"><i class="logo"></i><i class="sep"></i><span class="pill" id="mtWhen"></span><i class="sep" id="mtSep2"></i><span class="vn" id="mtVn"></span></div></div>
   </div>
 
+  <div class="fd shadow" id="fd" data-st="0">
+    <div class="hd"><div class="crest" id="fdCr"></div><span id="fdHd"></span><i class="logo"></i></div>
+    <div class="fld tm" id="fdFld"><div class="crest wm" id="fdWm"></div>
+      <svg viewBox="0 0 1500 654" preserveAspectRatio="none" aria-hidden="true">
+        <path class="grass" d="M750 640 L326 216 A600 600 0 0 1 1174 216 Z"/>
+        <path class="dirt" d="M750 640 L517 407 A330 330 0 0 1 983 407 Z"/>
+        <path class="ln" d="M750 640 L110 0 M750 640 L1390 0 M326 216 A600 600 0 0 1 1174 216 M517 407 A330 330 0 0 1 983 407 M750 640 L906 484 L750 328 L594 484 Z"/>
+        <circle class="md" cx="750" cy="484" r="26"/><rect class="bs" x="896" y="474" width="20" height="20" transform="rotate(45 906 484)"/><rect class="bs" x="740" y="318" width="20" height="20" transform="rotate(45 750 328)"/><rect class="bs" x="584" y="474" width="20" height="20" transform="rotate(45 594 484)"/><path class="bs" d="M738 628 h24 v10 l-12 10 l-12 -10 Z"/>
+      </svg>
+      <div id="fdPl"></div>
+    </div>
+    <div class="ft"><span id="fdFt"></span></div>
+  </div>
+
   <div class="lu shadow" id="lu" data-st="0">
     <div class="hd"><span id="luHd"></span><i class="logo"></i></div>
     <div class="vs tm" id="luVs"></div>
@@ -920,6 +982,13 @@
             </div>
             <p class="hint" id="annNow"></p>
           </div>
+          <div data-pane="field">
+            <label>Team</label><div class="chips"><button data-fd="away">Visitors</button><button data-fd="home">Home</button></div>
+            <label for="fdHead">Top line (blank = automatic)</label><input id="fdHead" placeholder="">
+            <label for="fdFoot">Bottom line (blank = Today vs the other team)</label><input id="fdFoot" placeholder="">
+            <div class="sum" id="fdSum"></div>
+            <p class="hint">Full screen: the starting nine at their positions on a field, with the DH in the corner, from the stat keeper's Lineups tab (the position beside each name). The starting pitcher picked there takes the mound. Each player's photo from Game setup, or the team logo. Picking the other team while it's up waits for Update.</p>
+          </div>
           <div data-pane="lineup">
             <label>Team</label><div class="chips"><button data-lu="away" id="luAway">Visitors</button><button data-lu="home" id="luHome">Home</button></div>
             <label for="luWho">Featured player (highlighted in the order, with their photo)</label><select id="luWho"></select>
@@ -1021,7 +1090,7 @@
     teams: { away: team('', '', '', '#1F3A93', '#FFFFFF'), home: team('Fort Bend Christian', 'Eagles', 'FBCA', FBCA.bg, FBCA.fg) },
     venue: '', when: '', mtTitle: '', mtSub: '', keyMode: 'alpha', keyColor: '#FF00FF', stn: { on: false, op: 70, color: 'white', size: 100, pos: 'right' },
     live: null, man: manSit(), flash: null, pitch: null, exit: null,
-    gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }, ann: { names: ['', '', ''], label: 'On the call', secs: 8 },
+    gfx: '', gp: null, gAt: 0, l3: { name: '', title: '', logo: 'eota' }, bxDue: true, bxHead: '', lu: { side: 'home', hi: '', cap: '' }, fd: { side: 'home' }, ann: { names: ['', '', ''], label: 'On the call', secs: 8 },
     // Batter and pitcher stats: which stats (set), which line above (cap), the typed line, typed labels, typed values by player
     hrSet: 'season', hrLine: '',
     ls: { capV: 1, b: { set: 'season', cap: 'none', txt: '', lab: ['', '', '', ''], v: {}, line: '' }, p: { set: 'season', cap: 'none', txt: '', lab: ['', '', '', ''], v: {}, line: '' } }
@@ -1029,7 +1098,7 @@
   const merge = raw => {
     const d = defaults(), out = { ...d, ...raw };
     out.teams = { away: { ...d.teams.away, ...(raw.teams || {}).away }, home: { ...d.teams.home, ...(raw.teams || {}).home } };
-    out.stn = { ...d.stn, ...(raw.stn || {}) }; out.man = { ...d.man, ...(raw.man || {}) }; out.l3 = { ...d.l3, ...(raw.l3 || {}) }; out.lu = { ...d.lu, ...(raw.lu || {}) }; out.ann = { ...d.ann, ...(raw.ann || {}) };
+    out.stn = { ...d.stn, ...(raw.stn || {}) }; out.man = { ...d.man, ...(raw.man || {}) }; out.l3 = { ...d.l3, ...(raw.l3 || {}) }; out.lu = { ...d.lu, ...(raw.lu || {}) }; out.fd = { ...d.fd, ...(raw.fd || {}) }; out.ann = { ...d.ann, ...(raw.ann || {}) };
     out.ls = { capV: 1, b: { ...d.ls.b, ...((raw.ls || {}).b || {}) }, p: { ...d.ls.p, ...((raw.ls || {}).p || {}) } };
     if (!(raw.ls && raw.ls.capV)) { out.ls.b.cap = 'none'; out.ls.p.cap = 'none'; } // the line above starts on None (it was Automatic)
     return out;
@@ -1058,6 +1127,14 @@
   // =====================================================================
   if (isBug) {
     document.body.className = 'bug' + (isMatte ? ' matte' : '');
+    // Player photos are saved on this computer (Game setup); the On the field graphic reads them here by key
+    const readPhotos = keys => new Promise(ok => {
+      let open; try { open = indexedDB.open('eota-baseball-media', 1); } catch (e) { ok({}); return; }
+      open.onupgradeneeded = () => { for (const n of ['spot', 'logos']) if (!open.result.objectStoreNames.contains(n)) open.result.createObjectStore(n); };
+      open.onerror = () => ok({});
+      open.onsuccess = () => { const d = open.result, out = {}; try { const tx = d.transaction('spot', 'readonly'), st = tx.objectStore('spot');
+        keys.forEach(k => { const r = st.get(k); r.onsuccess = () => { if (r.result) out[k] = r.result; }; }); tx.oncomplete = () => { d.close(); ok(out); }; tx.onerror = () => { d.close(); ok(out); }; } catch (e) { d.close(); ok({}); } };
+    });
     const stage = $('stage');
     const fitStage = () => stage.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`;
     addEventListener('resize', fitStage); fitStage();
@@ -1144,6 +1221,24 @@
         r.append(el('div', 'n r', String(v.R)), el('div', 'n tot', String(v.H)), el('div', 'n tot', String(v.E)), el('div', 'n tot', String(v.LOB)));
         return r;
       }));
+    };
+    // On the field: where each position stands (the center of the photo), on the field drawn 1500 x 654
+    const FD_AT = { CF: [750, 105], LF: [360, 190], RF: [1140, 190], SS: [615, 285], '2B': [885, 285], '3B': [515, 445], '1B': [985, 445], P: [750, 425], C: [750, 570], DH: [150, 570] };
+    const fillFd = g => {
+      const t = s.teams[g.side] || s.teams.home; paint($('fd'), t); stripe($('fdFld'), g.side);
+      crest($('fdCr'), t); crest($('fdWm'), t);
+      $('fdHd').textContent = g.head || ''; fit($('fdHd'), 1180); $('fdFt').textContent = g.foot || '';
+      const pls = (g.players || []).filter(p => FD_AT[p.pos]).map((p, i) => {
+        const [x, y] = FD_AT[p.pos], d = el('div', 'pl'); d.style.left = (x / 1500 * 100) + '%'; d.style.top = y + 'px'; d.style.setProperty('--i', i);
+        const ring = el('div', 'ring'), cr = el('div', 'crest'); crest(cr, t); ring.append(cr);
+        if (p.photo) { const pic = el('div', 'pic'); pic.dataset.key = p.photo; ring.append(pic); }
+        const nm = el('div', 'nm'), sp = el('span', null, p.name); if (p.num) nm.append(el('i', null, '#' + p.num)); nm.append(sp);
+        d.append(ring, el('div', 'pos', p.pos), nm); return [d, sp, !!p.num];
+      });
+      $('fdPl').replaceChildren(...pls.map(x => x[0])); pls.forEach(([, sp, n]) => fit(sp, n ? 160 : 210));
+      // Photos: the logo shows until (unless) the saved photo is read
+      const keys = pls.map(x => x[0].querySelector('.pic')).filter(Boolean).map(n => n.dataset.key);
+      if (keys.length) readPhotos(keys).then(ph => document.querySelectorAll('#fdPl .pic').forEach(n => { if (ph[n.dataset.key]) { n.style.backgroundImage = `url("${ph[n.dataset.key]}")`; n.previousSibling.style.visibility = 'hidden'; } }));
     };
     const fillHr = g => {
       const t = s.teams[g.side] || s.teams.home;
@@ -1261,12 +1356,12 @@
       $('mtWhen').textContent = g.when || ''; $('mtVn').textContent = g.venue || '';
       $('mtSep2').classList.toggle('off', !(g.when && g.venue)); fit($('mtVn'), 700);
     };
-    const NODE = { full: 'fb', match: 'mt', bstat: 'ln', pstat: 'ln', l3: 'ln', ann: 'ln', title: 'tc', brk: 'bx', hr: 'hr', lu: 'lu' };
-    const FILL = { full: fillFb, match: fillMt, bstat: fillLn, pstat: fillLn, l3: fillLn, ann: fillLn, title: fillTc, brk: fillBx, hr: fillHr, lu: fillLu };
+    const NODE = { fd: 'fd', full: 'fb', match: 'mt', bstat: 'ln', pstat: 'ln', l3: 'ln', ann: 'ln', title: 'tc', brk: 'bx', hr: 'hr', lu: 'lu' };
+    const FILL = { fd: fillFd, full: fillFb, match: fillMt, bstat: fillLn, pstat: fillLn, l3: fillLn, ann: fillLn, title: fillTc, brk: fillBx, hr: fillHr, lu: fillLu };
     // Steps in and out: [ms, stage]
     // Each step starts while the one before it is still moving, so nothing stops partway.
-    const IN = { fb: [[0, 1], [170, 2], [520, 3]], ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]], lu: [[0, 1], [260, 2], [1000, 3]], mt: [[0, 1], [420, 2], [1250, 3]] };
-    const OUT = { fb: [[0, 2], [140, 0], [600]], ln: [[0, 2], [180, 0], [600]], tc: [[0, 1], [170, 0], [620]], bx: [[0, 2], [130, 0], [560]], lu: [[0, 1], [260, 0], [760]], mt: [[0, 1], [260, 0], [760]], hr: [[0, 6], [300, 7], [500, 0], [520]] };
+    const IN = { fd: [[0, 1], [380, 2], [1200, 3]], fb: [[0, 1], [170, 2], [520, 3]], ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]], lu: [[0, 1], [260, 2], [1000, 3]], mt: [[0, 1], [420, 2], [1250, 3]] };
+    const OUT = { fd: [[0, 2], [300, 0], [800]], fb: [[0, 2], [140, 0], [600]], ln: [[0, 2], [180, 0], [600]], tc: [[0, 1], [170, 0], [620]], bx: [[0, 2], [130, 0], [560]], lu: [[0, 1], [260, 0], [760]], mt: [[0, 1], [260, 0], [760]], hr: [[0, 6], [300, 7], [500, 0], [520]] };
     const HR_LITE = [[0, 1], [190, 2], [4200, 6], [4520, 7], [4750, 0]];
     const HR_STEPS = [[0, 1], [190, 2], [3900, 3], [4500, 4], [4900, 5], [10600, 6], [10920, 7], [11150, 0]];
     const run = (node, steps, done) => { for (const [ms, st] of steps) later(ms, () => { if (st != null) $(node).dataset.st = st; else if (done) done(); }); };
@@ -1721,6 +1816,21 @@
     return { side, head: ((tn.name || kg.meta.names[side] || '') + ' Batting Order').toUpperCase(), vs: ('Today vs ' + (on.name || kg.meta.names[opp] || '')).toUpperCase(),
              rows, sp, hi, photo: fp ? photos[photoKey(side, fp.name)] || '' : '', cap: ($('luCap').value.trim() || auto).toUpperCase() };
   };
+  // ---- On the field: the starting nine (and the DH) where they play, from the stat keeper's lineup ----
+  const FD_POS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'];
+  const fdGp = () => {
+    if (!kg || !stats) return null;
+    const side = s.fd.side, opp = BB.other(side), ord = BB.orderOf(kg.meta, side);
+    if (!ord.length) return { err: 'No lineup for ' + kg.meta.names[side] + ' yet: set it on the stat keeper\'s Lineups tab.' };
+    const tn = s.teams[side], on = s.teams[opp], at = {};
+    for (const o of ord) { const pos = String(o.pos || '').toUpperCase(); if (FD_POS.includes(pos) && !at[pos]) at[pos] = o.id; }
+    if (luSp(side)) at.P = luSp(side); // the starting pitcher picked on the stat keeper pitches, batting or not
+    const players = FD_POS.filter(pos => at[pos]).map(pos => { const p = playerOf(side, at[pos]) || {}; return { pos, num: p.num || '', name: lastName(p.name).toUpperCase(), photo: photos[photoKey(side, p.name)] ? photoKey(side, p.name) : '' }; });
+    const missing = FD_POS.slice(0, 9).filter(pos => !at[pos]);
+    return { side, head: ($('fdHead').value.trim() || ((tn.name || kg.meta.names[side] || '') + ' Starting Defense')).toUpperCase(),
+             foot: ($('fdFoot').value.trim() || ('Today vs ' + (on.name || kg.meta.names[opp] || ''))).toUpperCase(), players, missing };
+  };
+  const showFd = () => { const g = fdGp(); if (!g) { note('Needs the stat keeper (Connections).'); return; } if (g.err) { note(g.err); return; } show('fd', g); };
   // ---- Announcers: up to three names and the line below them (as on soccer), remembered between games ----
   const annNames = () => { const n = (s.ann.names || []).map(x => String(x || '').trim()).filter(Boolean); return n.length > 1 ? n.slice(0, -1).join(', ') + ' & ' + n[n.length - 1] : n[0] || ''; };
   let annTimer = 0;
@@ -1841,12 +1951,13 @@
     { id: 'pitch', name: 'Pitch speed', kind: 'Exit velo too', on: () => !!((s.pitch && Date.now() < s.pitch.until) || (s.exit && Date.now() < s.exit.until)), show: showPitch, take: () => { s.pitch = null; s.exit = null; save(); } },
     { id: 'flash', name: 'BB / K / HBP', kind: 'On the bug', on: () => !!(s.flash && Date.now() < s.flash.until), show: () => flashNow('K'), take: () => { s.flash = null; save(); } },
     { id: 'lu', name: 'Batting order', kind: 'Full screen', on: () => s.gfx === 'lu', show: showLu },
+    { id: 'fd', name: 'On the field', kind: 'Full screen', on: () => s.gfx === 'fd', show: showFd },
     { id: 'brk', name: 'Box score + due up', kind: 'Break', on: () => s.gfx === 'brk', show: () => { const g = breakGp(); if (g) show('brk', g); } },
     { id: 'full', name: 'Full box score', kind: 'Every inning', on: () => s.gfx === 'full', show: () => { const g = fullGp(); if (g) show('full', g); else note('No game yet.'); } },
     { id: 'ann', name: 'Announcers', kind: 'Lower third', on: () => s.gfx === 'ann', show: showAnn },
     { id: 'l3', name: 'Lower third', kind: 'Name and title', on: () => s.gfx === 'l3', show: () => { const n = $('l3Name').value.trim(); if (!n) { $('l3Name').focus(); return; } show('l3', { side: s.l3.logo === 'eota' ? '' : s.l3.logo, last: n.toUpperCase(), sub: $('l3Title').value.trim() }); } }
   ];
-  const PANE = { match: 'match', title: 'title', bstat: 'bstat', pstat: 'pstat', hr: 'hr', pitch: 'pitch', flash: 'flash', brk: 'break', full: 'full', l3: 'l3', lu: 'lineup', ann: 'ann' };
+  const PANE = { match: 'match', title: 'title', bstat: 'bstat', pstat: 'pstat', hr: 'hr', pitch: 'pitch', flash: 'flash', brk: 'break', full: 'full', l3: 'l3', lu: 'lineup', fd: 'field', ann: 'ann' };
   let pick = 'bstat', noteText = '', noteAt = 0;
   const note = t => { noteText = t; noteAt = Date.now(); renderShell(); };
   const tileEls = {};
@@ -1870,6 +1981,7 @@
   $('l3Name').addEventListener('input', e => { s.l3.name = e.target.value; save(); });
   $('l3Title').addEventListener('input', e => { s.l3.title = e.target.value; save(); });
   $('l3Logo').addEventListener('change', e => { s.l3.logo = e.target.value; save(); });
+  document.querySelectorAll('[data-fd]').forEach(b => b.onclick = () => { s.fd.side = b.dataset.fd; save(); renderShell(); });
   document.querySelectorAll('[data-lu]').forEach(b => b.onclick = () => { s.lu.side = b.dataset.lu; s.lu.hi = ''; save(); renderShell(); });
   $('luWho').onchange = () => { s.lu.hi = $('luWho').value; save(); if (luLive()) showLu(); else renderShell(); };
   $('luCap').addEventListener('input', e => { s.lu.cap = e.target.value; });
@@ -2083,6 +2195,12 @@
       if (pick === 'hr') { const h = hrGp(), e = lastHr(); $('hrSum').replaceChildren(...(h ? ['Last home run: ', el('b', null, h.first + ' ' + h.last), ' (' + kg.meta.names[h.side] + ', ' + (h.tag || '').toLowerCase() + ', ' + e.e.period.replace('T', 'top ').replace('B', 'bottom ') + ')', el('br'), h.stats.map(([v, k]) => v + ' ' + k).join(' · ')] : ['No home run recorded yet this game.'])); }
     } else { $('bsSum').textContent = $('psSum').textContent = $('hrSum').textContent = 'Needs the stat keeper (Connections).'; }
     if (pick === 'ann') $('annNow').textContent = s.gfx === 'ann' ? 'On air: ' + annNames() + ((s.ann.secs ?? 8) ? ' (goes down by itself after ' + s.ann.secs + ' seconds)' : '') : annNames() ? 'Shows: ' + annNames() : '';
+    if (pick === 'fd') {
+      document.querySelectorAll('[data-fd]').forEach(b => { b.className = 'sm' + (b.dataset.fd === s.fd.side ? ' active' : ''); b.textContent = (kg && kg.meta.names[b.dataset.fd]) || (b.dataset.fd === 'home' ? 'Home' : 'Visitors'); });
+      const g = fdGp();
+      $('fdSum').replaceChildren(...(!g ? ['Needs the stat keeper (Connections).'] : g.err ? [g.err] : [el('b', null, g.head), el('br'), g.players.map(p => p.pos + ' ' + p.name + (p.photo ? ' (photo)' : '')).join(' · '),
+        ...(g.missing.length ? [el('br'), 'No one at ' + g.missing.join(', ') + ' (set positions on the stat keeper\'s Lineups tab)'] : [])]));
+    }
     if (pick === 'lu') {
       document.querySelectorAll('[data-lu]').forEach(b => { b.className = 'sm' + (b.dataset.lu === s.lu.side ? ' active' : ''); b.textContent = (kg && kg.meta.names[b.dataset.lu]) || (b.dataset.lu === 'home' ? 'Home' : 'Visitors'); });
       const ord = kg ? BB.orderOf(kg.meta, s.lu.side) : [], spP = playerOf(s.lu.side, luSp(s.lu.side));
