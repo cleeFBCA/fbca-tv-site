@@ -516,7 +516,7 @@
      venue in a box that drops down under it. In: it opens from the middle, the halves slide in from the sides, the
      names follow, VS comes into focus, then the box drops. The faint logos drift, a light runs along the gold lines
      and a shine crosses every 6 seconds; the card itself holds still. ---- */
-  .mt { position: absolute; left: 180px; top: 164px; width: 1560px; height: 674px; } /* taller for 360 x 360 logos; the card and the box under it stay centered */
+  .mt { position: absolute; left: 180px; top: 100px; width: 1560px; height: 670px; } /* taller for 360 x 360 logos: it grows upward, so the names, VS and the box under it stay where they were */
   .mt .card { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; background: linear-gradient(#2E3035, #17181B); box-shadow: var(--hl);
               clip-path: inset(0 50% 0 50% round 12px); transition: clip-path .55s cubic-bezier(.22,1,.36,1); }
   .mt:is([data-st="1"], [data-st="2"], [data-st="3"]) .card { clip-path: inset(0 0 0 0 round 12px); }
@@ -530,8 +530,8 @@
   .mt .gl::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 22%; opacity: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent); }
   .mt:is([data-st="2"], [data-st="3"]) .gl::after { opacity: 1; animation: pgRun 3.8s linear infinite; }
   .mt:is([data-st="2"], [data-st="3"]) .gl.b::after { animation-direction: reverse; animation-delay: -1.9s; }
-  .mt .body { display: grid; grid-template-columns: 1fr 260px 1fr; height: 580px; }
-  .mt .team { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px 30px; overflow: hidden; }
+  .mt .body { display: grid; grid-template-columns: 1fr 260px 1fr; height: 576px; }
+  .mt .team { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 6px 30px 20px; overflow: hidden; }
   .mt .team.L { clip-path: polygon(0 0, 100% 0, calc(100% - 70px) 100%, 0 100%); margin-right: -70px; padding-right: 100px; transform: translateX(-110%); }
   .mt .team.R { clip-path: polygon(70px 0, 100% 0, 100% 100%, 0 100%); margin-left: -70px; padding-left: 100px; transform: translateX(110%); }
   .mt .team { transition: transform .7s cubic-bezier(.22,1,.36,1) .05s; }
@@ -551,7 +551,7 @@
   .mt .team .nm span { display: inline-block; transform-origin: center; }
   .mt .team .rc { font-size: 30px; font-weight: 700; letter-spacing: .08em; padding: 4px 18px; border-radius: 18px; background: rgba(0,0,0,.3); }
   .mt .team .rc:empty, .mt .team .sc:empty { display: none; }
-  .mt .mid { position: relative; z-index: 2; display: grid; place-items: center; }
+  .mt .mid { position: relative; z-index: 2; display: grid; place-items: center; padding-top: 136px; } /* VS at the height it had before the card grew */
   .mt .mid::before { content: ''; position: absolute; left: 50%; top: 50%; width: 420px; height: 420px; margin: -210px 0 0 -210px; border-radius: 50%; pointer-events: none;
                      background: radial-gradient(circle, rgba(255,255,255,.16), transparent 62%); opacity: 0; transition: opacity .6s; }
   .mt:is([data-st="2"], [data-st="3"]) .mid::before { opacity: 1; }
@@ -560,7 +560,7 @@
   .mt .card::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 3;
                      background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.18) 50%, transparent 60%); }
   .mt:is([data-st="2"], [data-st="3"]) .card::after { animation: pgShine 6s .7s ease-in-out infinite both; }
-  .mt .drop { position: absolute; left: 50%; top: 674px; transform: translateX(-50%); overflow: hidden; border-radius: 0 0 12px 12px; }
+  .mt .drop { position: absolute; left: 50%; top: 670px; transform: translateX(-50%); overflow: hidden; border-radius: 0 0 12px 12px; }
   .mt .drop-in { display: flex; align-items: center; gap: 26px; height: 78px; padding: 0 40px; white-space: nowrap; background: linear-gradient(#2E3035, #17181B);
                  border-radius: 0 0 12px 12px; box-shadow: var(--hl); transform: translateY(-100%); transition: transform .25s cubic-bezier(.5,0,.75,0); }
   .mt[data-st="3"] .drop-in { transform: none; transition: transform .55s cubic-bezier(.22,1,.36,1); }
