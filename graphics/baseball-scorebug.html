@@ -970,7 +970,7 @@
       <div class="panel">
         <h2>Station bug</h2>
         <label class="check"><input type="checkbox" id="stnOn"> EOTA logo in the top right corner</label>
-        <label for="stnOp">Opacity</label><input type="range" id="stnOp" min="20" max="100">
+        <label for="stnOp" style="display:flex;justify-content:space-between">Opacity<span id="stnOpPct" style="font-variant-numeric:tabular-nums"></span></label><input type="range" id="stnOp" min="20" max="100">
         <label>Color</label>
         <div class="row" style="margin-top:0"><button data-stnc="white">White</button><button data-stnc="gold">Gold</button><button data-stnc="black">Black</button></div>
       </div>
@@ -1987,7 +1987,7 @@
   $('keyColor').oninput = e => { s.keyColor = e.target.value.toUpperCase(); save(); };
   $('stnOn').onchange = e => { s.stn.on = e.target.checked; save(); };
   document.querySelectorAll('[data-stnc]').forEach(b => b.onclick = () => { s.stn.color = b.dataset.stnc; save(); renderCtl(); });
-  $('stnOp').oninput = e => { s.stn.op = +e.target.value; save(); };
+  $('stnOp').oninput = e => { s.stn.op = +e.target.value; $('stnOpPct').textContent = s.stn.op + '%'; save(); };
   const freshUrl = hash => { const q = new URLSearchParams(location.search); q.set('v', Date.now()); return location.pathname + '?' + q + hash; };
   $('btnOpen').onclick = () => window.open(freshUrl('#bug'), 'eota-baseball-bug', 'width=1280,height=720');
   $('btnOpenKey').onclick = () => window.open(freshUrl('#key'), 'eota-baseball-key', 'width=1280,height=720');
@@ -2168,7 +2168,7 @@
     $('batShow').value = s.batShow;
     $('gameNote').textContent = kg ? 'Stat keeper teams: ' + kg.meta.names.away + ' at ' + kg.meta.names.home + '. Blank team names here use those.' : '';
     $('alpha').checked = s.keyMode === 'alpha'; $('chromaBox').hidden = s.keyMode === 'alpha'; setField($('keyColor'), hex(s.keyColor, '#FF00FF').toLowerCase());
-    $('stnOn').checked = s.stn.on; setField($('stnOp'), s.stn.op);
+    $('stnOn').checked = s.stn.on; setField($('stnOp'), s.stn.op); $('stnOpPct').textContent = s.stn.op + '%';
     document.querySelectorAll('[data-stnc]').forEach(b => b.className = b.dataset.stnc === (s.stn.color || 'white') ? 'active' : '');
     setField($('mtSub'), s.mtSub || ''); setField($('mtTitle'), s.mtTitle || ''); $('mtTitle').placeholder = SPORT(); if (pick === 'match') { const sg = schedToday(); $('mtNow').textContent = 'Under it: ' + [tcWhen(), s.venue.trim() || (sg && sg.location) || ''].filter(Boolean).join(' · '); }
     setField($('speedSecs'), String(s.speedSecs || 3));
