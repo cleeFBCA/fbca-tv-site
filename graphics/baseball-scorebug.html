@@ -52,7 +52,8 @@
   [data-key="alpha"] .shadow { filter: drop-shadow(0 8px 16px rgba(0,0,0,.55)); }
   /* A team's color with fine drifting stripes */
   .tm { background: repeating-linear-gradient(var(--stripe, 115deg), rgba(255,255,255,.045) 0 7px, transparent 7px 14px), linear-gradient(color-mix(in srgb, var(--c) 88%, #fff), var(--c) 45%, color-mix(in srgb, var(--c) 72%, #000)); }
-  .crest { display: grid; place-items: center; }
+  /* One cell the full size of the box, so a logo's max-height (100%) really is the box: a tall logo can't spill past it */
+  .crest { display: grid; place-items: center; grid-template: 100% / 100%; }
   .crest img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
   .crest .ini { font-weight: 800; color: var(--f); letter-spacing: .02em; }
 
@@ -126,7 +127,7 @@
   /* ---- Stat line lower third (batter, pitcher, a name): logo box opens, widens, then the text wipes in ---- */
   .ln { position: absolute; left: 425px; bottom: 70px; width: 1070px; height: 108px; }
   .ln .bg { position: absolute; inset: 0; border-radius: 12px; border-bottom: 4px solid var(--gold); clip-path: inset(0 50% 0 50%); transition: clip-path .42s cubic-bezier(.22,1,.36,1); }
-  .ln .lg { position: absolute; top: 8px; left: 460px; width: 150px; height: 92px; opacity: 0; transform: scale(.5); transition: left .42s cubic-bezier(.4,0,.2,1), opacity .18s, transform .3s cubic-bezier(.3,1.4,.5,1); }
+  .ln .lg { position: absolute; top: 10px; left: 460px; width: 150px; height: 84px; opacity: 0; transform: scale(.5); transition: left .42s cubic-bezier(.4,0,.2,1), opacity .18s, transform .3s cubic-bezier(.3,1.4,.5,1); }
   .ln .lg .ini { font-size: 46px; }
   .ln .lg .logo { width: 140px; }
   .ln .div { position: absolute; left: 172px; top: 14px; bottom: 14px; width: 2px; background: rgba(255,255,255,.35); opacity: 0; transition: opacity .2s; }
