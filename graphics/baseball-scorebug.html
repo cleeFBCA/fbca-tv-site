@@ -516,7 +516,7 @@
      venue in a box that drops down under it. In: it opens from the middle, the halves slide in from the sides, the
      names follow, VS comes into focus, then the box drops. The faint logos drift, a light runs along the gold lines
      and a shine crosses every 6 seconds; the card itself holds still. ---- */
-  .mt { position: absolute; left: 180px; top: 236px; width: 1560px; height: 534px; }
+  .mt { position: absolute; left: 180px; top: 164px; width: 1560px; height: 674px; } /* taller for 360 x 360 logos; the card and the box under it stay centered */
   .mt .card { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; background: linear-gradient(#2E3035, #17181B); box-shadow: var(--hl);
               clip-path: inset(0 50% 0 50% round 12px); transition: clip-path .55s cubic-bezier(.22,1,.36,1); }
   .mt:is([data-st="1"], [data-st="2"], [data-st="3"]) .card { clip-path: inset(0 0 0 0 round 12px); }
@@ -530,7 +530,7 @@
   .mt .gl::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 22%; opacity: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent); }
   .mt:is([data-st="2"], [data-st="3"]) .gl::after { opacity: 1; animation: pgRun 3.8s linear infinite; }
   .mt:is([data-st="2"], [data-st="3"]) .gl.b::after { animation-direction: reverse; animation-delay: -1.9s; }
-  .mt .body { display: grid; grid-template-columns: 1fr 260px 1fr; height: 440px; }
+  .mt .body { display: grid; grid-template-columns: 1fr 260px 1fr; height: 580px; }
   .mt .team { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px 30px; overflow: hidden; }
   .mt .team.L { clip-path: polygon(0 0, 100% 0, calc(100% - 70px) 100%, 0 100%); margin-right: -70px; padding-right: 100px; transform: translateX(-110%); }
   .mt .team.R { clip-path: polygon(70px 0, 100% 0, 100% 100%, 0 100%); margin-left: -70px; padding-left: 100px; transform: translateX(110%); }
@@ -542,9 +542,9 @@
   .mt .team > * { position: relative; z-index: 1; opacity: 0; transition: opacity .4s, transform .6s cubic-bezier(.22,1,.36,1); transition-delay: calc(.05s + var(--d, 0) * .08s); }
   .mt .team.L > * { transform: translateX(-70px); } .mt .team.R > * { transform: translateX(70px); }
   .mt:is([data-st="2"], [data-st="3"]) .team > * { opacity: 1; transform: none; }
-  .mt .team .crest { height: 210px; width: 360px; }
-  /* A tall logo stays inside its 360 x 210 box (it used to grow past it and cover the school name) */
-  .mt .team .crest img { width: auto; height: auto; max-width: 360px; max-height: 210px; object-fit: contain; filter: drop-shadow(0 6px 16px rgba(0,0,0,.4)); }
+  .mt .team .crest { height: 360px; width: 360px; }
+  /* The logo fits inside a 360 x 360 box (a tall one can't grow past it and cover the school name) */
+  .mt .team .crest img { width: auto; height: auto; max-width: 360px; max-height: 360px; object-fit: contain; filter: drop-shadow(0 6px 16px rgba(0,0,0,.4)); }
   .mt .team .crest .ini { font-size: 140px; }
   .mt .team .sc { font-size: 30px; font-weight: 700; letter-spacing: .08em; color: var(--f); opacity: .9; white-space: nowrap; transform-origin: center; text-shadow: 0 2px 8px rgba(0,0,0,.45); }
   .mt .team .nm { font-size: 72px; font-weight: 800; letter-spacing: .04em; line-height: .95; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.4); white-space: nowrap; }
@@ -560,7 +560,7 @@
   .mt .card::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 3;
                      background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.18) 50%, transparent 60%); }
   .mt:is([data-st="2"], [data-st="3"]) .card::after { animation: pgShine 6s .7s ease-in-out infinite both; }
-  .mt .drop { position: absolute; left: 50%; top: 534px; transform: translateX(-50%); overflow: hidden; border-radius: 0 0 12px 12px; }
+  .mt .drop { position: absolute; left: 50%; top: 674px; transform: translateX(-50%); overflow: hidden; border-radius: 0 0 12px 12px; }
   .mt .drop-in { display: flex; align-items: center; gap: 26px; height: 78px; padding: 0 40px; white-space: nowrap; background: linear-gradient(#2E3035, #17181B);
                  border-radius: 0 0 12px 12px; box-shadow: var(--hl); transform: translateY(-100%); transition: transform .25s cubic-bezier(.5,0,.75,0); }
   .mt[data-st="3"] .drop-in { transform: none; transition: transform .55s cubic-bezier(.22,1,.36,1); }
