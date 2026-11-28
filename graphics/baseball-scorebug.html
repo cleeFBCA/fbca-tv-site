@@ -906,7 +906,7 @@
             <div id="tcFull">
             <div class="two">
               <div><label for="mtTitle">Top line (blank = the sport)</label><input id="mtTitle" maxlength="40" placeholder="Baseball"></div>
-              <div><label for="mtSub">Beside it (optional)</label><input id="mtSub" maxlength="40" placeholder="District game"></div>
+              <div><label for="mtSubIn">Beside it (optional)</label><input id="mtSubIn" maxlength="40" placeholder="District game"></div>
             </div>
             </div>
             <label for="when">Date and time (in the box under the card; blank = today's game on the schedule, or today's date)</label><input id="when" placeholder="">
@@ -2005,7 +2005,7 @@
   $('flChips').replaceChildren(...[['BB', 'Walk (BB)'], ['IBB', 'Intentional (IBB)'], ['K', 'Strikeout (K)'], ['KL', 'Looking (backward K)'], ['HBP', 'Hit by pitch (HBP)']].map(([t, l]) => { const b = el('button', null, l); b.onclick = () => flashNow(t); return b; }));
   $('venue').addEventListener('input', e => { s.venue = e.target.value; save(); });
   $('when').addEventListener('input', e => { s.when = e.target.value; save(); });
-  $('mtSub').addEventListener('input', e => { s.mtSub = e.target.value; save(); });
+  $('mtSubIn').addEventListener('input', e => { s.mtSub = e.target.value; save(); });
   $('mtTitle').addEventListener('input', e => { s.mtTitle = e.target.value; save(); });
   document.querySelectorAll('[data-tcs]').forEach(b => b.onclick = () => { s.tcStyle = b.dataset.tcs; save(); renderShell(); });
   $('l3Name').addEventListener('input', e => { s.l3.name = e.target.value; save(); });
@@ -2338,7 +2338,7 @@
     setField($('stnSz'), s.stn.size || 100); $('stnSzPct').textContent = (s.stn.size || 100) + '%';
     document.querySelectorAll('[data-stnp]').forEach(b => b.className = b.dataset.stnp === (s.stn.pos || 'right') ? 'active' : '');
     document.querySelectorAll('[data-stnc]').forEach(b => b.className = b.dataset.stnc === (s.stn.color || 'white') ? 'active' : '');
-    setField($('mtSub'), s.mtSub || ''); setField($('mtTitle'), s.mtTitle || ''); $('mtTitle').placeholder = SPORT(); if (pick === 'title') { const full = s.tcStyle !== 'lower'; document.querySelectorAll('[data-tcs]').forEach(b => b.className = 'sm' + (b.dataset.tcs === (full ? 'full' : 'lower') ? ' active' : '')); $('tcFull').hidden = !full; $('tcHint').textContent = full ? "Full screen: each team's logo, school, name and record (from Game setup), VS, and a box under it with the date, time and venue. The score bug steps aside while it's up." : 'Lower third: the teams, records, colors and logos from Game setup, with the date, time and venue in the box under the card. The score bug steps aside while the card is up.'; if ((s.gfx === 'match') !== full && (s.gfx === 'match' || s.gfx === 'title')) $('tcHint').textContent += ' The other style is up now; Update switches to this one.'; }
+    setField($('mtSubIn'), s.mtSub || ''); setField($('mtTitle'), s.mtTitle || ''); $('mtTitle').placeholder = SPORT(); if (pick === 'title') { const full = s.tcStyle !== 'lower'; document.querySelectorAll('[data-tcs]').forEach(b => b.className = 'sm' + (b.dataset.tcs === (full ? 'full' : 'lower') ? ' active' : '')); $('tcFull').hidden = !full; $('tcHint').textContent = full ? "Full screen: each team's logo, school, name and record (from Game setup), VS, and a box under it with the date, time and venue. The score bug steps aside while it's up." : 'Lower third: the teams, records, colors and logos from Game setup, with the date, time and venue in the box under the card. The score bug steps aside while the card is up.'; if ((s.gfx === 'match') !== full && (s.gfx === 'match' || s.gfx === 'title')) $('tcHint').textContent += ' The other style is up now; Update switches to this one.'; }
     setField($('speedSecs'), String(s.speedSecs || 3));
     setField($('venue'), s.venue); setField($('when'), s.when || ''); $('when').placeholder = tcWhen(); if (pick === 'title') { const sg = schedToday(); $('tcNow').textContent = 'Under it: ' + [tcWhen(), s.venue.trim() || (sg && sg.location) || ''].filter(Boolean).join(' · '); } setField($('l3Name'), s.l3.name); setField($('l3Title'), s.l3.title); $('l3Logo').value = s.l3.logo; $('bxDue').checked = s.bxDue;
     renderTeams();
