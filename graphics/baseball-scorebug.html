@@ -579,6 +579,49 @@
   .mt[data-dir="out"] .card { transition: clip-path .4s cubic-bezier(.6,0,.4,1); }
   .mt[data-dir="out"] .team { transition: transform .4s cubic-bezier(.6,0,.4,1); }
 
+  /* ---- Up next: the next broadcasts from the schedule (as on the basketball and soccer score bugs): a date tile in FBCA's
+     colors, the matchup, and the time in the title card's white pill. Rows come in one after another ---- */
+  .nx { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .nx .card { position: relative; width: 1260px; border-radius: 12px; overflow: hidden; background: linear-gradient(#2E3035, #17181B); box-shadow: var(--hl);
+              clip-path: inset(0 50% 0 50% round 12px); transition: clip-path .5s cubic-bezier(.6,0,.3,1); }
+  .nx:is([data-st="1"], [data-st="2"], [data-st="3"]) .card { clip-path: inset(0 0 0 0 round 12px); }
+  .nx .head { position: relative; height: 84px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.35); }
+  .nx .head > * { opacity: 0; transform: translateY(14px); transition: opacity .4s, transform .5s cubic-bezier(.22,1,.36,1); }
+  .nx:is([data-st="1"], [data-st="2"], [data-st="3"]) .head > * { opacity: 1; transform: none; transition-delay: .3s; }
+  .nx .head .t { font-size: 46px; font-weight: 800; letter-spacing: .1em; }
+  .nx .head .logo { position: absolute; right: 30px; top: 50%; width: 96px; margin-top: -27px; }
+  .nx .gl { position: relative; height: 5px; background: var(--gold); overflow: hidden; }
+  .nx .gl::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 22%; opacity: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent); }
+  .nx:is([data-st="2"], [data-st="3"]) .gl::after { opacity: 1; animation: pgRun 3.8s linear infinite; }
+  .nx:is([data-st="2"], [data-st="3"]) .gl.b::after { animation-direction: reverse; animation-delay: -1.9s; }
+  .nx .row { display: grid; grid-template-columns: 186px 1fr auto; align-items: center; height: 118px; box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+             opacity: 0; transform: translateX(-60px); transition: opacity .35s, transform .6s cubic-bezier(.22,1,.36,1); transition-delay: calc(var(--i) * .1s); }
+  .nx:is([data-st="2"], [data-st="3"]) .row { opacity: 1; transform: none; }
+  .nx .dt { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;
+            background: linear-gradient(var(--turf), var(--field)); clip-path: polygon(0 0, 100% 0, calc(100% - 22px) 100%, 0 100%); }
+  .nx .dt small { font-size: 24px; font-weight: 800; letter-spacing: .2em; color: var(--gold-hi); }
+  .nx .dt b { font-size: 48px; font-weight: 800; color: #fff; margin-top: 4px; }
+  .nx .wh { padding: 0 24px 0 30px; line-height: 1.05; min-width: 0; }
+  .nx .wh small { display: block; font-size: 24px; font-weight: 700; letter-spacing: .14em; color: var(--gold-hi); text-transform: uppercase; }
+  .nx .wh b { display: block; font-size: 48px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; text-transform: uppercase; }
+  .nx .wh b em { font-style: normal; color: rgba(255,255,255,.55); margin-right: 12px; }
+  .nx .wr { padding-right: 34px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .nx .wr .pill { padding: 6px 20px; border-radius: 24px; background: linear-gradient(#FFFFFF, #DCDDE0); color: #17181B; font-size: 30px; font-weight: 800; letter-spacing: .04em; line-height: 1.1; white-space: nowrap; }
+  .nx .wr span { font-size: 22px; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.6); white-space: nowrap; text-transform: uppercase; max-width: 420px; overflow: hidden; text-overflow: ellipsis; }
+  .nx .wr span:empty { display: none; }
+  .nx .watch { display: flex; align-items: center; justify-content: center; gap: 22px; height: 76px; background: rgba(0,0,0,.35); font-size: 32px; font-weight: 800; letter-spacing: .14em;
+               opacity: 0; transform: translateY(12px); transition: opacity .4s, transform .5s cubic-bezier(.22,1,.36,1); }
+  .nx[data-st="3"] .watch { opacity: 1; transform: none; }
+  .nx .watch .chip { padding: 5px 16px 3px; border-radius: 4px; background: #E5352B; font-size: 26px; letter-spacing: .16em; }
+  .nx .watch .chip::before { content: ''; display: inline-block; width: 12px; height: 12px; margin: 0 10px 3px 0; border-radius: 50%; background: #fff; animation: nxLive 1.4s ease-in-out infinite; }
+  @keyframes nxLive { 50% { opacity: .25; } }
+  .nx .card::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 3;
+                     background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.14) 50%, transparent 60%); }
+  .nx:is([data-st="2"], [data-st="3"]) .card::after { animation: pgShine 7s .8s ease-in-out infinite both; }
+  /* Out: the rows and footer go, then the card folds to the middle */
+  .nx[data-dir="out"] .row, .nx[data-dir="out"] .watch, .nx[data-dir="out"] .head > * { transition: opacity .2s, transform .25s ease-in; transition-delay: 0s; }
+  .nx[data-dir="out"] .card { transition: clip-path .4s cubic-bezier(.6,0,.4,1); }
+
   /* ---- Depth: a white highlight on each panel's edge (brightest along the top) and a little shade at the bottom ---- */
   :root { --hl: inset 0 2px 0 rgba(255,255,255,.5), inset 0 0 0 1.5px rgba(255,255,255,.2), inset 0 -12px 16px -10px rgba(0,0,0,.5); }
   .sb .half, .sb .strip, .bp .tab, .ln .bg, .tc .bgL, .tc .bgR, .tc .mid, .tc .ven, .ln .cap { box-shadow: var(--hl); }
@@ -809,6 +852,16 @@
     <div class="drop"><div class="drop-in"><i class="logo"></i><i class="sep"></i><span class="pill" id="mtWhen"></span><i class="sep" id="mtSep2"></i><span class="vn" id="mtVn"></span></div></div>
   </div>
 
+  <div class="nx shadow" id="nx" data-st="0">
+    <div class="card">
+      <div class="head"><span class="t">NEXT ON EAGLES ON THE AIR</span><i class="logo"></i></div>
+      <div class="gl"></div>
+      <div id="nxRows"></div>
+      <div class="watch"><span class="chip">WATCH LIVE</span>FBCA.TV · ROKU · THE APP</div>
+      <div class="gl b"></div>
+    </div>
+  </div>
+
   <div class="fd shadow" id="fd" data-st="0">
     <div class="hd"><div class="crest" id="fdCr"></div><span id="fdHd"></span><i class="logo"></i></div>
     <div class="fld tm" id="fdFld"><div class="crest wm" id="fdWm"></div>
@@ -980,6 +1033,10 @@
             <label for="fbHead">Top line (blank = automatic: Top 3rd, End 5th, Final)</label><input id="fbHead" placeholder="">
             <p class="hint">Runs in every inning (7, or more in extra innings), then runs, hits, errors and left on base, from the stat keeper. Scoring by hand, the innings stay blank and only the runs show. The score bug steps aside while it's up.</p>
             </div>
+          </div>
+          <div data-pane="next">
+            <p class="hint" style="margin-top:0">The next broadcasts of any sport, from the schedule (up to five). Anything starting within the next hour is skipped, so tonight's game isn't listed. The score bug steps aside while it's up.</p>
+            <ol class="sum" id="nxSum" style="padding-left:22px"></ol>
           </div>
           <div data-pane="l3">
             <label for="l3Name">Name</label><input id="l3Name" placeholder="Jordan Lee">
@@ -1381,12 +1438,21 @@
       const size = () => { const H = Math.max(120, ...crs.map(fitH)); crs.forEach(c => c.style.height = Math.round(H) + 'px'); };
       size(); Promise.all(imgs.map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; }))).then(size);
     };
-    const NODE = { fd: 'fd', full: 'fb', match: 'mt', bstat: 'ln', pstat: 'ln', l3: 'ln', ann: 'ln', title: 'tc', brk: 'bx', hr: 'hr', lu: 'lu' };
-    const FILL = { fd: fillFd, full: fillFb, match: fillMt, bstat: fillLn, pstat: fillLn, l3: fillLn, ann: fillLn, title: fillTc, brk: fillBx, hr: fillHr, lu: fillLu };
+    const fillNx = g => {
+      $('nxRows').replaceChildren(...(g.games || []).map((x, i) => {
+        const row = el('div', 'row'); row.style.setProperty('--i', i);
+        const dt = el('div', 'dt'); dt.append(el('small', null, x.dow), el('b', null, x.md));
+        const wh = el('div', 'wh'), vs = el('b'); vs.append(el('em', null, x.away ? 'at' : 'vs'), x.opp); wh.append(el('small', null, x.sport), vs);
+        const wr = el('div', 'wr'); wr.append(el('div', 'pill', x.time), el('span', null, x.loc || ''));
+        row.append(dt, wh, wr); return row;
+      }));
+    };
+    const NODE = { next: 'nx', fd: 'fd', full: 'fb', match: 'mt', bstat: 'ln', pstat: 'ln', l3: 'ln', ann: 'ln', title: 'tc', brk: 'bx', hr: 'hr', lu: 'lu' };
+    const FILL = { next: fillNx, fd: fillFd, full: fillFb, match: fillMt, bstat: fillLn, pstat: fillLn, l3: fillLn, ann: fillLn, title: fillTc, brk: fillBx, hr: fillHr, lu: fillLu };
     // Steps in and out: [ms, stage]
     // Each step starts while the one before it is still moving, so nothing stops partway.
-    const IN = { fd: [[0, 1], [380, 2], [1200, 3]], fb: [[0, 1], [170, 2], [520, 3]], ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]], lu: [[0, 1], [260, 2], [1000, 3]], mt: [[0, 1], [420, 2], [1250, 3]] };
-    const OUT = { fd: [[0, 2], [300, 0], [800]], fb: [[0, 2], [140, 0], [600]], ln: [[0, 2], [180, 0], [600]], tc: [[0, 1], [170, 0], [620]], bx: [[0, 2], [130, 0], [560]], lu: [[0, 1], [260, 0], [760]], mt: [[0, 1], [260, 0], [760]], hr: [[0, 6], [300, 7], [500, 0], [520]] };
+    const IN = { nx: [[0, 1], [450, 2], [1100, 3]], fd: [[0, 1], [380, 2], [1200, 3]], fb: [[0, 1], [170, 2], [520, 3]], ln: [[0, 1], [170, 2], [330, 3]], tc: [[0, 1], [230, 2]], bx: [[0, 1], [160, 2], [380, 3]], lu: [[0, 1], [260, 2], [1000, 3]], mt: [[0, 1], [420, 2], [1250, 3]] };
+    const OUT = { nx: [[0, 1], [260, 0], [760]], fd: [[0, 2], [300, 0], [800]], fb: [[0, 2], [140, 0], [600]], ln: [[0, 2], [180, 0], [600]], tc: [[0, 1], [170, 0], [620]], bx: [[0, 2], [130, 0], [560]], lu: [[0, 1], [260, 0], [760]], mt: [[0, 1], [260, 0], [760]], hr: [[0, 6], [300, 7], [500, 0], [520]] };
     const HR_LITE = [[0, 1], [190, 2], [4200, 6], [4520, 7], [4750, 0]];
     const HR_STEPS = [[0, 1], [190, 2], [3900, 3], [4500, 4], [4900, 5], [10600, 6], [10920, 7], [11150, 0]];
     const run = (node, steps, done) => { for (const [ms, st] of steps) later(ms, () => { if (st != null) $(node).dataset.st = st; else if (done) done(); }); };
@@ -1472,7 +1538,7 @@
     const render = () => {
       applyKey();
       // The station bug steps aside while a full-screen graphic is up (they share the top of the screen)
-      $('stn').style.opacity = s.stn.on && !['match', 'lu', 'fd'].includes(s.gfx) ? s.stn.op / 100 : 0;
+      $('stn').style.opacity = s.stn.on && !['match', 'lu', 'fd', 'next'].includes(s.gfx) ? s.stn.op / 100 : 0;
       $('stn').style.background = STN_COLOR[s.stn.color] || STN_COLOR.white;
       $('stn').style.width = Math.round(190 * (s.stn.size || 100) / 100) + 'px'; // grows from its corner
       $('stn').classList.toggle('left', s.stn.pos === 'left');
@@ -1884,6 +1950,11 @@
   const dayCT = d => fmtCT(d, { year: 'numeric', month: 'numeric', day: 'numeric' });
   const schedToday = () => { const re = s.game === 'softball' ? /softball/i : /baseball/i, today = dayCT(Date.now());
     return (schedGames || []).filter(g => re.test(g.sport || '') && dayCT(g.start) === today).sort((a, b) => Date.parse(a.start) - Date.parse(b.start))[0] || null; };
+  // Up next: the next five broadcasts of any sport, skipping anything within the hour (tonight's game)
+  const nextGames = () => { const soon = Date.now() + 60 * 60000;
+    return (schedGames || []).filter(g => Date.parse(g.start) > soon).sort((a, b) => Date.parse(a.start) - Date.parse(b.start)).slice(0, 5)
+      .map(g => ({ dow: fmtCT(g.start, { weekday: 'short' }).toUpperCase(), md: fmtCT(g.start, { month: 'short', day: 'numeric' }).toUpperCase(), time: fmtCT(g.start, { hour: 'numeric', minute: '2-digit' }),
+        sport: g.sport || '', opp: g.opponent || '', away: g.homeAway === 'away', loc: g.location || '' })); };
   const tcWhen = () => { if ((s.when || '').trim()) return s.when.trim(); const g = schedToday();
     return g ? fmtCT(g.start, { weekday: 'long', month: 'short', day: 'numeric' }) + ' · ' + fmtCT(g.start, { hour: 'numeric', minute: '2-digit' }) : fmtCT(Date.now(), { weekday: 'long', month: 'short', day: 'numeric' }); };
   const PITCH_TYPES = () => s.game === 'softball' ? ['Fastball', 'Changeup', 'Drop', 'Rise', 'Curve', 'Screwball'] : ['Fastball', '4-Seam FB', 'Sinker', 'Cutter', 'Slider', 'Curveball', 'Changeup', 'Splitter'];
@@ -1987,9 +2058,10 @@
     { id: 'fd', name: 'On the field', kind: 'Full screen', on: () => s.gfx === 'fd', show: showFd },
     { id: 'brk', name: 'Box score', kind: () => s.bxStyle === 'full' ? 'Full box score' : 'Due up', on: () => s.gfx === 'brk' || s.gfx === 'full', show: () => { if (s.bxStyle === 'full') { const g = fullGp(); if (g) show('full', g); else note('No game yet.'); } else { const g = breakGp(); if (g) show('brk', g); } } },
     { id: 'ann', name: 'Announcers', kind: 'Lower third', on: () => s.gfx === 'ann', show: showAnn },
-    { id: 'l3', name: 'Lower third', kind: 'Name and title', on: () => s.gfx === 'l3', show: () => { const n = $('l3Name').value.trim(); if (!n) { $('l3Name').focus(); return; } show('l3', { side: s.l3.logo === 'eota' ? '' : s.l3.logo, last: n.toUpperCase(), sub: $('l3Title').value.trim() }); } }
+    { id: 'l3', name: 'Lower third', kind: 'Name and title', on: () => s.gfx === 'l3', show: () => { const n = $('l3Name').value.trim(); if (!n) { $('l3Name').focus(); return; } show('l3', { side: s.l3.logo === 'eota' ? '' : s.l3.logo, last: n.toUpperCase(), sub: $('l3Title').value.trim() }); } },
+    { id: 'next', name: 'Up next', kind: 'Full screen', on: () => s.gfx === 'next', show: () => { const games = nextGames(); if (games.length) show('next', { games }); else note(schedGames ? 'No upcoming games on the schedule.' : 'The schedule is still loading.'); } }
   ];
-  const PANE = { match: 'match', title: 'title', bstat: 'bstat', pstat: 'pstat', hr: 'hr', pitch: 'pitch', flash: 'flash', brk: 'break', full: 'full', l3: 'l3', lu: 'lineup', fd: 'field', ann: 'ann' };
+  const PANE = { match: 'match', title: 'title', bstat: 'bstat', pstat: 'pstat', hr: 'hr', pitch: 'pitch', flash: 'flash', brk: 'break', full: 'full', l3: 'l3', lu: 'lineup', fd: 'field', ann: 'ann', next: 'next' };
   let pick = 'bstat', noteText = '', noteAt = 0;
   const note = t => { noteText = t; noteAt = Date.now(); renderShell(); };
   const tileEls = {};
@@ -2253,6 +2325,7 @@
       const g = luGp();
       $('luSum').replaceChildren(...(!g ? ['Needs the stat keeper (Connections).'] : g.err ? [g.err] : [el('b', null, g.head), el('br'), g.vs, el('br'), (g.sp ? 'Starting pitcher: ' + g.sp.name : 'No starting pitcher picked (stat keeper, Lineups)'), el('br'), g.hi ? 'Featuring ' + g.hi.first + ' ' + g.hi.last + (g.photo ? ' (with photo)' : ' (no photo: shows the team logo)') : 'No featured player: the team logo fills the left side', el('br'), 'Bottom: ' + g.cap]));
     }
+    if (pick === 'next') { const gs = nextGames(); $('nxSum').replaceChildren(...(gs.length ? gs.map(x => el('li', null, x.dow + ' ' + x.md + ' · ' + x.time + ' · ' + x.sport + (x.away ? ' at ' : ' vs ') + x.opp)) : [schedGames ? 'No upcoming games on the schedule.' : 'Loading the schedule…'])); }
     if (pick === 'brk') { const full = s.bxStyle === 'full'; document.querySelectorAll('[data-bxs]').forEach(b => b.className = 'sm' + (b.dataset.bxs === (full ? 'full' : 'due') ? ' active' : '')); $('bxDueWrap').hidden = full; $('bxFullWrap').hidden = !full; }
     if (pick === 'brk' && s.bxStyle === 'full') { const b = fullGp(); $('fbSum').replaceChildren(...(b ? [el('b', null, b.head), ...SIDES.flatMap(sd => [el('br'), (s.teams[sd].abbr || sd) + '  ' + (b.cells[sd].join(' ') || '–') + '  ·  ' + b.rows[sd].R + ' R ' + b.rows[sd].H + ' H ' + b.rows[sd].E + ' E ' + b.rows[sd].LOB + ' LOB'])] : ['No game yet.'])); }
     if (pick === 'brk' && s.bxStyle !== 'full') { const b = breakGp(); $('bxSum').replaceChildren(...(b ? [el('b', null, b.head), el('br'), SIDES.map(sd => (s.teams[sd].abbr || sd) + ' ' + b.rows[sd].R + ' R ' + b.rows[sd].H + ' H ' + b.rows[sd].E + ' E').join(' · '), ...(b.due ? [el('br'), b.due.head + ': ' + b.due.list.map(d => d.name).join(', ')] : [])] : ['No game yet.'])); }
