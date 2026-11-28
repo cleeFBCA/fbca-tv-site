@@ -967,15 +967,19 @@
             <p class="hint" style="margin-top:0">Shows over the bases in the score bug for 4 seconds. With "Auto BB / K / HBP" on, walks, strikeouts and hit batters show by themselves as the stat keeper records them.</p>
             <div class="chips" id="flChips"></div>
           </div>
-          <div data-pane="full">
-            <div class="sum" id="fbSum"></div>
-            <label for="fbHead">Top line (blank = automatic: Top 3rd, End 5th, Final)</label><input id="fbHead" placeholder="">
-            <p class="hint">Runs in every inning (7, or more in extra innings), then runs, hits, errors and left on base, from the stat keeper. Scoring by hand, the innings stay blank and only the runs show. The score bug steps aside while it's up.</p>
-          </div>
           <div data-pane="break">
+            <label>Style</label><div class="chips"><button data-bxs="due">Due up</button><button data-bxs="full">Full box score</button></div>
+            <div id="bxDueWrap">
             <div class="sum" id="bxSum"></div>
             <label class="check"><input type="checkbox" id="bxDue" checked> Show the next three batters (Due up)</label>
             <label for="bxHead">Top line (blank = automatic)</label><input id="bxHead" placeholder="">
+            <p class="hint">Runs, hits and errors, with the next three batters due up. The score bug steps aside while it's up.</p>
+            </div>
+            <div id="bxFullWrap">
+            <div class="sum" id="fbSum"></div>
+            <label for="fbHead">Top line (blank = automatic: Top 3rd, End 5th, Final)</label><input id="fbHead" placeholder="">
+            <p class="hint">Runs in every inning (7, or more in extra innings), then runs, hits, errors and left on base, from the stat keeper. Scoring by hand, the innings stay blank and only the runs show. The score bug steps aside while it's up.</p>
+            </div>
           </div>
           <div data-pane="l3">
             <label for="l3Name">Name</label><input id="l3Name" placeholder="Jordan Lee">
@@ -1981,8 +1985,7 @@
     { id: 'flash', name: 'BB / K / HBP', kind: 'On the bug', on: () => !!(s.flash && Date.now() < s.flash.until), show: () => flashNow('K'), take: () => { s.flash = null; save(); } },
     { id: 'lu', name: 'Batting order', kind: 'Full screen', on: () => s.gfx === 'lu', show: showLu },
     { id: 'fd', name: 'On the field', kind: 'Full screen', on: () => s.gfx === 'fd', show: showFd },
-    { id: 'brk', name: 'Box score + due up', kind: 'Break', on: () => s.gfx === 'brk', show: () => { const g = breakGp(); if (g) show('brk', g); } },
-    { id: 'full', name: 'Full box score', kind: 'Every inning', on: () => s.gfx === 'full', show: () => { const g = fullGp(); if (g) show('full', g); else note('No game yet.'); } },
+    { id: 'brk', name: 'Box score', kind: () => s.bxStyle === 'full' ? 'Full box score' : 'Due up', on: () => s.gfx === 'brk' || s.gfx === 'full', show: () => { if (s.bxStyle === 'full') { const g = fullGp(); if (g) show('full', g); else note('No game yet.'); } else { const g = breakGp(); if (g) show('brk', g); } } },
     { id: 'ann', name: 'Announcers', kind: 'Lower third', on: () => s.gfx === 'ann', show: showAnn },
     { id: 'l3', name: 'Lower third', kind: 'Name and title', on: () => s.gfx === 'l3', show: () => { const n = $('l3Name').value.trim(); if (!n) { $('l3Name').focus(); return; } show('l3', { side: s.l3.logo === 'eota' ? '' : s.l3.logo, last: n.toUpperCase(), sub: $('l3Title').value.trim() }); } }
   ];
@@ -2037,6 +2040,7 @@
   };
   $('hrLine').addEventListener('input', e => { s.hrLine = e.target.value; save(); renderShell(); });
   $('speedSecs').addEventListener('input', e => { const v = parseInt(e.target.value, 10); if (v >= 1 && v <= 60) { s.speedSecs = v; save(); } });
+  document.querySelectorAll('[data-bxs]').forEach(b => b.onclick = () => { s.bxStyle = b.dataset.bxs; save(); renderShell(); });
   $('bxDue').addEventListener('change', e => { s.bxDue = e.target.checked; save(); });
   $('bxHead').addEventListener('input', e => { s.bxHead = e.target.value; });
   $('ltLogo').onclick = () => { const b = document.querySelector('[data-vp="conn"]'); if (b) b.click(); setTimeout(() => $('skKey').focus(), 50); };
@@ -2249,8 +2253,9 @@
       const g = luGp();
       $('luSum').replaceChildren(...(!g ? ['Needs the stat keeper (Connections).'] : g.err ? [g.err] : [el('b', null, g.head), el('br'), g.vs, el('br'), (g.sp ? 'Starting pitcher: ' + g.sp.name : 'No starting pitcher picked (stat keeper, Lineups)'), el('br'), g.hi ? 'Featuring ' + g.hi.first + ' ' + g.hi.last + (g.photo ? ' (with photo)' : ' (no photo: shows the team logo)') : 'No featured player: the team logo fills the left side', el('br'), 'Bottom: ' + g.cap]));
     }
-    if (pick === 'full') { const b = fullGp(); $('fbSum').replaceChildren(...(b ? [el('b', null, b.head), ...SIDES.flatMap(sd => [el('br'), (s.teams[sd].abbr || sd) + '  ' + (b.cells[sd].join(' ') || '–') + '  ·  ' + b.rows[sd].R + ' R ' + b.rows[sd].H + ' H ' + b.rows[sd].E + ' E ' + b.rows[sd].LOB + ' LOB'])] : ['No game yet.'])); }
-    if (pick === 'brk') { const b = breakGp(); $('bxSum').replaceChildren(...(b ? [el('b', null, b.head), el('br'), SIDES.map(sd => (s.teams[sd].abbr || sd) + ' ' + b.rows[sd].R + ' R ' + b.rows[sd].H + ' H ' + b.rows[sd].E + ' E').join(' · '), ...(b.due ? [el('br'), b.due.head + ': ' + b.due.list.map(d => d.name).join(', ')] : [])] : ['No game yet.'])); }
+    if (pick === 'brk') { const full = s.bxStyle === 'full'; document.querySelectorAll('[data-bxs]').forEach(b => b.className = 'sm' + (b.dataset.bxs === (full ? 'full' : 'due') ? ' active' : '')); $('bxDueWrap').hidden = full; $('bxFullWrap').hidden = !full; }
+    if (pick === 'brk' && s.bxStyle === 'full') { const b = fullGp(); $('fbSum').replaceChildren(...(b ? [el('b', null, b.head), ...SIDES.flatMap(sd => [el('br'), (s.teams[sd].abbr || sd) + '  ' + (b.cells[sd].join(' ') || '–') + '  ·  ' + b.rows[sd].R + ' R ' + b.rows[sd].H + ' H ' + b.rows[sd].E + ' E ' + b.rows[sd].LOB + ' LOB'])] : ['No game yet.'])); }
+    if (pick === 'brk' && s.bxStyle !== 'full') { const b = breakGp(); $('bxSum').replaceChildren(...(b ? [el('b', null, b.head), el('br'), SIDES.map(sd => (s.teams[sd].abbr || sd) + ' ' + b.rows[sd].R + ' R ' + b.rows[sd].H + ' H ' + b.rows[sd].E + ' E').join(' · '), ...(b.due ? [el('br'), b.due.head + ': ' + b.due.list.map(d => d.name).join(', ')] : [])] : ['No game yet.'])); }
     if (pick === 'pitch') {
       const types = PITCH_TYPES();
       if ($('spTypes').dataset.sig !== types.join() + pitchType) { $('spTypes').dataset.sig = types.join() + pitchType; $('spTypes').replaceChildren(...['', ...types].map(t => { const b = el('button', 'sm' + (t === pitchType ? ' active' : ''), t || 'No pitch type'); b.onclick = () => { pitchType = t; renderShell(); }; return b; })); }
