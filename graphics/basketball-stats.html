@@ -289,6 +289,7 @@
       <h3>New game</h3>
       <label style="display:flex;gap:8px;align-items:center;color:var(--chalk);font-size:15px"><input type="checkbox" id="keepRosters" checked style="width:auto"> Keep the teams and rosters</label>
       <label style="display:flex;gap:8px;align-items:center;color:var(--chalk);font-size:15px"><input type="checkbox" id="saveGame" checked style="width:auto"> Save this game to Past games (untick for a test game)</label>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--chalk);font-size:15px"><input type="checkbox" id="noPush" style="width:auto"> Test game: don't start the score banner on fans' phones</label>
       <div class="set-row" style="margin-top:10px"><button class="danger" id="btnReset">Start a new game</button></div>
       <p class="hint">Clears every play for both keepers and the scorebug. Do this before tip-off, not between quarters.</p>
     </div>
@@ -480,6 +481,8 @@
     savePending(); render(); flush();
   };
   let retryTimer = 0;
+  // Lock Screen scores: a test game isn't started on phones that turned them on (the iOS app)
+  $('noPush').addEventListener('change', e => enqueue('meta', { meta: { noPush: e.target.checked } }));
   const flush = async () => {
     if (sending || !pending.length || !server) return;
     if (!key) { sendErr = 'key'; render(); return; }
@@ -648,6 +651,8 @@
 
   // ---- Drawing ----
   const render = () => {
+    { const np = $('noPush'), mine = [...pending].reverse().find(p => p.kind === 'meta' && p.body.meta.noPush != null);
+      if (np) np.checked = mine ? !!mine.body.meta.noPush : !!(server && server.meta && server.meta.noPush); }
     const v = view();
     // Connection
     const c = $('conn'), waiting = pending.reduce((a, p) => a + (p.kind === 'events' ? p.body.events.length : 1), 0);

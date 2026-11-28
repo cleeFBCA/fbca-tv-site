@@ -62,3 +62,48 @@ Put `STAT_KEY=some-test-key` in `.dev.vars` (ignored by git), run
   doesn't match the `STAT_KEY` secret.
 - Scorebug: "Live from the stat keeper. N plays this game".
 - Cloudflare: Workers & Pages → eota-stat-keeper → Logs.
+
+## Lock Screen scores (iOS app)
+
+The app's live game banner (Lock Screen and Dynamic Island, iOS 18 and later) is kept current by this worker
+through Apple's push service, so it follows the game with the app closed.
+
+- **Updates:** after any change to a basketball, soccer, baseball or softball game, the game works out the banner
+  (`banner.js`, a port of the app's code: keep the two in step) and sends it to that sport's **broadcast channel**,
+  at most every 4 seconds. Scores, periods and the final go at high priority, other plays at low. Every phone
+  showing that sport's banner gets it, with one request per update however many phones there are.
+- **Start:** people who turn on **Live scores on Lock Screen** (Broadcast Schedule screen) register a push-to-start
+  token (`POST /push/register`). When a sport that's on today's fbca.tv schedule (from an hour before its start
+  to three hours after) records its **first play**, the banner is started on every registered phone with a
+  "Kinkaid at FBCA · Live now" alert. Once per game.
+- **Test games:** tick **Test game: don't start the score banner on fans' phones** in the stat page's New game
+  card. Off-day tests never start banners anyway (no game on the schedule).
+- **End:** marking the game final ends the banner (the final score stays for 30 minutes). Starting a new game
+  ends an unfinished one's banner at once.
+- People who open the Watch screen get the banner too (whether or not they turned the switch on), subscribed to
+  the same channel.
+
+### Set up (once)
+
+1. **Apple key** (Account Holder or Admin of the FBCA developer team, F9A6UW5W67): developer.apple.com →
+   Certificates, Identifiers & Profiles → **Keys** → + → **Apple Push Notifications service (APNs)**, environment
+   **Sandbox & Production**. Download the `.p8` (only once!) and note its **Key ID**. Keep the file safe.
+2. **Broadcast capability:** Identifiers → `tv.fbca.eaglesontheair` → Push Notifications → **Configure** → turn on
+   **Broadcast Capability** (can't be done from Xcode).
+3. **Channels:** from this folder, for each environment:
+   `node scripts/apns-channels.mjs create production ~/path/AuthKey_XXXXXXXXXX.p8 XXXXXXXXXX`
+   `node scripts/apns-channels.mjs create development ~/path/AuthKey_XXXXXXXXXX.p8 XXXXXXXXXX`
+   Combine the two printed lines into `APNS_CHANNELS` in `wrangler.toml`:
+   `APNS_CHANNELS = '{"production":{…},"development":{…}}'`, and set `APNS_KEY_ID`.
+4. `npx wrangler secret put APNS_KEY` and paste the whole `.p8` file, then `npx wrangler deploy`.
+
+Until the key is set, the worker sends nothing and everything else works as before.
+
+### Check it's working
+
+- Workers & Pages → eota-stat-keeper → Logs: "Banner started on phones for basketball: …", "Start pushes: N sent",
+  and any "Banner update … failed: 403 …" (a wrong key, team or bundle) or "400 BadChannelId".
+- Apple's broadcast docs name two different hosts. If updates fail with a connection error or 404, set
+  `APNS_BROADCAST_HOSTS = '{"production":"https://api-broadcast.push.apple.com","development":"https://api-broadcast.sandbox.push.apple.com"}'`.
+- Pushes to Apple can't be tested with `wrangler dev` (Apple needs HTTP/2, which only the deployed worker has).
+  Locally, `APNS_HOSTS`, `APNS_BROADCAST_HOSTS` and `SCHEDULE_URL` can point at a stand-in server.

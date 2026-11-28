@@ -17,3 +17,20 @@ new_sqlite_classes = ["Game"]
 # Keep a log of each request (free): Worker → Logs.
 [observability]
 enabled = true
+
+# Lock Screen scores (the iOS app's live game banner): phones' push-to-start tokens, one object for every sport.
+[[durable_objects.bindings]]
+name = "PUSH"
+class_name = "Push"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Push"]
+
+# Apple push settings (README "Lock Screen scores"). APNS_KEY (the .p8) is a secret: npx wrangler secret put APNS_KEY
+# APNS_CHANNELS is filled in after running scripts/apns-channels.mjs.
+[vars]
+APNS_TEAM_ID = "F9A6UW5W67"
+APNS_BUNDLE = "tv.fbca.eaglesontheair"
+APNS_KEY_ID = ""
+APNS_CHANNELS = "{}"

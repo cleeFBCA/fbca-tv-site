@@ -43,7 +43,25 @@
 // dropped connection) is stored once, and gameId, so plays queued offline during an
 // earlier game are turned away after a reset.
 
+//
+// Lock Screen scores (the iOS app's live game banner, pushed through Apple; see README "Lock Screen scores"):
+//   GET  /push/config                  { channels: { production: { basketball: id, … }, development: { … } } }
+//   POST /push/register { token, env: 'production'|'development', on }   a phone's push-to-start token, from the
+//                 app when someone turns on "Live scores on Lock Screen" (on false forgets it). No key: it's the app.
+//   Each game's banner follows its plays: after a change the game object works out the banner (banner.js) and sends
+//   it to the sport's broadcast channel, at most every few seconds. When a sport on today's fbca.tv schedule
+//   records its first play, the Push object starts the banner on every registered phone. meta.noPush (set from the
+//   stat page) keeps a test game off phones.
+
 import { DurableObject } from 'cloudflare:workers';
+import { attributes, contentState, sportOfGame, bigChange, startAlert } from './banner.js';
+import { pushConfigured, channels, broadcast, toDevice, deadToken } from './apns.js';
+
+const APP_SPORTS = ['basketball', 'soccer', 'baseball', 'softball']; // the games the app follows, by game name
+const PUSH_GAP = 4000;                  // at most one banner update every 4 seconds
+const STALE_AFTER = 30 * 60;            // a banner with no update for 30 minutes shows as out of date
+const FINAL_STAYS = 30 * 60;            // the final score stays on the Lock Screen for half an hour
+const START_WINDOW = [-60, 180];        // a first play from an hour before a scheduled start to three hours after
 
 const SITE_ORIGINS = ['https://fbca.tv', 'https://www.fbca.tv'];
 // Plays each sport records. A game named "soccer…" is soccer; anything else is basketball.
@@ -169,7 +187,96 @@ export class Game extends DurableObject {
   }
 
   async fetch(request) {
-    const url = new URL(request.url);
+    const url = new URL(request.url), game = url.searchParams.get('game') || '';
+    const res = await this.handle(request, url);
+    // A change to a game the app follows: its Lock Screen banner follows (see alarm).
+    if (request.method === 'POST' && res.ok && APP_SPORTS.includes(game) && pushConfigured(this.env)
+        && ['/events', '/undo', '/meta', '/logo', '/reset'].includes(url.pathname)) {
+      if (this.get('name') !== game) this.put('name', game);
+      const due = Math.max(Date.now(), this.get('push', {}).at + PUSH_GAP || 0);
+      const set = await this.ctx.storage.getAlarm();
+      if (set == null || set > due) await this.ctx.storage.setAlarm(due);
+    }
+    return res;
+  }
+
+  // ---- Lock Screen banner -------------------------------------------------------------------------------------
+
+  /** Sends the banner's latest state to the sport's channel: a start to registered phones once a scheduled game
+   *  gets going, then updates, then the end at the final. */
+  async alarm() {
+    const game = this.get('name'), env = this.env;
+    if (!game || !pushConfigured(env)) return;
+    this.sport = sportOf(game);
+    const sport = sportOfGame(game), st = this.state(), meta = st.meta, now = Date.now();
+    const attrs = attributes(sport, meta), cs = contentState(sport, st, now), ts = Math.floor(now / 1000);
+    const chans = channels(env);
+    let pushed = this.get('push', {});
+    const toChannels = async (payload, priority) => {
+      for (const [envName, ids] of Object.entries(chans)) {
+        if (!ids[sport]) continue;
+        const r = await broadcast(env, envName, ids[sport], payload, priority).catch(e => ({ ok: false, reason: String(e) }));
+        if (!r.ok) console.log(`Banner ${payload.aps.event} for ${sport} (${envName}) failed: ${r.status || ''} ${r.reason}`);
+      }
+    };
+
+    // A new game: the last one's banner ends now (a doubleheader's second game gets a banner of its own).
+    if (pushed.gameId !== attrs.gameId) {
+      if (pushed.gameId && pushed.state && !pushed.ended) {
+        await toChannels({ aps: { timestamp: ts, event: 'end', 'content-state': pushed.state, 'dismissal-date': ts } }, 10);
+      }
+      pushed = { gameId: attrs.gameId, at: 0 };
+      this.put('sched', null); // check the schedule afresh for the new game
+    }
+    if (pushed.ended) { this.put('push', pushed); return; }
+    // Nothing to show until the game has a play.
+    if (!st.events.length) { this.put('push', pushed); return; }
+
+    if (meta.status === 'final') {
+      await toChannels({ aps: { timestamp: ts, event: 'end', 'content-state': cs, 'dismissal-date': ts + FINAL_STAYS } }, 10);
+      this.put('push', { ...pushed, state: cs, at: now, ended: true });
+      return;
+    }
+
+    // The start, to every phone with "Live scores on Lock Screen" on: once, for a game on today's schedule.
+    if (!pushed.started && !meta.noPush && await this.scheduledNow(sport, now)) {
+      const starts = {};
+      for (const [envName, ids] of Object.entries(chans)) {
+        if (!ids[sport]) continue;
+        starts[envName] = { aps: { timestamp: ts, event: 'start', 'content-state': cs, 'stale-date': ts + STALE_AFTER,
+          'attributes-type': 'GameActivityAttributes', attributes: attrs, 'input-push-channel': ids[sport],
+          alert: startAlert(attrs) } };
+      }
+      const stub = env.PUSH.get(env.PUSH.idFromName('push'));
+      await stub.fetch('https://push/start', { method: 'POST', body: JSON.stringify({ starts }) });
+      pushed.started = true;
+      console.log(`Banner started on phones for ${sport}: ${attrs.awayName} at ${attrs.homeName}`);
+    }
+
+    if (JSON.stringify(cs) !== JSON.stringify(pushed.state)) {
+      await toChannels({ aps: { timestamp: ts, event: 'update', 'content-state': cs, 'stale-date': ts + STALE_AFTER } },
+        bigChange(pushed.state, cs) ? 10 : 5);
+      pushed.state = cs; pushed.at = now;
+    }
+    this.put('push', pushed);
+  }
+
+  /** Whether the sport has a game on fbca.tv's schedule starting about now (checked at most every 10 minutes). */
+  async scheduledNow(sport, now) {
+    const seen = this.get('sched', null);
+    if (seen && now - seen.at < 10 * 60000) return seen.yes;
+    let yes = false;
+    try {
+      const res = await fetch(this.env.SCHEDULE_URL || 'https://fbca.tv/schedule.json', { cf: { cacheTtl: 300 } });
+      const games = (await res.json()).games || [];
+      yes = games.some(g => String(g.sport || '').toLowerCase().includes(sport)
+        && (now - Date.parse(g.start)) / 60000 >= START_WINDOW[0] && (now - Date.parse(g.start)) / 60000 <= START_WINDOW[1]);
+    } catch (e) { console.log('Schedule check failed: ' + e); }
+    this.put('sched', { at: now, yes });
+    return yes;
+  }
+
+  async handle(request, url) {
     this.sport = sportOf(url.searchParams.get('game'));
     if (url.pathname === '/ws') {
       const [client, server] = Object.values(new WebSocketPair());
@@ -304,6 +411,8 @@ export class Game extends DurableObject {
       }
       // Halftime or final, as set on the scorebug (fbca.tv's box score turns LIVE off at the final).
       if (m.status != null) next.status = m.status === 'half' || m.status === 'final' ? m.status : '';
+      // A test game: its Lock Screen banner isn't started on phones (the stat page's "Don't send to phones").
+      if (m.noPush != null) next.noPush = !!m.noPush;
       // The scorebug shares its clock: who set it, and when (the stat pages follow it while it keeps checking in).
       if (m.clockSrc != null) next.clockSrc = m.clockSrc === 'scorebug' ? 'scorebug' : '';
       if (m.clock) next.clockAt = Date.now();
@@ -403,11 +512,78 @@ export class Game extends DurableObject {
   async webSocketClose(ws, code) { try { ws.close(code, 'bye'); } catch (e) { /* already closed */ } }
 }
 
+// The phones that asked for Lock Screen scores: each one's push-to-start token, so a game's banner can be started
+// on them. One object for every sport. Starts go out in batches (a Worker invocation can only make so many
+// requests), one batch per alarm.
+const TOKEN_OK = /^[0-9a-f]{64,200}$/;
+const MAX_TOKENS = 20000, START_BATCH = 40;
+
+export class Push extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.sql = ctx.storage.sql;
+    this.sql.exec('CREATE TABLE IF NOT EXISTS tokens (token TEXT PRIMARY KEY, env TEXT NOT NULL, at INTEGER NOT NULL)');
+    this.sql.exec('CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)');
+  }
+  get(k, fallback) { const r = this.sql.exec('SELECT v FROM kv WHERE k = ?', k).toArray()[0]; return r ? JSON.parse(r.v) : fallback; }
+  put(k, v) { this.sql.exec('INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v', k, JSON.stringify(v)); }
+
+  async fetch(request) {
+    const url = new URL(request.url), body = await request.json().catch(() => ({}));
+    if (url.pathname === '/register') {
+      const token = String(body.token || '').toLowerCase(), envName = body.env === 'development' ? 'development' : 'production';
+      if (!TOKEN_OK.test(token)) return json({ error: 'Bad token' }, 400);
+      if (body.on === false) this.sql.exec('DELETE FROM tokens WHERE token = ?', token);
+      else {
+        this.sql.exec('INSERT INTO tokens (token, env, at) VALUES (?, ?, ?) ON CONFLICT(token) DO UPDATE SET env = excluded.env, at = excluded.at', token, envName, Date.now());
+        // Over the limit: forget the tokens heard from longest ago.
+        this.sql.exec('DELETE FROM tokens WHERE token NOT IN (SELECT token FROM tokens ORDER BY at DESC LIMIT ?)', MAX_TOKENS);
+      }
+      return json({ ok: true });
+    }
+    if (url.pathname === '/start') {
+      // A new start replaces one still going out (only the latest game matters).
+      this.put('job', { starts: body.starts || {}, after: '' });
+      await this.ctx.storage.setAlarm(Date.now());
+      return json({ ok: true });
+    }
+    return json({ error: 'Not found' }, 404);
+  }
+
+  async alarm() {
+    const job = this.get('job', null);
+    if (!job) return;
+    const batch = this.sql.exec('SELECT token, env FROM tokens WHERE token > ? ORDER BY token LIMIT ?', job.after, START_BATCH).toArray();
+    let sent = 0, dead = 0;
+    for (const { token, env: envName } of batch) {
+      const payload = job.starts[envName];
+      if (!payload) continue;
+      const r = await toDevice(this.env, envName, token, payload).catch(e => ({ ok: false, reason: String(e) }));
+      if (r.ok) sent++;
+      else if (deadToken(r)) { this.sql.exec('DELETE FROM tokens WHERE token = ?', token); dead++; }
+      else console.log(`Start push failed: ${r.status || ''} ${r.reason}`);
+    }
+    console.log(`Start pushes: ${sent} sent, ${dead} dead tokens removed`);
+    if (batch.length === START_BATCH) {
+      this.put('job', { ...job, after: batch[batch.length - 1].token });
+      await this.ctx.storage.setAlarm(Date.now() + 1000);
+    } else this.sql.exec("DELETE FROM kv WHERE k = 'job'");
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url), origin = request.headers.get('Origin') || '';
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors(origin) });
     if (origin && !allowedOrigin(origin)) return json({ error: 'Not allowed from this site' }, 403, origin);
+
+    // Lock Screen scores (the iOS app)
+    if (url.pathname === '/push/config' && request.method === 'GET') return json({ channels: channels(env) }, 200, origin);
+    if (url.pathname === '/push/register' && request.method === 'POST') {
+      if (!env.PUSH) return json({ error: 'Lock Screen scores are not set up' }, 503, origin);
+      const r = await env.PUSH.get(env.PUSH.idFromName('push')).fetch('https://push/register', { method: 'POST', body: await request.text() });
+      return withCors(r, origin);
+    }
 
     const game = clean(url.searchParams.get('game') || 'basketball', 32);
     if (!/^[a-z0-9-]+$/.test(game)) return json({ error: 'Bad game name' }, 400, origin);
